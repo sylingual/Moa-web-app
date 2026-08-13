@@ -67,4 +67,16 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
         body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: max_tokens || 1200, system, messages }),
       });
-      if (!r.ok) throw new Error('Anthropic ' + r.status
+      if (!r.ok) throw new Error('Anthropic ' + r.status + ': ' + await r.text());
+      const data = await r.json();
+      text = (data.content || []).map(b => b.text || '').join('\n');
+
+    } else {
+      return res.status(500).json({ error: 'Unknown provider: ' + provider });
+    }
+
+    return res.status(200).json({ content: [{ type: 'text', text }] });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+}

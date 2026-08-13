@@ -121,35 +121,128 @@ function parseJSON(raw) {
 
 async function analyzeText(text, existing, lang) {
   const known = existing.map((c) => c.korean).join(", ");
-  const sys = `You are a Korean teacher for French-speaking intermediate learners (TOPIK 3-4).
-RESPOND WITH ONLY a JSON array, no markdown. Each item: {"korean":"structure","type":"grammar"|"expression","description_fr":"FR","description_en":"EN","example_kr":"from text","example_fr":"FR","example_en":"EN"}
-Find 3 structures. Skip: ${known || "none"}. Prefer expressive, blog-style structures.`;
-  return parseJSON(await callAI(sys, `Analyze:\n\n${text}`));
+  const L = lang === "fr" ? "French" : "English";
+  const sys = `You are an expert Korean language analyst specializing in identifying teachable grammar and expressions for French-speaking intermediate learners (TOPIK 3-4 level).
+
+TASK: Analyze the provided Korean text and extract exactly 3 interesting grammatical structures or expressions worth studying.
+
+SELECTION CRITERIA (in order of priority):
+- Prefer structures that are emotionally expressive, subjective, or commonly found (e.g. 어찌나...는지, ~아/어 가다, ~하는 모습)
+- Prefer structures that reveal a nuance hard to guess from textbook definitions alone
+- Avoid basic structures the learner likely already knows (e.g. ~고 싶다, ~수 있다)
+- Avoid overly advanced or literary structures that would overwhelm an intermediate learner
+- Each structure must appear clearly in the provided text with a real example sentence
+
+ALREADY KNOWN (skip these): ${known || "none"}
+
+For each structure, provide:
+- "korean": the structure pattern (e.g. "~아/어 가다", "어찌나 ~(은/는)지")
+- "type": "grammar" or "expression"
+- "description_fr": one clear sentence in French explaining what it means and when to use it
+- "description_en": same in English
+- "example_kr": the exact sentence from the text where this structure appears
+- "example_fr": natural French translation of that sentence
+- "example_en": natural English translation of that sentence
+
+Return a JSON array of exactly 3 items.`;
+  return parseJSON(await callAI(sys, text));
 }
 
 async function startSocratic(card, article, lang) {
   const L = lang === "fr" ? "French" : "English";
   const d = lang === "fr" ? card.description_fr : card.description_en;
-  const sys = `You are a Socratic Korean teacher. Teach by asking questions, NOT explaining.
-RESPOND ONLY JSON: {"message":"text","options":[{"label":"a) ...","correct":false},{"label":"b) ...","correct":true},{"label":"c) ...","correct":false}]}
-Use ${L}. Show the structure, give 2 new examples, ask a 3-option MCQ. Be warm.`;
-  return parseJSON(await callAI(sys, `Teach: ${card.korean} (${d})\nExample: ${card.example_kr}\nArticle:\n${(article || "").substring(0, 500)}`));
+  const sys = `You are a warm, encouraging Korean language teacher who uses the Socratic method. You NEVER explain a rule directly. Instead, you guide the student to discover it themselves through observation and intuition.
+
+METHODOLOGY:
+1. First, show the target structure highlighted in a sentence from the article
+2. Then show 2 NEW example sentences (not from the article) that use the same structure in different contexts. Choose examples where the meaning of the structure becomes obvious from context.
+3. Ask ONE multiple-choice question that tests whether the student has grasped the core meaning or nuance. The question should be about what the structure conveys emotionally or functionally, not about grammar terminology.
+
+TONE:
+- Speak in ${L}
+- Be warm and conversational, like a patient tutor
+- Use short paragraphs with line breaks for readability
+- Write Korean examples on their own lines
+- After each Korean example, add the ${L} translation in parentheses on the next line
+
+IMPORTANT RULES:
+- Do NOT name the grammar rule or give its official name yet
+- Do NOT immediately explain what the structure means. Let the student figure it out first.
+- The wrong MCQ options should be plausible but clearly distinguishable from the right answer
+- Use "label" as the key name for each option's text
+
+Return JSON: {"message": "your teaching text", "options": [{"label": "a) ...", "correct": false}, {"label": "b) ...", "correct": true}, {"label": "c) ...", "correct": false}]}`;
+  return parseJSON(await callAI(sys, `Structure to teach: ${card.korean}
+Meaning (do NOT reveal this to the student): ${d}
+Example from the article: ${card.example_kr}
+Article context:\n${(article || "").substring(0, 800)}`));
 }
 
 async function continueChat(card, conv, action, lang) {
   const L = lang === "fr" ? "French" : "English";
-  const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [${m.selected}]` : ""}`).join("\n");
-  const acts = { examples: "Give 2-3 new examples with translations, ask a question.", resources: "Suggest online resources, continue.", exercise: "Give a fill-in-the-blank exercise.", explain: "Explain differently with analogy." };
-  const sys = `Socratic Korean teacher. Continue the lesson. RESPOND ONLY JSON: {"message":"text","options":[...]} or {"message":"text"}. Use ${L}. Student asked: ${acts[action] || action}`;
-  return parseJSON(await callAI(sys, `Structure: ${card.korean}\nHistory:\n${hist}\n\nRequest: ${action}`));
+  const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
+  
+  const acts = {
+    examples: `The student wants more examples. Give 2-3 NEW example sentences using the structure "${card.korean}" in varied, real-life contexts (blog posts, conversations, social media), ideally based on the student's. For each example, write the Korean sentence, then the ${L} translation on the next line. After the examples, ask a new question to check understanding. Include MCQ options if appropriate.`,
+    
+    resources: `The student wants to find more examples online. Suggest 2-3 specific, actionable ways to find real Korean content using this structure. For example: specific search terms to use on Naver Blog (e.g. searching "${card.korean}" in quotes), YouTube channels, or web resources. Be specific, not generic. Then continue the lesson with a follow-up question.`,
+    
+    exercise: `The student wants a practice exercise. Create a fill-in-the-blank or sentence-building exercise that requires using "${card.korean}". Give a context sentence in ${L}, then ask the student to complete or translate it into Korean using the structure. If you include MCQ options, use "label" as the key name.`,
+    
+    explain: `The student is struggling. Explain the structure "${card.korean}" differently. Use an analogy with ${L} or compare it to a simpler Korean structure the student likely knows. Use concrete, visual examples rather than abstract grammar explanations. Then give one more example and ask a simpler question to rebuild confidence.`,
+    
+    correct: `The student answered correctly! Briefly confirm they are right (1 sentence). Then either: reveal the official grammar name if not done yet, or go deeper into a nuance, or show an edge case, or move to a slightly harder usage of the same structure. Include a new question if appropriate.`,
+    
+    "incorrect, explain": `The student answered incorrectly. Do NOT just say "wrong." Instead: gently say it is not quite right, then give a helpful hint by showing the structure in a very obvious context where the meaning is unmistakable. Ask a simpler version of the same question or rephrase it. Be encouraging. Use "label" as the key name for MCQ options.`
+  };
+
+  const instruction = acts[action] || `The student said: "${action}". Respond naturally as a Socratic Korean teacher. Stay focused on the structure "${card.korean}". If they ask a question, answer it helpfully. If they attempt Korean, gently correct any mistakes. Always try to keep the lesson moving forward.`;
+
+  const sys = `You are a Socratic Korean teacher having an ongoing lesson about the structure "${card.korean}". Speak in ${L}. Be warm, patient, and encouraging. Write Korean on its own lines followed by translations.
+
+${instruction}
+
+Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.`;
+  
+  return parseJSON(await callAI(sys, `Conversation so far:\n${hist}`));
 }
 
 async function genExercise(cards, mode, lang) {
   const L = lang === "fr" ? "French" : "English";
-  const structs = cards.map((c) => `${c.korean}: ${lang === "fr" ? c.description_fr : c.description_en} (${c.example_kr})`).join("\n");
-  const modes = { story: "Story prompt requiring ALL structures. Ask 3-4 sentences. Give a starter.", qcm: "3 MCQs with new examples, 3 options each.", fill: "3 fill-in-the-blank sentences." };
-  const sys = `Korean exercise generator. ${modes[mode]} RESPOND ONLY JSON: {"message":"text"} or {"message":"text","options":[...]}. Use ${L}.`;
-  return parseJSON(await callAI(sys, `Structures:\n${structs}`));
+  const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : c.description_en} (example: ${c.example_kr})`).join("\n");
+  
+  const modes = {
+    story: `STORY MODE: Create a creative writing prompt in ${L} that requires using ALL the listed structures naturally in a short paragraph (3-5 sentences). 
+Give the student:
+1. A scenario/context (e.g. "You are writing a blog post about your weekend trip to Busan")
+2. A starter sentence in Korean to help them begin
+3. Clear instructions about which structures to incorporate and where they would fit naturally
+The goal is for the student to write a coherent mini-text, not isolated sentences.`,
+
+    qcm: `QUIZ MODE: Create 3 multiple-choice questions testing these structures. For EACH question:
+1. Write a new Korean sentence (not from the original article) that uses one of the structures
+2. Ask what the sentence means or what nuance the structure adds
+3. Provide 3 options where only one is correct
+4. Make wrong options plausible but clearly different in meaning
+Format all 3 questions in a single message. Use "label" as the key for option text. Only include options for the FIRST question (the student will answer one at a time).`,
+
+    fill: `FILL-IN-THE-BLANK MODE: Create 3 sentences with blanks where the student must fill in the correct structure. For each:
+1. Give a ${L} translation of the full sentence
+2. Give the Korean sentence with a blank (use ______) where the structure should go
+3. Provide the words around the blank so the student knows what form to use
+Start with the easiest structure and increase difficulty. Present all 3 in your message.`
+  };
+
+  const sys = `You are a Korean language exercise designer for intermediate learners. Speak in ${L}. Be clear and encouraging.
+
+${modes[mode]}
+
+Structures to practice:
+${structs}
+
+Return JSON: {"message": "your exercise content"} or {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]} if the exercise format includes MCQ. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
+  
+  return parseJSON(await callAI(sys, `Generate the exercise now.`));
 }
 
 // =============================================
@@ -167,11 +260,13 @@ function Bubble({ msg }) {
         {msg.options && (
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
             {msg.options.map((o, i) => {
-              const sel = msg.selected === o.label, showOk = msg.selected && o.correct, bad = sel && !o.correct;
+              const oLabel = o.label || o.text || String(o);
+              const oCorrect = (o.correct === true || o.correct === "true");
+              const sel = msg.selected === oLabel, showOk = msg.selected && oCorrect, bad = sel && !oCorrect;
               return (
-                <button key={i} onClick={() => msg.onSelect?.(o)} disabled={!!msg.selected}
+                <button key={i} onClick={() => msg.onSelect?.({...o, label: oLabel, correct: oCorrect})} disabled={!!msg.selected}
                   style={{ background: showOk ? C.okBg : bad ? C.warnBg : C.s1, border: `1px solid ${showOk ? C.okB : bad ? C.warnB : C.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 12, color: showOk ? C.ok : bad ? C.warn : C.txt, cursor: msg.selected ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", textAlign: "left", opacity: msg.selected && !sel && !showOk ? 0.4 : 1 }}>
-                  {o.label || o.text || o}
+                  {oLabel}
                 </button>
               );
             })}
@@ -339,10 +434,11 @@ export default function App() {
   }, c.articleText || "");
 
   const pickOpt = async (i, opt) => {
+    const isRight = (opt.correct === true || opt.correct === "true");
     const nc = [...conv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setConv(u); setLLoad(true);
-    try { const r = await continueChat(lCard, u, opt.correct ? "correct" : "incorrect, explain", lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
-    catch { setConv([...u, { role: "ai", content: opt.correct ? "Exact ! 👏" : "Pas tout à fait..." }]); }
+    try { const r = await continueChat(lCard, u, isRight ? "correct" : "incorrect, explain", lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
+    catch { setConv([...u, { role: "ai", content: isRight ? "Exact ! 👏" : "Pas tout à fait..." }]); }
     setLLoad(false);
   };
 
@@ -374,10 +470,11 @@ export default function App() {
   };
 
   const exOpt = async (i, opt) => {
+    const isRight = (opt.correct === true || opt.correct === "true");
     const nc = [...exConv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setExConv(u); setExLoad(true);
-    try { const r = await continueChat(acqCards[0], u, opt.correct ? "correct" : "incorrect, explain", lang); setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
-    catch { setExConv([...u, { role: "ai", content: opt.correct ? "Correct ! 👏" : "Pas tout à fait..." }]); }
+    try { const r = await continueChat(acqCards[0], u, isRight ? "correct" : "incorrect, explain", lang); setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
+    catch { setExConv([...u, { role: "ai", content: isRight ? "Correct ! 👏" : "Pas tout à fait..." }]); }
     setExLoad(false);
   };
 

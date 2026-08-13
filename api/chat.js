@@ -18,7 +18,7 @@ const PROVIDERS = {
           body: JSON.stringify({
             system_instruction: { parts: [{ text: system }] },
             contents: [{ role: 'user', parts: [{ text: userMsg }] }],
-            generationConfig: { maxOutputTokens: maxTokens || 1200 },
+            generationConfig: { maxOutputTokens: maxTokens || 1200, responseMimeType: "application/json" },
           }),
         }
       );

@@ -99,7 +99,11 @@ async function callAI(systemPrompt, userMessage) {
 }
 
 function parseJSON(raw) {
-  return JSON.parse(raw.replace(/```json|```/g, "").trim());
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+  const start = cleaned.search(/[\[{]/);
+  const end = Math.max(cleaned.lastIndexOf(']'), cleaned.lastIndexOf('}'));
+  if (start === -1 || end === -1) throw new Error("No JSON found in response");
+  return JSON.parse(cleaned.substring(start, end + 1));
 }
 
 async function analyzeText(text, existing, lang) {

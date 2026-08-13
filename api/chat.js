@@ -42,11 +42,7 @@ export default async function handler(req, res) {
       if (start >= 0 && end > start) {
         text = text.substring(start, end + 1);
       }
-      try {
-        JSON.parse(text);
-      } catch (e) {
-        return res.status(500).json({ error: 'Gemini response is not valid JSON. Got: ' + text.substring(0, 500) });
-      }
+
 
     } else if (provider === 'openai') {
       const r = await fetch('https://api.openai.com/v1/chat/completions', {

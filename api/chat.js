@@ -70,7 +70,8 @@ export default async function handler(req, res) {
     } else {
       return res.status(500).json({ error: 'Unknown provider: ' + provider });
     }
-
+var parsed = JSON.parse(text)
+    text = JSON.stringify(parsed)
     return res.status(200).json({ content: [{ type: 'text', text }] });
   } catch (err) {
     return res.status(500).json({ error: err.message });

@@ -171,7 +171,7 @@ function Bubble({ msg }) {
               return (
                 <button key={i} onClick={() => msg.onSelect?.(o)} disabled={!!msg.selected}
                   style={{ background: showOk ? C.okBg : bad ? C.warnBg : C.s1, border: `1px solid ${showOk ? C.okB : bad ? C.warnB : C.border}`, borderRadius: 6, padding: "6px 10px", fontSize: 12, color: showOk ? C.ok : bad ? C.warn : C.txt, cursor: msg.selected ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", textAlign: "left", opacity: msg.selected && !sel && !showOk ? 0.4 : 1 }}>
-                  {o.label}
+                  {o.label || o.text || o}
                 </button>
               );
             })}

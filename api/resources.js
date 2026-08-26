@@ -56,13 +56,19 @@ export default async function handler(req, res) {
 
     var data = JSON.parse(raw)
     var web = (data.web && data.web.results) || []
-    var results = web.slice(0, 6).map(function (it) {
+    var mapped = web.map(function (it) {
       return {
         title: (it.title || it.url || '').replace(/<[^>]*>/g, ''),
         uri: it.url,
         snippet: (it.description || '').replace(/<[^>]*>/g, ''),
       }
     }).filter(function (it) { return it.uri })
+
+    // Surface How To Study Korean first when it shows up — it's usually the most relevant.
+    function isHtsk(it) { return /howtostudykorean\.com/i.test(it.uri) }
+    mapped.sort(function (a, b) { return (isHtsk(b) ? 1 : 0) - (isHtsk(a) ? 1 : 0) })
+
+    var results = mapped.slice(0, 3)
 
     return res.status(200).json({ results: results })
   } catch (err) {

@@ -711,7 +711,8 @@ function resourceSearchLinks(card, tlCode) {
     ],
   };
 
-  return [...(byLang[tlCode] || []), ...common];
+  // Cap at 3, language-specific sites first (How To Study Korean already leads the ko list).
+  return [...(byLang[tlCode] || []), ...common].slice(0, 3);
 }
 
 // Call the Brave-backed /api/resources route. Always resolves to { results: [...] }.

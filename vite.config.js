@@ -83,12 +83,53 @@ function devApiProxy() {
   }
 }
 
+function devResourcesProxy() {
+  let braveKey = ''
+  return {
+    name: 'dev-resources-proxy',
+    configResolved() { braveKey = process.env.BRAVE_API_KEY || '' },
+    configureServer(server) {
+      server.middlewares.use('/api/resources', async (req, res) => {
+        const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)) }
+        if (req.method !== 'POST') { res.writeHead(405); res.end('Method not allowed'); return }
+        if (!braveKey) return send(200, { error: 'NO_BRAVE_KEY', results: [] })
+        let body = ''
+        for await (const chunk of req) body += chunk
+        try {
+          const { structure = '', targetLang = '' } = JSON.parse(body || '{}')
+          if (!String(structure).trim()) return send(400, { error: 'No structure provided', results: [] })
+          const params = new URLSearchParams({
+            q: `${structure} ${targetLang} grammar meaning usage explanation`,
+            count: '10', safesearch: 'moderate', text_decorations: 'false',
+          })
+          const r = await fetch('https://api.search.brave.com/res/v1/web/search?' + params.toString(), {
+            headers: { 'Accept': 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': braveKey },
+          })
+          const raw = await r.text()
+          if (!r.ok) return send(200, { error: 'Brave ' + r.status + ': ' + raw.substring(0, 200), results: [] })
+          const data = JSON.parse(raw)
+          const web = (data.web && data.web.results) || []
+          const results = web.slice(0, 6).map(it => ({
+            title: (it.title || it.url || '').replace(/<[^>]*>/g, ''),
+            uri: it.url,
+            snippet: (it.description || '').replace(/<[^>]*>/g, ''),
+          })).filter(it => it.uri)
+          return send(200, { results })
+        } catch (e) {
+          return send(200, { error: e.message, results: [] })
+        }
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   process.env.AI_API_KEY = env.AI_API_KEY || ''
   process.env.AI_PROVIDER = env.AI_PROVIDER || 'gemini'
+  process.env.BRAVE_API_KEY = env.BRAVE_API_KEY || ''
   return {
-    plugins: [react(), devApiProxy()],
+    plugins: [react(), devApiProxy(), devResourcesProxy()],
     server: { port: 3000, open: true },
   }
 })

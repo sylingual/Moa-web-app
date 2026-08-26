@@ -681,68 +681,79 @@ Return JSON: {"message": "your response"} or {"message": "your response", "optio
   return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`)).text);
 }
 
+// Curated deep-links: each opens a trusted resource site pre-filtered to this
+// structure (not a generic Google search). Used as a fallback when web search
+// is unavailable. Language-aware, with a sensible generic set for other langs.
 function resourceSearchLinks(card, tlCode) {
   const structure = card.korean.trim();
+  const q = encodeURIComponent(structure);
   const target = getTargetLangName(tlCode, "en");
-  const searches = [
-    [`Google - ${target} grammar`, `${structure} ${target} grammar`],
-    [`YouTube - ${target} lesson`, `${structure} ${target} grammar lesson`],
-    [`Reddit - ${target} learners`, `${structure} ${target} grammar`],
-    [`HiNative - ${target}`, `${structure} ${target}`],
+  const ytQ = encodeURIComponent(`${structure} ${target} grammar lesson`);
+  const rdQ = encodeURIComponent(`${structure} ${target} grammar`);
+
+  const common = [
+    { title: `YouTube — leçon ${target}`, uri: `https://www.youtube.com/results?search_query=${ytQ}` },
+    { title: `Reddit — apprenants ${target}`, uri: `https://www.reddit.com/search/?q=${rdQ}` },
+    { title: "Wiktionary", uri: `https://en.wiktionary.org/w/index.php?search=${q}` },
   ];
-  return searches.map(([title, query]) => ({
-    title,
-    uri: `https://www.google.com/search?q=${encodeURIComponent(query)}${title.startsWith("YouTube") ? "+site%3Ayoutube.com" : title.startsWith("Reddit") ? "+site%3Areddit.com" : title.startsWith("HiNative") ? "+site%3Ahinative.com" : ""}`,
-  }));
+
+  const byLang = {
+    ko: [
+      { title: "How To Study Korean", uri: `https://www.howtostudykorean.com/?s=${q}` },
+      { title: "Talk To Me In Korean", uri: `https://talktomeinkorean.com/?s=${q}` },
+      { title: "Naver 국어사전", uri: `https://ko.dict.naver.com/#/search?query=${q}` },
+      { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
+    ],
+    de: [
+      { title: "Lingolia Deutsch", uri: `https://deutsch.lingolia.com/?s=${q}` },
+      { title: "DW Deutsch lernen", uri: `https://www.dw.com/search/?languageCode=de&item=${q}` },
+      { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
+    ],
+  };
+
+  return [...(byLang[tlCode] || []), ...common];
 }
 
+// Call the Brave-backed /api/resources route. Always resolves to { results: [...] }.
+async function callResources(structure, targetLangName, uiLang) {
+  const res = await fetch("/api/resources", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ structure, targetLang: targetLangName, uiLang }),
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { return { results: [] }; }
+  return data && Array.isArray(data.results) ? data : { results: [] };
+}
+
+// "Ressources complémentaires": real web resources (with URLs) via Brave Search.
+// Falls back to curated deep-links when the Brave key is missing or search fails,
+// so the button always returns useful, clickable sources — never an error.
 async function findResources(card, lang, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are a ${TL} language learning research assistant. Search the web for high-quality pedagogical resources explaining the grammar structure "${card.korean}".
+  const structure = card.korean.trim();
 
-TASK: Find 4-6 real, published resources that explain or demonstrate this specific structure. Return a useful mix when available: pedagogical lesson pages or teacher-created worksheets, grammar reference articles, relevant YouTube videos, and thoughtful discussions on HiNative, Reddit, or language-learning forums.
-
-PRIORITIZE:
-- Pages that explain the rule, its conjugation, and its nuances
-- Teacher-created lessons and worksheets with substantial explanations or examples
-- Videos and forum discussions that add a different practical perspective
-- Resources in ${L} or English when available, but include target-language resources if they are the best explanation
-
-For each resource, give:
-- The site or page name
-- A one-line description of what it covers and why it is useful
-- The URL
-
-Then add a short note in ${L} comparing what the different resources emphasize, so the student knows which to read or watch first.
-
-Write your answer in ${L}, in clear prose with line breaks. Do NOT return JSON. Do NOT invent URLs: only cite pages you actually found in your search.`;
-
-  const fallbackSys = `You are a ${TL} language learning assistant. The student wants pedagogical resources explaining the grammar structure "${card.korean}".
-
-You do NOT have web access right now, so do NOT invent URLs.
-
-Instead, in ${L}:
-1. Name 3-4 well-established reference sites you genuinely know cover ${TL} grammar (e.g. for Korean: How To Study Korean, Talk To Me In Korean, Naver 국어사전; for German: Deutsche Welle, Lingolia, Canoonet).
-2. For each, give the EXACT search terms the student should type to land on the right page (e.g. site name + the structure in quotes).
-3. Add a 2-3 sentence summary of the rule itself so the student has something useful right now.
-
-Be explicit that these are search suggestions, not direct links.
-
-Write plain readable prose with line breaks. Do NOT return JSON, do NOT use curly braces or key-value pairs.`;
+  const curatedFallback = () => {
+    const note = lang === "fr"
+      ? `Voici une sélection de ressources fiables pour « ${structure} ». Chaque lien ouvre directement le site correspondant, ciblé sur cette structure :`
+      : `Here's a selection of trusted resources for "${structure}". Each link opens the relevant site directly, targeted to this structure:`;
+    return { text: note, sources: resourceSearchLinks(card, tlCode) };
+  };
 
   try {
-    const r = await callAI(sys, `Find pedagogical resources explaining the ${TL} grammar structure: ${card.korean}`, 1600, true);
-    return { ...r, text: flattenIfJSON(r.text) };
-  } catch (e) {
-    if (String(e.message).includes("SEARCH_QUOTA")) {
-      const r = await callAI(fallbackSys, `Suggest how to find resources for: ${card.korean}`, 1200, false, true);
-      const fallbackNotice = lang === "fr"
-        ? "La recherche web Google est temporairement indisponible. Voici des recherches ciblées pour trouver des ressources actuelles :"
-        : "Google web search is temporarily unavailable. Here are targeted searches to find current resources:";
-      return { text: `${fallbackNotice}\n\n${flattenIfJSON(r.text)}`, sources: resourceSearchLinks(card, tlCode), degraded: true };
+    const data = await callResources(structure, TL, lang);
+    const results = (data.results || []).filter((r) => r && r.uri);
+    if (results.length) {
+      const intro = lang === "fr"
+        ? `Ressources trouvées sur le web pour « ${structure} ». Clique sur un lien ci-dessous pour l'ouvrir :`
+        : `Web resources found for "${structure}". Click any link below to open it:`;
+      return { text: intro, sources: results };
     }
-    throw e;
+    return curatedFallback();
+  } catch (e) {
+    console.error("findResources error:", e);
+    return curatedFallback();
   }
 }
 
@@ -1112,11 +1123,16 @@ function Bubble({ msg, revealAll }) {
             <div style={{ fontSize: 10, fontWeight: 600, color: C.txtM, textTransform: "uppercase", marginBottom: 5 }}>Sources</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {msg.sources.map((s, i) => (
-                <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4 }}>
-                  <span style={{ flexShrink: 0 }}>🔗</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
-                </a>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <a href={s.uri} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4 }}>
+                    <span style={{ flexShrink: 0 }}>🔗</span>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                  </a>
+                  {s.snippet && (
+                    <span style={{ fontSize: 10, color: C.txtS, lineHeight: 1.45, marginLeft: 18, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.snippet}</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>

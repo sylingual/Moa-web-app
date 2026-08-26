@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE } from "./storage.js";
 
 // =============================================
 // ERROR BOUNDARY
@@ -80,10 +80,14 @@ const T = {
     syncError: "Erreur de connexion. Vérifie ta configuration Supabase.",
     syncSuccess: "Données synchronisées !",
     welcomeTitle: "Bienvenue sur 모아",
-    welcomeSub: "Entre un code pour synchroniser tes données entre tous tes appareils. Utilise le même code partout.",
-    welcomeNew: "Première fois ? Choisis n'importe quel mot ou phrase comme code.",
-    welcomeReturning: "Tu as déjà un code ? Entre-le pour retrouver tes données.",
-    welcomeStart: "Commencer",
+    welcomeSub: "Connecte-toi à ton compte ou crée-en un nouveau pour commencer.",
+    welcomeLogin: "Se connecter",
+    welcomeCreate: "Créer un compte",
+    welcomeCode: "Code personnel",
+    welcomeCodePlaceholder: "ton code personnel...",
+    welcomeNoAccount: "Aucun compte trouvé avec ce code.",
+    welcomeCreateSub: "Choisis n'importe quel mot ou phrase comme code.",
+    welcomeLoginSub: "Utilise le code de ton compte existant pour retrouver tes données.",
     // Profile
     profileTitle: "Mon profil",
     profileSub: "Ces informations permettent à l'IA d'adapter les leçons, les exemples et les exercices à tes centres d'intérêt et à ton niveau.",
@@ -236,10 +240,14 @@ const T = {
     syncError: "Connection error. Check your Supabase setup.",
     syncSuccess: "Data synced!",
     welcomeTitle: "Welcome to 모아",
-    welcomeSub: "Enter a code to sync your data across all your devices. Use the same code everywhere.",
-    welcomeNew: "First time? Pick any word or phrase as your code.",
-    welcomeReturning: "Already have a code? Enter it to get your data back.",
-    welcomeStart: "Start",
+    welcomeSub: "Log in to your account or create a new one to get started.",
+    welcomeLogin: "Log in",
+    welcomeCreate: "Create an account",
+    welcomeCode: "Personal code",
+    welcomeCodePlaceholder: "your personal code...",
+    welcomeNoAccount: "No account was found with this code.",
+    welcomeCreateSub: "Pick any word or phrase as your code.",
+    welcomeLoginSub: "Use your existing account code to retrieve your data.",
     // Profile
     profileTitle: "My profile",
     profileSub: "This information helps the AI tailor lessons, examples, and exercises to your interests and level.",
@@ -1310,6 +1318,7 @@ function AppInner() {
   const [tlOpen, setTlOpen] = useState(false);
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
   const [syncInput, setSyncInput] = useState("");
+  const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
   const [showSync, setShowSync] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null); // null | "loading" | "success" | "error"
 
@@ -1525,7 +1534,7 @@ function AppInner() {
     if (!id) return;
     setSyncStatus("loading");
     try {
-      const result = await syncData(id, null);
+      const result = welcomeMode === "login" ? await connectData(id) : await syncData(id, null);
       if (!result.ok) {
         console.error("Sync failed:", result.error);
         setSyncStatus("error");
@@ -2014,24 +2023,44 @@ function AppInner() {
           </span>
           <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center" }}>{t.welcomeTitle}</div>
           <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7 }}>{t.welcomeSub}</div>
-          <input
-            value={syncInput} onChange={e => setSyncInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSync()}
-            placeholder={t.syncPlaceholder}
-            disabled={syncStatus === "loading"}
-            style={{ width: "100%", border: `2px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1, outline: "none", textAlign: "center" }}
-            onFocus={e => { e.target.style.borderColor = C.acc; }}
-            onBlur={e => { e.target.style.borderColor = C.border; }}
-          />
-          <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
-            style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: syncInput.trim() && syncStatus !== "loading" ? C.acc : C.s1, color: syncInput.trim() && syncStatus !== "loading" ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
-            {syncStatus === "loading" ? t.syncLoading : t.welcomeStart}
-          </button>
-          {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{t.syncError}</div>}
-          <div style={{ fontSize: 11.5, color: C.txtM, textAlign: "center", lineHeight: 1.6, marginTop: 8 }}>
-            <div>{t.welcomeNew}</div>
-            <div style={{ marginTop: 4 }}>{t.welcomeReturning}</div>
-          </div>
+          {!welcomeMode ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+              <button onClick={() => setWelcomeMode("login")}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+                {t.welcomeLogin}
+              </button>
+              <button onClick={() => setWelcomeMode("create")}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+                {t.welcomeCreate}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div style={{ width: "100%", fontSize: 12, color: C.txtS, textAlign: "center" }}>
+                {welcomeMode === "login" ? t.welcomeLoginSub : t.welcomeCreateSub}
+              </div>
+              <label style={{ width: "100%", fontSize: 12, fontWeight: 500, color: C.txt }}>{t.welcomeCode}</label>
+              <input
+                autoFocus
+                value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
+                onKeyDown={e => e.key === "Enter" && handleSync()}
+                placeholder={t.welcomeCodePlaceholder}
+                disabled={syncStatus === "loading"}
+                style={{ width: "100%", boxSizing: "border-box", border: `2px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1, outline: "none", textAlign: "center" }}
+                onFocus={e => { e.target.style.borderColor = C.acc; }}
+                onBlur={e => { e.target.style.borderColor = C.border; }}
+              />
+              <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: syncInput.trim() && syncStatus !== "loading" ? C.acc : C.s1, color: syncInput.trim() && syncStatus !== "loading" ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
+                {syncStatus === "loading" ? t.syncLoading : welcomeMode === "login" ? t.welcomeLogin : t.welcomeCreate}
+              </button>
+              {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{welcomeMode === "login" ? t.welcomeNoAccount : t.syncError}</div>}
+              <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
+                style={{ padding: "4px 10px", border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                {t.back}
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

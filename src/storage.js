@@ -140,6 +140,21 @@ export async function syncData(userId, localData) {
   }
 }
 
+// connectData: load an existing account without creating one
+export async function connectData(userId) {
+  if (!supabase) {
+    return { ok: false, error: 'Supabase non configuré (variables VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY manquantes)' };
+  }
+
+  const remote = await loadFromSupabase(userId);
+  if (remote.error) return { ok: false, error: remote.error };
+  if (!remote.data) return { ok: false, error: 'account_not_found' };
+
+  const data = mergeWithDefaults(remote.data);
+  saveLocal(data);
+  return { ok: true, data, source: 'remote' };
+}
+
 // loadData: called on app start
 export async function loadData(userId) {
   if (userId && supabase) {

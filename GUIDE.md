@@ -4,7 +4,7 @@
 
 1. **Un compte GitHub** (gratuit) : https://github.com/signup
 2. **Un compte Vercel** (gratuit) : https://vercel.com/signup (connecte-le à GitHub)
-3. **Une clé API Anthropic** : https://console.anthropic.com (il y a $5 de crédits offerts)
+3. **Une clé API Google Gemini** (gratuite) : https://aistudio.google.com/apikey (connecte-toi avec un compte Google, puis "Create API key")
 4. **Un compte Supabase** (gratuit, optionnel pour la synchro entre appareils) : https://supabase.com
 
 ---
@@ -28,7 +28,7 @@
 1. Va sur https://vercel.com/new
 2. Clique "Import" à côté de ton repo `moa-app`
 3. Dans "Environment Variables", ajoute :
-   - `ANTHROPIC_API_KEY` = ta clé API Anthropic (commence par `sk-ant-...`)
+   - `AI_API_KEY` = ta clé API Google Gemini
 4. Clique "Deploy"
 5. En 30 secondes, ton app est en ligne ! Vercel te donne une URL du type `moa-app.vercel.app`
 
@@ -88,6 +88,6 @@ Dans l'app, clique sur "Local uniquement" en haut à droite. Entre un mot de pas
 
 - **Vercel** : gratuit (hobby plan)
 - **Supabase** : gratuit (free tier, 500 Mo)
-- **Anthropic API** : $5 offerts, puis ~$0.003 par leçon (quelques centimes par jour d'utilisation normale)
+- **Google Gemini API** : gratuit (le free tier de Google AI Studio suffit largement pour un usage personnel)
 
 C'est tout ! 🎉

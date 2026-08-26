@@ -681,6 +681,21 @@ Return JSON: {"message": "your response"} or {"message": "your response", "optio
   return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`)).text);
 }
 
+function resourceSearchLinks(card, tlCode) {
+  const structure = card.korean.trim();
+  const target = getTargetLangName(tlCode, "en");
+  const searches = [
+    [`Google - ${target} grammar`, `${structure} ${target} grammar`],
+    [`YouTube - ${target} lesson`, `${structure} ${target} grammar lesson`],
+    [`Reddit - ${target} learners`, `${structure} ${target} grammar`],
+    [`HiNative - ${target}`, `${structure} ${target}`],
+  ];
+  return searches.map(([title, query]) => ({
+    title,
+    uri: `https://www.google.com/search?q=${encodeURIComponent(query)}${title.startsWith("YouTube") ? "+site%3Ayoutube.com" : title.startsWith("Reddit") ? "+site%3Areddit.com" : title.startsWith("HiNative") ? "+site%3Ahinative.com" : ""}`,
+  }));
+}
+
 async function findResources(card, lang, tlCode) {
   const L = lang === "fr" ? "French" : "English";
   const TL = getTargetLangName(tlCode, "en");
@@ -722,7 +737,10 @@ Write plain readable prose with line breaks. Do NOT return JSON, do NOT use curl
   } catch (e) {
     if (String(e.message).includes("SEARCH_QUOTA")) {
       const r = await callAI(fallbackSys, `Suggest how to find resources for: ${card.korean}`, 1200, false, true);
-      return { text: flattenIfJSON(r.text), sources: [], degraded: true };
+      const fallbackNotice = lang === "fr"
+        ? "La recherche web Google est temporairement indisponible. Voici des recherches ciblées pour trouver des ressources actuelles :"
+        : "Google web search is temporarily unavailable. Here are targeted searches to find current resources:";
+      return { text: `${fallbackNotice}\n\n${flattenIfJSON(r.text)}`, sources: resourceSearchLinks(card, tlCode), degraded: true };
     }
     throw e;
   }
@@ -1085,7 +1103,7 @@ function Bubble({ msg, revealAll }) {
       <div style={{ padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
         {msg.degraded && (
           <div style={{ marginBottom: 8, padding: "6px 9px", background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 10.5, color: C.warn, lineHeight: 1.5 }}>
-            ⚠️ Quota de recherche web atteint pour aujourd'hui. Réponse générée sans sources en ligne.
+            ⚠️ Recherche web temporairement indisponible. Des liens de recherche ciblés sont proposés ci-dessous.
           </div>
         )}
         {ai ? renderMarkdown(msg.content, revealAll) : msg.content}

@@ -88,6 +88,8 @@ const T = {
     welcomeNoAccount: "Aucun compte trouvé avec ce code.",
     welcomeCreateSub: "Choisis n'importe quel mot ou phrase comme code.",
     welcomeLoginSub: "Utilise le code de ton compte existant pour retrouver tes données.",
+    welcomeSwitchToLogin: "Se connecter plutôt",
+    welcomeSwitchToCreate: "Créer un compte plutôt",
     // Profile
     profileTitle: "Mon profil",
     profileSub: "Ces informations permettent à l'IA d'adapter les leçons, les exemples et les exercices à tes centres d'intérêt et à ton niveau.",
@@ -248,6 +250,8 @@ const T = {
     welcomeNoAccount: "No account was found with this code.",
     welcomeCreateSub: "Pick any word or phrase as your code.",
     welcomeLoginSub: "Use your existing account code to retrieve your data.",
+    welcomeSwitchToLogin: "Log in instead",
+    welcomeSwitchToCreate: "Create an account instead",
     // Profile
     profileTitle: "My profile",
     profileSub: "This information helps the AI tailor lessons, examples, and exercises to your interests and level.",
@@ -2055,10 +2059,17 @@ function AppInner() {
                 {syncStatus === "loading" ? t.syncLoading : welcomeMode === "login" ? t.welcomeLogin : t.welcomeCreate}
               </button>
               {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{welcomeMode === "login" ? t.welcomeNoAccount : t.syncError}</div>}
-              <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
-                style={{ padding: "4px 10px", border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                {t.back}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+                <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
+                  style={{ padding: "4px 10px", border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                  {t.back}
+                </button>
+                <span style={{ color: C.border }}>|</span>
+                <button onClick={() => { setWelcomeMode(welcomeMode === "login" ? "create" : "login"); setSyncInput(""); setSyncStatus(null); }}
+                  style={{ padding: "4px 10px", border: "none", background: "none", color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                  {welcomeMode === "login" ? t.welcomeSwitchToCreate : t.welcomeSwitchToLogin}
+                </button>
+              </div>
             </>
           )}
         </div>

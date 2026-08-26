@@ -686,11 +686,12 @@ async function findResources(card, lang, tlCode) {
   const TL = getTargetLangName(tlCode, "en");
   const sys = `You are a ${TL} language learning research assistant. Search the web for high-quality pedagogical resources explaining the grammar structure "${card.korean}".
 
-TASK: Find 2-4 published grammar guides, lesson pages, or reference articles that explain this specific structure in depth.
+TASK: Find 4-6 real, published resources that explain or demonstrate this specific structure. Return a useful mix when available: pedagogical lesson pages or teacher-created worksheets, grammar reference articles, relevant YouTube videos, and thoughtful discussions on HiNative, Reddit, or language-learning forums.
 
 PRIORITIZE:
-- Dedicated grammar reference sites and language-learning blogs
 - Pages that explain the rule, its conjugation, and its nuances
+- Teacher-created lessons and worksheets with substantial explanations or examples
+- Videos and forum discussions that add a different practical perspective
 - Resources in ${L} or English when available, but include target-language resources if they are the best explanation
 
 For each resource, give:
@@ -698,7 +699,7 @@ For each resource, give:
 - A one-line description of what it covers and why it is useful
 - The URL
 
-Then add a short note in ${L} comparing what the different resources emphasize, so the student knows which to read first.
+Then add a short note in ${L} comparing what the different resources emphasize, so the student knows which to read or watch first.
 
 Write your answer in ${L}, in clear prose with line breaks. Do NOT return JSON. Do NOT invent URLs: only cite pages you actually found in your search.`;
 

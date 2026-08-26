@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     var r = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=' + apiKey,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,12 +76,14 @@ export default async function handler(req, res) {
 
     // Extract grounding sources if present
     var sources = []
+    var seenSources = {}
     var gm = cand.groundingMetadata
     if (gm && gm.groundingChunks) {
       for (var i = 0; i < gm.groundingChunks.length; i++) {
         var chunk = gm.groundingChunks[i]
-        if (chunk.web && chunk.web.uri) {
+        if (chunk.web && chunk.web.uri && !seenSources[chunk.web.uri]) {
           sources.push({ title: chunk.web.title || chunk.web.uri, uri: chunk.web.uri })
+          seenSources[chunk.web.uri] = true
         }
       }
     }

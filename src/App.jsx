@@ -81,13 +81,17 @@ const T = {
     syncSuccess: "Données synchronisées !",
     welcomeTitle: "Bienvenue sur 모아",
     welcomeSub: "Connecte-toi à ton compte ou crée-en un nouveau pour commencer.",
+    welcomeLoginTitle: "Retrouve ton compte",
+    welcomeLoginSub: "Entre ton code personnel pour retrouver tes données.",
+    welcomeCreateTitle: "Crée ton compte",
+    welcomeCreateSub: "Choisis un code personnel pour créer ton compte.",
     welcomeLogin: "Se connecter",
     welcomeCreate: "Créer un compte",
     welcomeCode: "Code personnel",
     welcomeCodePlaceholder: "ton code personnel...",
     welcomeNoAccount: "Aucun compte trouvé avec ce code.",
-    welcomeCreateSub: "Choisis n'importe quel mot ou phrase comme code.",
-    welcomeLoginSub: "Utilise le code de ton compte existant pour retrouver tes données.",
+    welcomeCreateHint: "Choisis n'importe quel mot ou phrase comme code.",
+    welcomeLoginHint: "Utilise le code de ton compte existant pour retrouver tes données.",
     welcomeSwitchToLogin: "Se connecter plutôt",
     welcomeSwitchToCreate: "Créer un compte plutôt",
     // Profile
@@ -243,13 +247,17 @@ const T = {
     syncSuccess: "Data synced!",
     welcomeTitle: "Welcome to 모아",
     welcomeSub: "Log in to your account or create a new one to get started.",
+    welcomeLoginTitle: "Access your account",
+    welcomeLoginSub: "Enter your personal code to retrieve your data.",
+    welcomeCreateTitle: "Create your account",
+    welcomeCreateSub: "Choose a personal code to create your account.",
     welcomeLogin: "Log in",
     welcomeCreate: "Create an account",
     welcomeCode: "Personal code",
     welcomeCodePlaceholder: "your personal code...",
     welcomeNoAccount: "No account was found with this code.",
-    welcomeCreateSub: "Pick any word or phrase as your code.",
-    welcomeLoginSub: "Use your existing account code to retrieve your data.",
+    welcomeCreateHint: "Pick any word or phrase as your code.",
+    welcomeLoginHint: "Use your existing account code to retrieve your data.",
     welcomeSwitchToLogin: "Log in instead",
     welcomeSwitchToCreate: "Create an account instead",
     // Profile
@@ -2025,8 +2033,12 @@ function AppInner() {
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>
-          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center" }}>{t.welcomeTitle}</div>
-          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7 }}>{t.welcomeSub}</div>
+          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center" }}>
+            {welcomeMode === "login" ? t.welcomeLoginTitle : welcomeMode === "create" ? t.welcomeCreateTitle : t.welcomeTitle}
+          </div>
+          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7 }}>
+            {welcomeMode === "login" ? t.welcomeLoginSub : welcomeMode === "create" ? t.welcomeCreateSub : t.welcomeSub}
+          </div>
           {!welcomeMode ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
               <button onClick={() => setWelcomeMode("login")}
@@ -2041,7 +2053,7 @@ function AppInner() {
           ) : (
             <>
               <div style={{ width: "100%", fontSize: 12, color: C.txtS, textAlign: "center" }}>
-                {welcomeMode === "login" ? t.welcomeLoginSub : t.welcomeCreateSub}
+                {welcomeMode === "login" ? t.welcomeLoginHint : t.welcomeCreateHint}
               </div>
               <label style={{ width: "100%", fontSize: 12, fontWeight: 500, color: C.txt }}>{t.welcomeCode}</label>
               <input

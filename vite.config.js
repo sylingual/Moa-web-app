@@ -20,26 +20,37 @@ function devApiProxy() {
         let body = ''
         for await (const chunk of req) body += chunk
         try {
-          const { system, messages, max_tokens } = JSON.parse(body)
+          const { system, messages, max_tokens, search, plain } = JSON.parse(body)
           const userMsg = messages.map(m => m.content).join('\n')
           let text = ''
+          let sources = []
 
           if (provider === 'gemini') {
+            const useSearch = search === true
+            const payload = {
+              contents: [{ role: 'user', parts: [{ text: system + '\n\n' + userMsg }] }],
+              generationConfig: { maxOutputTokens: max_tokens || 1200 },
+            }
+            if (useSearch) payload.tools = [{ google_search: {} }]
+            else if (plain !== true) payload.generationConfig.responseMimeType = 'application/json'
             const r = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [{ role: 'user', parts: [{ text: system + '\n\n' + userMsg }] }],
-                  generationConfig: { maxOutputTokens: max_tokens || 1200, responseMimeType: 'application/json' },
-                }),
+                body: JSON.stringify(payload),
               }
             )
             const raw = await r.text()
             if (!r.ok) throw new Error('Gemini ' + r.status + ': ' + raw.substring(0, 300))
             const data = JSON.parse(raw)
-            text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+            const candidate = data?.candidates?.[0]
+            text = candidate?.content?.parts?.map(part => part.text || '').join('') || ''
+            sources = (candidate?.groundingMetadata?.groundingChunks || [])
+              .map(chunk => chunk.web)
+              .filter(web => web?.uri)
+              .filter((web, index, all) => all.findIndex(item => item.uri === web.uri) === index)
+              .map(web => ({ title: web.title || web.uri, uri: web.uri }))
             if (!text) throw new Error('Empty Gemini response: ' + raw.substring(0, 300))
           } else if (provider === 'openai') {
             const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -62,7 +73,7 @@ function devApiProxy() {
           }
 
           res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ content: [{ type: 'text', text }] }))
+          res.end(JSON.stringify({ content: [{ type: 'text', text }], sources }))
         } catch (e) {
           res.writeHead(500, { 'Content-Type': 'application/json' })
           res.end(JSON.stringify({ error: e.message }))

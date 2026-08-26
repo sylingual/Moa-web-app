@@ -1112,7 +1112,7 @@ function Bubble({ msg, revealAll }) {
       <div style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0, background: C.s1, border: `1px solid ${C.border}`, color: C.txtM }}>
         {ai ? "✦" : "🧑"}
       </div>
-      <div style={{ padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
+      <div style={{ minWidth: 0, padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
         {msg.degraded && (
           <div style={{ marginBottom: 8, padding: "6px 9px", background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 10.5, color: C.warn, lineHeight: 1.5 }}>
             ⚠️ Recherche web temporairement indisponible. Des liens de recherche ciblés sont proposés ci-dessous.
@@ -1124,11 +1124,11 @@ function Bubble({ msg, revealAll }) {
             <div style={{ fontSize: 10, fontWeight: 600, color: C.txtM, textTransform: "uppercase", marginBottom: 5 }}>Sources</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {msg.sources.map((s, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                   <a href={s.uri} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4 }}>
+                    style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4, minWidth: 0, maxWidth: "100%" }}>
                     <span style={{ flexShrink: 0 }}>🔗</span>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
                   </a>
                   {s.snippet && (
                     <span style={{ fontSize: 10, color: C.txtS, lineHeight: 1.45, marginLeft: 18, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.snippet}</span>

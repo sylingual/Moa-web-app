@@ -164,6 +164,7 @@ const T = {
     detailedCta: "Compléter mon profil",
     detailedReward: "+100 points",
     detailedDone_: "Questionnaire complété ✓",
+    editAnswers: "Éditer mes réponses",
     favFilms: "3 films ou séries préférés",
     favFilmsPh: "ex: Crash Landing on You, Reply 1988, Parasite",
     favMusic: "3 chanteurs ou chansons préférés",
@@ -330,6 +331,7 @@ const T = {
     detailedCta: "Complete my profile",
     detailedReward: "+100 points",
     detailedDone_: "Questionnaire completed ✓",
+    editAnswers: "Edit my answers",
     favFilms: "3 favorite films or series",
     favFilmsPh: "e.g. Crash Landing on You, Reply 1988, Parasite",
     favMusic: "3 favorite singers or songs",
@@ -2782,10 +2784,13 @@ function AppInner() {
                 </button>
               )}
               {data.profile?.detailedDone && !showDetailed && (
-                <button onClick={() => setShowDetailed(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.okB}`, background: C.okBg, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.ok, width: "100%" }}>
-                  ✓ {t.detailedDone_}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1 }}>
+                  <span style={{ flex: 1, fontSize: 12.5, color: C.txtS }}>✓ {t.detailedDone_}</span>
+                  <button onClick={() => setShowDetailed(true)}
+                    style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s0, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, color: C.txtS }}>
+                    {t.editAnswers}
+                  </button>
+                </div>
               )}
 
               {/* Detailed questionnaire form */}

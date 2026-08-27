@@ -1,7 +1,16 @@
-// Feed endpoint: Naver Search API for Korean, RSS for other languages.
-// Env vars needed for Korean: NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+// Feed endpoint. All sources are free and keyless.
+//   Korean categories: news (Google News RSS, keyword-personalized), press (Korean outlet
+//   RSS headlines), sns (Bluesky curated accounts), masto (Korean Mastodon timelines).
+//   Other languages (e.g. German): outlet RSS.
+// (Naver Search API was retired from developers.naver.com — moved to Naver Cloud Platform —
+//  so it is no longer used here.)
 
 const RSS_SOURCES = {
+  ko: [
+    { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' },
+    { name: '경향신문', url: 'https://www.khan.co.kr/rss/rssdata/total_news.xml' },
+    { name: '한겨레', url: 'https://www.hani.co.kr/rss/' },
+  ],
   de: [
     { name: 'Deutsche Welle', url: 'https://rss.dw.com/rdf/rss-de-all' },
     { name: 'tagesschau', url: 'https://www.tagesschau.de/index~rss2.xml' },
@@ -47,53 +56,74 @@ function formatNaverDate(d) {
   }
 }
 
-async function fetchNaver(query, category) {
-  var id = process.env.NAVER_CLIENT_ID || ''
-  var secret = process.env.NAVER_CLIENT_SECRET || ''
-  if (!id || !secret) {
-    return { error: 'NAVER_CLIENT_ID / NAVER_CLIENT_SECRET non configurés sur Vercel.' }
-  }
+// Google News RSS (Korean). Keyword search when a query is given, else top headlines.
+// Free, keyless. Titles come as "Headline - Outlet"; the outlet is split off.
+async function fetchGoogleNews(query) {
+  var base = 'hl=ko&gl=KR&ceid=KR:ko'
+  var url = query
+    ? 'https://news.google.com/rss/search?q=' + encodeURIComponent(query) + '&' + base
+    : 'https://news.google.com/rss?' + base
+  var xml
+  try {
+    var r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/rss+xml, application/xml, text/xml' } })
+    if (!r.ok) return { error: 'Google News ' + r.status }
+    xml = await r.text()
+  } catch (e) { return { error: 'Google News: ' + e.message } }
 
-  var endpoint = category === 'news' ? 'news'
-    : category === 'cafe' ? 'cafearticle'
-    : category === 'kin' ? 'kin'
-    : 'blog'
-
-  // kin and cafearticle do not support sort=date reliably; use sim for those
-  var sort = (endpoint === 'blog' || endpoint === 'news') ? 'date' : 'sim'
-  var url = 'https://openapi.naver.com/v1/search/' + endpoint +
-    '?query=' + encodeURIComponent(query) + '&display=20&sort=' + sort
-
-  var r = await fetch(url, {
-    headers: {
-      'X-Naver-Client-Id': id,
-      'X-Naver-Client-Secret': secret,
-    },
-  })
-  var raw = await r.text()
-  if (!r.ok) {
-    return { error: 'Naver ' + r.status + ': ' + raw.substring(0, 250) }
-  }
-  var data
-  try { data = JSON.parse(raw) } catch (e) {
-    return { error: 'Réponse Naver illisible: ' + raw.substring(0, 200) }
-  }
-
-  var items = (data.items || []).map(function (it) {
-    return {
-      title: stripTags(it.title),
-      snippet: stripTags(it.description),
-      link: it.link || it.originallink || '',
-      author: stripTags(it.bloggername || it.cafename || ''),
-      date: formatNaverDate(it.postdate || it.pubDate),
-      source: endpoint === 'news' ? 'Naver News'
-        : endpoint === 'cafearticle' ? 'Naver Cafe'
-        : endpoint === 'kin' ? '지식iN'
-        : 'Naver Blog',
+  var blocks = xml.split(/<item[\s>]/i).slice(1)
+  var items = []
+  for (var j = 0; j < blocks.length && j < 30; j++) {
+    var b = blocks[j]
+    var title = pickTag(b, 'title')
+    var link = pickTag(b, 'link')
+    var pub = pickTag(b, 'pubDate')
+    var source = pickTag(b, 'source')
+    if (!title || !link) continue
+    if (source && title.slice(-(source.length + 3)) === ' - ' + source) {
+      title = title.slice(0, -(source.length + 3)).trim() // drop trailing " - Outlet"
     }
-  }).filter(function (it) { return it.title && it.snippet })
+    items.push({
+      title: title,
+      snippet: '',
+      link: link,
+      author: '',
+      date: pub ? formatNaverDate(pub) : '',
+      source: source || 'Google News',
+    })
+  }
+  return { items: items.slice(0, 25) }
+}
 
-  return { items: items }
+// Korean Mastodon public timelines — short-form social text. Free, no auth.
+var MASTO_KO_INSTANCES = ['qdon.space', 'planet.moe']
+async function fetchMastodon(lang) {
+  var out = []
+  for (var i = 0; i < MASTO_KO_INSTANCES.length; i++) {
+    var host = MASTO_KO_INSTANCES[i]
+    var data = await getJson('https://' + host + '/api/v1/timelines/public?local=true&limit=20')
+    if (!Array.isArray(data)) continue
+    for (var k = 0; k < data.length; k++) {
+      var s = data[k]
+      if (!s || s.reblog) continue // original toots only (skip boosts)
+      if (lang && s.language && s.language !== lang) continue
+      var text = stripTags((s.content || '').replace(/<\/(p|div)>/gi, ' ').replace(/<br\s*\/?>/gi, ' '))
+      if (!text) continue
+      var acct = s.account || {}
+      var name = acct.display_name || acct.username || ''
+      out.push({
+        title: text,
+        snippet: '',
+        link: s.url || s.uri || '',
+        author: name ? name + ' (@' + (acct.acct || acct.username || '') + '@' + host + ')' : '',
+        date: s.created_at ? formatNaverDate(s.created_at) : '',
+        source: 'Mastodon',
+        _ts: s.created_at ? new Date(s.created_at).getTime() : 0,
+      })
+    }
+  }
+  out.sort(function (a, b) { return (b._ts || 0) - (a._ts || 0) })
+  out.forEach(function (it) { delete it._ts })
+  return { items: out.slice(0, 30) }
 }
 
 async function fetchRss(langCode, query) {
@@ -219,18 +249,18 @@ export default async function handler(req, res) {
     var body = req.body || {}
     var targetLang = body.targetLang || 'ko'
     var query = (body.query || '').trim()
-    var category = body.category || 'blog'
+    var category = body.category || 'news'
 
-    // The Bluesky (sns) category is a curated account feed — no keyword needed.
-    if (!query && category !== 'sns') {
-      return res.status(400).json({ error: 'Aucun mot-clé fourni.' })
+    // All categories work without a keyword (news falls back to top headlines).
+    var result
+    if (targetLang === 'ko') {
+      if (category === 'sns') result = await fetchBluesky('ko')
+      else if (category === 'masto') result = await fetchMastodon('ko')
+      else if (category === 'press') result = await fetchRss('ko', '')
+      else result = await fetchGoogleNews(query) // 'news' — keyword-personalized, else top
+    } else {
+      result = await fetchRss(targetLang, query) // other languages: outlet RSS
     }
-
-    var result = category === 'sns'
-      ? await fetchBluesky(targetLang)
-      : targetLang === 'ko'
-        ? await fetchNaver(query, category)
-        : await fetchRss(targetLang, query)
 
     if (result.error) {
       return res.status(502).json({ error: result.error })

@@ -202,11 +202,10 @@ const T = {
     feedNoKeywords: "Complète ton profil pour un feed personnalisé, ou lance une recherche.",
     feedRefresh: "Rafraîchir",
     feedRead: "Lire l'article",
-    feedCatBlog: "Blogs",
     feedCatNews: "Actu",
-    feedCatCafe: "Forums",
-    feedCatKin: "Q&R",
+    feedCatPress: "Manchettes",
     feedCatSns: "Bluesky",
+    feedCatMasto: "Mastodon",
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
     newExercise: "Nouvel exercice",
@@ -374,11 +373,10 @@ const T = {
     feedNoKeywords: "Fill in your profile for a personalized feed, or run a search.",
     feedRefresh: "Refresh",
     feedRead: "Read article",
-    feedCatBlog: "Blogs",
     feedCatNews: "News",
-    feedCatCafe: "Forums",
-    feedCatKin: "Q&A",
+    feedCatPress: "Headlines",
     feedCatSns: "Bluesky",
+    feedCatMasto: "Mastodon",
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
     newExercise: "New exercise",
@@ -1434,7 +1432,7 @@ function AppInner() {
   const [feedErr, setFeedErr] = useState(null);
   const [feedQuery, setFeedQuery] = useState("");
   const [feedInput, setFeedInput] = useState("");
-  const [feedCat, setFeedCat] = useState("blog");
+  const [feedCat, setFeedCat] = useState("news");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
 
   const msgsR = useRef(null);
@@ -1672,7 +1670,8 @@ function AppInner() {
 
   const loadFeed = useCallback(async (query, category) => {
     const cat = category || feedCat;
-    if (!query && cat !== "sns") return; // Bluesky (sns) is a curated feed — no keyword needed
+    // Only "news" personalizes with a keyword; press/sns/masto are keyless, and even news
+    // falls back to top headlines with no query — so nothing here requires a keyword.
     setFeedLoad(true); setFeedErr(null);
     try {
       const items = await fetchFeed(query, tl, cat);
@@ -1707,11 +1706,15 @@ function AppInner() {
   useEffect(() => {
     if (view !== "feed" || feedItems.length > 0 || feedLoad || feedKwLoad) return;
     (async () => {
-      if (feedCat === "sns") { loadFeed("", "sns"); return; } // Bluesky needs no keywords/AI
+      // Keyless categories load directly (no AI keyword generation).
+      if (feedCat === "sns" || feedCat === "masto" || feedCat === "press") { loadFeed("", feedCat); return; }
+      // "news": personalize with AI keywords when available, else fall back to top headlines.
       const kws = await ensureKeywords();
       if (kws.length) {
         const pick = kws[Math.floor(Math.random() * kws.length)];
         loadFeed(pick, feedCat);
+      } else {
+        loadFeed("", feedCat);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2796,18 +2799,18 @@ function AppInner() {
             <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: C.s2, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", gap: 6 }}>
                 <input value={feedInput} onChange={e => setFeedInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && feedInput.trim()) loadFeed(feedInput.trim(), feedCat); }}
+                  onKeyDown={e => { if (e.key === "Enter" && feedInput.trim()) { setFeedCat("news"); loadFeed(feedInput.trim(), "news"); } }}
                   placeholder={t.feedSearch}
                   style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none" }} />
-                <button onClick={() => feedInput.trim() && loadFeed(feedInput.trim(), feedCat)}
+                <button onClick={() => { if (feedInput.trim()) { setFeedCat("news"); loadFeed(feedInput.trim(), "news"); } }}
                   style={{ width: 36, height: 36, background: C.acc, color: C.onAcc, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🔍</button>
               </div>
 
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["blog", t.feedCatBlog], ["news", t.feedCatNews], ["cafe", t.feedCatCafe], ["kin", t.feedCatKin], ["sns", t.feedCatSns]].map(([k, l]) => (
-                    <button key={k} onClick={() => { setFeedCat(k); if (k === "sns") { setFeedItems([]); loadFeed("", "sns"); } else if (feedQuery) loadFeed(feedQuery, k); }}
+                  {[["news", t.feedCatNews], ["press", t.feedCatPress], ["sns", t.feedCatSns], ["masto", t.feedCatMasto]].map(([k, l]) => (
+                    <button key={k} onClick={() => { setFeedCat(k); setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}
                     </button>
@@ -2815,8 +2818,8 @@ function AppInner() {
                 </div>
               )}
 
-              {/* Auto keywords (not for the curated Bluesky feed) */}
-              {feedKeywords.length > 0 && feedCat !== "sns" && (
+              {/* Auto keywords — only the personalized News category uses them */}
+              {feedKeywords.length > 0 && feedCat === "news" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 2 }}>
                   {feedKeywords.map((kw, i) => (
                     <button key={i} onClick={() => { setFeedInput(kw); loadFeed(kw, feedCat); }}

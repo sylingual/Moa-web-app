@@ -110,10 +110,13 @@ async function fetchMastodon(lang) {
       if (!text) continue
       var acct = s.account || {}
       var name = acct.display_name || acct.username || ''
+      var surl = s.url || s.uri || ''
       out.push({
         title: text,
         snippet: '',
-        link: s.url || s.uri || '',
+        link: surl,
+        // Mastodon's official per-status embed — renders in an in-app iframe.
+        embed: surl ? surl.replace(/\/+$/, '') + '/embed' : '',
         author: name ? name + ' (@' + (acct.acct || acct.username || '') + '@' + host + ')' : '',
         date: s.created_at ? formatNaverDate(s.created_at) : '',
         source: 'Mastodon',
@@ -189,12 +192,16 @@ function mapBlueskyPosts(posts) {
     var rec = p.record || {}
     var handle = (p.author && p.author.handle) || ''
     var name = (p.author && p.author.displayName) || ''
-    var rkey = (p.uri || '').split('/').pop()
+    var m = (p.uri || '').match(/^at:\/\/(did:[^/]+)\/app\.bsky\.feed\.post\/(.+)$/)
+    var did = m ? m[1] : ''
+    var rkey = m ? m[2] : (p.uri || '').split('/').pop()
     var text = (rec.text || '').trim()
     return {
       title: text,
       snippet: '',
       link: (handle && rkey) ? 'https://bsky.app/profile/' + handle + '/post/' + rkey : '',
+      // Official embed — renders the post in an in-app iframe (no leaving the app).
+      embed: (did && rkey) ? 'https://embed.bsky.app/embed/' + did + '/app.bsky.feed.post/' + rkey : '',
       author: name ? name + ' (@' + handle + ')' : (handle ? '@' + handle : ''),
       date: formatNaverDate(rec.createdAt || p.indexedAt),
       source: 'Bluesky',

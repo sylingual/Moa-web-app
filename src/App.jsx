@@ -1434,6 +1434,7 @@ function AppInner() {
   const [feedInput, setFeedInput] = useState("");
   const [feedCat, setFeedCat] = useState("news");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
+  const [feedEmbed, setFeedEmbed] = useState(null); // { url, link } to view a post in-app, or null
 
   const msgsR = useRef(null);
   const exR = useRef(null);
@@ -2323,6 +2324,26 @@ function AppInner() {
         </div>
       )}
 
+      {/* FEED POST VIEWER (in-app iframe for Bluesky / Mastodon) */}
+      {feedEmbed && (
+        <div onClick={() => setFeedEmbed(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 14, width: "100%", maxWidth: 560, height: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: `1px solid ${C.border}`, background: C.s2, flexShrink: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.txt, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.feedRead}</span>
+              <a href={feedEmbed.link} target="_blank" rel="noopener noreferrer" title="↗"
+                style={{ fontSize: 12, color: C.acc, textDecoration: "none", padding: "4px 9px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1 }}>↗</a>
+              <button onClick={() => setFeedEmbed(null)}
+                style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+            </div>
+            <iframe src={feedEmbed.url} title="post"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
@@ -2848,8 +2869,9 @@ function AppInner() {
               {!feedLoad && feedItems.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {feedItems.map((it, i) => (
-                    <a key={i} href={it.link} target="_blank" rel="noopener noreferrer"
-                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s" }}
+                    <div key={i}
+                      onClick={() => { if (it.embed) setFeedEmbed({ url: it.embed, link: it.link }); else if (it.link) window.open(it.link, "_blank", "noopener,noreferrer"); }}
+                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
@@ -2863,7 +2885,7 @@ function AppInner() {
                       <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
                         {it.snippet}
                       </div>
-                    </a>
+                    </div>
                   ))}
                 </div>
               )}

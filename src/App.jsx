@@ -155,6 +155,12 @@ const T = {
     dreamPlaceholder: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coréen...",
     spokenLangsLabel: "Langues que tu parles",
     spokenLangsPlaceholder: "ex: Français (natif), Anglais (courant), Espagnol (notions)",
+    langColLang: "Langue", langColLevel: "Niveau", langAddRow: "+ Ajouter une langue",
+    langPh: "ex : Français", langLevelPick: "Niveau…",
+    langLevelNative: "Langue maternelle", langLevelBilingual: "Bilingue", langLevelAdvanced: "Avancé", langLevelIntermediate: "Intermédiaire",
+    myNotesLabel: "Mes notes", teacherNotesLabel: "Notes du professeur", teacherNotesEmpty: "Aucune note du professeur pour l'instant.",
+    myNotesPlaceholder: "Tes propres notes : objectifs perso, rappels, préférences...",
+    contact: "Contact", contactSub: "Besoin d'aide ? Écris-nous.",
     onbNext: "Suivant",
     onbSkip: "Passer",
     onbFinish: "C'est parti !",
@@ -328,6 +334,12 @@ const T = {
     dreamPlaceholder: "e.g. Chat for hours with my in-laws without a translator. Read Han Kang in the original. Do stand-up in Korean...",
     spokenLangsLabel: "Languages you speak",
     spokenLangsPlaceholder: "e.g. French (native), English (fluent), Spanish (basics)",
+    langColLang: "Language", langColLevel: "Level", langAddRow: "+ Add a language",
+    langPh: "e.g. French", langLevelPick: "Level…",
+    langLevelNative: "Native", langLevelBilingual: "Bilingual", langLevelAdvanced: "Advanced", langLevelIntermediate: "Intermediate",
+    myNotesLabel: "My notes", teacherNotesLabel: "Teacher's notes", teacherNotesEmpty: "No teacher notes yet.",
+    myNotesPlaceholder: "Your own notes: personal goals, reminders, preferences...",
+    contact: "Contact", contactSub: "Need help? Write to us.",
     onbNext: "Next",
     onbSkip: "Skip",
     onbFinish: "Let's go!",
@@ -511,20 +523,24 @@ function buildContext(data, lang) {
     p.dreamJobs && `dream jobs: ${p.dreamJobs}`,
   ].filter(Boolean).join(" | ");
 
-  const hasProfile = p.gender || p.age || p.nationality || p.spokenLanguages || p.dream || p.level || p.interests || p.goals || p.notes || favs;
+  const hasProfile = p.gender || p.age || p.nationality || p.spokenLanguages || (p.languages && p.languages.length) || p.dream || p.level || p.interests || p.goals || p.notes || p.learnerNotes || favs;
   if (hasProfile) {
     ctx += "=== LEARNER PROFILE ===\n";
     ctx += "Level: intermediate learner.\n";
     if (p.gender) ctx += `Gender: ${p.gender}\n`;
     if (p.age) ctx += `Age: ${p.age}\n`;
     if (p.nationality) ctx += `Nationality / native language: ${p.nationality}\n`;
-    if (p.spokenLanguages) ctx += `Languages spoken: ${p.spokenLanguages} (you can draw comparisons with these languages when useful)\n`;
+    const langStr = (p.languages && p.languages.length)
+      ? p.languages.filter(r => r && r.lang).map(r => r.lang + (r.level ? ` (${r.level})` : "")).join(", ")
+      : (p.spokenLanguages || "");
+    if (langStr) ctx += `Languages spoken: ${langStr} (you can draw comparisons with these languages when useful)\n`;
     if (p.dream) ctx += `Their dream in this language: ${p.dream}\n`;
     if (p.level) ctx += `Self-described level: ${p.level}\n`;
     if (favs) ctx += `FAVORITES (use these to build examples that resonate): ${favs}\n`;
     if (p.interests) ctx += `Other interests: ${p.interests}\n`;
     if (p.goals) ctx += `Goals: ${p.goals}\n`;
-    if (p.notes) ctx += `Additional notes: ${p.notes}\n`;
+    if (p.notes) ctx += `Teacher notes: ${p.notes}\n`;
+    if (p.learnerNotes) ctx += `Learner's own notes: ${p.learnerNotes}\n`;
     ctx += "\n";
   }
 
@@ -1216,6 +1232,45 @@ function Bubble({ msg, revealAll }) {
   );
 }
 
+const LANG_LEVELS = ["native", "bilingual", "advanced", "intermediate"];
+function langLevelLabel(level, t) {
+  return { native: t.langLevelNative, bilingual: t.langLevelBilingual, advanced: t.langLevelAdvanced, intermediate: t.langLevelIntermediate }[level] || "";
+}
+function LanguagesTable({ value, onChange, t }) {
+  const rows = Array.isArray(value) ? value : [];
+  const setRow = (i, patch) => onChange(rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const addRow = () => onChange([...rows, { lang: "", level: "" }]);
+  const delRow = (i) => onChange(rows.filter((_, j) => j !== i));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {rows.length > 0 && (
+        <div style={{ display: "flex", gap: 8, fontSize: 10.5, color: C.txtM, fontWeight: 600, padding: "0 2px" }}>
+          <span style={{ flex: 1 }}>{t.langColLang}</span>
+          <span style={{ width: 150 }}>{t.langColLevel}</span>
+          <span style={{ width: 24 }} />
+        </div>
+      )}
+      {rows.map((r, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input value={r.lang || ""} onChange={e => setRow(i, { lang: e.target.value })} placeholder={t.langPh}
+            style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none" }} />
+          <select value={r.level || ""} onChange={e => setRow(i, { level: e.target.value })}
+            style={{ width: 150, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: r.level ? C.txt : C.txtM, background: C.s1, outline: "none", cursor: "pointer", appearance: "auto" }}>
+            <option value="">{t.langLevelPick}</option>
+            {LANG_LEVELS.map(lv => <option key={lv} value={lv}>{langLevelLabel(lv, t)}</option>)}
+          </select>
+          <button onClick={() => delRow(i)} title="×"
+            style={{ width: 24, height: 24, flexShrink: 0, borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        </div>
+      ))}
+      <button onClick={addRow}
+        style={{ alignSelf: "flex-start", padding: "5px 12px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.acc, cursor: "pointer", fontSize: 12, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+        {t.langAddRow}
+      </button>
+    </div>
+  );
+}
+
 function GrammarCard({ card, t, onToggle, onReview }) {
   const si = statusInfo(card.status, t);
   const canToggle = card.status === "studied" || card.status === "acquired";
@@ -1440,7 +1495,7 @@ function AppInner() {
   const [profileDraft, setProfileDraft] = useState(null);
   const [profileSavedMsg, setProfileSavedMsg] = useState(false);
   const [onbStep, setOnbStep] = useState(0);
-  const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", spokenLanguages: "", dream: "" });
+  const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "" });
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
 
@@ -2273,7 +2328,7 @@ function AppInner() {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.spokenLangsLabel}</label>
-                <input value={onbDraft.spokenLanguages} onChange={e => setOnbDraft({ ...onbDraft, spokenLanguages: e.target.value })} placeholder={t.spokenLangsPlaceholder} style={box} />
+                <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
               </div>
             </>
           ) : (
@@ -3063,8 +3118,7 @@ function AppInner() {
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.spokenLangsLabel}</label>
-                <input value={profileDraft.spokenLanguages || ""} onChange={e => setProfileDraft({ ...profileDraft, spokenLanguages: e.target.value })}
-                  placeholder={t.spokenLangsPlaceholder} style={fieldStyle} />
+                <LanguagesTable value={profileDraft.languages} onChange={rows => setProfileDraft({ ...profileDraft, languages: rows })} t={t} />
               </div>
 
               <div>
@@ -3092,9 +3146,28 @@ function AppInner() {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.notesLabel}</label>
-                <textarea value={profileDraft.notes} onChange={e => setProfileDraft({ ...profileDraft, notes: e.target.value })}
-                  placeholder={t.notesPlaceholder} rows={2} style={fieldStyle} />
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.myNotesLabel}</label>
+                <textarea value={profileDraft.learnerNotes || ""} onChange={e => setProfileDraft({ ...profileDraft, learnerNotes: e.target.value })}
+                  placeholder={t.myNotesPlaceholder} rows={2} style={fieldStyle} />
+              </div>
+
+              {/* Teacher notes (AI-written) — read-only for the learner */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>👩‍🏫 {t.teacherNotesLabel}</label>
+                <div style={{ fontSize: 12.5, color: profileDraft.notes ? C.txtS : C.txtM, lineHeight: 1.6, whiteSpace: "pre-wrap", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", minHeight: 40 }}>
+                  {profileDraft.notes || t.teacherNotesEmpty}
+                </div>
+              </div>
+
+              {/* Contact / help */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.txt }}>{t.contact}</div>
+                  <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5 }}>{t.contactSub}</div>
+                </div>
+                <a href="mailto:sylingual@gmail.com" style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, textDecoration: "none" }}>
+                  ✉️ sylingual@gmail.com
+                </a>
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

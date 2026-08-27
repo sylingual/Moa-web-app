@@ -1486,43 +1486,47 @@ function AppInner() {
       const raw = localStorage.getItem("moa-active-lesson");
       if (!raw) return;
       const saved = JSON.parse(raw);
-      // Only restore if the lesson belongs to the current account
-      // Only restore an UNFINISHED lesson that belongs to the current account.
-      if (saved && saved.card && saved.conv && saved.conv.length > 0 && !saved.lessonDone && (!saved.syncId || saved.syncId === syncId)) {
+      // Restore only an UNFINISHED lesson that belongs to the current context (same
+      // account code, or both anonymous). The article lives on the card (articleText),
+      // so it no longer needs to be stored in the save itself.
+      if (saved && saved.card && saved.conv && saved.conv.length > 0 && !saved.lessonDone && (saved.syncId || "") === (syncId || "")) {
         setLCard(saved.card);
-        setLArticle(saved.article || "");
+        setLArticle(saved.card.articleText || saved.article || "");
         setConv(saved.conv.map(m => ({ ...m, options: m.options || null })));
         setLessonDone(false);
         setLessonSummary(null);
         setView("lesson");
       } else {
-        // Wrong account, or an already-finished lesson: discard it.
+        // Wrong context, or an already-finished lesson: discard it.
         localStorage.removeItem("moa-active-lesson");
       }
     } catch (e) { console.error("Failed to restore lesson:", e); }
   }, [loaded, lessonRestored, syncId]);
 
-  // Persist the active lesson to localStorage whenever the conversation changes — but
-  // ONLY while it's unfinished. A trailing (still-unanswered) user turn is dropped so a
-  // resumed session always lands on an AI message the learner can actually act on.
+  // Persist the active lesson to localStorage whenever the conversation changes — while
+  // it's unfinished, with or without an account (it's the learner's own browser). A
+  // trailing (still-unanswered) user turn is dropped so a resumed session always lands on
+  // an AI message. The article is NOT stored (it lives on the card) to keep this small,
+  // and if storage is full we shed the oldest messages so recent turns always survive.
   useEffect(() => {
     if (!lessonRestored) return; // don't save during initial restore or after disconnect
-    if (!syncId) { localStorage.removeItem("moa-active-lesson"); return; } // no account = no persistence
-    let toSave = conv;
-    if (toSave.length && toSave[toSave.length - 1].role === "user") toSave = toSave.slice(0, -1);
-    if (lCard && toSave.length > 0 && !lessonDone) {
-      try {
-        localStorage.setItem("moa-active-lesson", JSON.stringify({
-          card: lCard, article: lArticle, syncId: syncId,
-          conv: toSave.map(m => ({ role: m.role, content: m.content, options: m.options || null, selected: m.selected || null, sources: m.sources || null, degraded: m.degraded || false })),
-          lessonDone: false, lessonSummary: null,
-        }));
-      } catch (e) { console.error("Failed to save lesson:", e); }
-    } else {
+    let msgs = conv;
+    if (msgs.length && msgs[msgs.length - 1].role === "user") msgs = msgs.slice(0, -1);
+    if (!(lCard && msgs.length > 0 && !lessonDone)) {
       // No live card, empty conversation, or the lesson is finished -> nothing to resume.
       localStorage.removeItem("moa-active-lesson");
+      return;
     }
-  }, [conv, lCard, lArticle, lessonDone, lessonSummary, lessonRestored, syncId]);
+    const slim = msgs.map(m => ({ role: m.role, content: m.content, options: m.options || null, selected: m.selected || null, sources: m.sources || null, degraded: m.degraded || false }));
+    for (let keep = slim.length; keep >= 1; keep = Math.floor(keep / 2)) {
+      try {
+        localStorage.setItem("moa-active-lesson", JSON.stringify({ card: lCard, syncId: syncId || "", conv: slim.slice(-keep), lessonDone: false }));
+        return;
+      } catch (e) {
+        if (keep <= 1) console.error("Failed to save lesson (storage full):", e);
+      }
+    }
+  }, [conv, lCard, lessonDone, lessonRestored, syncId]);
 
   // Init profile draft when data loads or view switches to profile
   useEffect(() => {
@@ -1851,8 +1855,8 @@ function AppInner() {
       const raw = localStorage.getItem("moa-active-lesson");
       if (raw) {
         const s = JSON.parse(raw);
-        if (s && s.card && s.card.korean === c.korean && Array.isArray(s.conv) && s.conv.length > 0 && !s.lessonDone && (!s.syncId || s.syncId === syncId)) {
-          return { card: s.card, article: s.article || "", conv: s.conv.map(m => ({ ...m, options: m.options || null })) };
+        if (s && s.card && s.card.korean === c.korean && Array.isArray(s.conv) && s.conv.length > 0 && !s.lessonDone && (s.syncId || "") === (syncId || "")) {
+          return { card: s.card, article: s.card.articleText || s.article || "", conv: s.conv.map(m => ({ ...m, options: m.options || null })) };
         }
       }
     } catch (e) { /* corrupt save -> treat as none */ }

@@ -140,6 +140,100 @@ async function fetchRss(langCode, query) {
   return { items: all.slice(0, 25) }
 }
 
+// Bluesky (AT Protocol). Short-form Korean social text.
+// Two paths, tried in order:
+//   A) Personalized keyword search — needs a (free) account: BLUESKY_IDENTIFIER +
+//      BLUESKY_APP_PASSWORD. app.bsky.feed.searchPosts now requires an auth session.
+//   B) Zero-config fallback — recent Korean posts from accounts discovered via the public
+//      (unauthenticated) searchActors + getAuthorFeed endpoints.
+var BSKY_PUBLIC = 'https://public.api.bsky.app/xrpc/'
+var BSKY_PDS = 'https://bsky.social/xrpc/'
+
+function mapBlueskyPosts(posts) {
+  return posts.map(function (p) {
+    var rec = p.record || {}
+    var handle = (p.author && p.author.handle) || ''
+    var name = (p.author && p.author.displayName) || ''
+    var rkey = (p.uri || '').split('/').pop()
+    var text = (rec.text || '').trim()
+    return {
+      title: text,
+      snippet: '',
+      link: (handle && rkey) ? 'https://bsky.app/profile/' + handle + '/post/' + rkey : '',
+      author: name ? name + ' (@' + handle + ')' : (handle ? '@' + handle : ''),
+      date: formatNaverDate(rec.createdAt || p.indexedAt),
+      source: 'Bluesky',
+    }
+  }).filter(function (it) { return it.title && it.link })
+}
+
+async function getJson(url, headers) {
+  try {
+    var r = await fetch(url, { headers: headers || { 'Accept': 'application/json' } })
+    if (!r.ok) return null
+    return await r.json()
+  } catch (e) { return null }
+}
+
+// Path A: authenticated keyword search. Returns mapped items, or null if unavailable.
+async function blueskyAuthedSearch(query, lang) {
+  var id = process.env.BLUESKY_IDENTIFIER || ''
+  var pw = process.env.BLUESKY_APP_PASSWORD || ''
+  if (!id || !pw) return null
+  try {
+    var sres = await fetch(BSKY_PDS + 'com.atproto.server.createSession', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: id, password: pw }),
+    })
+    if (!sres.ok) return null
+    var session = await sres.json()
+    if (!session.accessJwt) return null
+    var url = BSKY_PDS + 'app.bsky.feed.searchPosts?q=' + encodeURIComponent(query) +
+      '&limit=25&sort=latest&lang=' + encodeURIComponent(lang)
+    var data = await getJson(url, { 'Authorization': 'Bearer ' + session.accessJwt, 'Accept': 'application/json' })
+    if (!data) return null
+    return mapBlueskyPosts(data.posts || [])
+  } catch (e) { return null }
+}
+
+// Path B: recent Korean posts from discovered accounts, no auth required.
+async function blueskyAccountsFeed(query, lang) {
+  // Discover accounts from the query, plus a reliable Korean-language anchor.
+  var seed = query || '한국'
+  var a = await getJson(BSKY_PUBLIC + 'app.bsky.actor.searchActors?q=' + encodeURIComponent(seed) + '&limit=8')
+  var handles = ((a && a.actors) || []).map(function (x) { return x.handle }).filter(Boolean)
+  handles = handles.concat(['trending-ko.bsky.social'])
+  handles = handles.filter(function (h, i) { return handles.indexOf(h) === i }).slice(0, 6)
+
+  var posts = []
+  for (var i = 0; i < handles.length; i++) {
+    var f = await getJson(BSKY_PUBLIC + 'app.bsky.feed.getAuthorFeed?actor=' + encodeURIComponent(handles[i]) + '&limit=15&filter=posts_no_replies')
+    var feed = (f && f.feed) || []
+    for (var k = 0; k < feed.length; k++) {
+      var post = feed[k] && feed[k].post
+      if (!post) continue
+      var langs = (post.record && post.record.langs) || []
+      if (lang && langs.length && langs.indexOf(lang) === -1) continue // keep target-language posts
+      posts.push(post)
+    }
+  }
+  // Newest first.
+  posts.sort(function (x, y) {
+    return new Date(y.indexedAt || 0).getTime() - new Date(x.indexedAt || 0).getTime()
+  })
+  return mapBlueskyPosts(posts).slice(0, 25)
+}
+
+async function fetchBluesky(query, langCode) {
+  var lang = langCode || 'ko'
+  var authed = await blueskyAuthedSearch(query, lang)
+  if (authed && authed.length) return { items: authed }
+  // Not configured, or search returned nothing -> zero-config account feed.
+  var items = await blueskyAccountsFeed(query, lang)
+  return { items: items }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -154,9 +248,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Aucun mot-clé fourni.' })
     }
 
-    var result = targetLang === 'ko'
-      ? await fetchNaver(query, category)
-      : await fetchRss(targetLang, query)
+    var result = category === 'sns'
+      ? await fetchBluesky(query, targetLang)
+      : targetLang === 'ko'
+        ? await fetchNaver(query, category)
+        : await fetchRss(targetLang, query)
 
     if (result.error) {
       return res.status(502).json({ error: result.error })

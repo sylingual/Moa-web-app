@@ -206,6 +206,7 @@ const T = {
     feedCatNews: "Actu",
     feedCatCafe: "Forums",
     feedCatKin: "Q&R",
+    feedCatSns: "Bluesky",
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
     newExercise: "Nouvel exercice",
@@ -377,6 +378,7 @@ const T = {
     feedCatNews: "News",
     feedCatCafe: "Forums",
     feedCatKin: "Q&A",
+    feedCatSns: "Bluesky",
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
     newExercise: "New exercise",
@@ -2802,7 +2804,7 @@ function AppInner() {
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["blog", t.feedCatBlog], ["news", t.feedCatNews], ["cafe", t.feedCatCafe], ["kin", t.feedCatKin]].map(([k, l]) => (
+                  {[["blog", t.feedCatBlog], ["news", t.feedCatNews], ["cafe", t.feedCatCafe], ["kin", t.feedCatKin], ["sns", t.feedCatSns]].map(([k, l]) => (
                     <button key={k} onClick={() => { setFeedCat(k); if (feedQuery) loadFeed(feedQuery, k); }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}

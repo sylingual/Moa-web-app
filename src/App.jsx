@@ -66,6 +66,10 @@ const T = {
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     back: "Retour", thinking: "Réflexion...",
+    leaveTitle: "Quitter la leçon ?", leaveBody: "Tu as une leçon en cours. Que veux-tu faire ?",
+    leaveKeep: "Garder et reprendre plus tard", leaveDiscard: "Quitter sans sauvegarder", leaveCancel: "Annuler",
+    resumeTitle: "Reprendre la leçon ?", resumeBody: "Tu as une session en cours pour cette carte.",
+    resumeBtn: "Reprendre", restartBtn: "Recommencer",
     noAcquired: "Aucune carte étudiée ou acquise.",
     emptyLesson: "Importe un texte et choisis un point pour commencer.",
     syncLabel: "Code de synchro",
@@ -232,6 +236,10 @@ const T = {
     noCards: "No cards yet. Import a text to get started!",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     back: "Back", thinking: "Thinking...",
+    leaveTitle: "Leave the lesson?", leaveBody: "You have a lesson in progress. What would you like to do?",
+    leaveKeep: "Keep and resume later", leaveDiscard: "Leave without saving", leaveCancel: "Cancel",
+    resumeTitle: "Resume the lesson?", resumeBody: "You have a session in progress for this card.",
+    resumeBtn: "Resume", restartBtn: "Start over",
     noAcquired: "No studied or acquired cards yet.",
     emptyLesson: "Import a text and pick a point to start.",
     syncLabel: "Sync code",
@@ -681,68 +689,80 @@ Return JSON: {"message": "your response"} or {"message": "your response", "optio
   return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`)).text);
 }
 
+// Curated deep-links: each opens a trusted resource site pre-filtered to this
+// structure (not a generic Google search). Used as a fallback when web search
+// is unavailable. Language-aware, with a sensible generic set for other langs.
 function resourceSearchLinks(card, tlCode) {
   const structure = card.korean.trim();
+  const q = encodeURIComponent(structure);
   const target = getTargetLangName(tlCode, "en");
-  const searches = [
-    [`Google - ${target} grammar`, `${structure} ${target} grammar`],
-    [`YouTube - ${target} lesson`, `${structure} ${target} grammar lesson`],
-    [`Reddit - ${target} learners`, `${structure} ${target} grammar`],
-    [`HiNative - ${target}`, `${structure} ${target}`],
+  const ytQ = encodeURIComponent(`${structure} ${target} grammar lesson`);
+  const rdQ = encodeURIComponent(`${structure} ${target} grammar`);
+
+  const common = [
+    { title: `YouTube — leçon ${target}`, uri: `https://www.youtube.com/results?search_query=${ytQ}` },
+    { title: `Reddit — apprenants ${target}`, uri: `https://www.reddit.com/search/?q=${rdQ}` },
+    { title: "Wiktionary", uri: `https://en.wiktionary.org/w/index.php?search=${q}` },
   ];
-  return searches.map(([title, query]) => ({
-    title,
-    uri: `https://www.google.com/search?q=${encodeURIComponent(query)}${title.startsWith("YouTube") ? "+site%3Ayoutube.com" : title.startsWith("Reddit") ? "+site%3Areddit.com" : title.startsWith("HiNative") ? "+site%3Ahinative.com" : ""}`,
-  }));
+
+  const byLang = {
+    ko: [
+      { title: "How To Study Korean", uri: `https://www.howtostudykorean.com/?s=${q}` },
+      { title: "Talk To Me In Korean", uri: `https://talktomeinkorean.com/?s=${q}` },
+      { title: "Naver 국어사전", uri: `https://ko.dict.naver.com/#/search?query=${q}` },
+      { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
+    ],
+    de: [
+      { title: "Lingolia Deutsch", uri: `https://deutsch.lingolia.com/?s=${q}` },
+      { title: "DW Deutsch lernen", uri: `https://www.dw.com/search/?languageCode=de&item=${q}` },
+      { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
+    ],
+  };
+
+  // Cap at 3, language-specific sites first (How To Study Korean already leads the ko list).
+  return [...(byLang[tlCode] || []), ...common].slice(0, 3);
 }
 
+// Call the Brave-backed /api/resources route. Always resolves to { results: [...] }.
+async function callResources(structure, targetLangName, uiLang) {
+  const res = await fetch("/api/resources", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ structure, targetLang: targetLangName, uiLang }),
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { return { results: [] }; }
+  return data && Array.isArray(data.results) ? data : { results: [] };
+}
+
+// "Ressources complémentaires": real web resources (with URLs) via Brave Search.
+// Falls back to curated deep-links when the Brave key is missing or search fails,
+// so the button always returns useful, clickable sources — never an error.
 async function findResources(card, lang, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are a ${TL} language learning research assistant. Search the web for high-quality pedagogical resources explaining the grammar structure "${card.korean}".
+  const structure = card.korean.trim();
 
-TASK: Find 4-6 real, published resources that explain or demonstrate this specific structure. Return a useful mix when available: pedagogical lesson pages or teacher-created worksheets, grammar reference articles, relevant YouTube videos, and thoughtful discussions on HiNative, Reddit, or language-learning forums.
-
-PRIORITIZE:
-- Pages that explain the rule, its conjugation, and its nuances
-- Teacher-created lessons and worksheets with substantial explanations or examples
-- Videos and forum discussions that add a different practical perspective
-- Resources in ${L} or English when available, but include target-language resources if they are the best explanation
-
-For each resource, give:
-- The site or page name
-- A one-line description of what it covers and why it is useful
-- The URL
-
-Then add a short note in ${L} comparing what the different resources emphasize, so the student knows which to read or watch first.
-
-Write your answer in ${L}, in clear prose with line breaks. Do NOT return JSON. Do NOT invent URLs: only cite pages you actually found in your search.`;
-
-  const fallbackSys = `You are a ${TL} language learning assistant. The student wants pedagogical resources explaining the grammar structure "${card.korean}".
-
-You do NOT have web access right now, so do NOT invent URLs.
-
-Instead, in ${L}:
-1. Name 3-4 well-established reference sites you genuinely know cover ${TL} grammar (e.g. for Korean: How To Study Korean, Talk To Me In Korean, Naver 국어사전; for German: Deutsche Welle, Lingolia, Canoonet).
-2. For each, give the EXACT search terms the student should type to land on the right page (e.g. site name + the structure in quotes).
-3. Add a 2-3 sentence summary of the rule itself so the student has something useful right now.
-
-Be explicit that these are search suggestions, not direct links.
-
-Write plain readable prose with line breaks. Do NOT return JSON, do NOT use curly braces or key-value pairs.`;
+  const curatedFallback = () => {
+    const note = lang === "fr"
+      ? `Voici une sélection de ressources fiables pour « ${structure} ». Chaque lien ouvre directement le site correspondant, ciblé sur cette structure :`
+      : `Here's a selection of trusted resources for "${structure}". Each link opens the relevant site directly, targeted to this structure:`;
+    return { text: note, sources: resourceSearchLinks(card, tlCode) };
+  };
 
   try {
-    const r = await callAI(sys, `Find pedagogical resources explaining the ${TL} grammar structure: ${card.korean}`, 1600, true);
-    return { ...r, text: flattenIfJSON(r.text) };
-  } catch (e) {
-    if (String(e.message).includes("SEARCH_QUOTA")) {
-      const r = await callAI(fallbackSys, `Suggest how to find resources for: ${card.korean}`, 1200, false, true);
-      const fallbackNotice = lang === "fr"
-        ? "La recherche web Google est temporairement indisponible. Voici des recherches ciblées pour trouver des ressources actuelles :"
-        : "Google web search is temporarily unavailable. Here are targeted searches to find current resources:";
-      return { text: `${fallbackNotice}\n\n${flattenIfJSON(r.text)}`, sources: resourceSearchLinks(card, tlCode), degraded: true };
+    const data = await callResources(structure, TL, lang);
+    const results = (data.results || []).filter((r) => r && r.uri);
+    if (results.length) {
+      const intro = lang === "fr"
+        ? `Ressources trouvées sur le web pour « ${structure} ». Clique sur un lien ci-dessous pour l'ouvrir :`
+        : `Web resources found for "${structure}". Click any link below to open it:`;
+      return { text: intro, sources: results };
     }
-    throw e;
+    return curatedFallback();
+  } catch (e) {
+    console.error("findResources error:", e);
+    return curatedFallback();
   }
 }
 
@@ -1100,7 +1120,7 @@ function Bubble({ msg, revealAll }) {
       <div style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0, background: C.s1, border: `1px solid ${C.border}`, color: C.txtM }}>
         {ai ? "✦" : "🧑"}
       </div>
-      <div style={{ padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
+      <div style={{ minWidth: 0, padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
         {msg.degraded && (
           <div style={{ marginBottom: 8, padding: "6px 9px", background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 10.5, color: C.warn, lineHeight: 1.5 }}>
             ⚠️ Recherche web temporairement indisponible. Des liens de recherche ciblés sont proposés ci-dessous.
@@ -1112,11 +1132,16 @@ function Bubble({ msg, revealAll }) {
             <div style={{ fontSize: 10, fontWeight: 600, color: C.txtM, textTransform: "uppercase", marginBottom: 5 }}>Sources</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {msg.sources.map((s, i) => (
-                <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4 }}>
-                  <span style={{ flexShrink: 0 }}>🔗</span>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
-                </a>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
+                  <a href={s.uri} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4, minWidth: 0, maxWidth: "100%" }}>
+                    <span style={{ flexShrink: 0 }}>🔗</span>
+                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
+                  </a>
+                  {s.snippet && (
+                    <span style={{ fontSize: 10, color: C.txtS, lineHeight: 1.45, marginLeft: 18, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.snippet}</span>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -1373,6 +1398,8 @@ function AppInner() {
   const [lessonDone, setLessonDone] = useState(false);
   const [lessonSummary, setLessonSummary] = useState(null);
   const [lessonRestored, setLessonRestored] = useState(false);
+  const [leaveGuard, setLeaveGuard] = useState(null); // pending target view when leaving an active lesson, or null
+  const [resumePrompt, setResumePrompt] = useState(null); // card to resume/restart when reopened with a live session, or null
   const [showRecap, setShowRecap] = useState(false);
   const [recapCard, setRecapCard] = useState(null);
   const [recapConv, setRecapConv] = useState([]);
@@ -1772,9 +1799,26 @@ function AppInner() {
     setLLoad(false);
   };
 
-  const reviewCard = (c) => {
+  // A lesson is "live" (resumable) when its chat is open, has messages, and isn't finished.
+  const lessonActive = () => view === "lesson" && !showRecap && lCard && conv.length > 0 && !lessonDone;
+
+  // Nav-tab handler: guard against silently abandoning an in-progress lesson.
+  const navTo = (target) => {
+    if (target !== "lesson" && lessonActive()) { setLeaveGuard(target); return; }
+    if (target === "import") setImpStep("input");
+    setView(target);
+  };
+
+  // Discard the in-progress lesson entirely (in-memory state + persisted copy).
+  const discardLesson = () => {
+    setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+    setShowRecap(false); setRecapCard(null);
+    try { localStorage.removeItem("moa-active-lesson"); } catch (e) {}
+  };
+
+  // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
+  const openCardFresh = (c) => {
     const effectiveStatus = migrateStatus(c.status);
-    // Check if this card has any past summaries
     const cardSummaries = (data.summaries || []).filter(s => s.cardKorean === c.korean);
     if (cardSummaries.length > 0 && effectiveStatus !== "new") {
       // Show recap screen instead of starting lesson directly
@@ -1787,6 +1831,15 @@ function AppInner() {
     }
     // No summaries or brand new card: start lesson directly
     startLessonFromCard(c);
+  };
+
+  const reviewCard = (c) => {
+    // A live session already exists for this exact card -> offer to resume rather than restart.
+    if (lCard && lCard.korean === c.korean && conv.length > 0 && !lessonDone) {
+      setResumePrompt(c);
+      return;
+    }
+    openCardFresh(c);
   };
 
   const startLessonFromCard = (c) => {
@@ -2212,6 +2265,50 @@ function AppInner() {
         </div>
       )}
 
+      {/* LEAVE-LESSON GUARD */}
+      {leaveGuard && (
+        <div onClick={() => setLeaveGuard(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.leaveTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.leaveBody}</div>
+            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); if (target === "import") setImpStep("input"); setView(target); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              💾 {t.leaveKeep}
+            </button>
+            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); discardLesson(); if (target === "import") setImpStep("input"); setView(target); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.warnB}`, background: C.warnBg, color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+              🗑 {t.leaveDiscard}
+            </button>
+            <button onClick={() => setLeaveGuard(null)}
+              style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {t.leaveCancel}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RESUME-LESSON PROMPT */}
+      {resumePrompt && (
+        <div onClick={() => setResumePrompt(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.resumeTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.resumeBody}</div>
+            <button onClick={() => { setResumePrompt(null); setView("lesson"); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              ▶ {t.resumeBtn}
+            </button>
+            <button onClick={() => { const c = resumePrompt; setResumePrompt(null); openCardFresh(c); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              🔄 {t.restartBtn}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
@@ -2226,12 +2323,12 @@ function AppInner() {
         </div>
         {/* Scrollable tabs */}
         <div style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
-        <button style={tabS(view === "library")} onClick={() => setView("library")}>{t.library}</button>
-        <button style={tabS(view === "lesson")} onClick={() => setView("lesson")}>{t.lesson}</button>
-        <button style={tabS(view === "import")} onClick={() => { setView("import"); setImpStep("input"); }}>{t.import}</button>
-        <button style={tabS(view === "feed")} onClick={() => setView("feed")}>{t.feed}</button>
-        <button style={tabS(view === "exercise")} onClick={() => setView("exercise")}>{t.exercise}</button>
-        <button style={tabS(view === "profile")} onClick={() => setView("profile")}>{t.profile}</button>
+        <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
+        <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
+        <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
+        <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>
+        <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
+        <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: C.acc, background: C.accBg, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>

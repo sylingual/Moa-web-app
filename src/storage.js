@@ -16,11 +16,13 @@ const DEFAULT_PROFILE = {
   age: '',
   nationality: '',
   spokenLanguages: '',
+  languages: [],        // [{ lang: string, level: 'native'|'bilingual'|'advanced'|'intermediate' }]
   dream: '',
   level: '',
   interests: '',
   goals: '',
-  notes: '',
+  notes: '',            // teacher/AI notes (learner does not edit these)
+  learnerNotes: '',     // the learner's own notes
   // Detailed questionnaire (filled later, rewards points)
   favFilms: '',
   favMusic: '',

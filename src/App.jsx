@@ -1831,7 +1831,7 @@ function AppInner() {
     if (!profileDraft) return;
     save({ ...data, profile: { ...profileDraft } });
     setProfileSavedMsg(true);
-    setTimeout(() => setProfileSavedMsg(false), 2000);
+    setTimeout(() => setProfileSavedMsg(false), 2600);
   };
 
   // ---- IMPORT ----
@@ -2515,6 +2515,10 @@ function AppInner() {
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
             {t.disconnect}
           </button>
+          <a href="mailto:sylingual@gmail.com" title={t.contactSub}
+            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer", textDecoration: "none" }}>
+            ✉️ {t.contact}
+          </a>
           <span style={{ fontSize: 11, color: C.txtM, flex: 1 }}>{t.syncInfo}</span>
         </div>
       )}
@@ -3154,26 +3158,12 @@ function AppInner() {
                 </div>
               </div>
 
-              {/* Contact / help */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 600, color: C.txt }}>{t.contact}</div>
-                  <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5 }}>{t.contactSub}</div>
-                </div>
-                <a href="mailto:sylingual@gmail.com" style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, textDecoration: "none" }}>
-                  ✉️ sylingual@gmail.com
-                </a>
-              </div>
-
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <button onClick={saveProfile}
-                    style={{ padding: "8px 22px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                    {t.saveProfile}
+                    style={{ padding: "8px 22px", borderRadius: 6, background: profileSavedMsg ? C.ok : C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.2s" }}>
+                    {profileSavedMsg ? `✓ ${t.profileSaved}` : t.saveProfile}
                   </button>
-                  {profileSavedMsg && (
-                    <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>✓ {t.profileSaved}</span>
-                  )}
                 </div>
                 <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
                   💡 {t.profileAutoUpdate}

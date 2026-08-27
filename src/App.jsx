@@ -1554,6 +1554,11 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, tl]);
 
+  // Feed is Korean-only for now: never leave the learner stranded on it in another language.
+  useEffect(() => {
+    if (view === "feed" && tl !== "ko") setView("library");
+  }, [view, tl]);
+
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
   useEffect(() => {
@@ -2328,7 +2333,7 @@ function AppInner() {
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
-        <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>
+        {tl === "ko" && <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>}
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}

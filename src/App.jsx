@@ -2389,6 +2389,14 @@ function AppInner() {
                         {p.date && <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{p.date}</span>}
                       </div>
                       <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{p.text}</div>
+                      {p.images && p.images.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                          {p.images.map((im, k) => (
+                            <img key={k} src={im.url} alt={im.alt || ""} loading="lazy"
+                              style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8, border: `1px solid ${C.border}`, objectFit: "contain" }} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

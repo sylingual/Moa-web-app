@@ -222,6 +222,29 @@ async function getJson(url) {
   } catch (e) { return null }
 }
 
+// Extract image URLs from a Bluesky post embed view (handles image + recordWithMedia).
+function bskyImages(embed) {
+  if (!embed) return []
+  var e = embed
+  if (e['$type'] === 'app.bsky.embed.recordWithMedia#view' && e.media) e = e.media
+  if (e['$type'] === 'app.bsky.embed.images#view' && Array.isArray(e.images)) {
+    return e.images.map(function (im) { return { url: im.fullsize || im.thumb || '', alt: im.alt || '' } })
+      .filter(function (x) { return x.url })
+  }
+  return []
+}
+
+// Extract image URLs from Mastodon media attachments (video/gifv use their thumbnail).
+function mastoImages(atts) {
+  if (!Array.isArray(atts)) return []
+  return atts.map(function (m) {
+    if (!m) return null
+    if (m.type === 'image') return { url: m.url || m.preview_url || '', alt: m.description || '' }
+    if (m.type === 'gifv' || m.type === 'video') return { url: m.preview_url || '', alt: m.description || '' }
+    return null
+  }).filter(function (x) { return x && x.url })
+}
+
 // Recent target-language posts the curated accounts wrote OR shared (reposts included, since
 // these accounts mostly surface news by resharing). Per-account capped so no one floods,
 // de-duplicated across accounts, newest-surfaced first.
@@ -273,6 +296,7 @@ async function fetchBlueskyThread(uri) {
       link: (a.handle && rkey) ? 'https://bsky.app/profile/' + a.handle + '/post/' + rkey : '',
       same: !!(a.did && a.did === rootDid),
       role: role,
+      images: bskyImages(pp.embed),
     }
   }
   var posts = []
@@ -313,6 +337,7 @@ async function fetchMastodonThread(host, id) {
       link: s.url || s.uri || '',
       same: !!(s.account && s.account.id === rootAcct),
       role: role,
+      images: mastoImages(s.media_attachments),
     }
   }
   var posts = []

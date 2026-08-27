@@ -66,6 +66,10 @@ const T = {
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     back: "Retour", thinking: "Réflexion...",
+    leaveTitle: "Quitter la leçon ?", leaveBody: "Tu as une leçon en cours. Que veux-tu faire ?",
+    leaveKeep: "Garder et reprendre plus tard", leaveDiscard: "Quitter sans sauvegarder", leaveCancel: "Annuler",
+    resumeTitle: "Reprendre la leçon ?", resumeBody: "Tu as une session en cours pour cette carte.",
+    resumeBtn: "Reprendre", restartBtn: "Recommencer",
     noAcquired: "Aucune carte étudiée ou acquise.",
     emptyLesson: "Importe un texte et choisis un point pour commencer.",
     syncLabel: "Code de synchro",
@@ -232,6 +236,10 @@ const T = {
     noCards: "No cards yet. Import a text to get started!",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     back: "Back", thinking: "Thinking...",
+    leaveTitle: "Leave the lesson?", leaveBody: "You have a lesson in progress. What would you like to do?",
+    leaveKeep: "Keep and resume later", leaveDiscard: "Leave without saving", leaveCancel: "Cancel",
+    resumeTitle: "Resume the lesson?", resumeBody: "You have a session in progress for this card.",
+    resumeBtn: "Resume", restartBtn: "Start over",
     noAcquired: "No studied or acquired cards yet.",
     emptyLesson: "Import a text and pick a point to start.",
     syncLabel: "Sync code",
@@ -1390,6 +1398,8 @@ function AppInner() {
   const [lessonDone, setLessonDone] = useState(false);
   const [lessonSummary, setLessonSummary] = useState(null);
   const [lessonRestored, setLessonRestored] = useState(false);
+  const [leaveGuard, setLeaveGuard] = useState(null); // pending target view when leaving an active lesson, or null
+  const [resumePrompt, setResumePrompt] = useState(null); // card to resume/restart when reopened with a live session, or null
   const [showRecap, setShowRecap] = useState(false);
   const [recapCard, setRecapCard] = useState(null);
   const [recapConv, setRecapConv] = useState([]);
@@ -1789,9 +1799,26 @@ function AppInner() {
     setLLoad(false);
   };
 
-  const reviewCard = (c) => {
+  // A lesson is "live" (resumable) when its chat is open, has messages, and isn't finished.
+  const lessonActive = () => view === "lesson" && !showRecap && lCard && conv.length > 0 && !lessonDone;
+
+  // Nav-tab handler: guard against silently abandoning an in-progress lesson.
+  const navTo = (target) => {
+    if (target !== "lesson" && lessonActive()) { setLeaveGuard(target); return; }
+    if (target === "import") setImpStep("input");
+    setView(target);
+  };
+
+  // Discard the in-progress lesson entirely (in-memory state + persisted copy).
+  const discardLesson = () => {
+    setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+    setShowRecap(false); setRecapCard(null);
+    try { localStorage.removeItem("moa-active-lesson"); } catch (e) {}
+  };
+
+  // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
+  const openCardFresh = (c) => {
     const effectiveStatus = migrateStatus(c.status);
-    // Check if this card has any past summaries
     const cardSummaries = (data.summaries || []).filter(s => s.cardKorean === c.korean);
     if (cardSummaries.length > 0 && effectiveStatus !== "new") {
       // Show recap screen instead of starting lesson directly
@@ -1804,6 +1831,15 @@ function AppInner() {
     }
     // No summaries or brand new card: start lesson directly
     startLessonFromCard(c);
+  };
+
+  const reviewCard = (c) => {
+    // A live session already exists for this exact card -> offer to resume rather than restart.
+    if (lCard && lCard.korean === c.korean && conv.length > 0 && !lessonDone) {
+      setResumePrompt(c);
+      return;
+    }
+    openCardFresh(c);
   };
 
   const startLessonFromCard = (c) => {
@@ -2229,6 +2265,50 @@ function AppInner() {
         </div>
       )}
 
+      {/* LEAVE-LESSON GUARD */}
+      {leaveGuard && (
+        <div onClick={() => setLeaveGuard(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.leaveTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.leaveBody}</div>
+            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); if (target === "import") setImpStep("input"); setView(target); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              💾 {t.leaveKeep}
+            </button>
+            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); discardLesson(); if (target === "import") setImpStep("input"); setView(target); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.warnB}`, background: C.warnBg, color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+              🗑 {t.leaveDiscard}
+            </button>
+            <button onClick={() => setLeaveGuard(null)}
+              style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {t.leaveCancel}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* RESUME-LESSON PROMPT */}
+      {resumePrompt && (
+        <div onClick={() => setResumePrompt(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.resumeTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.resumeBody}</div>
+            <button onClick={() => { setResumePrompt(null); setView("lesson"); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              ▶ {t.resumeBtn}
+            </button>
+            <button onClick={() => { const c = resumePrompt; setResumePrompt(null); openCardFresh(c); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              🔄 {t.restartBtn}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
@@ -2243,12 +2323,12 @@ function AppInner() {
         </div>
         {/* Scrollable tabs */}
         <div style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
-        <button style={tabS(view === "library")} onClick={() => setView("library")}>{t.library}</button>
-        <button style={tabS(view === "lesson")} onClick={() => setView("lesson")}>{t.lesson}</button>
-        <button style={tabS(view === "import")} onClick={() => { setView("import"); setImpStep("input"); }}>{t.import}</button>
-        <button style={tabS(view === "feed")} onClick={() => setView("feed")}>{t.feed}</button>
-        <button style={tabS(view === "exercise")} onClick={() => setView("exercise")}>{t.exercise}</button>
-        <button style={tabS(view === "profile")} onClick={() => setView("profile")}>{t.profile}</button>
+        <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
+        <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
+        <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
+        <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>
+        <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
+        <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: C.acc, background: C.accBg, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>

@@ -135,6 +135,11 @@ const T = {
     derivedFrom: "issu de",
     viewGrid: "Grille",
     viewTree: "Arbre",
+    viewSources: "Textes",
+    restudyText: "Réétudier ce texte",
+    sourcesNone: "Sans texte d'origine",
+    pointsFromText: "Points associés",
+    recapExcerpt: "Extrait du récap",
     noParent: "Structure racine",
     childCount: (n) => `${n} dérivée${n > 1 ? "s" : ""}`,
     recapTitle: "Récap de la leçon",
@@ -308,6 +313,11 @@ const T = {
     derivedFrom: "derived from",
     viewGrid: "Grid",
     viewTree: "Tree",
+    viewSources: "Texts",
+    restudyText: "Study this text again",
+    sourcesNone: "No source text",
+    pointsFromText: "Associated points",
+    recapExcerpt: "Recap excerpt",
     noParent: "Root structure",
     childCount: (n) => `${n} derived`,
     recapTitle: "Lesson recap",
@@ -1382,6 +1392,94 @@ function TreeView({ cards, t, onToggle, onReview }) {
 }
 
 // =============================================
+// SOURCES VIEW (original texts + their points)
+// =============================================
+function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) {
+  const byKorean = {};
+  cards.forEach(c => { byKorean[c.korean] = c; });
+  // Derived cards resolve to their parent's source text.
+  const resolveText = (c) => {
+    if (c.articleText) return c.articleText;
+    if (c.parentKorean && byKorean[c.parentKorean] && byKorean[c.parentKorean].articleText) return byKorean[c.parentKorean].articleText;
+    return "";
+  };
+  const groupMap = new Map();
+  const noSource = [];
+  cards.forEach(c => {
+    const text = resolveText(c);
+    if (text) {
+      if (!groupMap.has(text)) groupMap.set(text, []);
+      groupMap.get(text).push(c);
+    } else {
+      noSource.push(c);
+    }
+  });
+  const groups = [...groupMap.entries()].map(([text, cs]) => ({ text, cards: cs }));
+
+  const recapExcerptFor = (c) => {
+    const s = (summaries || []).filter(x => x.cardKorean === c.korean);
+    if (!s.length) return "";
+    const last = s[s.length - 1];
+    return (last.grammarRecap || last.structuresLearned || last.nextSteps || "").slice(0, 220);
+  };
+
+  const PointChip = ({ c }) => {
+    const si = statusInfo(c.status, t);
+    return (
+      <button onClick={() => onReview(c)}
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
+        <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : C.proBg, color: c.type === "grammar" ? C.acc : C.pro }}>{c.type === "grammar" ? t.grammar : t.expression}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+      {groups.map((g, i) => (
+        <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
+          <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 170, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
+            {g.text}
+          </div>
+          <button onClick={() => onRestudy(g.text)}
+            style={{ marginTop: 10, padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+            ✨ {t.restudyText}
+          </button>
+          <div style={{ fontSize: 10, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "13px 0 7px" }}>{t.pointsFromText}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {g.cards.map(c => <PointChip key={c.id} c={c} />)}
+          </div>
+        </div>
+      ))}
+      {noSource.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "2px 0 8px" }}>{t.sourcesNone}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {noSource.map(c => {
+              const ex = recapExcerptFor(c);
+              return (
+                <div key={c.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                  <PointChip c={c} />
+                  {ex && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>
+                      <span style={{ fontSize: 9, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.recapExcerpt}</span>
+                      <div style={{ marginTop: 3 }}>{ex}{ex.length >= 220 ? "…" : ""}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================
 // MAIN APP
 // =============================================
 function AppInner() {
@@ -1876,6 +1974,14 @@ function AppInner() {
     }
     // No summaries or brand new card: start lesson directly
     startLessonFromCard(c);
+  };
+
+  // Re-open the Import flow prefilled with a source text, to study it again.
+  const reStudyFromText = (text) => {
+    setImpText(text || "");
+    setFound([]); setSelPick(0); setKnown(new Set());
+    setImpStep("input");
+    setView("import");
   };
 
   const reviewCard = (c) => {
@@ -2497,7 +2603,7 @@ function AppInner() {
               <span style={{ fontSize: 12, color: C.txtM }}>{filteredCards.length} {t.points} · {studiedCount} {t.statusStudied.toLowerCase()} · {acqCount} {t.statusAcquired.toLowerCase()}</span>
               {filteredCards.length > 0 && (
                 <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
-                  {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree]].map(([k, icon, label]) => (
+                  {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree], ["sources", "📄", t.viewSources]].map(([k, icon, label]) => (
                     <button key={k} onClick={() => setLibView(k)}
                       style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: libView === k ? C.s2 : "transparent", color: libView === k ? C.acc : C.txtM, fontWeight: libView === k ? 500 : 400, boxShadow: libView === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
                       {icon} {label}
@@ -2508,11 +2614,13 @@ function AppInner() {
             </div>
             {filteredCards.length === 0
               ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13 }}>{t.noCards}</div>
-              : libView === "grid"
-                ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                    {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} />)}
-                  </div>
-                : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
+              : libView === "sources"
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
+                : libView === "grid"
+                  ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
+                      {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} />)}
+                    </div>
+                  : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
             }
           </div>
         )}

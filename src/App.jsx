@@ -202,10 +202,10 @@ const T = {
     feedNoKeywords: "Complète ton profil pour un feed personnalisé, ou lance une recherche.",
     feedRefresh: "Rafraîchir",
     feedRead: "Lire l'article",
-    feedCatBlog: "Blogs",
     feedCatNews: "Actu",
-    feedCatCafe: "Forums",
-    feedCatKin: "Q&R",
+    feedCatPress: "Manchettes",
+    feedCatSns: "Bluesky",
+    feedCatMasto: "Mastodon",
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
     newExercise: "Nouvel exercice",
@@ -373,10 +373,10 @@ const T = {
     feedNoKeywords: "Fill in your profile for a personalized feed, or run a search.",
     feedRefresh: "Refresh",
     feedRead: "Read article",
-    feedCatBlog: "Blogs",
     feedCatNews: "News",
-    feedCatCafe: "Forums",
-    feedCatKin: "Q&A",
+    feedCatPress: "Headlines",
+    feedCatSns: "Bluesky",
+    feedCatMasto: "Mastodon",
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
     newExercise: "New exercise",
@@ -1432,8 +1432,9 @@ function AppInner() {
   const [feedErr, setFeedErr] = useState(null);
   const [feedQuery, setFeedQuery] = useState("");
   const [feedInput, setFeedInput] = useState("");
-  const [feedCat, setFeedCat] = useState("blog");
+  const [feedCat, setFeedCat] = useState("news");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
+  const [feedEmbed, setFeedEmbed] = useState(null); // { url, link } to view a post in-app, or null
 
   const msgsR = useRef(null);
   const exR = useRef(null);
@@ -1554,6 +1555,11 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, tl]);
 
+  // Feed is Korean-only for now: never leave the learner stranded on it in another language.
+  useEffect(() => {
+    if (view === "feed" && tl !== "ko") setView("library");
+  }, [view, tl]);
+
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
   useEffect(() => {
@@ -1664,10 +1670,12 @@ function AppInner() {
   const feedKeywords = (data.feedKeywords && data.feedKeywords[tl]) || [];
 
   const loadFeed = useCallback(async (query, category) => {
-    if (!query) return;
+    const cat = category || feedCat;
+    // Only "news" personalizes with a keyword; press/sns/masto are keyless, and even news
+    // falls back to top headlines with no query — so nothing here requires a keyword.
     setFeedLoad(true); setFeedErr(null);
     try {
-      const items = await fetchFeed(query, tl, category || feedCat);
+      const items = await fetchFeed(query, tl, cat);
       setFeedItems(items);
       setFeedQuery(query);
     } catch (e) {
@@ -1699,10 +1707,15 @@ function AppInner() {
   useEffect(() => {
     if (view !== "feed" || feedItems.length > 0 || feedLoad || feedKwLoad) return;
     (async () => {
+      // Keyless categories load directly (no AI keyword generation).
+      if (feedCat === "sns" || feedCat === "masto" || feedCat === "press") { loadFeed("", feedCat); return; }
+      // "news": personalize with AI keywords when available, else fall back to top headlines.
       const kws = await ensureKeywords();
       if (kws.length) {
         const pick = kws[Math.floor(Math.random() * kws.length)];
         loadFeed(pick, feedCat);
+      } else {
+        loadFeed("", feedCat);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2311,6 +2324,26 @@ function AppInner() {
         </div>
       )}
 
+      {/* FEED POST VIEWER (in-app iframe for Bluesky / Mastodon) */}
+      {feedEmbed && (
+        <div onClick={() => setFeedEmbed(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 14, width: "100%", maxWidth: 560, height: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: `1px solid ${C.border}`, background: C.s2, flexShrink: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.txt, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.feedRead}</span>
+              <a href={feedEmbed.link} target="_blank" rel="noopener noreferrer" title="↗"
+                style={{ fontSize: 12, color: C.acc, textDecoration: "none", padding: "4px 9px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1 }}>↗</a>
+              <button onClick={() => setFeedEmbed(null)}
+                style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+            </div>
+            <iframe src={feedEmbed.url} title="post"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+              style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
+          </div>
+        </div>
+      )}
+
       {/* NAV */}
       <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
@@ -2328,7 +2361,7 @@ function AppInner() {
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
-        <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>
+        {tl === "ko" && <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>}
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
@@ -2787,18 +2820,18 @@ function AppInner() {
             <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: C.s2, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", gap: 6 }}>
                 <input value={feedInput} onChange={e => setFeedInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && feedInput.trim()) loadFeed(feedInput.trim(), feedCat); }}
+                  onKeyDown={e => { if (e.key === "Enter" && feedInput.trim()) { setFeedCat("news"); loadFeed(feedInput.trim(), "news"); } }}
                   placeholder={t.feedSearch}
                   style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none" }} />
-                <button onClick={() => feedInput.trim() && loadFeed(feedInput.trim(), feedCat)}
+                <button onClick={() => { if (feedInput.trim()) { setFeedCat("news"); loadFeed(feedInput.trim(), "news"); } }}
                   style={{ width: 36, height: 36, background: C.acc, color: C.onAcc, border: "none", borderRadius: 8, cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>🔍</button>
               </div>
 
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["blog", t.feedCatBlog], ["news", t.feedCatNews], ["cafe", t.feedCatCafe], ["kin", t.feedCatKin]].map(([k, l]) => (
-                    <button key={k} onClick={() => { setFeedCat(k); if (feedQuery) loadFeed(feedQuery, k); }}
+                  {[["news", t.feedCatNews], ["press", t.feedCatPress], ["sns", t.feedCatSns], ["masto", t.feedCatMasto]].map(([k, l]) => (
+                    <button key={k} onClick={() => { setFeedCat(k); setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}
                     </button>
@@ -2806,8 +2839,8 @@ function AppInner() {
                 </div>
               )}
 
-              {/* Auto keywords */}
-              {feedKeywords.length > 0 && (
+              {/* Auto keywords — only the personalized News category uses them */}
+              {feedKeywords.length > 0 && feedCat === "news" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 2 }}>
                   {feedKeywords.map((kw, i) => (
                     <button key={i} onClick={() => { setFeedInput(kw); loadFeed(kw, feedCat); }}
@@ -2836,8 +2869,9 @@ function AppInner() {
               {!feedLoad && feedItems.length > 0 && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {feedItems.map((it, i) => (
-                    <a key={i} href={it.link} target="_blank" rel="noopener noreferrer"
-                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s" }}
+                    <div key={i}
+                      onClick={() => { if (it.embed) setFeedEmbed({ url: it.embed, link: it.link }); else if (it.link) window.open(it.link, "_blank", "noopener,noreferrer"); }}
+                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
@@ -2851,7 +2885,7 @@ function AppInner() {
                       <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
                         {it.snippet}
                       </div>
-                    </a>
+                    </div>
                   ))}
                 </div>
               )}

@@ -49,6 +49,7 @@ const T = {
     importTitle: "Importer un texte",
     importSub: "Colle un article de blog, un extrait, ou n'importe quel texte coréen. L'IA va repérer les points pertinents pour ton niveau.",
     analyze: "Analyser ce texte", analyzing: "Analyse en cours...",
+    importImage: "Importer une image", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} repéré${n > 1 ? "s" : ""} dans ton texte`,
     pickSub: "Choisis celui que tu veux étudier, ou marque ceux que tu connais déjà.",
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
@@ -222,6 +223,7 @@ const T = {
     importTitle: "Import a text",
     importSub: "Paste a blog article or any Korean text. The AI will find relevant points for your level.",
     analyze: "Analyze this text", analyzing: "Analyzing...",
+    importImage: "Import an image", ocrLoading: "Extracting text...", ocrEmpty: "No text detected in the image.",
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} found in your text`,
     pickSub: "Choose one to study, or mark the ones you already know.",
     iKnow: "I know this", addedAcq: "Added (acquired)",
@@ -474,6 +476,47 @@ async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText
   const text = (data.content || []).map((b) => b.text || "").join("\n");
   if (!text) throw new Error("Empty AI response. Raw: " + rawText.substring(0, 200));
   return { text, sources: data.sources || [] };
+}
+
+// Downscale an image file to a JPEG (keeps payloads small; text stays legible).
+function fileToScaledBase64(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const scale = Math.min(1, (maxDim || 1600) / Math.max(width, height));
+      width = Math.max(1, Math.round(width * scale));
+      height = Math.max(1, Math.round(height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      resolve({ base64: dataUrl.slice(dataUrl.indexOf(",") + 1), mimeType: "image/jpeg" });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image illisible")); };
+    img.src = url;
+  });
+}
+
+// OCR: extract the target-language text from an image via the vision model.
+async function extractImageText(base64, mimeType, tlName) {
+  const sys = `You are an OCR engine. Extract ALL the ${tlName} text visible in this image, preserving line breaks and natural reading order. Do NOT translate, summarize, describe the image, or add any commentary. If some text is not ${tlName}, include it as-is. Return ONLY the extracted text.`;
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system: sys,
+      messages: [{ role: "user", content: "Extract the text from this image." }],
+      plain: true,
+      image: { mimeType, data: base64 },
+    }),
+  });
+  const raw = await res.text();
+  if (!res.ok) { let e = raw; try { e = JSON.parse(raw).error || raw; } catch {} throw new Error(e); }
+  let data; try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
+  return (data.content || []).map((b) => b.text || "").join("\n").trim();
 }
 
 function parseJSON(raw) {
@@ -1794,6 +1837,21 @@ function AppInner() {
     } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
   };
 
+  // Import from an image/screenshot: extract the text via OCR, then let the user review it.
+  const onImagePick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setImpStep("ocr");
+    try {
+      const { base64, mimeType } = await fileToScaledBase64(file, 1600);
+      const text = await extractImageText(base64, mimeType, getTargetLangName(tl, "en"));
+      if (!text) { alert(t.ocrEmpty); setImpStep("input"); return; }
+      setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
+      setImpStep("input");
+    } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }
+  };
+
   const markKnown = (i) => {
     const p = found[i], nk = new Set(known);
     if (nk.has(i)) { nk.delete(i); save({ ...data, cards: data.cards.filter(c => c.korean !== p.korean) }); }
@@ -2528,6 +2586,11 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+              {/* Import from an image / screenshot (OCR) */}
+              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                📷 {t.importImage}
+                <input type="file" accept="image/*" onChange={onImagePick} style={{ display: "none" }} />
+              </label>
               <button onClick={doAnalyze} disabled={!impText.trim()}
                 style={{ padding: "8px 22px", borderRadius: 6, border: "none", cursor: impText.trim() ? "pointer" : "default", background: impText.trim() ? C.acc : C.s1, color: impText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500 }}>
                 ✨ {t.analyze}
@@ -2535,6 +2598,8 @@ function AppInner() {
             </>)}
             {impStep === "scanning" && <div style={{ fontSize: 36 }}>📄</div>}
             {impStep === "scanning" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.analyzing}</div>}
+            {impStep === "ocr" && <div style={{ fontSize: 36 }}>📷</div>}
+            {impStep === "ocr" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.ocrLoading}</div>}
             {impStep === "picks" && (
               <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.pointsFound(found.length)}</div>

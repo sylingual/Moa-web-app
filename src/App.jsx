@@ -1671,10 +1671,11 @@ function AppInner() {
   const feedKeywords = (data.feedKeywords && data.feedKeywords[tl]) || [];
 
   const loadFeed = useCallback(async (query, category) => {
-    if (!query) return;
+    const cat = category || feedCat;
+    if (!query && cat !== "sns") return; // Bluesky (sns) is a curated feed — no keyword needed
     setFeedLoad(true); setFeedErr(null);
     try {
-      const items = await fetchFeed(query, tl, category || feedCat);
+      const items = await fetchFeed(query, tl, cat);
       setFeedItems(items);
       setFeedQuery(query);
     } catch (e) {
@@ -1706,6 +1707,7 @@ function AppInner() {
   useEffect(() => {
     if (view !== "feed" || feedItems.length > 0 || feedLoad || feedKwLoad) return;
     (async () => {
+      if (feedCat === "sns") { loadFeed("", "sns"); return; } // Bluesky needs no keywords/AI
       const kws = await ensureKeywords();
       if (kws.length) {
         const pick = kws[Math.floor(Math.random() * kws.length)];
@@ -2805,7 +2807,7 @@ function AppInner() {
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
                   {[["blog", t.feedCatBlog], ["news", t.feedCatNews], ["cafe", t.feedCatCafe], ["kin", t.feedCatKin], ["sns", t.feedCatSns]].map(([k, l]) => (
-                    <button key={k} onClick={() => { setFeedCat(k); if (feedQuery) loadFeed(feedQuery, k); }}
+                    <button key={k} onClick={() => { setFeedCat(k); if (k === "sns") { setFeedItems([]); loadFeed("", "sns"); } else if (feedQuery) loadFeed(feedQuery, k); }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}
                     </button>
@@ -2813,8 +2815,8 @@ function AppInner() {
                 </div>
               )}
 
-              {/* Auto keywords */}
-              {feedKeywords.length > 0 && (
+              {/* Auto keywords (not for the curated Bluesky feed) */}
+              {feedKeywords.length > 0 && feedCat !== "sns" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto", paddingBottom: 2 }}>
                   {feedKeywords.map((kw, i) => (
                     <button key={i} onClick={() => { setFeedInput(kw); loadFeed(kw, feedCat); }}

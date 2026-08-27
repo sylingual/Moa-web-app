@@ -140,14 +140,19 @@ async function fetchRss(langCode, query) {
   return { items: all.slice(0, 25) }
 }
 
-// Bluesky (AT Protocol). Short-form Korean social text.
-// Two paths, tried in order:
-//   A) Personalized keyword search — needs a (free) account: BLUESKY_IDENTIFIER +
-//      BLUESKY_APP_PASSWORD. app.bsky.feed.searchPosts now requires an auth session.
-//   B) Zero-config fallback — recent Korean posts from accounts discovered via the public
-//      (unauthenticated) searchActors + getAuthorFeed endpoints.
+// Bluesky (AT Protocol). Short-form Korean social text — recent posts from a curated set
+// of notable, active Korean-language accounts (journalism, political news, and public
+// voices who post opinions/news often). No keyword search, no API key: the public
+// getAuthorFeed endpoint is unauthenticated. Handles verified active + Korean at authoring.
 var BSKY_PUBLIC = 'https://public.api.bsky.app/xrpc/'
-var BSKY_PDS = 'https://bsky.social/xrpc/'
+var BSKY_KO_ACCOUNTS = [
+  'sisain.bsky.social',        // 시사IN — magazine de journalisme (opinion/actu)
+  'imnotheqoo.bsky.social',    // 정치뉴스 — actu politique
+  'koreadesk.bsky.social',     // 코리아데스크 — actu coréenne
+  'letswinpress.bsky.social',  // 기자호소인 — journaliste, opinions
+  'duwind88.bsky.social',      // 작가두도 — écrivain coréen
+  'blue-eon.bsky.social',      // 이온 — créateur webtoon/roman coréen
+]
 
 function mapBlueskyPosts(posts) {
   return posts.map(function (p) {
@@ -167,71 +172,43 @@ function mapBlueskyPosts(posts) {
   }).filter(function (it) { return it.title && it.link })
 }
 
-async function getJson(url, headers) {
+async function getJson(url) {
   try {
-    var r = await fetch(url, { headers: headers || { 'Accept': 'application/json' } })
+    var r = await fetch(url, { headers: { 'Accept': 'application/json' } })
     if (!r.ok) return null
     return await r.json()
   } catch (e) { return null }
 }
 
-// Path A: authenticated keyword search. Returns mapped items, or null if unavailable.
-async function blueskyAuthedSearch(query, lang) {
-  var id = process.env.BLUESKY_IDENTIFIER || ''
-  var pw = process.env.BLUESKY_APP_PASSWORD || ''
-  if (!id || !pw) return null
-  try {
-    var sres = await fetch(BSKY_PDS + 'com.atproto.server.createSession', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier: id, password: pw }),
-    })
-    if (!sres.ok) return null
-    var session = await sres.json()
-    if (!session.accessJwt) return null
-    var url = BSKY_PDS + 'app.bsky.feed.searchPosts?q=' + encodeURIComponent(query) +
-      '&limit=25&sort=latest&lang=' + encodeURIComponent(lang)
-    var data = await getJson(url, { 'Authorization': 'Bearer ' + session.accessJwt, 'Accept': 'application/json' })
-    if (!data) return null
-    return mapBlueskyPosts(data.posts || [])
-  } catch (e) { return null }
-}
-
-// Path B: recent Korean posts from discovered accounts, no auth required.
-async function blueskyAccountsFeed(query, lang) {
-  // Discover accounts from the query, plus a reliable Korean-language anchor.
-  var seed = query || '한국'
-  var a = await getJson(BSKY_PUBLIC + 'app.bsky.actor.searchActors?q=' + encodeURIComponent(seed) + '&limit=8')
-  var handles = ((a && a.actors) || []).map(function (x) { return x.handle }).filter(Boolean)
-  handles = handles.concat(['trending-ko.bsky.social'])
-  handles = handles.filter(function (h, i) { return handles.indexOf(h) === i }).slice(0, 6)
-
-  var posts = []
-  for (var i = 0; i < handles.length; i++) {
-    var f = await getJson(BSKY_PUBLIC + 'app.bsky.feed.getAuthorFeed?actor=' + encodeURIComponent(handles[i]) + '&limit=15&filter=posts_no_replies')
+// Recent target-language posts the curated accounts wrote OR shared (reposts included, since
+// these accounts mostly surface news by resharing). Per-account capped so no one floods,
+// de-duplicated across accounts, newest-surfaced first.
+async function fetchBluesky(langCode) {
+  var lang = langCode || 'ko'
+  var PER_ACCOUNT = 6
+  var collected = []
+  var seenUris = {}
+  for (var i = 0; i < BSKY_KO_ACCOUNTS.length; i++) {
+    var f = await getJson(BSKY_PUBLIC + 'app.bsky.feed.getAuthorFeed?actor=' + encodeURIComponent(BSKY_KO_ACCOUNTS[i]) + '&limit=20&filter=posts_no_replies')
     var feed = (f && f.feed) || []
-    for (var k = 0; k < feed.length; k++) {
-      var post = feed[k] && feed[k].post
-      if (!post) continue
+    var kept = 0
+    for (var k = 0; k < feed.length && kept < PER_ACCOUNT; k++) {
+      var item = feed[k]
+      var post = item && item.post
+      if (!post || seenUris[post.uri]) continue
       var langs = (post.record && post.record.langs) || []
       if (lang && langs.length && langs.indexOf(lang) === -1) continue // keep target-language posts
-      posts.push(post)
+      // Order by when it surfaced: repost time if reshared, else the post's own time.
+      var surfaced = (item.reason && item.reason.indexedAt) || post.indexedAt || (post.record && post.record.createdAt)
+      seenUris[post.uri] = true
+      collected.push({ post: post, surfaced: surfaced })
+      kept++
     }
   }
-  // Newest first.
-  posts.sort(function (x, y) {
-    return new Date(y.indexedAt || 0).getTime() - new Date(x.indexedAt || 0).getTime()
+  collected.sort(function (x, y) {
+    return new Date(y.surfaced || 0).getTime() - new Date(x.surfaced || 0).getTime()
   })
-  return mapBlueskyPosts(posts).slice(0, 25)
-}
-
-async function fetchBluesky(query, langCode) {
-  var lang = langCode || 'ko'
-  var authed = await blueskyAuthedSearch(query, lang)
-  if (authed && authed.length) return { items: authed }
-  // Not configured, or search returned nothing -> zero-config account feed.
-  var items = await blueskyAccountsFeed(query, lang)
-  return { items: items }
+  return { items: mapBlueskyPosts(collected.map(function (c) { return c.post })).slice(0, 30) }
 }
 
 export default async function handler(req, res) {
@@ -244,12 +221,13 @@ export default async function handler(req, res) {
     var query = (body.query || '').trim()
     var category = body.category || 'blog'
 
-    if (!query) {
+    // The Bluesky (sns) category is a curated account feed — no keyword needed.
+    if (!query && category !== 'sns') {
       return res.status(400).json({ error: 'Aucun mot-clé fourni.' })
     }
 
     var result = category === 'sns'
-      ? await fetchBluesky(query, targetLang)
+      ? await fetchBluesky(targetLang)
       : targetLang === 'ko'
         ? await fetchNaver(query, category)
         : await fetchRss(targetLang, query)

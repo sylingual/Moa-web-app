@@ -18,16 +18,21 @@ export default async function handler(req, res) {
     var body = req.body || {}
     var structure = (body.structure || '').toString().trim()
     var targetLang = (body.targetLang || '').toString().trim()
+    var mode = (body.mode || 'resources').toString()
+    var isExamples = mode === 'examples'
 
     if (!structure) {
       return res.status(400).json({ error: 'No structure provided', results: [] })
     }
 
-    // Query aimed at pedagogical explanations rather than raw target-language pages.
-    var query = structure + ' ' + targetLang + ' grammar meaning usage explanation'
+    // resources: pedagogical explanation pages. examples: real occurrences of the exact
+    // structure (quoted phrase) as used by native speakers.
+    var query = isExamples
+      ? '"' + structure + '"'
+      : structure + ' ' + targetLang + ' grammar meaning usage explanation'
     var params = new URLSearchParams({
       q: query,
-      count: '10',
+      count: isExamples ? '15' : '10',
       safesearch: 'moderate',
       text_decorations: 'false',
     })
@@ -64,11 +69,17 @@ export default async function handler(req, res) {
       }
     }).filter(function (it) { return it.uri })
 
-    // Surface How To Study Korean first when it shows up — it's usually the most relevant.
-    function isHtsk(it) { return /howtostudykorean\.com/i.test(it.uri) }
-    mapped.sort(function (a, b) { return (isHtsk(b) ? 1 : 0) - (isHtsk(a) ? 1 : 0) })
-
-    var results = mapped.slice(0, 3)
+    var results
+    if (isExamples) {
+      // Prefer results whose snippet actually contains the structure (real occurrences).
+      var withHit = mapped.filter(function (it) { return it.snippet && it.snippet.indexOf(structure) !== -1 })
+      results = (withHit.length ? withHit : mapped).slice(0, 6)
+    } else {
+      // Surface How To Study Korean first when it shows up — it's usually the most relevant.
+      function isHtsk(it) { return /howtostudykorean\.com/i.test(it.uri) }
+      mapped.sort(function (a, b) { return (isHtsk(b) ? 1 : 0) - (isHtsk(a) ? 1 : 0) })
+      results = mapped.slice(0, 3)
+    }
 
     return res.status(200).json({ results: results })
   } catch (err) {

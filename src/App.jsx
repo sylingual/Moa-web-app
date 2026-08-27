@@ -730,11 +730,11 @@ function resourceSearchLinks(card, tlCode) {
 }
 
 // Call the Brave-backed /api/resources route. Always resolves to { results: [...] }.
-async function callResources(structure, targetLangName, uiLang) {
+async function callResources(structure, targetLangName, uiLang, mode) {
   const res = await fetch("/api/resources", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ structure, targetLang: targetLangName, uiLang }),
+    body: JSON.stringify({ structure, targetLang: targetLangName, uiLang, mode: mode || "resources" }),
   });
   const raw = await res.text();
   let data;
@@ -772,51 +772,46 @@ async function findResources(card, lang, tlCode) {
   }
 }
 
-async function findRealExamples(card, lang, tlCode, profileInterests) {
-  const L = lang === "fr" ? "French" : "English";
+// Curated phrase-search links, used when Brave returns nothing (or has no key).
+function exampleSearchLinks(card, tlCode) {
+  const structure = card.korean.trim();
+  const phrase = encodeURIComponent('"' + structure + '"');
+  const plain = encodeURIComponent(structure);
+  const links = [
+    { title: `Google — « ${structure} »`, uri: `https://www.google.com/search?q=${phrase}` },
+    { title: `YouTube — ${structure}`, uri: `https://www.youtube.com/results?search_query=${plain}` },
+  ];
+  if (tlCode === "ko") links.push({ title: `Naver — ${structure}`, uri: `https://search.naver.com/search.naver?query=${phrase}` });
+  return links;
+}
+
+// "Exemples authentiques": real web occurrences of the structure via Brave Search (same
+// engine as Ressources complémentaires), with a curated phrase-search fallback — reliable,
+// no fabricated examples, and independent of the AI generation quota.
+async function findRealExamples(card, lang, tlCode) {
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are a ${TL} language research assistant. Search the web for REAL, authentic examples of the structure "${card.korean}" used by native speakers.
+  const structure = card.korean.trim();
 
-TASK: Find 4-6 genuine example sentences from varied sources. Aim for a mix:
-- Modern/casual sources: blog posts, YouTube video titles or comments, social media, news headlines, song lyrics
-- More literary or formal sources: published articles, essays, literature, journalism
-
-${profileInterests ? `The learner is interested in: ${profileInterests}. Prioritize sources connected to these interests when you can find them.` : ""}
-
-For EACH example:
-1. The sentence in ${TL}, exactly as it appears in the source
-2. The ${L} translation on the next line, wrapped in [[double square brackets]]
-3. The source: where it comes from (site name, author, or publication) and the URL
-
-Group them into two sections: modern/everyday usage, and literary/formal usage.
-
-Write your answer in ${L}, in clear prose with line breaks. Do NOT return JSON. CRITICAL: only cite sentences and sources you actually found in your search. Never invent an example or a URL. If you find fewer than 4 real examples, say so and give only the ones you found.`;
-
-  const fallbackSys = `You are a ${TL} language teacher. The student wants to see the structure "${card.korean}" used in varied real-world registers.
-
-You do NOT have web access right now, so you cannot cite real sources. Be transparent about that in one short line at the top.
-
-Then, in ${L}, write 5 example sentences you compose yourself, clearly labelled by register:
-- 2 casual/social media style
-- 2 blog or journalism style
-- 1 literary or formal style
-${profileInterests ? `Where it fits naturally, connect examples to these interests: ${profileInterests}.` : ""}
-
-For each: the ${TL} sentence, then the ${L} translation on the next line wrapped in [[double square brackets]].
-
-Finish with 2-3 precise search queries the student can run themselves to find authentic occurrences.
-
-Write plain readable prose with line breaks. Do NOT return JSON, do NOT use curly braces or key-value pairs.`;
+  const curatedFallback = () => {
+    const note = lang === "fr"
+      ? `Voici des recherches pour voir « ${structure} » en usage réel. Chaque lien lance une recherche ciblée :`
+      : `Here are searches to see "${structure}" in real usage. Each link runs a targeted search:`;
+    return { text: note, sources: exampleSearchLinks(card, tlCode) };
+  };
 
   try {
-    const r = await callAI(sys, `Find authentic real-world examples of the ${TL} structure: ${card.korean}`, 2000, true);
-    return { ...r, text: flattenIfJSON(r.text) };
-  } catch (e) {
-    if (String(e.message).includes("SEARCH_QUOTA")) {
-      const r = await callAI(fallbackSys, `Give varied register examples for: ${card.korean}`, 1600, false, true);
-      return { text: flattenIfJSON(r.text), sources: [], degraded: true };
+    const data = await callResources(structure, TL, lang, "examples");
+    const results = (data.results || []).filter((r) => r && r.uri);
+    if (results.length) {
+      const intro = lang === "fr"
+        ? `Exemples authentiques de « ${structure} » trouvés sur le web. Clique pour ouvrir la page source :`
+        : `Authentic examples of "${structure}" found on the web. Click to open the source page:`;
+      return { text: intro, sources: results };
     }
-    throw e;
+    return curatedFallback();
+  } catch (e) {
+    console.error("findRealExamples error:", e);
+    return curatedFallback();
   }
 }
 

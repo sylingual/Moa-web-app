@@ -1450,7 +1450,7 @@ function AppInner() {
   const [feedErr, setFeedErr] = useState(null);
   const [feedQuery, setFeedQuery] = useState("");
   const [feedInput, setFeedInput] = useState("");
-  const [feedCat, setFeedCat] = useState("news");
+  const [feedCat, setFeedCat] = useState("sns");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
   const [feedThread, setFeedThread] = useState(null); // { loading, posts, link, source, error } or null
 
@@ -2892,7 +2892,7 @@ function AppInner() {
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["news", t.feedCatNews], ["press", t.feedCatPress], ["sns", t.feedCatSns], ["masto", t.feedCatMasto]].map(([k, l]) => (
+                  {[["sns", t.feedCatSns], ["masto", t.feedCatMasto], ["news", t.feedCatNews], ["press", t.feedCatPress]].map(([k, l]) => (
                     <button key={k} onClick={() => { setFeedCat(k); setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}

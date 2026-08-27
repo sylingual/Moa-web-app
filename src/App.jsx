@@ -202,6 +202,8 @@ const T = {
     feedNoKeywords: "Complète ton profil pour un feed personnalisé, ou lance une recherche.",
     feedRefresh: "Rafraîchir",
     feedRead: "Lire l'article",
+    feedThreadTitle: "Fil",
+    feedThreadEmpty: "Ce post n'a pas pu être chargé.",
     feedCatNews: "Actu",
     feedCatPress: "Manchettes",
     feedCatSns: "Bluesky",
@@ -373,6 +375,8 @@ const T = {
     feedNoKeywords: "Fill in your profile for a personalized feed, or run a search.",
     feedRefresh: "Refresh",
     feedRead: "Read article",
+    feedThreadTitle: "Thread",
+    feedThreadEmpty: "This post could not be loaded.",
     feedCatNews: "News",
     feedCatPress: "Headlines",
     feedCatSns: "Bluesky",
@@ -943,6 +947,20 @@ async function fetchFeed(query, targetLang, category) {
   return data.items || [];
 }
 
+// Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
+async function fetchThread(item) {
+  const res = await fetch("/api/feed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "thread", src: item.src, uri: item.uri, mhost: item.mhost, mid: item.mid }),
+  });
+  const raw = await res.text();
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
+  if (!res.ok) throw new Error(data.error || raw.substring(0, 150));
+  return data.posts || [];
+}
+
 async function generateSummary(card, conv, lang) {
   const L = lang === "fr" ? "French" : "English";
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
@@ -1434,7 +1452,7 @@ function AppInner() {
   const [feedInput, setFeedInput] = useState("");
   const [feedCat, setFeedCat] = useState("news");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
-  const [feedEmbed, setFeedEmbed] = useState(null); // { url, link } to view a post in-app, or null
+  const [feedThread, setFeedThread] = useState(null); // { loading, posts, link, source, error } or null
 
   const msgsR = useRef(null);
   const exR = useRef(null);
@@ -1685,6 +1703,18 @@ function AppInner() {
     }
     setFeedLoad(false);
   }, [tl, feedCat]);
+
+  // Open a social post (Bluesky/Mastodon) in the in-app thread viewer.
+  const openThread = async (item) => {
+    setFeedThread({ loading: true, posts: [], link: item.link, source: item.source });
+    try {
+      const posts = await fetchThread(item);
+      setFeedThread({ loading: false, posts, link: item.link, source: item.source });
+    } catch (e) {
+      console.error("thread error:", e);
+      setFeedThread({ loading: false, posts: [], link: item.link, source: item.source, error: e.message });
+    }
+  };
 
   const ensureKeywords = async () => {
     if (feedKeywords.length > 0) return feedKeywords;
@@ -2324,22 +2354,54 @@ function AppInner() {
         </div>
       )}
 
-      {/* FEED POST VIEWER (in-app iframe for Bluesky / Mastodon) */}
-      {feedEmbed && (
-        <div onClick={() => setFeedEmbed(null)}
+      {/* FEED POST VIEWER (in-app native thread for Bluesky / Mastodon) */}
+      {feedThread && (
+        <div onClick={() => setFeedThread(null)}
           style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 14, width: "100%", maxWidth: 560, height: "85vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: `1px solid ${C.border}`, background: C.s2, flexShrink: 0 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: C.txt, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.feedRead}</span>
-              <a href={feedEmbed.link} target="_blank" rel="noopener noreferrer" title="↗"
-                style={{ fontSize: 12, color: C.acc, textDecoration: "none", padding: "4px 9px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1 }}>↗</a>
-              <button onClick={() => setFeedEmbed(null)}
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.txt, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {(feedThread.source || "") + " · " + t.feedThreadTitle}
+              </span>
+              {feedThread.link && (
+                <a href={feedThread.link} target="_blank" rel="noopener noreferrer" title="↗"
+                  style={{ fontSize: 12, color: C.acc, textDecoration: "none", padding: "4px 9px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1 }}>↗</a>
+              )}
+              <button onClick={() => setFeedThread(null)}
                 style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
             </div>
-            <iframe src={feedEmbed.url} title="post"
-              sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-              style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
+            <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              {feedThread.loading && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 24 }}>{t.feedLoading}</div>}
+              {!feedThread.loading && (feedThread.error || feedThread.posts.length === 0) && (
+                <div style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 24, lineHeight: 1.6 }}>{t.feedThreadEmpty}</div>
+              )}
+              {!feedThread.loading && feedThread.posts.map((p, i) => {
+                const isRoot = p.role === "root";
+                // A run of same-author posts (a split message) shares a left rail.
+                const rail = p.same ? C.acc : "transparent";
+                return (
+                  <div key={i} style={{ borderLeft: `3px solid ${rail}`, paddingLeft: 9, marginLeft: p.role === "reply" ? 10 : 0 }}>
+                    <div style={{ background: isRoot ? C.accBg : C.s2, border: `1px solid ${isRoot ? C.acc : C.border}`, borderRadius: 10, padding: "9px 11px" }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 5, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 600, color: C.txt }}>{p.author}</span>
+                        {p.handle && <span style={{ fontSize: 10, color: C.txtM }}>@{p.handle}</span>}
+                        {p.date && <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{p.date}</span>}
+                      </div>
+                      <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt, lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{p.text}</div>
+                      {p.images && p.images.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                          {p.images.map((im, k) => (
+                            <img key={k} src={im.url} alt={im.alt || ""} loading="lazy"
+                              style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8, border: `1px solid ${C.border}`, objectFit: "contain" }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -2870,20 +2932,28 @@ function AppInner() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {feedItems.map((it, i) => (
                     <div key={i}
-                      onClick={() => { if (it.embed) setFeedEmbed({ url: it.embed, link: it.link }); else if (it.link) window.open(it.link, "_blank", "noopener,noreferrer"); }}
-                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
+                      onClick={() => { if (it.src) openThread(it); else if (it.link) window.open(it.link, "_blank", "noopener,noreferrer"); }}
+                      style={{ display: "flex", gap: 11, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 9.5, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: C.accBg, color: C.acc }}>{it.source}</span>
-                        {it.author && <span style={{ fontSize: 10.5, color: C.txtM }}>{it.author}</span>}
-                        {it.date && <span style={{ fontSize: 10.5, color: C.txtM, marginLeft: "auto" }}>{it.date}</span>}
-                      </div>
-                      <div style={{ fontFamily: tFont, fontSize: 14.5, fontWeight: 500, color: C.txt, lineHeight: 1.5, marginBottom: 6 }}>
-                        {it.title}
-                      </div>
-                      <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
-                        {it.snippet}
+                      {it.image && (
+                        <img src={it.image} alt="" loading="lazy"
+                          style={{ width: 62, height: 62, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: `1px solid ${C.border}`, background: C.s1 }} />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: C.accBg, color: C.acc }}>{it.source}</span>
+                          {it.author && <span style={{ fontSize: 10.5, color: C.txtM }}>{it.author}</span>}
+                          {it.date && <span style={{ fontSize: 10.5, color: C.txtM, marginLeft: "auto" }}>{it.date}</span>}
+                        </div>
+                        <div style={{ fontFamily: tFont, fontSize: 14.5, fontWeight: 500, color: C.txt, lineHeight: 1.5, marginBottom: 6 }}>
+                          {it.title}
+                        </div>
+                        {it.snippet && (
+                          <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
+                            {it.snippet}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

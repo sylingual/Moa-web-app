@@ -120,6 +120,10 @@ async function fetchMastodon(lang) {
         author: name ? name + ' (@' + (acct.acct || acct.username || '') + '@' + host + ')' : '',
         date: s.created_at ? formatNaverDate(s.created_at) : '',
         source: 'Mastodon',
+        src: 'masto',
+        mhost: host, // instance + status id, used to load the full thread in-app
+        mid: s.id || '',
+        image: (mastoImages(s.media_attachments)[0] || {}).thumb || '',
         _ts: s.created_at ? new Date(s.created_at).getTime() : 0,
       })
     }
@@ -205,6 +209,9 @@ function mapBlueskyPosts(posts) {
       author: name ? name + ' (@' + handle + ')' : (handle ? '@' + handle : ''),
       date: formatNaverDate(rec.createdAt || p.indexedAt),
       source: 'Bluesky',
+      src: 'bsky',
+      uri: p.uri || '', // at-uri, used to load the full thread in-app
+      image: (bskyImages(p.embed)[0] || {}).thumb || '',
     }
   }).filter(function (it) { return it.title && it.link })
 }
@@ -215,6 +222,29 @@ async function getJson(url) {
     if (!r.ok) return null
     return await r.json()
   } catch (e) { return null }
+}
+
+// Extract image URLs from a Bluesky post embed view (handles image + recordWithMedia).
+function bskyImages(embed) {
+  if (!embed) return []
+  var e = embed
+  if (e['$type'] === 'app.bsky.embed.recordWithMedia#view' && e.media) e = e.media
+  if (e['$type'] === 'app.bsky.embed.images#view' && Array.isArray(e.images)) {
+    return e.images.map(function (im) { return { url: im.fullsize || im.thumb || '', thumb: im.thumb || im.fullsize || '', alt: im.alt || '' } })
+      .filter(function (x) { return x.url })
+  }
+  return []
+}
+
+// Extract image URLs from Mastodon media attachments (video/gifv use their thumbnail).
+function mastoImages(atts) {
+  if (!Array.isArray(atts)) return []
+  return atts.map(function (m) {
+    if (!m) return null
+    if (m.type === 'image') return { url: m.url || m.preview_url || '', thumb: m.preview_url || m.url || '', alt: m.description || '' }
+    if (m.type === 'gifv' || m.type === 'video') return { url: m.preview_url || '', thumb: m.preview_url || '', alt: m.description || '' }
+    return null
+  }).filter(function (x) { return x && x.url })
 }
 
 // Recent target-language posts the curated accounts wrote OR shared (reposts included, since
@@ -248,6 +278,84 @@ async function fetchBluesky(langCode) {
   return { items: mapBlueskyPosts(collected.map(function (c) { return c.post })).slice(0, 30) }
 }
 
+// Full thread for one post: ancestors (the start of a split message) + the post + replies,
+// with same-author continuations ordered first. Used by the in-app post viewer.
+async function fetchBlueskyThread(uri) {
+  if (!uri) return { error: 'Fil introuvable.' }
+  var data = await getJson(BSKY_PUBLIC + 'app.bsky.feed.getPostThread?uri=' + encodeURIComponent(uri) + '&depth=10&parentHeight=10')
+  var t = data && data.thread
+  if (!t || !t.post) return { error: 'Fil introuvable.' }
+  var rootDid = t.post.author && t.post.author.did
+  function mapP(pp, role) {
+    var rec = pp.record || {}
+    var a = pp.author || {}
+    var rkey = (pp.uri || '').split('/').pop()
+    return {
+      author: a.displayName || a.handle || '',
+      handle: a.handle || '',
+      text: (rec.text || '').trim(),
+      date: formatNaverDate(rec.createdAt || pp.indexedAt),
+      link: (a.handle && rkey) ? 'https://bsky.app/profile/' + a.handle + '/post/' + rkey : '',
+      same: !!(a.did && a.did === rootDid),
+      role: role,
+      images: bskyImages(pp.embed),
+    }
+  }
+  var posts = []
+  var chain = [], p = t.parent, guard = 0
+  while (p && p.post && guard < 20) { chain.unshift(p.post); p = p.parent; guard++ }
+  chain.forEach(function (x) { posts.push(mapP(x, 'ancestor')) })
+  posts.push(mapP(t.post, 'root'))
+  function walk(node, depth) {
+    if (!node || !node.replies || depth > 8) return
+    var reps = node.replies.filter(function (r) { return r && r.post })
+    reps.sort(function (a, b) {
+      var sa = (a.post.author && a.post.author.did === rootDid) ? 0 : 1
+      var sb = (b.post.author && b.post.author.did === rootDid) ? 0 : 1
+      if (sa !== sb) return sa - sb
+      return new Date((a.post.record && a.post.record.createdAt) || 0) - new Date((b.post.record && b.post.record.createdAt) || 0)
+    })
+    reps.forEach(function (r) { posts.push(mapP(r.post, 'reply')); walk(r, depth + 1) })
+  }
+  walk(t, 0)
+  return { posts: posts.filter(function (x) { return x.text }).slice(0, 40) }
+}
+
+async function fetchMastodonThread(host, id) {
+  if (!host || !id) return { error: 'Fil introuvable.' }
+  var base = 'https://' + host + '/api/v1/statuses/' + encodeURIComponent(id)
+  var status = await getJson(base)
+  var ctx = await getJson(base + '/context')
+  if (!status) return { error: 'Fil introuvable.' }
+  var rootAcct = status.account && status.account.id
+  function mapS(s, role) {
+    var acct = s.account || {}
+    var text = stripTags((s.content || '').replace(/<\/(p|div)>/gi, ' ').replace(/<br\s*\/?>/gi, ' '))
+    return {
+      author: acct.display_name || acct.username || '',
+      handle: (acct.acct || acct.username || '') + '@' + host,
+      text: text,
+      date: s.created_at ? formatNaverDate(s.created_at) : '',
+      link: s.url || s.uri || '',
+      same: !!(s.account && s.account.id === rootAcct),
+      role: role,
+      images: mastoImages(s.media_attachments),
+    }
+  }
+  var posts = []
+  ;((ctx && ctx.ancestors) || []).forEach(function (s) { posts.push(mapS(s, 'ancestor')) })
+  posts.push(mapS(status, 'root'))
+  var desc = ((ctx && ctx.descendants) || []).slice()
+  desc.sort(function (a, b) {
+    var sa = (a.account && a.account.id === rootAcct) ? 0 : 1
+    var sb = (b.account && b.account.id === rootAcct) ? 0 : 1
+    if (sa !== sb) return sa - sb
+    return new Date(a.created_at || 0) - new Date(b.created_at || 0)
+  })
+  desc.forEach(function (s) { posts.push(mapS(s, 'reply')) })
+  return { posts: posts.filter(function (x) { return x.text }).slice(0, 40) }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -257,6 +365,15 @@ export default async function handler(req, res) {
     var targetLang = body.targetLang || 'ko'
     var query = (body.query || '').trim()
     var category = body.category || 'news'
+
+    // Thread request: return one post's full thread (ancestors + post + replies).
+    if (body.action === 'thread') {
+      var tr = body.src === 'masto'
+        ? await fetchMastodonThread(body.mhost, body.mid)
+        : await fetchBlueskyThread(body.uri)
+      if (tr.error) return res.status(502).json({ error: tr.error })
+      return res.status(200).json({ posts: tr.posts || [] })
+    }
 
     // All categories work without a keyword (news falls back to top headlines).
     var result

@@ -2933,19 +2933,27 @@ function AppInner() {
                   {feedItems.map((it, i) => (
                     <div key={i}
                       onClick={() => { if (it.src) openThread(it); else if (it.link) window.open(it.link, "_blank", "noopener,noreferrer"); }}
-                      style={{ display: "block", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
+                      style={{ display: "flex", gap: 11, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, textDecoration: "none", transition: "border-color 0.15s", cursor: "pointer" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 9.5, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: C.accBg, color: C.acc }}>{it.source}</span>
-                        {it.author && <span style={{ fontSize: 10.5, color: C.txtM }}>{it.author}</span>}
-                        {it.date && <span style={{ fontSize: 10.5, color: C.txtM, marginLeft: "auto" }}>{it.date}</span>}
-                      </div>
-                      <div style={{ fontFamily: tFont, fontSize: 14.5, fontWeight: 500, color: C.txt, lineHeight: 1.5, marginBottom: 6 }}>
-                        {it.title}
-                      </div>
-                      <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
-                        {it.snippet}
+                      {it.image && (
+                        <img src={it.image} alt="" loading="lazy"
+                          style={{ width: 62, height: 62, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: `1px solid ${C.border}`, background: C.s1 }} />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 9.5, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: C.accBg, color: C.acc }}>{it.source}</span>
+                          {it.author && <span style={{ fontSize: 10.5, color: C.txtM }}>{it.author}</span>}
+                          {it.date && <span style={{ fontSize: 10.5, color: C.txtM, marginLeft: "auto" }}>{it.date}</span>}
+                        </div>
+                        <div style={{ fontFamily: tFont, fontSize: 14.5, fontWeight: 500, color: C.txt, lineHeight: 1.5, marginBottom: 6 }}>
+                          {it.title}
+                        </div>
+                        {it.snippet && (
+                          <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtS, lineHeight: 1.9 }}>
+                            {it.snippet}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

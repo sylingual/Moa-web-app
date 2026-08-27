@@ -123,6 +123,7 @@ async function fetchMastodon(lang) {
         src: 'masto',
         mhost: host, // instance + status id, used to load the full thread in-app
         mid: s.id || '',
+        image: (mastoImages(s.media_attachments)[0] || {}).thumb || '',
         _ts: s.created_at ? new Date(s.created_at).getTime() : 0,
       })
     }
@@ -210,6 +211,7 @@ function mapBlueskyPosts(posts) {
       source: 'Bluesky',
       src: 'bsky',
       uri: p.uri || '', // at-uri, used to load the full thread in-app
+      image: (bskyImages(p.embed)[0] || {}).thumb || '',
     }
   }).filter(function (it) { return it.title && it.link })
 }
@@ -228,7 +230,7 @@ function bskyImages(embed) {
   var e = embed
   if (e['$type'] === 'app.bsky.embed.recordWithMedia#view' && e.media) e = e.media
   if (e['$type'] === 'app.bsky.embed.images#view' && Array.isArray(e.images)) {
-    return e.images.map(function (im) { return { url: im.fullsize || im.thumb || '', alt: im.alt || '' } })
+    return e.images.map(function (im) { return { url: im.fullsize || im.thumb || '', thumb: im.thumb || im.fullsize || '', alt: im.alt || '' } })
       .filter(function (x) { return x.url })
   }
   return []
@@ -239,8 +241,8 @@ function mastoImages(atts) {
   if (!Array.isArray(atts)) return []
   return atts.map(function (m) {
     if (!m) return null
-    if (m.type === 'image') return { url: m.url || m.preview_url || '', alt: m.description || '' }
-    if (m.type === 'gifv' || m.type === 'video') return { url: m.preview_url || '', alt: m.description || '' }
+    if (m.type === 'image') return { url: m.url || m.preview_url || '', thumb: m.preview_url || m.url || '', alt: m.description || '' }
+    if (m.type === 'gifv' || m.type === 'video') return { url: m.preview_url || '', thumb: m.preview_url || '', alt: m.description || '' }
     return null
   }).filter(function (x) { return x && x.url })
 }

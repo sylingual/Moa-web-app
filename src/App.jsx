@@ -53,6 +53,16 @@ const T = {
     pickSub: "Choisis celui que tu veux étudier, ou marque ceux que tu connais déjà.",
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
+    vocab: "Vocabulaire",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire",
+    importModeSub: "Que veux-tu étudier dans ce texte ?",
+    vocabPickTitle: "Mots à étudier", vocabPickSub: "Désélectionne ceux que tu connais déjà.",
+    studyTheseWords: "Étudier ces mots", vocabNoneSelected: "Sélectionne au moins un mot.",
+    vocabStepGuess: "Devine le sens", vocabStepEtym: "Étymologie", vocabStepSyn: "Synonymes & mots liés",
+    vocabStepFun: "Le sais-tu ?", vocabStepEx: "Autres exemples",
+    vocabNext: "Suivant", vocabNextWord: "Mot suivant →", vocabFinishBtn: "Terminer",
+    vocabCorrect: "Correct ✓", vocabWrong: "Pas tout à fait", vocabWordOf: (i, n) => `Mot ${i}/${n}`,
+    vocabDone: "Vocab étudié ✓", vocabExitConfirm: "Quitter l'étude du vocabulaire ?",
     exerciseTitle: "Exercice global",
     exerciseSub: "Choisis un mode et les cartes que tu veux travailler.",
     story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
@@ -135,6 +145,11 @@ const T = {
     derivedFrom: "issu de",
     viewGrid: "Grille",
     viewTree: "Arbre",
+    viewSources: "Textes",
+    restudyText: "Réétudier ce texte",
+    sourcesNone: "Sans texte d'origine",
+    pointsFromText: "Points associés",
+    recapExcerpt: "Extrait du récap",
     noParent: "Structure racine",
     childCount: (n) => `${n} dérivée${n > 1 ? "s" : ""}`,
     recapTitle: "Récap de la leçon",
@@ -232,6 +247,16 @@ const T = {
     pickSub: "Choose one to study, or mark the ones you already know.",
     iKnow: "I know this", addedAcq: "Added (acquired)",
     startLesson: "Start lesson", morePoints: "Find more points",
+    vocab: "Vocabulary",
+    importModeGrammar: "Grammar", importModeVocab: "Vocabulary",
+    importModeSub: "What do you want to study in this text?",
+    vocabPickTitle: "Words to study", vocabPickSub: "Deselect the ones you already know.",
+    studyTheseWords: "Study these words", vocabNoneSelected: "Select at least one word.",
+    vocabStepGuess: "Guess the meaning", vocabStepEtym: "Etymology", vocabStepSyn: "Synonyms & related",
+    vocabStepFun: "Did you know?", vocabStepEx: "More examples",
+    vocabNext: "Next", vocabNextWord: "Next word →", vocabFinishBtn: "Finish",
+    vocabCorrect: "Correct ✓", vocabWrong: "Not quite", vocabWordOf: (i, n) => `Word ${i}/${n}`,
+    vocabDone: "Vocab studied ✓", vocabExitConfirm: "Leave vocabulary study?",
     exerciseTitle: "Global exercise",
     exerciseSub: "Choose a mode and cards to work on.",
     story: "Tell a story", storyDesc: "Use chosen structures in a coherent text.",
@@ -314,6 +339,11 @@ const T = {
     derivedFrom: "derived from",
     viewGrid: "Grid",
     viewTree: "Tree",
+    viewSources: "Texts",
+    restudyText: "Study this text again",
+    sourcesNone: "No source text",
+    pointsFromText: "Associated points",
+    recapExcerpt: "Recap excerpt",
     noParent: "Root structure",
     childCount: (n) => `${n} derived`,
     recapTitle: "Lesson recap",
@@ -619,6 +649,57 @@ For each structure, provide:
 
 Return a JSON array of exactly 3 items.`;
   return parseJSON((await callAI(sys, text)).text);
+}
+
+// Pick likely-unknown vocabulary from a text for the learner to choose from.
+async function analyzeVocab(text, existing, lang, context, tlCode) {
+  const known = existing.map((c) => c.korean).join(", ");
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `You are an expert ${TL} vocabulary teacher. From the provided ${TL} text, pick the words most likely to be UNKNOWN or worth learning for this specific learner (skip trivial/basic words and anything already known).
+
+${context}
+TASK: Extract 6-10 vocabulary items (single words or short set expressions) from the text worth learning.
+
+SELECTION CRITERIA:
+1. Prefer mid/low-frequency words that carry real meaning (nouns, verbs, adjectives, idiomatic expressions)
+2. Skip very basic/common words and grammatical particles
+3. Adapt to the learner's level; skip words in ALREADY KNOWN
+4. Each item must actually appear in the text
+
+ALREADY KNOWN (skip these): ${known || "none"}
+
+For each item provide:
+- "word": the word/expression (dictionary form if inflected)
+- "reading": pronunciation/romanization if helpful (or "")
+- "meaning_fr": short French meaning
+- "meaning_en": short English meaning
+- "example_kr": the sentence from the text where it appears
+- "example_fr": French translation of that sentence
+- "example_en": English translation of that sentence
+
+Return a JSON array of 6-10 items.`;
+  return parseJSON((await callAI(sys, text)).text);
+}
+
+// Full 5-part study of ONE vocabulary word: guess (QCM), etymology, synonyms, fun facts, examples.
+async function studyVocabWord(word, exampleSentence, lang, context, tlCode) {
+  const L = lang === "fr" ? "French" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `You are an expert ${TL} vocabulary teacher creating a rich, memorable study of ONE word. Write all explanatory text in ${L}. Be concise but insightful.
+
+${context}
+The word to study: "${word}"
+Context sentence where it appeared: "${exampleSentence || "(none)"}"
+
+Produce a complete study as a JSON object with these fields:
+- "qcm": { "question": a ${L} question asking what "${word}" means in context, "options": array of exactly 4 plausible ${L} meanings (only one correct), "answer": integer index 0-3 of the correct option, "explanation": one ${L} sentence explaining the correct meaning }
+- "etymology": ${L} explanation of the word's origin. For ${TL}, if it is Sino-Korean, break down the hanja (한자) characters and their individual meanings; otherwise explain its formation.
+- "synonyms": ${L} text listing synonyms and closely related words/expressions, with nuance differences.
+- "funfacts": ${L} cultural or surprising facts that make the word memorable.
+- "examples": array of 3 example sentences in ${TL} using the word in DIFFERENT contexts, each followed by " — " then its ${L} translation.
+
+Return only the JSON object.`;
+  return parseJSON((await callAI(sys, `Study the word: ${word}`, 1600)).text);
 }
 
 async function startSocratic(card, article, lang, context, tlCode) {
@@ -1039,6 +1120,10 @@ function statusInfo(status, t) {
   }
 }
 
+function typeLabel(type, t) {
+  return type === "grammar" ? t.grammar : type === "vocab" ? t.vocab : t.expression;
+}
+
 // =============================================
 // COMPONENTS
 // =============================================
@@ -1278,7 +1363,7 @@ function GrammarCard({ card, t, onToggle, onReview }) {
         {card.korean.replace(/[~()]/g, "").slice(0, 2)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{card.type === "grammar" ? t.grammar : t.expression}</span>
+        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
         <button onClick={e => { e.stopPropagation(); if (canToggle) onToggle(); }}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 10, fontSize: 10, cursor: canToggle ? "pointer" : "default", border: "none", background: si.bg, color: si.color, fontFamily: "'Plus Jakarta Sans'" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />
@@ -1408,7 +1493,7 @@ function TreeView({ cards, t, onToggle, onReview }) {
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
             <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt, fontWeight: 500 }}>{card.korean}</span>
             <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro, flexShrink: 0 }}>
-              {card.type === "grammar" ? t.grammar : t.expression}
+              {typeLabel(card.type, t)}
             </span>
             {children.length > 0 && (
               <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto", flexShrink: 0 }}>{t.childCount(children.length)}</span>
@@ -1427,6 +1512,218 @@ function TreeView({ cards, t, onToggle, onReview }) {
   return (
     <div style={{ padding: "14px 16px" }}>
       {roots.map(r => renderNode(r, 0))}
+    </div>
+  );
+}
+
+// =============================================
+// SOURCES VIEW (original texts + their points)
+// =============================================
+function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) {
+  const byKorean = {};
+  cards.forEach(c => { byKorean[c.korean] = c; });
+  // Derived cards resolve to their parent's source text.
+  const resolveText = (c) => {
+    if (c.articleText) return c.articleText;
+    if (c.parentKorean && byKorean[c.parentKorean] && byKorean[c.parentKorean].articleText) return byKorean[c.parentKorean].articleText;
+    return "";
+  };
+  const groupMap = new Map();
+  const noSource = [];
+  cards.forEach(c => {
+    const text = resolveText(c);
+    if (text) {
+      if (!groupMap.has(text)) groupMap.set(text, []);
+      groupMap.get(text).push(c);
+    } else {
+      noSource.push(c);
+    }
+  });
+  const groups = [...groupMap.entries()].map(([text, cs]) => ({ text, cards: cs }));
+
+  const recapExcerptFor = (c) => {
+    const s = (summaries || []).filter(x => x.cardKorean === c.korean);
+    if (!s.length) return "";
+    const last = s[s.length - 1];
+    return (last.grammarRecap || last.structuresLearned || last.nextSteps || "").slice(0, 220);
+  };
+
+  const PointChip = ({ c }) => {
+    const si = statusInfo(c.status, t);
+    return (
+      <button onClick={() => onReview(c)}
+        style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 9px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+        <span style={{ width: 7, height: 7, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
+        <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : C.proBg, color: c.type === "grammar" ? C.acc : C.pro }}>{typeLabel(c.type, t)}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+      {groups.map((g, i) => (
+        <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
+          <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 170, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
+            {g.text}
+          </div>
+          <button onClick={() => onRestudy(g.text)}
+            style={{ marginTop: 10, padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+            ✨ {t.restudyText}
+          </button>
+          <div style={{ fontSize: 10, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "13px 0 7px" }}>{t.pointsFromText}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {g.cards.map(c => <PointChip key={c.id} c={c} />)}
+          </div>
+        </div>
+      ))}
+      {noSource.length > 0 && (
+        <div>
+          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "2px 0 8px" }}>{t.sourcesNone}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {noSource.map(c => {
+              const ex = recapExcerptFor(c);
+              return (
+                <div key={c.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                  <PointChip c={c} />
+                  {ex && (
+                    <div style={{ marginTop: 8, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>
+                      <span style={{ fontSize: 9, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.recapExcerpt}</span>
+                      <div style={{ marginTop: 3 }}>{ex}{ex.length >= 220 ? "…" : ""}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================
+// VOCAB LESSON (one word at a time, 5-step study)
+// =============================================
+function VocabLesson({ words, lang, tl, context, tFont, t, onFinish, onExit }) {
+  const [idx, setIdx] = useState(0);
+  const [study, setStudy] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [revealed, setRevealed] = useState(1); // steps shown (1..5)
+  const [qcmSel, setQcmSel] = useState(null);
+  const word = words[idx];
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true); setErr(null); setStudy(null); setRevealed(1); setQcmSel(null);
+    studyVocabWord(word.word, word.example_kr, lang, context, tl)
+      .then(d => { if (alive) { setStudy(d); setLoading(false); } })
+      .catch(e => { if (alive) { setErr(e.message); setLoading(false); } });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx]);
+
+  const qcm = study && study.qcm;
+  const answered = qcmSel !== null;
+  const isLastWord = idx >= words.length - 1;
+  const next = () => { if (revealed < 5) setRevealed(revealed + 1); };
+  const nextWord = () => { if (isLastWord) onFinish(); else setIdx(idx + 1); };
+
+  const Panel = ({ label, children }) => (
+    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 13, marginTop: 10 }}>
+      <div style={{ fontSize: 10.5, fontWeight: 600, color: C.acc, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 7 }}>{label}</div>
+      {children}
+    </div>
+  );
+  const prose = { fontSize: 13, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-wrap" };
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
+      {/* header */}
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: C.s2, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <button onClick={onExit}
+          style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>← {t.back}</button>
+        <span style={{ fontSize: 11.5, color: C.txtM, flexShrink: 0 }}>{t.vocabWordOf(idx + 1, words.length)}</span>
+        <span style={{ fontFamily: tFont, fontSize: 15, fontWeight: 600, color: C.txt, marginLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{word.word}</span>
+        {word.reading ? <span style={{ fontSize: 11, color: C.txtM }}>[{word.reading}]</span> : null}
+      </div>
+
+      {/* body */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
+        {loading && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.thinking}</div>}
+        {err && <div style={{ padding: 14, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, fontSize: 12, color: C.warn, lineHeight: 1.6 }}>⚠️ {err}</div>}
+        {study && (
+          <div style={{ maxWidth: 560, margin: "0 auto" }}>
+            {/* Step 1 — guess from context (QCM) */}
+            <Panel label={t.vocabStepGuess}>
+              {word.example_kr ? (
+                <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt, lineHeight: 1.7, marginBottom: 10, padding: "8px 10px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}` }}>{word.example_kr}</div>
+              ) : null}
+              {qcm && <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 8 }}>{qcm.question}</div>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {qcm && (qcm.options || []).map((opt, i) => {
+                  const isAnswer = i === qcm.answer;
+                  const showOk = answered && isAnswer;
+                  const showBad = answered && qcmSel === i && !isAnswer;
+                  return (
+                    <button key={i} disabled={answered} onClick={() => setQcmSel(i)}
+                      style={{ textAlign: "left", padding: "9px 12px", borderRadius: 8, fontSize: 13, cursor: answered ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'",
+                        border: `1px solid ${showOk ? C.okB : showBad ? C.warnB : C.border}`,
+                        background: showOk ? C.okBg : showBad ? C.warnBg : C.s1,
+                        color: showOk ? C.ok : showBad ? C.warn : C.txt }}>
+                      {showOk ? "✓ " : showBad ? "✕ " : ""}{opt}
+                    </button>
+                  );
+                })}
+              </div>
+              {answered && (
+                <div style={{ marginTop: 9, fontSize: 12.5, color: qcmSel === qcm.answer ? C.ok : C.txtS, lineHeight: 1.6 }}>
+                  <b>{qcmSel === qcm.answer ? t.vocabCorrect : t.vocabWrong}</b>{qcm.explanation ? " — " + qcm.explanation : ""}
+                </div>
+              )}
+            </Panel>
+
+            {revealed >= 2 && <Panel label={t.vocabStepEtym}><div style={prose}>{study.etymology}</div></Panel>}
+            {revealed >= 3 && <Panel label={t.vocabStepSyn}><div style={prose}>{study.synonyms}</div></Panel>}
+            {revealed >= 4 && <Panel label={t.vocabStepFun}><div style={prose}>{study.funfacts}</div></Panel>}
+            {revealed >= 5 && (
+              <Panel label={t.vocabStepEx}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {(study.examples || []).map((ex, i) => {
+                    const parts = String(ex).split(" — ");
+                    return (
+                      <div key={i}>
+                        <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.6 }}>{parts[0]}</div>
+                        {parts[1] && <div style={{ fontSize: 11.5, color: C.txtM, lineHeight: 1.5 }}>{parts.slice(1).join(" — ")}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </Panel>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* footer */}
+      {study && (
+        <div style={{ padding: "9px 12px", borderTop: `1px solid ${C.border}`, background: C.s2, display: "flex", justifyContent: "flex-end", gap: 8, flexShrink: 0 }}>
+          {revealed < 5 ? (
+            <button onClick={next} disabled={!answered && revealed === 1}
+              style={{ padding: "8px 18px", borderRadius: 6, border: "none", cursor: (!answered && revealed === 1) ? "default" : "pointer", background: (!answered && revealed === 1) ? C.s1 : C.acc, color: (!answered && revealed === 1) ? C.txtM : C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500 }}>
+              {t.vocabNext}
+            </button>
+          ) : (
+            <button onClick={nextWord}
+              style={{ padding: "8px 18px", borderRadius: 6, border: "none", cursor: "pointer", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500 }}>
+              {isLastWord ? t.vocabFinishBtn : t.vocabNextWord}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1454,6 +1751,10 @@ function AppInner() {
   const [found, setFound] = useState([]);
   const [selPick, setSelPick] = useState(0);
   const [known, setKnown] = useState(new Set());
+  const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab"
+  const [vocabFound, setVocabFound] = useState([]); // AI-picked vocab items
+  const [vocabSel, setVocabSel] = useState(new Set()); // indices selected to study
+  const [vocabSession, setVocabSession] = useState(null); // { words: [...] } or null
 
   // Lesson
   const [lCard, setLCard] = useState(null);
@@ -1849,10 +2150,58 @@ function AppInner() {
     if (!impText.trim()) return;
     setImpStep("scanning");
     try {
-      setFound(await analyzeText(impText, data.cards, lang, context, tl));
-      setSelPick(0); setKnown(new Set()); setImpStep("picks");
+      if (impMode === "vocab") {
+        const items = await analyzeVocab(impText, data.cards, lang, context, tl);
+        setVocabFound(items);
+        setVocabSel(new Set(items.map((_, i) => i))); // all selected by default
+        setImpStep("vocabpicks");
+      } else {
+        setFound(await analyzeText(impText, data.cards, lang, context, tl));
+        setSelPick(0); setKnown(new Set()); setImpStep("picks");
+      }
     } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
   };
+
+  const makeVocabCard = (v, status) => ({
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
+    korean: v.word, type: "vocab",
+    description: lang === "fr" ? v.meaning_fr : v.meaning_en,
+    description_fr: v.meaning_fr, description_en: v.meaning_en,
+    example_kr: v.example_kr || "",
+    example_tr: lang === "fr" ? v.example_fr : v.example_en,
+    reading: v.reading || "",
+    status, source: "Import", articleText: impText, reviewCount: 0,
+    targetLang: tl || "ko",
+    date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+  });
+
+  const startVocabLesson = () => {
+    const words = [...vocabSel].sort((a, b) => a - b).map(i => vocabFound[i]).filter(Boolean);
+    if (!words.length) { alert(t.vocabNoneSelected); return; }
+    const newCards = words.filter(w => !data.cards.find(c => c.korean === w.word)).map(w => makeVocabCard(w, "in_progress"));
+    if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
+    setVocabSession({ words });
+    setLCard(null); setConv([]); setShowRecap(false); setRecapCard(null); setLessonDone(false); setLessonSummary(null);
+    setView("lesson");
+  };
+
+  const finishVocab = () => {
+    const studiedWords = (vocabSession?.words || []).map(w => w.word);
+    const updated = data.cards.map(c => {
+      if (c.type === "vocab" && studiedWords.includes(c.korean)) {
+        return { ...c, status: c.status === "acquired" ? "acquired" : "studied", reviewCount: (c.reviewCount || 0) + 1 };
+      }
+      return c;
+    });
+    const base = data.profile || DEFAULT_PROFILE;
+    const gain = 15;
+    save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
+    setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
+    setVocabSession(null);
+    setView("library");
+  };
+
+  const exitVocab = () => { setVocabSession(null); setView("library"); };
 
   const markKnown = (i) => {
     const p = found[i], nk = new Set(known);
@@ -1936,6 +2285,14 @@ function AppInner() {
     }
     // No summaries or brand new card: start lesson directly
     startLessonFromCard(c);
+  };
+
+  // Re-open the Import flow prefilled with a source text, to study it again.
+  const reStudyFromText = (text) => {
+    setImpText(text || "");
+    setFound([]); setSelPick(0); setKnown(new Set());
+    setImpStep("input");
+    setView("import");
   };
 
   // Find a resumable (unfinished) session for card c: the in-memory one first, else the
@@ -2584,7 +2941,7 @@ function AppInner() {
               <span style={{ fontSize: 12, color: C.txtM }}>{filteredCards.length} {t.points} · {studiedCount} {t.statusStudied.toLowerCase()} · {acqCount} {t.statusAcquired.toLowerCase()}</span>
               {filteredCards.length > 0 && (
                 <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
-                  {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree]].map(([k, icon, label]) => (
+                  {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree], ["sources", "📄", t.viewSources]].map(([k, icon, label]) => (
                     <button key={k} onClick={() => setLibView(k)}
                       style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: libView === k ? C.s2 : "transparent", color: libView === k ? C.acc : C.txtM, fontWeight: libView === k ? 500 : 400, boxShadow: libView === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
                       {icon} {label}
@@ -2595,11 +2952,13 @@ function AppInner() {
             </div>
             {filteredCards.length === 0
               ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13 }}>{t.noCards}</div>
-              : libView === "grid"
-                ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                    {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} />)}
-                  </div>
-                : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
+              : libView === "sources"
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
+                : libView === "grid"
+                  ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
+                      {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} />)}
+                    </div>
+                  : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
             }
           </div>
         )}
@@ -2615,6 +2974,18 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+              {/* Study mode: grammar or vocabulary */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
+                <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}` }}>
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab]].map(([k, l]) => (
+                    <button key={k} onClick={() => setImpMode(k)}
+                      style={{ padding: "6px 16px", borderRadius: 6, border: "none", fontSize: 12.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button onClick={doAnalyze} disabled={!impText.trim()}
                 style={{ padding: "8px 22px", borderRadius: 6, border: "none", cursor: impText.trim() ? "pointer" : "default", background: impText.trim() ? C.acc : C.s1, color: impText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500 }}>
                 ✨ {t.analyze}
@@ -2633,7 +3004,7 @@ function AppInner() {
                       <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{p.korean}</div>
                       <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : p.description_en}</div>
                     </div>
-                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "grammar" ? C.acc : C.pro }}>{p.type === "grammar" ? t.grammar : t.expression}</span>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
                     <button onClick={e => { e.stopPropagation(); markKnown(i); }}
                       style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${known.has(i) ? C.okB : C.border}`, background: known.has(i) ? C.okBg : "none", color: known.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       ✓ {known.has(i) ? t.addedAcq : t.iKnow}
@@ -2647,11 +3018,39 @@ function AppInner() {
                 </div>
               </div>
             )}
+            {impStep === "vocabpicks" && (
+              <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.vocabPickTitle}</div>
+                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 6 }}>{t.vocabPickSub}</div>
+                {vocabFound.map((v, i) => {
+                  const on = vocabSel.has(i);
+                  return (
+                    <div key={i} onClick={() => { const s = new Set(vocabSel); if (s.has(i)) s.delete(i); else s.add(i); setVocabSel(s); }}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, cursor: "pointer", border: `1px solid ${on ? C.acc : C.border}`, background: on ? C.accBg : C.s2 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{v.word}{v.reading ? <span style={{ fontSize: 11, color: C.txtM, marginLeft: 6 }}>[{v.reading}]</span> : null}</div>
+                        <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : v.meaning_en}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <button onClick={startVocabLesson} disabled={vocabSel.size === 0}
+                    style={{ padding: "8px 18px", borderRadius: 6, background: vocabSel.size ? C.acc : C.s1, color: vocabSel.size ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: vocabSel.size ? "pointer" : "default" }}>
+                    → {t.studyTheseWords} ({vocabSel.size})
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* LESSON */}
         {view === "lesson" && (
+          vocabSession ? (
+            <VocabLesson words={vocabSession.words} lang={lang} tl={tl} context={context} tFont={tFont} t={t} onFinish={finishVocab} onExit={exitVocab} />
+          ) :
           showRecap && recapCard && recapMode ? (
             // FULL-SCREEN QUICK PRACTICE CHAT
             <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
@@ -2692,7 +3091,7 @@ function AppInner() {
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro }}>{recapCard.type === "grammar" ? t.grammar : t.expression}</span>
+                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro }}>{typeLabel(recapCard.type, t)}</span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}

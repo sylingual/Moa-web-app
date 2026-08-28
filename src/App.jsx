@@ -52,6 +52,7 @@ const T = {
     importImage: "Importer une image", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
     ocrNoTarget: (l) => `Aucun texte en ${l} n'a été détecté dans cette image. Tu t'es peut-être trompé d'image ?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} repéré${n > 1 ? "s" : ""} dans ton texte`,
+    importAllKnown: "Tous les points de ce texte sont déjà dans ta bibliothèque — rien de nouveau à ajouter.",
     pickSub: "Choisis celui que tu veux étudier, ou marque ceux que tu connais déjà.",
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
@@ -252,6 +253,7 @@ const T = {
     importImage: "Import an image", ocrLoading: "Extracting text...", ocrEmpty: "No text detected in the image.",
     ocrNoTarget: (l) => `No ${l} text was detected in this image. Did you maybe pick the wrong image?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} found in your text`,
+    importAllKnown: "All the points in this text are already in your library — nothing new to add.",
     pickSub: "Choose one to study, or mark the ones you already know.",
     iKnow: "I know this", addedAcq: "Added (acquired)",
     startLesson: "Start lesson", morePoints: "Find more points",
@@ -1169,6 +1171,23 @@ function migrateStatus(s) {
   if (s === "review") return "new";
   if (s === "acquired" || s === "studied" || s === "in_progress" || s === "new") return s;
   return "new";
+}
+
+// Remove extracted grammar/vocab items that duplicate an existing library card, and
+// de-duplicate within the extraction. A card already "studied" (but not acquired) may be
+// re-proposed once for review; anything acquired / already queued is dropped.
+function dedupeExtracted(items, existingCards) {
+  const byKorean = {};
+  (existingCards || []).forEach(c => { if (c && c.korean) byKorean[c.korean.trim()] = c; });
+  const seen = new Set();
+  return (items || []).filter(it => {
+    const key = ((it && (it.korean || it.word)) || "").trim();
+    if (!key || seen.has(key)) return false;   // empty or already in this batch
+    seen.add(key);
+    const ex = byKorean[key];
+    if (!ex) return true;                        // brand new -> show
+    return migrateStatus(ex.status) === "studied"; // studied -> re-show; acquired/queued -> hide
+  });
 }
 
 function statusInfo(status, t) {
@@ -2243,12 +2262,12 @@ function AppInner() {
     setImpStep("scanning");
     try {
       if (impMode === "vocab") {
-        const items = await analyzeVocab(impText, data.cards, lang, context, tl);
+        const items = dedupeExtracted(await analyzeVocab(impText, data.cards, lang, context, tl), data.cards);
         setVocabFound(items);
         setVocabSel(new Set(items.map((_, i) => i))); // all selected by default
         setImpStep("vocabpicks");
       } else {
-        setFound(await analyzeText(impText, data.cards, lang, context, tl));
+        setFound(dedupeExtracted(await analyzeText(impText, data.cards, lang, context, tl), data.cards));
         setSelPick(0); setKnown(new Set()); setImpStep("picks");
       }
     } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
@@ -3156,7 +3175,9 @@ function AppInner() {
             {impStep === "picks" && (
               <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.pointsFound(found.length)}</div>
-                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 8 }}>{t.pickSub}</div>
+                {found.length === 0
+                  ? <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>{t.importAllKnown}</div>
+                  : <div style={{ fontSize: 12, color: C.txtM, marginBottom: 8 }}>{t.pickSub}</div>}
                 {found.map((p, i) => (
                   <div key={i} onClick={() => setSelPick(i)}
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, cursor: "pointer", border: `1px solid ${selPick === i ? C.acc : C.border}`, background: selPick === i ? C.accBg : C.s2 }}>
@@ -3173,7 +3194,7 @@ function AppInner() {
                 ))}
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                   <button onClick={() => beginLesson(null, null)} style={{ padding: "8px 18px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>→ {t.startLesson}</button>
-                  <button onClick={async () => { setImpStep("scanning"); try { const m = await analyzeText(impText, [...data.cards, ...found.map(p => ({ korean: p.korean }))], lang, context, tl); setFound([...found, ...m]); } catch (e) { console.error(e); } setImpStep("picks"); }}
+                  <button onClick={async () => { setImpStep("scanning"); try { const m = await analyzeText(impText, [...data.cards, ...found.map(p => ({ korean: p.korean }))], lang, context, tl); const fresh = dedupeExtracted(m, [...data.cards, ...found]); setFound([...found, ...fresh]); } catch (e) { console.error(e); } setImpStep("picks"); }}
                     style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.borderS}`, background: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txtS, cursor: "pointer" }}>+ {t.morePoints}</button>
                 </div>
               </div>
@@ -3181,7 +3202,9 @@ function AppInner() {
             {impStep === "vocabpicks" && (
               <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.vocabPickTitle}</div>
-                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 6 }}>{t.vocabPickSub}</div>
+                {vocabFound.length === 0
+                  ? <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>{t.importAllKnown}</div>
+                  : <div style={{ fontSize: 12, color: C.txtM, marginBottom: 6 }}>{t.vocabPickSub}</div>}
                 {vocabFound.map((v, i) => {
                   const on = vocabSel.has(i);
                   return (

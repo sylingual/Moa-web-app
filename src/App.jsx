@@ -1555,37 +1555,47 @@ function AppInner() {
       const raw = localStorage.getItem("moa-active-lesson");
       if (!raw) return;
       const saved = JSON.parse(raw);
-      // Only restore if the lesson belongs to the current account
-      if (saved && saved.card && saved.conv && saved.conv.length > 0 && (!saved.syncId || saved.syncId === syncId)) {
+      // Restore only an UNFINISHED lesson that belongs to the current context (same
+      // account code, or both anonymous). The article lives on the card (articleText),
+      // so it no longer needs to be stored in the save itself.
+      if (saved && saved.card && saved.conv && saved.conv.length > 0 && !saved.lessonDone && (saved.syncId || "") === (syncId || "")) {
         setLCard(saved.card);
-        setLArticle(saved.article || "");
+        setLArticle(saved.card.articleText || saved.article || "");
         setConv(saved.conv.map(m => ({ ...m, options: m.options || null })));
-        setLessonDone(saved.lessonDone || false);
-        setLessonSummary(saved.lessonSummary && !saved.lessonSummary.error ? saved.lessonSummary : null);
+        setLessonDone(false);
+        setLessonSummary(null);
         setView("lesson");
       } else {
-        // Lesson belongs to a different account, discard it
+        // Wrong context, or an already-finished lesson: discard it.
         localStorage.removeItem("moa-active-lesson");
       }
     } catch (e) { console.error("Failed to restore lesson:", e); }
   }, [loaded, lessonRestored, syncId]);
 
-  // Persist active lesson to localStorage whenever conversation changes
+  // Persist the active lesson to localStorage whenever the conversation changes — while
+  // it's unfinished, with or without an account (it's the learner's own browser). A
+  // trailing (still-unanswered) user turn is dropped so a resumed session always lands on
+  // an AI message. The article is NOT stored (it lives on the card) to keep this small,
+  // and if storage is full we shed the oldest messages so recent turns always survive.
   useEffect(() => {
     if (!lessonRestored) return; // don't save during initial restore or after disconnect
-    if (!syncId) { localStorage.removeItem("moa-active-lesson"); return; } // no account = no persistence
-    if (lCard && conv.length > 0) {
-      try {
-        localStorage.setItem("moa-active-lesson", JSON.stringify({
-          card: lCard, article: lArticle, syncId: syncId,
-          conv: conv.map(m => ({ role: m.role, content: m.content, options: m.options || null, selected: m.selected || null, sources: m.sources || null, degraded: m.degraded || false })),
-          lessonDone, lessonSummary,
-        }));
-      } catch (e) { console.error("Failed to save lesson:", e); }
-    } else if (!lCard) {
+    let msgs = conv;
+    if (msgs.length && msgs[msgs.length - 1].role === "user") msgs = msgs.slice(0, -1);
+    if (!(lCard && msgs.length > 0 && !lessonDone)) {
+      // No live card, empty conversation, or the lesson is finished -> nothing to resume.
       localStorage.removeItem("moa-active-lesson");
+      return;
     }
-  }, [conv, lCard, lArticle, lessonDone, lessonSummary, lessonRestored, syncId]);
+    const slim = msgs.map(m => ({ role: m.role, content: m.content, options: m.options || null, selected: m.selected || null, sources: m.sources || null, degraded: m.degraded || false }));
+    for (let keep = slim.length; keep >= 1; keep = Math.floor(keep / 2)) {
+      try {
+        localStorage.setItem("moa-active-lesson", JSON.stringify({ card: lCard, syncId: syncId || "", conv: slim.slice(-keep), lessonDone: false }));
+        return;
+      } catch (e) {
+        if (keep <= 1) console.error("Failed to save lesson (storage full):", e);
+      }
+    }
+  }, [conv, lCard, lessonDone, lessonRestored, syncId]);
 
   // Init profile draft when data loads or view switches to profile
   useEffect(() => {
@@ -1928,12 +1938,28 @@ function AppInner() {
     startLessonFromCard(c);
   };
 
-  const reviewCard = (c) => {
-    // A live session already exists for this exact card -> offer to resume rather than restart.
+  // Find a resumable (unfinished) session for card c: the in-memory one first, else the
+  // persisted copy from localStorage (so a lesson resumes even after a full page reload).
+  const savedSessionFor = (c) => {
     if (lCard && lCard.korean === c.korean && conv.length > 0 && !lessonDone) {
-      setResumePrompt(c);
-      return;
+      return { card: lCard, article: lArticle, conv };
     }
+    try {
+      const raw = localStorage.getItem("moa-active-lesson");
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s && s.card && s.card.korean === c.korean && Array.isArray(s.conv) && s.conv.length > 0 && !s.lessonDone && (s.syncId || "") === (syncId || "")) {
+          return { card: s.card, article: s.card.articleText || s.article || "", conv: s.conv.map(m => ({ ...m, options: m.options || null })) };
+        }
+      }
+    } catch (e) { /* corrupt save -> treat as none */ }
+    return null;
+  };
+
+  const reviewCard = (c) => {
+    // A resumable session exists for this exact card -> offer to resume rather than restart.
+    const sess = savedSessionFor(c);
+    if (sess) { setResumePrompt({ card: c, sess }); return; }
     openCardFresh(c);
   };
 
@@ -2392,11 +2418,18 @@ function AppInner() {
             style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.resumeTitle}</div>
             <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.resumeBody}</div>
-            <button onClick={() => { setResumePrompt(null); setView("lesson"); }}
+            <button onClick={() => {
+                const { sess } = resumePrompt; setResumePrompt(null);
+                setShowRecap(false); setRecapCard(null);
+                setLCard(sess.card); setLArticle(sess.article || "");
+                setConv(sess.conv);
+                setLessonDone(false); setLessonSummary(null);
+                setView("lesson");
+              }}
               style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
               ▶ {t.resumeBtn}
             </button>
-            <button onClick={() => { const c = resumePrompt; setResumePrompt(null); openCardFresh(c); }}
+            <button onClick={() => { const c = resumePrompt.card; setResumePrompt(null); try { localStorage.removeItem("moa-active-lesson"); } catch (e) {} openCardFresh(c); }}
               style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
               🔄 {t.restartBtn}
             </button>

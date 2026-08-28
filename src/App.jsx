@@ -73,6 +73,7 @@ const T = {
     fillBlanks: "Compléter les phrases", fillDesc: "Phrases à trous tirées de vrais articles.",
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
+    resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
     anExercise: "Un exercice", explainOther: "Expliquer autrement",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -274,6 +275,7 @@ const T = {
     fillBlanks: "Fill in the blanks", fillDesc: "Gap-fill from real articles.",
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
+    resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
     anExercise: "An exercise", explainOther: "Explain differently",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -912,8 +914,8 @@ async function findResources(card, lang, tlCode) {
 
   const curatedFallback = () => {
     const note = lang === "fr"
-      ? `Voici une sélection de ressources fiables pour « ${structure} ». Chaque lien ouvre directement le site correspondant, ciblé sur cette structure :`
-      : `Here's a selection of trusted resources for "${structure}". Each link opens the relevant site directly, targeted to this structure:`;
+      ? `Voici des sites fiables pour explorer « ${structure} » par toi-même : fiches pédagogiques et explications authentiques écrites par des humains. Compare-en plusieurs avant de te faire une idée — c'est aussi le meilleur moyen de vérifier que moi, l'IA, je n'ai pas halluciné 😉`
+      : `Here are trusted sites to explore "${structure}" yourself: human-written teaching guides and authentic explanations. Compare a few before settling on one — it's also the best way to check that I, the AI, didn't hallucinate 😉`;
     return { text: note, sources: resourceSearchLinks(card, tlCode) };
   };
 
@@ -922,8 +924,8 @@ async function findResources(card, lang, tlCode) {
     const results = (data.results || []).filter((r) => r && r.uri);
     if (results.length) {
       const intro = lang === "fr"
-        ? `Ressources trouvées sur le web pour « ${structure} ». Clique sur un lien ci-dessous pour l'ouvrir :`
-        : `Web resources found for "${structure}". Click any link below to open it:`;
+        ? `Voici des ressources authentiques (fiches, explications écrites par des humains) sur « ${structure} », pour creuser par toi-même. Compare-en plusieurs — c'est aussi un bon moyen de vérifier que moi, l'IA, je n'ai pas halluciné 😉`
+        : `Authentic resources (guides, human-written explanations) about "${structure}", to dig deeper yourself. Compare a few — it's also a good way to check that I, the AI, didn't hallucinate 😉`;
       return { text: intro, sources: results };
     }
     return curatedFallback();
@@ -1306,9 +1308,10 @@ function renderMarkdown(text, revealAll) {
   return parts.length > 0 ? parts : clean;
 }
 
-function Bubble({ msg, revealAll }) {
+function Bubble({ msg, revealAll, onResourceClick }) {
   const ai = msg.role === "ai";
   const [preSel, setPreSel] = useState(null);
+  const [clickedLinks, setClickedLinks] = useState(() => new Set());
   const confirmed = !!msg.selected;
   const canPick = ai && !confirmed && msg.options && msg.onSelect;
 
@@ -1331,6 +1334,7 @@ function Bubble({ msg, revealAll }) {
               {msg.sources.map((s, i) => (
                 <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                   <a href={s.uri} target="_blank" rel="noopener noreferrer"
+                    onClick={() => { if (msg.pointOnClick && onResourceClick && s.uri && !clickedLinks.has(s.uri)) { onResourceClick(); setClickedLinks(prev => { const n = new Set(prev); n.add(s.uri); return n; }); } }}
                     style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4, minWidth: 0, maxWidth: "100%" }}>
                     <span style={{ flexShrink: 0 }}>🔗</span>
                     <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
@@ -2256,6 +2260,9 @@ function AppInner() {
     return next;
   };
 
+  // +1 point the first time the learner opens a given "Further resources" link.
+  const awardResourcePoint = () => save(awardPoints(1, data));
+
   // ---- ONBOARDING ----
   const finishOnboarding = (skip) => {
     let nd = {
@@ -2479,7 +2486,7 @@ function AppInner() {
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.moreExamples, realExamples: t.realExamples, resources: t.onlineRes, exercise: t.anExercise };
+    const labels = { examples: t.moreExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.anExercise };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -2489,7 +2496,7 @@ function AppInner() {
           ? await findResources(recapCard, lang, tl)
           : await findRealExamples(recapCard, lang, tl, data.profile?.interests || "");
         setSearching(false);
-        setRecapConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, options: null, selected: null }]);
+        setRecapConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, pointOnClick: action === "resources", options: null, selected: null }]);
       } else {
         const r = await continueChat(recapCard, u, action, lang);
         setRecapConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
@@ -2628,7 +2635,7 @@ function AppInner() {
 
   const quickAct = async (a) => {
     setTray(false); setLLoad(true);
-    const labels = { resources: t.onlineRes, realExamples: t.realExamples };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
       if (a === "resources" || a === "realExamples") {
@@ -2637,7 +2644,7 @@ function AppInner() {
           ? await findResources(lCard, lang, tl)
           : await findRealExamples(lCard, lang, tl, data.profile?.interests || "");
         setSearching(false);
-        setConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, options: null, selected: null }]);
+        setConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, pointOnClick: a === "resources", options: null, selected: null }]);
       } else {
         const r = await continueChat(lCard, u, a, lang);
         setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
@@ -3245,7 +3252,7 @@ function AppInner() {
               <div ref={recapR} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {recapConv.map((m, i) => (
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
-                    <Bubble revealAll={revealTr}
+                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                   </div>
                 ))}
@@ -3360,7 +3367,7 @@ function AppInner() {
                 <div ref={msgsR} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
-                      <Bubble revealAll={revealTr} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
+                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                     </div>
                   ))}
                   {lLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : lessonDone ? t.generating : t.thinking}</div>}

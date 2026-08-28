@@ -1859,6 +1859,7 @@ function AppInner() {
   const [searching, setSearching] = useState(false);
   const [revealTr, setRevealTr] = useState(() => localStorage.getItem("moa-reveal-tr") === "1");
   const [kbOpen, setKbOpen] = useState(false);
+  const [winW, setWinW] = useState(() => (typeof window !== "undefined" ? window.innerWidth : 1024));
   const [inp, setInp] = useState("");
   const [tray, setTray] = useState(false);
   const [lessonDone, setLessonDone] = useState(false);
@@ -2076,6 +2077,13 @@ function AppInner() {
   useEffect(() => {
     if (view === "feed" && tl !== "ko") setView("library");
   }, [view, tl]);
+
+  // Track window width so responsive layouts re-render on resize (not just first paint).
+  useEffect(() => {
+    const onR = () => setWinW(window.innerWidth);
+    window.addEventListener("resize", onR);
+    return () => window.removeEventListener("resize", onR);
+  }, []);
 
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
@@ -3343,8 +3351,8 @@ function AppInner() {
               </div>
             </div>
           ) : lCard ? (
-            <div style={{ flex: 1, display: "flex", overflow: "hidden", flexDirection: window.innerWidth < 700 ? "column" : "row" }}>
-              <div style={{ width: window.innerWidth < 700 ? "100%" : "40%", maxHeight: window.innerWidth < 700 ? "35%" : "none", flexShrink: 0, borderRight: window.innerWidth >= 700 ? `1px solid ${C.border}` : "none", borderBottom: window.innerWidth < 700 ? `1px solid ${C.border}` : "none", display: "flex", flexDirection: "column", background: C.s2 }}>
+            <div style={{ flex: 1, display: "flex", overflow: "hidden", flexDirection: winW < 700 ? "column" : "row" }}>
+              <div style={{ width: winW < 700 ? "100%" : "40%", maxHeight: winW < 700 ? "35%" : "none", flexShrink: 0, borderRight: winW >= 700 ? `1px solid ${C.border}` : "none", borderBottom: winW < 700 ? `1px solid ${C.border}` : "none", display: "flex", flexDirection: "column", background: C.s2 }}>
                 <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500, color: C.txt, marginBottom: 5 }}>📄 Article</div>
@@ -3443,7 +3451,7 @@ function AppInner() {
                       ))}
                     </div>
                   )}
-                  <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
+                  <div style={{ padding: "10px 14px 12px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                     <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={t.yourAnswer}
                       style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
                     <button onClick={sendMsg} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>

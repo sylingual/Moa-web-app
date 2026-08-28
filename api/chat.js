@@ -13,8 +13,14 @@ export default async function handler(req, res) {
     var useSearch = body.search === true
     var plainText = body.plain === true
 
+    var parts = [{ text: body.system + '\n\n' + userMsg }]
+    // Optional image input (base64) for vision/OCR.
+    if (body.image && body.image.data) {
+      parts.push({ inline_data: { mime_type: body.image.mimeType || 'image/jpeg', data: body.image.data } })
+    }
+
     var payload = {
-      contents: [{ role: 'user', parts: [{ text: body.system + '\n\n' + userMsg }] }],
+      contents: [{ role: 'user', parts: parts }],
       generationConfig: { maxOutputTokens: 8000 }
     }
 

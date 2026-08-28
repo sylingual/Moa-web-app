@@ -1661,8 +1661,8 @@ function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) 
 // =============================================
 // VOCAB LESSON (one word at a time, 5-step study)
 // =============================================
-function VocabLesson({ words, lang, tl, context, tFont, t, onFinish, onExit }) {
-  const [idx, setIdx] = useState(0);
+function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFinish, onExit }) {
+  const [idx, setIdx] = useState(startIdx || 0);
   const [study, setStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -1684,7 +1684,7 @@ function VocabLesson({ words, lang, tl, context, tFont, t, onFinish, onExit }) {
   const answered = qcmSel !== null;
   const isLastWord = idx >= words.length - 1;
   const next = () => { if (revealed < 5) setRevealed(revealed + 1); };
-  const nextWord = () => { if (isLastWord) onFinish(); else setIdx(idx + 1); };
+  const nextWord = () => { if (isLastWord) onFinish(); else { const ni = idx + 1; setIdx(ni); if (onIdx) onIdx(ni); } };
 
   const Panel = ({ label, children }) => (
     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 13, marginTop: 10 }}>
@@ -1908,8 +1908,7 @@ function AppInner() {
     setLessonRestored(true);
     try {
       const raw = localStorage.getItem("moa-active-lesson");
-      if (!raw) return;
-      const saved = JSON.parse(raw);
+      const saved = raw ? JSON.parse(raw) : null;
       // Restore only an UNFINISHED lesson that belongs to the current context (same
       // account code, or both anonymous). The article lives on the card (articleText),
       // so it no longer needs to be stored in the save itself.
@@ -1920,12 +1919,31 @@ function AppInner() {
         setLessonDone(false);
         setLessonSummary(null);
         setView("lesson");
-      } else {
-        // Wrong context, or an already-finished lesson: discard it.
-        localStorage.removeItem("moa-active-lesson");
+        return;
+      } else if (raw) {
+        localStorage.removeItem("moa-active-lesson"); // wrong context / finished
+      }
+      // No grammar lesson to restore -> try an in-progress vocab session.
+      const vraw = localStorage.getItem("moa-active-vocab");
+      const vsaved = vraw ? JSON.parse(vraw) : null;
+      if (vsaved && Array.isArray(vsaved.words) && vsaved.words.length > 0 && (vsaved.syncId || "") === (syncId || "")) {
+        setVocabSession({ words: vsaved.words, idx: Math.min(vsaved.idx || 0, vsaved.words.length - 1) });
+        setView("lesson");
+      } else if (vraw) {
+        localStorage.removeItem("moa-active-vocab");
       }
     } catch (e) { console.error("Failed to restore lesson:", e); }
   }, [loaded, lessonRestored, syncId]);
+
+  // Persist an in-progress vocab session (words + current word index) so it can resume.
+  useEffect(() => {
+    if (!lessonRestored) return;
+    if (vocabSession && vocabSession.words && vocabSession.words.length) {
+      try { localStorage.setItem("moa-active-vocab", JSON.stringify({ words: vocabSession.words, idx: vocabSession.idx || 0, syncId: syncId || "" })); } catch (e) {}
+    } else {
+      try { localStorage.removeItem("moa-active-vocab"); } catch (e) {}
+    }
+  }, [vocabSession, lessonRestored, syncId]);
 
   // Persist the active lesson to localStorage whenever the conversation changes — while
   // it's unfinished, with or without an account (it's the learner's own browser). A
@@ -2234,7 +2252,7 @@ function AppInner() {
     if (!words.length) { alert(t.vocabNoneSelected); return; }
     const newCards = words.filter(w => !data.cards.find(c => c.korean === w.word)).map(w => makeVocabCard(w, "in_progress"));
     if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
-    setVocabSession({ words });
+    setVocabSession({ words, idx: 0 });
     setLCard(null); setConv([]); setShowRecap(false); setRecapCard(null); setLessonDone(false); setLessonSummary(null);
     setView("lesson");
   };
@@ -2251,6 +2269,7 @@ function AppInner() {
     const gain = 15;
     save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
     setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
+    try { localStorage.removeItem("moa-active-vocab"); } catch (e) {}
     setVocabSession(null);
     setView("library");
   };
@@ -2323,8 +2342,11 @@ function AppInner() {
     setLLoad(false);
   };
 
-  // A lesson is "live" (resumable) when its chat is open, has messages, and isn't finished.
-  const lessonActive = () => view === "lesson" && !showRecap && lCard && conv.length > 0 && !lessonDone;
+  // A lesson is "live" (resumable) when a grammar chat has messages, or a vocab session is open.
+  const lessonActive = () => view === "lesson" && (
+    (vocabSession && vocabSession.words && vocabSession.words.length > 0) ||
+    (!showRecap && lCard && conv.length > 0 && !lessonDone)
+  );
 
   // Nav-tab handler: guard against silently abandoning an in-progress lesson.
   const navTo = (target) => {
@@ -2337,7 +2359,8 @@ function AppInner() {
   const discardLesson = () => {
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
     setShowRecap(false); setRecapCard(null);
-    try { localStorage.removeItem("moa-active-lesson"); } catch (e) {}
+    setVocabSession(null);
+    try { localStorage.removeItem("moa-active-lesson"); localStorage.removeItem("moa-active-vocab"); } catch (e) {}
   };
 
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
@@ -3126,7 +3149,7 @@ function AppInner() {
         {/* LESSON */}
         {view === "lesson" && (
           vocabSession ? (
-            <VocabLesson words={vocabSession.words} lang={lang} tl={tl} context={context} tFont={tFont} t={t} onFinish={finishVocab} onExit={exitVocab} />
+            <VocabLesson words={vocabSession.words} startIdx={vocabSession.idx || 0} onIdx={(i) => setVocabSession(s => (s ? { ...s, idx: i } : s))} lang={lang} tl={tl} context={context} tFont={tFont} t={t} onFinish={finishVocab} onExit={exitVocab} />
           ) :
           showRecap && recapCard && recapMode ? (
             // FULL-SCREEN QUICK PRACTICE CHAT

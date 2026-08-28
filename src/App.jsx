@@ -1860,7 +1860,6 @@ function AppInner() {
   const [lessonDone, setLessonDone] = useState(false);
   const [lessonSummary, setLessonSummary] = useState(null);
   const [lessonRestored, setLessonRestored] = useState(false);
-  const [leaveGuard, setLeaveGuard] = useState(null); // pending target view when leaving an active lesson, or null
   const [resumePrompt, setResumePrompt] = useState(null); // card to resume/restart when reopened with a live session, or null
   const [showRecap, setShowRecap] = useState(false);
   const [recapCard, setRecapCard] = useState(null);
@@ -1942,7 +1941,9 @@ function AppInner() {
     });
   }, [syncId]);
 
-  // Restore active lesson from localStorage on first load
+  // Restore an in-progress lesson into memory on first load — but stay on the Library
+  // (default) view, so the user lands there and chooses to resume (via the card or the
+  // Leçon tab) rather than being dropped straight into the lesson.
   useEffect(() => {
     if (!loaded || lessonRestored) return;
     setLessonRestored(true);
@@ -1950,25 +1951,22 @@ function AppInner() {
       const raw = localStorage.getItem("moa-active-lesson");
       const saved = raw ? JSON.parse(raw) : null;
       // Restore only an UNFINISHED lesson that belongs to the current context (same
-      // account code, or both anonymous). The article lives on the card (articleText),
-      // so it no longer needs to be stored in the save itself.
+      // account code, or both anonymous). The article lives on the card (articleText).
       if (saved && saved.card && saved.conv && saved.conv.length > 0 && !saved.lessonDone && (saved.syncId || "") === (syncId || "")) {
         setLCard(saved.card);
         setLArticle(saved.card.articleText || saved.article || "");
         setConv(saved.conv.map(m => ({ ...m, options: m.options || null })));
         setLessonDone(false);
         setLessonSummary(null);
-        setView("lesson");
         return;
       } else if (raw) {
         localStorage.removeItem("moa-active-lesson"); // wrong context / finished
       }
-      // No grammar lesson to restore -> try an in-progress vocab session.
+      // No grammar lesson to restore -> keep an in-progress vocab session in memory.
       const vraw = localStorage.getItem("moa-active-vocab");
       const vsaved = vraw ? JSON.parse(vraw) : null;
       if (vsaved && Array.isArray(vsaved.words) && vsaved.words.length > 0 && (vsaved.syncId || "") === (syncId || "")) {
         setVocabSession({ words: vsaved.words, idx: Math.min(vsaved.idx || 0, vsaved.words.length - 1) });
-        setView("lesson");
       } else if (vraw) {
         localStorage.removeItem("moa-active-vocab");
       }
@@ -2406,29 +2404,15 @@ function AppInner() {
     setLLoad(false);
   };
 
-  // A lesson is "live" (resumable) when a grammar chat has messages, or a vocab session is open.
-  const lessonActive = () => view === "lesson" && (
-    (vocabSession && vocabSession.words && vocabSession.words.length > 0) ||
-    (!showRecap && lCard && conv.length > 0 && !lessonDone)
-  );
-
-  // Nav-tab handler: guard against silently abandoning an in-progress lesson.
+  // Nav-tab handler. An in-progress lesson auto-saves continuously (localStorage), so
+  // leaving never needs a prompt — just navigate.
   const navTo = (target) => {
-    if (target !== "lesson" && lessonActive()) { setLeaveGuard(target); return; }
     // Flush any unsaved profile edits before leaving the profile.
     if (view === "profile" && profileDraft && JSON.stringify(profileDraft) !== JSON.stringify(data.profile || {})) {
       save({ ...data, profile: { ...profileDraft } });
     }
     if (target === "import") setImpStep("input");
     setView(target);
-  };
-
-  // Discard the in-progress lesson entirely (in-memory state + persisted copy).
-  const discardLesson = () => {
-    setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
-    setShowRecap(false); setRecapCard(null);
-    setVocabSession(null);
-    try { localStorage.removeItem("moa-active-lesson"); localStorage.removeItem("moa-active-vocab"); } catch (e) {}
   };
 
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
@@ -2928,29 +2912,6 @@ function AppInner() {
             <button onClick={() => setCardToDelete(null)}
               style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
               {t.cancelBtn}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {leaveGuard && (
-        <div onClick={() => setLeaveGuard(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.leaveTitle}</div>
-            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.leaveBody}</div>
-            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); if (target === "import") setImpStep("input"); setView(target); }}
-              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-              💾 {t.leaveKeep}
-            </button>
-            <button onClick={() => { const target = leaveGuard; setLeaveGuard(null); discardLesson(); if (target === "import") setImpStep("input"); setView(target); }}
-              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.warnB}`, background: C.warnBg, color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-              🗑 {t.leaveDiscard}
-            </button>
-            <button onClick={() => setLeaveGuard(null)}
-              style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
-              {t.leaveCancel}
             </button>
           </div>
         </div>

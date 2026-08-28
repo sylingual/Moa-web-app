@@ -122,7 +122,7 @@ const T = {
     goalsPlaceholder: "ex: Pouvoir lire des articles de blog sans dictionnaire, comprendre les paroles de chansons, passer TOPIK 4...",
     notesLabel: "Notes",
     notesPlaceholder: "Toute info utile : difficultés récurrentes, temps disponible, préférences d'apprentissage...",
-    profileSaved: "Profil enregistré !",
+    profileSaved: "Enregistré !", autoSaveHint: "Enregistrement automatique",
     saveProfile: "Enregistrer",
     genderLabel: "Genre",
     genderNone: "Non renseigné",
@@ -323,7 +323,7 @@ const T = {
     goalsPlaceholder: "e.g. Read blog articles without a dictionary, understand song lyrics, pass TOPIK 4...",
     notesLabel: "Notes",
     notesPlaceholder: "Any useful info: recurring difficulties, available study time, learning preferences...",
-    profileSaved: "Profile saved!",
+    profileSaved: "Saved!", autoSaveHint: "Saved automatically",
     saveProfile: "Save",
     genderLabel: "Gender",
     genderNone: "Not specified",
@@ -2009,13 +2009,28 @@ function AppInner() {
     }
   }, [conv, lCard, lessonDone, lessonRestored, syncId]);
 
-  // Init profile draft when data loads or view switches to profile
+  // Init the profile draft when ENTERING the profile view (not on every data change,
+  // so auto-save doesn't reset what the user is typing).
   useEffect(() => {
     if (view === "profile") {
       setProfileDraft({ ...(data.profile || DEFAULT_PROFILE) });
       setProfileSavedMsg(false);
     }
-  }, [view, data.profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+
+  // Auto-save the profile shortly after any edit, with a green confirmation. No button.
+  useEffect(() => {
+    if (view !== "profile" || !profileDraft) return;
+    if (JSON.stringify(profileDraft) === JSON.stringify(data.profile || {})) return;
+    const id = setTimeout(() => {
+      save({ ...data, profile: { ...profileDraft } });
+      setProfileSavedMsg(true);
+      setTimeout(() => setProfileSavedMsg(false), 2000);
+    }, 700);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileDraft]);
 
   // Scroll to start of last message
   useEffect(() => {
@@ -2390,6 +2405,10 @@ function AppInner() {
   // Nav-tab handler: guard against silently abandoning an in-progress lesson.
   const navTo = (target) => {
     if (target !== "lesson" && lessonActive()) { setLeaveGuard(target); return; }
+    // Flush any unsaved profile edits before leaving the profile.
+    if (view === "profile" && profileDraft && JSON.stringify(profileDraft) !== JSON.stringify(data.profile || {})) {
+      save({ ...data, profile: { ...profileDraft } });
+    }
     if (target === "import") setImpStep("input");
     setView(target);
   };
@@ -3774,11 +3793,8 @@ function AppInner() {
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <button onClick={saveProfile}
-                    style={{ padding: "8px 22px", borderRadius: 6, background: profileSavedMsg ? C.ok : C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "background 0.2s" }}>
-                    {profileSavedMsg ? `✓ ${t.profileSaved}` : t.saveProfile}
-                  </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, color: profileSavedMsg ? C.ok : C.txtM, transition: "color 0.2s" }}>
+                  {profileSavedMsg ? `✓ ${t.profileSaved}` : `💾 ${t.autoSaveHint}`}
                 </div>
                 <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
                   💡 {t.profileAutoUpdate}

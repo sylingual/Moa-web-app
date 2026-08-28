@@ -50,6 +50,7 @@ const T = {
     importSub: "Colle un article de blog, un extrait, ou n'importe quel texte coréen. L'IA va repérer les points pertinents pour ton niveau.",
     analyze: "Analyser ce texte", analyzing: "Analyse en cours...",
     importImage: "Importer une image", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
+    ocrNoTarget: (l) => `Aucun texte en ${l} n'a été détecté dans cette image. Tu t'es peut-être trompé d'image ?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} repéré${n > 1 ? "s" : ""} dans ton texte`,
     pickSub: "Choisis celui que tu veux étudier, ou marque ceux que tu connais déjà.",
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
@@ -224,6 +225,7 @@ const T = {
     importSub: "Paste a blog article or any Korean text. The AI will find relevant points for your level.",
     analyze: "Analyze this text", analyzing: "Analyzing...",
     importImage: "Import an image", ocrLoading: "Extracting text...", ocrEmpty: "No text detected in the image.",
+    ocrNoTarget: (l) => `No ${l} text was detected in this image. Did you maybe pick the wrong image?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} found in your text`,
     pickSub: "Choose one to study, or mark the ones you already know.",
     iKnow: "I know this", addedAcq: "Added (acquired)",
@@ -517,6 +519,15 @@ async function extractImageText(base64, mimeType, tlName) {
   if (!res.ok) { let e = raw; try { e = JSON.parse(raw).error || raw; } catch {} throw new Error(e); }
   let data; try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
   return (data.content || []).map((b) => b.text || "").join("\n").trim();
+}
+
+// Does the extracted text actually contain the target language's script?
+function hasTargetScript(text, tlCode) {
+  if (!text || !text.trim()) return false;
+  if (tlCode === "ko") return /[가-힣ᄀ-ᇿ㄰-㆏]/.test(text); // Hangul
+  if (tlCode === "ja") return /[぀-ヿ一-鿿]/.test(text);              // kana + kanji
+  if (tlCode === "zh") return /[一-鿿]/.test(text);                           // Han
+  return /[A-Za-zÀ-ɏ]/.test(text);                                          // Latin-script fallback
 }
 
 function parseJSON(raw) {
@@ -1846,7 +1857,8 @@ function AppInner() {
     try {
       const { base64, mimeType } = await fileToScaledBase64(file, 1600);
       const text = await extractImageText(base64, mimeType, getTargetLangName(tl, "en"));
-      if (!text) { alert(t.ocrEmpty); setImpStep("input"); return; }
+      // Warn if the image has no text in the target language (likely the wrong image).
+      if (!hasTargetScript(text, tl)) { alert(t.ocrNoTarget(getTargetLangName(tl, lang))); setImpStep("input"); return; }
       setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
       setImpStep("input");
     } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }

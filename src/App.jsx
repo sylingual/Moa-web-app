@@ -1881,6 +1881,7 @@ function AppInner() {
   // Profile
   const [profileDraft, setProfileDraft] = useState(null);
   const [profileSavedMsg, setProfileSavedMsg] = useState(false);
+  const [savedFieldKey, setSavedFieldKey] = useState(null); // which profile field just auto-saved
   const [onbStep, setOnbStep] = useState(0);
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "" });
   const [showDetailed, setShowDetailed] = useState(false);
@@ -2019,18 +2020,27 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // Auto-save the profile shortly after any edit, with a green confirmation. No button.
+  // Auto-save the profile shortly after any edit; the green "Saved" shows under the field
+  // that changed. No button.
   useEffect(() => {
     if (view !== "profile" || !profileDraft) return;
-    if (JSON.stringify(profileDraft) === JSON.stringify(data.profile || {})) return;
+    const prof = data.profile || {};
+    if (JSON.stringify(profileDraft) === JSON.stringify(prof)) return;
+    const changedKey = Object.keys(profileDraft).find(k => JSON.stringify(profileDraft[k]) !== JSON.stringify(prof[k])) || null;
     const id = setTimeout(() => {
       save({ ...data, profile: { ...profileDraft } });
+      setSavedFieldKey(changedKey);
       setProfileSavedMsg(true);
       setTimeout(() => setProfileSavedMsg(false), 2000);
     }, 700);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileDraft]);
+
+  // Inline "Saved ✓" shown right under the field that was just auto-saved.
+  const savedTag = (k) => (profileSavedMsg && savedFieldKey === k)
+    ? <div style={{ fontSize: 11, color: C.ok, fontWeight: 500, marginTop: 4 }}>✓ {t.profileSaved}</div>
+    : null;
 
   // Scroll to start of last message
   useEffect(() => {
@@ -3698,6 +3708,7 @@ function AppInner() {
                     <div key={key}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{label}</label>
                       <input value={profileDraft[key] || ""} onChange={e => setProfileDraft({ ...profileDraft, [key]: e.target.value })} placeholder={ph} style={fieldStyle} />
+                      {savedTag(key)}
                     </div>
                   ))}
                   <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
@@ -3709,6 +3720,7 @@ function AppInner() {
                       <div key={key} style={{ marginBottom: 12 }}>
                         <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{label}</label>
                         <textarea value={profileDraft[key] || ""} onChange={e => setProfileDraft({ ...profileDraft, [key]: e.target.value })} placeholder={ph} rows={2} style={fieldStyle} />
+                        {savedTag(key)}
                       </div>
                     ))}
                   </div>
@@ -3736,52 +3748,61 @@ function AppInner() {
                     <option value="homme">{t.genderM}</option>
                     <option value="femme">{t.genderF}</option>
                   </select>
+                  {savedTag("gender")}
                 </div>
                 <div style={{ flex: "0 0 90px" }}>
                   <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.ageLabel}</label>
                   <input type="number" min="1" max="120" value={profileDraft.age || ""} onChange={e => setProfileDraft({ ...profileDraft, age: e.target.value })}
                     placeholder={t.agePlaceholder} style={fieldStyle} />
+                  {savedTag("age")}
                 </div>
                 <div style={{ flex: "2 1 200px" }}>
                   <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.nationalityLabel}</label>
                   <input value={profileDraft.nationality || ""} onChange={e => setProfileDraft({ ...profileDraft, nationality: e.target.value })}
                     placeholder={t.nationalityPlaceholder} style={fieldStyle} />
+                  {savedTag("nationality")}
                 </div>
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.spokenLangsLabel}</label>
                 <LanguagesTable value={profileDraft.languages} onChange={rows => setProfileDraft({ ...profileDraft, languages: rows })} t={t} />
+                {savedTag("languages")}
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>✨ {t.onbTitle2}</label>
                 <textarea value={profileDraft.dream || ""} onChange={e => setProfileDraft({ ...profileDraft, dream: e.target.value })}
                   placeholder={t.dreamPlaceholder} rows={2} style={fieldStyle} />
+                {savedTag("dream")}
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.levelLabel}</label>
                 <input value={profileDraft.level} onChange={e => setProfileDraft({ ...profileDraft, level: e.target.value })}
                   placeholder={t.levelPlaceholder} style={fieldStyle} />
+                {savedTag("level")}
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.interestsLabel}</label>
                 <textarea value={profileDraft.interests} onChange={e => setProfileDraft({ ...profileDraft, interests: e.target.value })}
                   placeholder={t.interestsPlaceholder} rows={3} style={fieldStyle} />
+                {savedTag("interests")}
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.goalsLabel}</label>
                 <textarea value={profileDraft.goals} onChange={e => setProfileDraft({ ...profileDraft, goals: e.target.value })}
                   placeholder={t.goalsPlaceholder} rows={2} style={fieldStyle} />
+                {savedTag("goals")}
               </div>
 
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.myNotesLabel}</label>
                 <textarea value={profileDraft.learnerNotes || ""} onChange={e => setProfileDraft({ ...profileDraft, learnerNotes: e.target.value })}
                   placeholder={t.myNotesPlaceholder} rows={2} style={fieldStyle} />
+                {savedTag("learnerNotes")}
               </div>
 
               {/* Teacher notes (AI-written) — read-only for the learner */}
@@ -3792,13 +3813,8 @@ function AppInner() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, color: profileSavedMsg ? C.ok : C.txtM, transition: "color 0.2s" }}>
-                  {profileSavedMsg ? `✓ ${t.profileSaved}` : `💾 ${t.autoSaveHint}`}
-                </div>
-                <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
-                  💡 {t.profileAutoUpdate}
-                </div>
+              <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
+                💡 {t.profileAutoUpdate}
               </div>
 
               {/* Lesson history */}

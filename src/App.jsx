@@ -148,6 +148,10 @@ const T = {
     viewGrid: "Grille",
     viewTree: "Arbre",
     viewSources: "Textes",
+    deleteCard: "Supprimer la carte", deleteConfirmTitle: "Supprimer cette carte ?",
+    deleteConfirmMsg: (k) => `« ${k} » sera supprimée définitivement, ainsi que ses récaps.`,
+    deleteBtn: "Supprimer", cancelBtn: "Annuler",
+    filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
     restudyText: "Réétudier ce texte",
     sourcesNone: "Sans texte d'origine",
     pointsFromText: "Points associés",
@@ -344,6 +348,10 @@ const T = {
     viewGrid: "Grid",
     viewTree: "Tree",
     viewSources: "Texts",
+    deleteCard: "Delete card", deleteConfirmTitle: "Delete this card?",
+    deleteConfirmMsg: (k) => `"${k}" will be permanently deleted, along with its recaps.`,
+    deleteBtn: "Delete", cancelBtn: "Cancel",
+    filterAll: "All", filterGrammar: "Grammar", filterVocab: "Vocab",
     restudyText: "Study this text again",
     sourcesNone: "No source text",
     pointsFromText: "Associated points",
@@ -1405,7 +1413,7 @@ function LanguagesTable({ value, onChange, t }) {
   );
 }
 
-function GrammarCard({ card, t, onToggle, onReview }) {
+function GrammarCard({ card, t, onToggle, onReview, onDelete }) {
   const si = statusInfo(card.status, t);
   const canToggle = card.status === "studied" || card.status === "acquired";
   return (
@@ -1427,6 +1435,14 @@ function GrammarCard({ card, t, onToggle, onReview }) {
           <span style={{ fontSize: 9, color: C.txtM }}>({t.reviewCount(card.reviewCount)})</span>
         )}
         <span style={{ fontSize: 11, color: C.txtM, marginLeft: "auto" }}>{card.date}</span>
+        {onDelete && (
+          <button onClick={e => { e.stopPropagation(); onDelete(); }} title={t.deleteCard}
+            style={{ width: 22, height: 22, borderRadius: 6, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={e => { e.currentTarget.style.color = C.warn; e.currentTarget.style.background = C.warnBg; }}
+            onMouseLeave={e => { e.currentTarget.style.color = C.txtM; e.currentTarget.style.background = "transparent"; }}>
+            🗑
+          </button>
+        )}
       </div>
       <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 17, color: C.txt, marginBottom: 3 }}>{card.korean}</div>
       <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginBottom: 8 }}>{card.description}</div>
@@ -1661,8 +1677,8 @@ function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) 
 // =============================================
 // VOCAB LESSON (one word at a time, 5-step study)
 // =============================================
-function VocabLesson({ words, lang, tl, context, tFont, t, onFinish, onExit }) {
-  const [idx, setIdx] = useState(0);
+function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFinish, onExit }) {
+  const [idx, setIdx] = useState(startIdx || 0);
   const [study, setStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -1684,7 +1700,7 @@ function VocabLesson({ words, lang, tl, context, tFont, t, onFinish, onExit }) {
   const answered = qcmSel !== null;
   const isLastWord = idx >= words.length - 1;
   const next = () => { if (revealed < 5) setRevealed(revealed + 1); };
-  const nextWord = () => { if (isLastWord) onFinish(); else setIdx(idx + 1); };
+  const nextWord = () => { if (isLastWord) onFinish(); else { const ni = idx + 1; setIdx(ni); if (onIdx) onIdx(ni); } };
 
   const Panel = ({ label, children }) => (
     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 13, marginTop: 10 }}>
@@ -1790,6 +1806,8 @@ function AppInner() {
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState("library");
   const [libView, setLibView] = useState("grid");
+  const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab"
+  const [cardToDelete, setCardToDelete] = useState(null);
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -1877,14 +1895,16 @@ function AppInner() {
   // Filter cards by current target language, sorted by status priority
   const allCards = data.cards || [];
   const filteredCards = useMemo(() => {
-    const base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
+    let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
+    if (libFilter === "vocab") base = base.filter(c => c.type === "vocab");
+    else if (libFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     const order = { in_progress: 0, new: 1, review: 1, studied: 2, acquired: 3 };
     return [...base].sort((a, b) => {
       const oa = order[migrateStatus(a.status)] ?? 4;
       const ob = order[migrateStatus(b.status)] ?? 4;
       return oa - ob;
     });
-  }, [allCards, tl]);
+  }, [allCards, tl, libFilter]);
   const revCount = filteredCards.filter(c => c.status === "new" || c.status === "review" || c.status === "in_progress").length;
   const studiedCount = filteredCards.filter(c => c.status === "studied").length;
   const acqCount = filteredCards.filter(c => c.status === "acquired").length;
@@ -1908,8 +1928,7 @@ function AppInner() {
     setLessonRestored(true);
     try {
       const raw = localStorage.getItem("moa-active-lesson");
-      if (!raw) return;
-      const saved = JSON.parse(raw);
+      const saved = raw ? JSON.parse(raw) : null;
       // Restore only an UNFINISHED lesson that belongs to the current context (same
       // account code, or both anonymous). The article lives on the card (articleText),
       // so it no longer needs to be stored in the save itself.
@@ -1920,12 +1939,31 @@ function AppInner() {
         setLessonDone(false);
         setLessonSummary(null);
         setView("lesson");
-      } else {
-        // Wrong context, or an already-finished lesson: discard it.
-        localStorage.removeItem("moa-active-lesson");
+        return;
+      } else if (raw) {
+        localStorage.removeItem("moa-active-lesson"); // wrong context / finished
+      }
+      // No grammar lesson to restore -> try an in-progress vocab session.
+      const vraw = localStorage.getItem("moa-active-vocab");
+      const vsaved = vraw ? JSON.parse(vraw) : null;
+      if (vsaved && Array.isArray(vsaved.words) && vsaved.words.length > 0 && (vsaved.syncId || "") === (syncId || "")) {
+        setVocabSession({ words: vsaved.words, idx: Math.min(vsaved.idx || 0, vsaved.words.length - 1) });
+        setView("lesson");
+      } else if (vraw) {
+        localStorage.removeItem("moa-active-vocab");
       }
     } catch (e) { console.error("Failed to restore lesson:", e); }
   }, [loaded, lessonRestored, syncId]);
+
+  // Persist an in-progress vocab session (words + current word index) so it can resume.
+  useEffect(() => {
+    if (!lessonRestored) return;
+    if (vocabSession && vocabSession.words && vocabSession.words.length) {
+      try { localStorage.setItem("moa-active-vocab", JSON.stringify({ words: vocabSession.words, idx: vocabSession.idx || 0, syncId: syncId || "" })); } catch (e) {}
+    } else {
+      try { localStorage.removeItem("moa-active-vocab"); } catch (e) {}
+    }
+  }, [vocabSession, lessonRestored, syncId]);
 
   // Persist the active lesson to localStorage whenever the conversation changes — while
   // it's unfinished, with or without an account (it's the learner's own browser). A
@@ -2234,7 +2272,7 @@ function AppInner() {
     if (!words.length) { alert(t.vocabNoneSelected); return; }
     const newCards = words.filter(w => !data.cards.find(c => c.korean === w.word)).map(w => makeVocabCard(w, "in_progress"));
     if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
-    setVocabSession({ words });
+    setVocabSession({ words, idx: 0 });
     setLCard(null); setConv([]); setShowRecap(false); setRecapCard(null); setLessonDone(false); setLessonSummary(null);
     setView("lesson");
   };
@@ -2251,6 +2289,7 @@ function AppInner() {
     const gain = 15;
     save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
     setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
+    try { localStorage.removeItem("moa-active-vocab"); } catch (e) {}
     setVocabSession(null);
     setView("library");
   };
@@ -2323,8 +2362,11 @@ function AppInner() {
     setLLoad(false);
   };
 
-  // A lesson is "live" (resumable) when its chat is open, has messages, and isn't finished.
-  const lessonActive = () => view === "lesson" && !showRecap && lCard && conv.length > 0 && !lessonDone;
+  // A lesson is "live" (resumable) when a grammar chat has messages, or a vocab session is open.
+  const lessonActive = () => view === "lesson" && (
+    (vocabSession && vocabSession.words && vocabSession.words.length > 0) ||
+    (!showRecap && lCard && conv.length > 0 && !lessonDone)
+  );
 
   // Nav-tab handler: guard against silently abandoning an in-progress lesson.
   const navTo = (target) => {
@@ -2337,7 +2379,8 @@ function AppInner() {
   const discardLesson = () => {
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
     setShowRecap(false); setRecapCard(null);
-    try { localStorage.removeItem("moa-active-lesson"); } catch (e) {}
+    setVocabSession(null);
+    try { localStorage.removeItem("moa-active-lesson"); localStorage.removeItem("moa-active-vocab"); } catch (e) {}
   };
 
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
@@ -2582,6 +2625,15 @@ function AppInner() {
 
   const toggleSt = (id) => save({ ...data, cards: data.cards.map(c => c.id === id ? { ...c, status: c.status === "acquired" ? "studied" : "acquired" } : c) });
 
+  const deleteCard = (c) => {
+    save({
+      ...data,
+      cards: data.cards.filter(x => (c.id ? x.id !== c.id : x.korean !== c.korean)),
+      summaries: (data.summaries || []).filter(s => s.cardKorean !== c.korean),
+    });
+    setCardToDelete(null);
+  };
+
   // ---- EXERCISE ----
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
@@ -2814,6 +2866,25 @@ function AppInner() {
       )}
 
       {/* LEAVE-LESSON GUARD */}
+      {cardToDelete && (
+        <div onClick={() => setCardToDelete(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.deleteConfirmTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{t.deleteConfirmMsg(cardToDelete.korean)}</div>
+            <button onClick={() => deleteCard(cardToDelete)}
+              style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.warnB}`, background: C.warnBg, color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              🗑 {t.deleteBtn}
+            </button>
+            <button onClick={() => setCardToDelete(null)}
+              style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {t.cancelBtn}
+            </button>
+          </div>
+        </div>
+      )}
+
       {leaveGuard && (
         <div onClick={() => setLeaveGuard(null)}
           style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -3007,18 +3078,30 @@ function AppInner() {
         {/* LIBRARY */}
         {view === "library" && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-            <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, color: C.txtM }}>{filteredCards.length} {t.points} · {studiedCount} {t.statusStudied.toLowerCase()} · {acqCount} {t.statusAcquired.toLowerCase()}</span>
-              {filteredCards.length > 0 && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                {/* Type filter */}
                 <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
-                  {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree], ["sources", "📄", t.viewSources]].map(([k, icon, label]) => (
-                    <button key={k} onClick={() => setLibView(k)}
-                      style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: libView === k ? C.s2 : "transparent", color: libView === k ? C.acc : C.txtM, fontWeight: libView === k ? 500 : 400, boxShadow: libView === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
-                      {icon} {label}
+                  {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
+                    <button key={k} onClick={() => setLibFilter(k)}
+                      style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: libFilter === k ? C.s2 : "transparent", color: libFilter === k ? C.acc : C.txtM, fontWeight: libFilter === k ? 500 : 400, boxShadow: libFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+                      {label}
                     </button>
                   ))}
                 </div>
-              )}
+                {/* View toggle */}
+                {filteredCards.length > 0 && (
+                  <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
+                    {[["grid", "▦", t.viewGrid], ["tree", "🌿", t.viewTree], ["sources", "📄", t.viewSources]].map(([k, icon, label]) => (
+                      <button key={k} onClick={() => setLibView(k)}
+                        style={{ display: "flex", alignItems: "center", gap: 3, padding: "3px 8px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: libView === k ? C.s2 : "transparent", color: libView === k ? C.acc : C.txtM, fontWeight: libView === k ? 500 : 400, boxShadow: libView === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+                        {icon} {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             {filteredCards.length === 0
               ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13 }}>{t.noCards}</div>
@@ -3026,7 +3109,7 @@ function AppInner() {
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
                 : libView === "grid"
                   ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                      {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} />)}
+                      {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} onDelete={() => setCardToDelete(c)} />)}
                     </div>
                   : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
             }
@@ -3126,7 +3209,7 @@ function AppInner() {
         {/* LESSON */}
         {view === "lesson" && (
           vocabSession ? (
-            <VocabLesson words={vocabSession.words} lang={lang} tl={tl} context={context} tFont={tFont} t={t} onFinish={finishVocab} onExit={exitVocab} />
+            <VocabLesson words={vocabSession.words} startIdx={vocabSession.idx || 0} onIdx={(i) => setVocabSession(s => (s ? { ...s, idx: i } : s))} lang={lang} tl={tl} context={context} tFont={tFont} t={t} onFinish={finishVocab} onExit={exitVocab} />
           ) :
           showRecap && recapCard && recapMode ? (
             // FULL-SCREEN QUICK PRACTICE CHAT
@@ -3221,7 +3304,7 @@ function AppInner() {
                       { k: "examples", l: t.moreExamples, i: "💡" },
                       { k: "realExamples", l: t.realExamples, i: "🔍" },
                       { k: "resources", l: t.onlineRes, i: "📚" },
-                    ].map(a => (
+                    ].filter(a => a.k !== "resources" || recapCard?.type !== "vocab").map(a => (
                       <button key={a.k} onClick={() => startRecapAction(a.k)}
                         style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 13px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
@@ -3332,7 +3415,7 @@ function AppInner() {
                   })()}
                   {tray && (
                     <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 5, flexWrap: "wrap", background: C.s1 }}>
-                      {qa.map(a => (
+                      {qa.filter(a => a.k !== "resources" || lCard?.type !== "vocab").map(a => (
                         <button key={a.k} onClick={() => quickAct(a.k)}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: "pointer" }}>
                           {a.i} {a.l}

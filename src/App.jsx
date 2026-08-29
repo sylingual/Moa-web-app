@@ -3257,7 +3257,7 @@ function AppInner() {
                   {revealTr ? "👁" : "🙈"}
                 </button>
               </div>
-              <div ref={recapR} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div ref={recapR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {recapConv.map((m, i) => (
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
                     <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint}
@@ -3372,7 +3372,7 @@ function AppInner() {
                 </div>
               </div>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
-                <div ref={msgsR} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div ref={msgsR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
                       <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
@@ -3451,7 +3451,7 @@ function AppInner() {
                       ))}
                     </div>
                   )}
-                  <div style={{ padding: "10px 14px 12px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
+                  <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                     <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={t.yourAnswer}
                       style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
                     <button onClick={sendMsg} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
@@ -3515,7 +3515,7 @@ function AppInner() {
                     <button onClick={() => setExOn(false)} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
                   </div>
                 </div>
-                <div ref={exR} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div ref={exR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {exConv.map((m, i) => (
                     <div key={i} ref={i === exConv.length - 1 ? lastExMsgRef : null}>
                       <Bubble revealAll={revealTr} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => exOpt(i, o) : null }} />

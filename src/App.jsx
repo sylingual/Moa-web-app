@@ -44,6 +44,9 @@ const T = {
     library: "Bibliothèque", lesson: "Leçon", import: "Importer", exercise: "Exercice",
     profile: "Profil",
     review: "À revoir", acquired: "Acquis", reviewBtn: "Revoir",
+    toAcqTitle: "Marquer comme Acquis ?", toAcqMsg: (k) => `« ${k} » rejoindra l'étagère « Acquis » (seul le titre y sera affiché).`,
+    toStudiedTitle: "Remettre en Étudié ?", toStudiedMsg: (k) => `« ${k} » repassera parmi les cartes en apprentissage.`,
+    confirmBtn: "Confirmer", learningShelf: "En apprentissage",
     statusNew: "Nouveau", statusInProgress: "En cours", statusStudied: "Étudié", statusAcquired: "Acquis",
     reviewCount: (n) => `${n} révision${n > 1 ? "s" : ""}`,
     importTitle: "Importer un texte",
@@ -246,6 +249,9 @@ const T = {
     library: "Library", lesson: "Lesson", import: "Import", exercise: "Exercise",
     profile: "Profile",
     review: "To review", acquired: "Acquired", reviewBtn: "Review",
+    toAcqTitle: "Mark as Acquired?", toAcqMsg: (k) => `"${k}" will move to the "Acquired" shelf (only the title is shown there).`,
+    toStudiedTitle: "Move back to Studied?", toStudiedMsg: (k) => `"${k}" will return to the cards you're still learning.`,
+    confirmBtn: "Confirm", learningShelf: "Learning",
     statusNew: "New", statusInProgress: "In progress", statusStudied: "Studied", statusAcquired: "Acquired",
     reviewCount: (n) => `${n} review${n > 1 ? "s" : ""}`,
     importTitle: "Import a text",
@@ -1397,6 +1403,30 @@ function Bubble({ msg, revealAll, onResourceClick }) {
   );
 }
 
+// Compact card for the "Acquired" shelf — title only (they're mastered). Click to review.
+function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
+  return (
+    <div onClick={onReview} title={t.reviewBtn}
+      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 20, padding: "6px 8px 6px 12px", cursor: "pointer", transition: "border-color 0.12s" }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = C.stAcq; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.stAcq, flexShrink: 0 }} />
+      <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{card.korean}</span>
+      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
+      <button onClick={e => { e.stopPropagation(); onToggle(); }} title={t.toStudiedTitle}
+        style={{ width: 20, height: 20, borderRadius: 6, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.acc; e.currentTarget.style.background = C.accBg; }}
+        onMouseLeave={e => { e.currentTarget.style.color = C.txtM; e.currentTarget.style.background = "transparent"; }}>↩</button>
+      {onDelete && (
+        <button onClick={e => { e.stopPropagation(); onDelete(); }} title={t.deleteCard}
+          style={{ width: 20, height: 20, borderRadius: 6, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+          onMouseEnter={e => { e.currentTarget.style.color = C.warn; e.currentTarget.style.background = C.warnBg; }}
+          onMouseLeave={e => { e.currentTarget.style.color = C.txtM; e.currentTarget.style.background = "transparent"; }}>🗑</button>
+      )}
+    </div>
+  );
+}
+
 const LANG_LEVELS = ["native", "bilingual", "advanced", "intermediate"];
 function langLevelLabel(level, t) {
   return { native: t.langLevelNative, bilingual: t.langLevelBilingual, advanced: t.langLevelAdvanced, intermediate: t.langLevelIntermediate }[level] || "";
@@ -1831,6 +1861,7 @@ function AppInner() {
   const [libView, setLibView] = useState("grid");
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab"
   const [cardToDelete, setCardToDelete] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -2932,6 +2963,26 @@ function AppInner() {
         </div>
       )}
 
+      {/* STUDIED <-> ACQUIRED CONFIRMATION */}
+      {confirmToggle && (() => { const toAcq = migrateStatus(confirmToggle.status) !== "acquired"; return (
+        <div onClick={() => setConfirmToggle(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 340, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{toAcq ? t.toAcqTitle : t.toStudiedTitle}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.5, marginBottom: 6 }}>{(toAcq ? t.toAcqMsg : t.toStudiedMsg)(confirmToggle.korean)}</div>
+            <button onClick={() => { toggleSt(confirmToggle.id); setConfirmToggle(null); }}
+              style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {toAcq ? "✅" : "↩"} {t.confirmBtn}
+            </button>
+            <button onClick={() => setConfirmToggle(null)}
+              style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {t.cancelBtn}
+            </button>
+          </div>
+        </div>
+      ); })()}
+
       {/* RESUME-LESSON PROMPT */}
       {resumePrompt && (
         <div onClick={() => setResumePrompt(null)}
@@ -3132,10 +3183,30 @@ function AppInner() {
               : libView === "sources"
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
                 : libView === "grid"
-                  ? <div style={{ padding: "14px 16px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                      {filteredCards.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => toggleSt(c.id)} onReview={() => reviewCard(c)} onDelete={() => setCardToDelete(c)} />)}
-                    </div>
-                  : <TreeView cards={filteredCards} t={t} onToggle={(id) => toggleSt(id)} onReview={(c) => reviewCard(c)} />
+                  ? (() => {
+                      const acq = filteredCards.filter(c => migrateStatus(c.status) === "acquired");
+                      const learning = filteredCards.filter(c => migrateStatus(c.status) !== "acquired");
+                      return (
+                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
+                          {learning.length > 0 && (
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
+                              {learning.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => setConfirmToggle(c)} onReview={() => reviewCard(c)} onDelete={() => setCardToDelete(c)} />)}
+                            </div>
+                          )}
+                          {acq.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 9, display: "flex", alignItems: "center", gap: 6 }}>
+                                ✅ {t.acquired} <span style={{ fontWeight: 400 }}>· {acq.length}</span>
+                              </div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                {acq.map(c => <AcquiredCard key={c.id} card={c} t={t} onReview={() => reviewCard(c)} onToggle={() => setConfirmToggle(c)} onDelete={() => setCardToDelete(c)} />)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  : <TreeView cards={filteredCards} t={t} onToggle={(id) => setConfirmToggle(data.cards.find(c => c.id === id))} onReview={(c) => reviewCard(c)} />
             }
           </div>
         )}

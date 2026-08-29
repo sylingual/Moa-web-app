@@ -2433,9 +2433,10 @@ function AppInner() {
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
   const openCardFresh = (c) => {
     const effectiveStatus = migrateStatus(c.status);
-    const cardSummaries = (data.summaries || []).filter(s => s.cardKorean === c.korean);
-    if (cardSummaries.length > 0 && effectiveStatus !== "new") {
-      // Show recap screen instead of starting lesson directly
+    // An already-studied/acquired card always opens the recap MENU first (consistent, and
+    // reviewing it saves nothing — only the recap conversation, for consultation). New or
+    // in-progress cards start/continue the actual lesson.
+    if (effectiveStatus === "studied" || effectiveStatus === "acquired") {
       setRecapCard(c);
       setShowRecap(true);
       setRecapConv([]); setRecapMode(null); setRecapInp("");
@@ -2443,7 +2444,6 @@ function AppInner() {
       setView("lesson");
       return;
     }
-    // No summaries or brand new card: start lesson directly
     startLessonFromCard(c);
   };
 

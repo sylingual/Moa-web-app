@@ -48,6 +48,9 @@ const T = {
     toStudiedTitle: "Remettre en Étudié ?", toStudiedMsg: (k) => `« ${k} » repassera parmi les cartes en apprentissage.`,
     confirmBtn: "Confirmer", learningShelf: "En apprentissage",
     statusNew: "Nouveau", statusInProgress: "En cours", statusStudied: "Étudié", statusAcquired: "Acquis",
+    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Rien à étudier aujourd'hui — importe un texte pour commencer !",
+    shelfMaskedHint: "sens masqué, à toi de deviner", shelfExpandHint: "clic pour dérouler", toStudied: "Remettre en Étudié",
+    dailyCountLabel: "Cartes proposées chaque jour", markAcquired: "Marquer acquis",
     reviewCount: (n) => `${n} révision${n > 1 ? "s" : ""}`,
     importTitle: "Importer un texte",
     importSub: "Colle un article de blog, un extrait, ou n'importe quel texte coréen. L'IA va repérer les points pertinents pour ton niveau.",
@@ -253,6 +256,9 @@ const T = {
     toStudiedTitle: "Move back to Studied?", toStudiedMsg: (k) => `"${k}" will return to the cards you're still learning.`,
     confirmBtn: "Confirm", learningShelf: "Learning",
     statusNew: "New", statusInProgress: "In progress", statusStudied: "Studied", statusAcquired: "Acquired",
+    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "Nothing to study today — import a text to get started!",
+    shelfMaskedHint: "meaning hidden — guess it", shelfExpandHint: "click to expand", toStudied: "Move back to Studied",
+    dailyCountLabel: "Cards suggested each day", markAcquired: "Mark acquired",
     reviewCount: (n) => `${n} review${n > 1 ? "s" : ""}`,
     importTitle: "Import a text",
     importSub: "Paste a blog article or any Korean text. The AI will find relevant points for your level.",
@@ -1427,6 +1433,49 @@ function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
   );
 }
 
+// A card rendered as a horizontal "book spine": a colored binding + the Korean form.
+// masked = hide the meaning (a "?" instead), for cards not yet learned.
+function BookSpine({ card, t, color, masked, compact, active, onClick, onToggleStatus, onDelete }) {
+  const iconBtn = (glyph, title, handler, hover) => (
+    <button onClick={e => { e.stopPropagation(); handler(); }} title={title}
+      style={{ width: 19, height: 19, borderRadius: 5, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      onMouseEnter={e => { e.currentTarget.style.color = hover; e.currentTarget.style.background = C.s1; }}
+      onMouseLeave={e => { e.currentTarget.style.color = C.txtM; e.currentTarget.style.background = "transparent"; }}>{glyph}</button>
+  );
+  return (
+    <div onClick={onClick}
+      style={{ display: "inline-flex", alignItems: "stretch", background: C.s2, border: `1px solid ${active ? color : C.border}`, borderRadius: 6, overflow: "hidden", cursor: "pointer", transition: "border-color 0.12s, transform 0.1s" }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = "translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = active ? color : C.border; e.currentTarget.style.transform = "none"; }}>
+      <span style={{ width: compact ? 7 : 9, background: color, flexShrink: 0 }} />
+      <span style={{ width: 2, background: C.s1, flexShrink: 0 }} />
+      <span style={{ padding: compact ? "6px 8px 6px 11px" : "8px 10px 8px 11px", display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: compact ? 13.5 : 14.5, color: C.txt }}>{card.korean}</span>
+        {masked && <span style={{ width: 15, height: 15, borderRadius: "50%", background: C.s1, color: C.txtM, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans'" }}>?</span>}
+        {onToggleStatus && iconBtn("↩", t.toStudied, onToggleStatus, C.acc)}
+        {onDelete && iconBtn("🗑", t.deleteCard, onDelete, C.warn)}
+      </span>
+    </div>
+  );
+}
+
+// Where "today's weather" comes from, per target language (a representative city).
+const WEATHER_CITY = {
+  ko: { name: "Séoul", lat: 37.5665, lon: 126.978 },
+  de: { name: "Berlin", lat: 52.52, lon: 13.405 },
+};
+function weatherEmoji(code) {
+  if (code === 0) return "☀️";
+  if (code <= 2) return "🌤️";
+  if (code === 3) return "☁️";
+  if (code >= 45 && code <= 48) return "🌫️";
+  if (code >= 51 && code <= 67) return "🌧️";
+  if (code >= 71 && code <= 77) return "❄️";
+  if (code >= 80 && code <= 86) return "🌦️";
+  if (code >= 95) return "⛈️";
+  return "🌡️";
+}
+
 const LANG_LEVELS = ["native", "bilingual", "advanced", "intermediate"];
 function langLevelLabel(level, t) {
   return { native: t.langLevelNative, bilingual: t.langLevelBilingual, advanced: t.langLevelAdvanced, intermediate: t.langLevelIntermediate }[level] || "";
@@ -1862,6 +1911,8 @@ function AppInner() {
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab"
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
+  const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
+  const [weather, setWeather] = useState(null); // { city, temp, emoji } for the target language
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -2115,6 +2166,18 @@ function AppInner() {
     window.addEventListener("resize", onR);
     return () => window.removeEventListener("resize", onR);
   }, []);
+
+  // Today's weather in the target-language's city (Open-Meteo — free, no key).
+  useEffect(() => {
+    const city = WEATHER_CITY[tl];
+    if (!city) { setWeather(null); return; }
+    let alive = true;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code`)
+      .then(r => r.json())
+      .then(d => { if (alive && d && d.current) setWeather({ city: city.name, temp: Math.round(d.current.temperature_2m), emoji: weatherEmoji(d.current.weather_code) }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [tl]);
 
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
@@ -3184,25 +3247,73 @@ function AppInner() {
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
                 : libView === "grid"
                   ? (() => {
-                      const acq = filteredCards.filter(c => migrateStatus(c.status) === "acquired");
-                      const learning = filteredCards.filter(c => migrateStatus(c.status) !== "acquired");
+                      const groups = { new: [], in_progress: [], studied: [], acquired: [] };
+                      filteredCards.forEach(c => { const s = migrateStatus(c.status); (groups[s] || groups.new).push(c); });
+                      const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
+                      const today = [...groups.in_progress, ...groups.new].slice(0, dc);
+                      const shelf = (status, bg, color, { masked, compact, expandable } = {}) => {
+                        const cs = groups[status];
+                        if (!cs.length) return null;
+                        const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
+                        return (
+                          <div style={{ background: bg, borderRadius: 14, padding: "11px 13px" }}>
+                            <div style={{ fontSize: 12, color, marginBottom: 10, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 500 }}>{statusInfo(status, t).label}</span>
+                              <span style={{ opacity: 0.7 }}>· {cs.length}</span>
+                              {masked && <span style={{ color: C.txtM }}>— {t.shelfMaskedHint}</span>}
+                              {expandable && <span style={{ color: C.txtM }}>— {t.shelfExpandHint}</span>}
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                              {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} masked={masked} compact={compact} active={expandable && expandedId === c.id}
+                                onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
+                                onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
+                                onDelete={compact ? () => setCardToDelete(c) : undefined} />)}
+                            </div>
+                            {ex && (
+                              <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
+                                <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt, marginBottom: 6 }}>{ex.korean}</div>
+                                <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>{ex.description}</div>
+                                {ex.example_kr && (
+                                  <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
+                                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>
+                                    <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 2 }}>{ex.example_tr}</div>
+                                  </div>
+                                )}
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
+                                  <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>✅ {t.markAcquired}</button>
+                                  <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>🗑</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      };
                       return (
-                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
-                          {learning.length > 0 && (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                              {learning.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => setConfirmToggle(c)} onReview={() => reviewCard(c)} onDelete={() => setCardToDelete(c)} />)}
+                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                          {today.length > 0 && (
+                            <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11, gap: 8, flexWrap: "wrap" }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.today} · {t.todayCards(today.length)}</div>
+                                {weather && <div style={{ fontSize: 12.5, color: C.txtS }}>{weather.emoji} {weather.city} · {weather.temp}°</div>}
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
+                                {today.map(c => { const st = migrateStatus(c.status); return (
+                                  <div key={c.id} onClick={() => reviewCard(c)}
+                                    style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "border-color 0.12s" }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = st === "in_progress" ? C.stProg : C.stNew; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                                    <div style={{ fontSize: 10, color: st === "in_progress" ? C.stProg : C.txtM, marginBottom: 6 }}>{st === "in_progress" ? t.statusInProgress : t.statusNew}</div>
+                                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
+                                  </div>
+                                ); })}
+                              </div>
                             </div>
                           )}
-                          {acq.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 9, display: "flex", alignItems: "center", gap: 6 }}>
-                                ✅ {t.acquired} <span style={{ fontWeight: 400 }}>· {acq.length}</span>
-                              </div>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                {acq.map(c => <AcquiredCard key={c.id} card={c} t={t} onReview={() => reviewCard(c)} onToggle={() => setConfirmToggle(c)} onDelete={() => setCardToDelete(c)} />)}
-                              </div>
-                            </div>
-                          )}
+                          {shelf("new", C.stNewBg, C.stNew, { masked: true })}
+                          {shelf("in_progress", C.stProgBg, C.stProg, { masked: true })}
+                          {shelf("studied", C.stStudiedBg, C.stStudied, { expandable: true })}
+                          {shelf("acquired", C.stAcqBg, C.stAcq, { compact: true })}
                         </div>
                       );
                     })()
@@ -3815,6 +3926,17 @@ function AppInner() {
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.spokenLangsLabel}</label>
                 <LanguagesTable value={profileDraft.languages} onChange={rows => setProfileDraft({ ...profileDraft, languages: rows })} t={t} />
                 {savedTag("languages")}
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.dailyCountLabel}</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" min="1" max="20" value={profileDraft.dailyCount ?? 5}
+                    onChange={e => setProfileDraft({ ...profileDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                    style={{ ...fieldStyle, width: 90 }} />
+                  <span style={{ fontSize: 12, color: C.txtM }}>{t.today.toLowerCase()}</span>
+                </div>
+                {savedTag("dailyCount")}
               </div>
 
               <div>

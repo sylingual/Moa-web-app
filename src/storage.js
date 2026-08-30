@@ -23,6 +23,7 @@ const DEFAULT_PROFILE = {
   goals: '',
   notes: '',            // teacher/AI notes (learner does not edit these)
   learnerNotes: '',     // the learner's own notes
+  dailyCount: 5,        // cards suggested each day in the "Today" band
   // Detailed questionnaire (filled later, rewards points)
   favFilms: '',
   favMusic: '',

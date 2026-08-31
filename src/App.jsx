@@ -158,6 +158,8 @@ const T = {
     derivedAll: "Tout cocher",
     derivedNone: "Tout décocher",
     derivedSkip: "Ignorer",
+    formalityLabel: "Registre",
+    formality: { casual: "courant", neutral: "neutre", formal: "formel" },
     moreExercises: "Plus d'exercices",
     derivedFrom: "issu de",
     viewGrid: "Grille",
@@ -374,6 +376,8 @@ const T = {
     derivedAll: "Select all",
     derivedNone: "Deselect all",
     derivedSkip: "Skip",
+    formalityLabel: "Register",
+    formality: { casual: "casual", neutral: "neutral", formal: "formal" },
     moreExercises: "More exercises",
     derivedFrom: "derived from",
     viewGrid: "Grid",
@@ -1170,6 +1174,7 @@ Return JSON:
   "structuresLearned": "Internal: what the student demonstrated understanding of",
   "mistakesMade": "Internal: specific errors or confusions",
   "nextSteps": "Internal: what to work on next",
+  "formality": "ONLY for a Korean VOCABULARY WORD (card type 'vocab', target language Korean): the word's usual register, exactly one of 'casual' (everyday/informal speech), 'neutral' (standard, works in most contexts), or 'formal' (formal/polite/honorific or written register). Empty string for grammar structures, non-vocab, or non-Korean.",
   "profileInsights": {
     "interests": "New interests mentioned. Empty string if none.",
     "level": "Level observations. Empty string if none.",
@@ -1190,7 +1195,7 @@ Return JSON:
 
 For "derivedStructures": include any related patterns the TEACHER introduced. Empty array [] if none.`;
 
-  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\n\nFull conversation:\n${hist}`, 1200)).text);
+  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 1200)).text);
 }
 
 // =============================================
@@ -2733,11 +2738,14 @@ function AppInner() {
         }));
       // Update card status: new/in_progress -> studied, studied -> studied (increment reviewCount), acquired stays acquired
       const wasFirstTime = (data.cards.find(c => c.korean === lCard.korean)?.reviewCount || 0) === 0;
+      const fmt = (result.formality || "").toLowerCase();
+      const formality = ["casual", "neutral", "formal"].includes(fmt) ? fmt : "";
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
-        if (c.status === "acquired") return { ...c, reviewCount: rc };
-        return { ...c, status: "studied", reviewCount: rc };
+        const f = formality || c.formality || "";
+        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f };
+        return { ...c, status: "studied", reviewCount: rc, formality: f };
       });
       const gain = wasFirstTime ? 20 : 10;
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
@@ -3336,7 +3344,14 @@ function AppInner() {
                             </div>
                             {ex && (
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
-                                <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt, marginBottom: 6 }}>{ex.korean}</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                  <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
+                                  {tl === "ko" && ex.type === "vocab" && ex.formality && t.formality[ex.formality] && (
+                                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
+                                      {t.formalityLabel} · {t.formality[ex.formality]}
+                                    </span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>{ex.description}</div>
                                 {ex.example_kr && (
                                   <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>

@@ -2238,7 +2238,8 @@ function AppInner() {
     const sel = data.today;
     if (!sel || sel.bonusAwarded || sel.date !== dayKey()) return;
     const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
-    if (!cards.length || !cards.every(c => migrateStatus(c.status) !== "new")) return;
+    const isDone = c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired"; };
+    if (!cards.length || !cards.every(isDone)) return;
     const base = data.profile || DEFAULT_PROFILE;
     save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
     setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
@@ -3329,7 +3330,8 @@ function AppInner() {
                       return (
                         <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
                           {today.length > 0 && (() => {
-                            const doneCount = today.filter(c => migrateStatus(c.status) !== "new").length;
+                            const isDone = c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired"; };
+                            const doneCount = today.filter(isDone).length;
                             return (
                             <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.22), rgba(255,214,102,0.10))", border: "1px solid rgba(230,180,40,0.35)", borderRadius: 14, padding: 14, display: "flex", alignItems: "stretch", gap: 14, flexWrap: "wrap" }}>
                               {weather && (
@@ -3345,7 +3347,7 @@ function AppInner() {
                                   {doneCount > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: C.stAcq }}>· {doneCount}/{today.length} ✓</span>}
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
-                                  {today.map(c => { const done = migrateStatus(c.status) !== "new"; return (
+                                  {today.map(c => { const done = isDone(c); return (
                                     <div key={c.id} onClick={() => reviewCard(c)} title={done ? t.todayDone : ""}
                                       style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "transform 0.1s" }}
                                       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}

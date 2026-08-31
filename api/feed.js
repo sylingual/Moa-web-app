@@ -407,19 +407,18 @@ async function braveNews(query, searchLang) {
   return { results: (pw.results || []).length ? pw.results : pd.results }
 }
 
-async function fetchNewsRecap(targetLang, interest, uiLang) {
+async function fetchNewsRecap(targetLang, interestQuery) {
   var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
-  // General: local-language sources (immersive). Interest (the learner's dream): searched
-  // in the interface language for better coverage of a niche topic. Both get translated /
-  // summarized into the interface language on the client.
+  // Both sections search LOCAL-language (e.g. Korean) sources for immersion + real coverage
+  // of niche topics; the client translates/summarizes everything into the interface language.
   var g = await braveNews(cfg.general, targetLang)
   if (g.error) return { error: g.error }
   var interestItems = []
-  if (interest) {
-    var ir = await braveNews(interest + ' Korea', uiLang || 'en')
+  if (interestQuery) {
+    var ir = await braveNews(interestQuery, targetLang)
     interestItems = ir.results || []
   }
-  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interest }
+  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interestQuery }
 }
 
 export default async function handler(req, res) {
@@ -443,7 +442,7 @@ export default async function handler(req, res) {
 
     // Daily news recap (Brave): general + interest sections with descriptions + sources.
     if (body.action === 'newsRecap') {
-      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim(), (body.uiLang || 'en').trim())
+      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim())
       if (nr.error) return res.status(502).json({ error: nr.error })
       return res.status(200).json(nr)
     }

@@ -1157,6 +1157,14 @@ async function fetchFeed(query, targetLang, category) {
   return data.items || [];
 }
 
+// Translate the learner's dream/passion into a concise target-language search query so the
+// interest section pulls from local (e.g. Korean) sources, where niche topics actually exist.
+async function dreamToSearchQuery(dream, tlName) {
+  const sys = `Turn the learner's passion/dream below into a concise ${tlName} web-search query (2 to 6 ${tlName} words) that would surface recent ${tlName}-language news about that world. Return ONLY the query text in ${tlName}, nothing else.`;
+  const q = (await callAI(sys, `Passion/dream: ${dream}`, 60, false, true)).text.trim();
+  return q.replace(/^["'`]|["'`]$/g, "").split("\n")[0].slice(0, 80);
+}
+
 // Turn raw Brave news results (often Korean) into clean briefs in the interface language.
 // Drops site homepages/boilerplate; never invents facts. Returns { general, interest }
 // arrays of { i, title, description }, i = index into the original list (to keep sources).
@@ -2413,9 +2421,12 @@ function AppInner() {
     }
     setNewsRecapLoad(true); setNewsRecapErr("");
     try {
+      // Translate the dream into a target-language query (Korean sources cover niche topics).
+      let interestQuery = interest;
+      if (interest) { try { interestQuery = await dreamToSearchQuery(interest, getTargetLangName(tl, "en")) || interest; } catch (qe) { console.warn("dream query translate failed:", qe); } }
       const res = await fetch("/api/feed", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest, uiLang: lang }),
+        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
       });
       const raw = await res.text();
       let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }

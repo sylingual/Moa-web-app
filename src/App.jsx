@@ -2418,7 +2418,7 @@ function AppInner() {
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem(key) || "null");
-        if (cached && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
+        if (cached && cached.v === 3 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
           setNewsRecap(cached); return;
         }
       } catch {}
@@ -2447,7 +2447,7 @@ function AppInner() {
         const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
         if (g.length) { general = g; interestItems = it; translated = true; }
       } catch (se) { console.warn("recap summarize failed, showing raw:", se); }
-      const recap = { date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, translated };
+      const recap = { v: 3, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, translated };
       setNewsRecap(recap);
       try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
     } catch (e) {

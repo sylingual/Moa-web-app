@@ -256,11 +256,12 @@ const T = {
     feedCatRecap: "📰 Journal",
     recapMasthead: "Le Quotidien coréen",
     recapGeneralTitle: "À la une aujourd'hui",
-    recapInterestTitle: "Vos centres d'intérêt",
+    recapInterestTitle: "Autour de ton rêve",
     recapRefresh: "Rafraîchir",
     recapLoading: "Édition du jour en préparation…",
     recapEmpty: "Pas d'actualité trouvée pour aujourd'hui.",
-    recapInterestHint: "Ajoute un centre d'intérêt dans ton profil pour une rubrique personnalisée.",
+    recapInterestHint: "Renseigne ton rêve dans le Profil pour une rubrique sur mesure.",
+    recapRawNote: "Traduction indisponible (quota IA) — titres affichés en version d'origine.",
     recapEdition: (d) => `Édition du ${d}`,
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
@@ -483,11 +484,12 @@ const T = {
     feedCatRecap: "📰 Daily",
     recapMasthead: "The Korea Daily",
     recapGeneralTitle: "Today's headlines",
-    recapInterestTitle: "Your interests",
+    recapInterestTitle: "Around your dream",
     recapRefresh: "Refresh",
     recapLoading: "Setting today's edition…",
     recapEmpty: "No news found for today.",
-    recapInterestHint: "Add an interest in your profile for a personalized section.",
+    recapInterestHint: "Set your dream in your Profile for a tailored section.",
+    recapRawNote: "Translation unavailable (AI quota) — showing original headlines.",
     recapEdition: (d) => `${d} edition`,
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
@@ -1153,6 +1155,23 @@ async function fetchFeed(query, targetLang, category) {
   try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
   if (!res.ok) throw new Error(data.error || raw.substring(0, 150));
   return data.items || [];
+}
+
+// Turn raw Brave news results (often Korean) into clean briefs in the interface language.
+// Drops site homepages/boilerplate; never invents facts. Returns { general, interest }
+// arrays of { i, title, description }, i = index into the original list (to keep sources).
+async function summarizeRecap(general, interestItems, lang) {
+  const L = lang === "fr" ? "French" : "English";
+  const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 300)}`).join("\n\n") || "(none)";
+  const sys = `You are the editor of a daily news digest inside a language-learning app. Below are web/news search results (headline + snippet) in two sections, GENERAL (Korea news) and INTEREST (the learner's passion). Rewrite them as short news briefs IN ${L}, for a reader who cannot yet read Korean.
+Rules:
+- Translate/clarify each headline into natural, concise ${L} (no clickbait, no source name in the title).
+- Write a 1-3 sentence description in ${L} summarizing the story, based ONLY on the given headline + snippet. Never invent specific facts, numbers, names or quotes not present.
+- OMIT items that are just a site homepage, section page or boilerplate (e.g. titles like "Daum News | Home", "YTN channel", or snippets like "we cannot provide a description").
+- Keep at most 5 per section, most newsworthy first.
+Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":"..."}],"interest":[{"i":...,"title":"...","description":"..."}]}.`;
+  const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
+  return parseJSON((await callAI(sys, user, 1800)).text);
 }
 
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
@@ -2379,14 +2398,15 @@ function AppInner() {
     setFeedLoad(false);
   }, [tl, feedCat]);
 
-  // Daily news recap (#57): general + interest sections, cached once per day per language.
+  // Daily news recap (#57): general + dream-based sections, translated into the interface
+  // language and cached once per day (so the AI pass runs at most once a day).
   const loadNewsRecap = useCallback(async (force) => {
-    const interest = ((data.profile?.interests || "").split(/[\n,;]/)[0] || "").trim().slice(0, 50);
+    const interest = (data.profile?.dream || "").trim().slice(0, 80);
     const key = "moa-news-recap";
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem(key) || "null");
-        if (cached && cached.date === dayKey() && cached.lang === tl && cached.interest === interest) {
+        if (cached && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
           setNewsRecap(cached); return;
         }
       } catch {}
@@ -2395,12 +2415,23 @@ function AppInner() {
     try {
       const res = await fetch("/api/feed", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest }),
+        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest, uiLang: lang }),
       });
       const raw = await res.text();
       let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }
       if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
-      const recap = { date: dayKey(), lang: tl, interest, general: d.general || [], interestItems: d.interest || [] };
+      const rawGeneral = d.general || [], rawInterest = d.interest || [];
+      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5), translated = false;
+      // Translate + summarize into the interface language (falls back to raw on quota/error).
+      try {
+        const s = await summarizeRecap(rawGeneral, rawInterest, lang);
+        const merge = (parsed, rawArr) => (parsed || [])
+          .map(p => { const r = rawArr[p.i]; return r ? { title: p.title || r.title, snippet: p.description || "", link: r.link, source: r.source, date: r.date, image: r.image } : null; })
+          .filter(Boolean).slice(0, 5);
+        const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
+        if (g.length) { general = g; interestItems = it; translated = true; }
+      } catch (se) { console.warn("recap summarize failed, showing raw:", se); }
+      const recap = { date: dayKey(), lang: tl, uiLang: lang, interest, general, interestItems, translated };
       setNewsRecap(recap);
       try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
     } catch (e) {
@@ -2408,7 +2439,7 @@ function AppInner() {
       setNewsRecapErr(e.message);
     }
     setNewsRecapLoad(false);
-  }, [tl, data.profile?.interests]);
+  }, [tl, lang, data.profile?.dream]);
 
   // Open a social post (Bluesky/Mastodon) in the in-app thread viewer.
   const openThread = async (item) => {
@@ -3994,6 +4025,9 @@ function AppInner() {
                         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
                           <button onClick={() => loadNewsRecap(true)} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>↻ {t.recapRefresh}</button>
                         </div>
+                        {!newsRecap.translated && (
+                          <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {t.recapRawNote}</div>
+                        )}
                         {section(t.recapGeneralTitle, newsRecap.general || [])}
                         {section(t.recapInterestTitle + (newsRecap.interest ? " · " + newsRecap.interest : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
                       </div>

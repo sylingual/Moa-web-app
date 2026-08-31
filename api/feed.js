@@ -28,6 +28,8 @@ function stripTags(s) {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, function (_, h) { try { return String.fromCodePoint(parseInt(h, 16)) } catch (e) { return '' } })
+    .replace(/&#(\d+);/g, function (_, d) { try { return String.fromCodePoint(parseInt(d, 10)) } catch (e) { return '' } })
     .trim()
 }
 
@@ -405,16 +407,19 @@ async function braveNews(query, searchLang) {
   return { results: (pw.results || []).length ? pw.results : pd.results }
 }
 
-async function fetchNewsRecap(targetLang, interest) {
+async function fetchNewsRecap(targetLang, interest, uiLang) {
   var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
+  // General: local-language sources (immersive). Interest (the learner's dream): searched
+  // in the interface language for better coverage of a niche topic. Both get translated /
+  // summarized into the interface language on the client.
   var g = await braveNews(cfg.general, targetLang)
   if (g.error) return { error: g.error }
   var interestItems = []
   if (interest) {
-    var ir = await braveNews(interest + ' ' + cfg.suffix, targetLang)
+    var ir = await braveNews(interest + ' Korea', uiLang || 'en')
     interestItems = ir.results || []
   }
-  return { general: (g.results || []).slice(0, 5), interest: interestItems.slice(0, 5), interestQuery: interest }
+  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interest }
 }
 
 export default async function handler(req, res) {
@@ -438,7 +443,7 @@ export default async function handler(req, res) {
 
     // Daily news recap (Brave): general + interest sections with descriptions + sources.
     if (body.action === 'newsRecap') {
-      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim())
+      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim(), (body.uiLang || 'en').trim())
       if (nr.error) return res.status(502).json({ error: nr.error })
       return res.status(200).json(nr)
     }

@@ -48,6 +48,9 @@ const T = {
     toStudiedTitle: "Remettre en Étudié ?", toStudiedMsg: (k) => `« ${k} » repassera parmi les cartes en apprentissage.`,
     confirmBtn: "Confirmer", learningShelf: "En apprentissage",
     statusNew: "Nouveau", statusInProgress: "En cours", statusStudied: "Étudié", statusAcquired: "Acquis",
+    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Rien à étudier aujourd'hui — importe un texte pour commencer !", todayDone: "fait !",
+    shelfMaskedHint: "sens masqué, à toi de deviner", shelfExpandHint: "clic pour dérouler", toStudied: "Remettre en Étudié",
+    dailyCountLabel: "Cartes proposées chaque jour", markAcquired: "Marquer acquis",
     reviewCount: (n) => `${n} révision${n > 1 ? "s" : ""}`,
     importTitle: "Importer un texte",
     importSub: "Colle un article de blog, un extrait, ou n'importe quel texte coréen. L'IA va repérer les points pertinents pour ton niveau.",
@@ -140,6 +143,7 @@ const T = {
     // Lesson summary
     endLesson: "Terminer la leçon",
     endLessonConfirm: "Terminer et voir le résumé ?",
+    wrapUpTitle: "Tu peux conclure la leçon, ou aller un peu plus loin :",
     summaryTitle: "Résumé de la leçon",
     generating: "Génération du résumé...",
     summaryHistory: "Historique des leçons",
@@ -194,6 +198,7 @@ const T = {
     // Points
     points_: "points",
     pointsEarned: (n) => `+${n} points !`,
+    dailyGoalReached: (n) => `Objectif du jour atteint ! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Questionnaire détaillé",
     detailedSub: "Plus l'IA te connaît, plus tes leçons seront taillées pour toi. Chaque réponse rend les exemples plus vivants.",
@@ -253,6 +258,9 @@ const T = {
     toStudiedTitle: "Move back to Studied?", toStudiedMsg: (k) => `"${k}" will return to the cards you're still learning.`,
     confirmBtn: "Confirm", learningShelf: "Learning",
     statusNew: "New", statusInProgress: "In progress", statusStudied: "Studied", statusAcquired: "Acquired",
+    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "Nothing to study today — import a text to get started!", todayDone: "done!",
+    shelfMaskedHint: "meaning hidden — guess it", shelfExpandHint: "click to expand", toStudied: "Move back to Studied",
+    dailyCountLabel: "Cards suggested each day", markAcquired: "Mark acquired",
     reviewCount: (n) => `${n} review${n > 1 ? "s" : ""}`,
     importTitle: "Import a text",
     importSub: "Paste a blog article or any Korean text. The AI will find relevant points for your level.",
@@ -345,6 +353,7 @@ const T = {
     // Lesson summary
     endLesson: "End lesson",
     endLessonConfirm: "End lesson and see summary?",
+    wrapUpTitle: "You can wrap up the lesson, or go a little further:",
     summaryTitle: "Lesson summary",
     generating: "Generating summary...",
     summaryHistory: "Lesson history",
@@ -399,6 +408,7 @@ const T = {
     // Points
     points_: "points",
     pointsEarned: (n) => `+${n} points!`,
+    dailyGoalReached: (n) => `Daily goal reached! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Detailed questionnaire",
     detailedSub: "The more the AI knows you, the more your lessons fit you. Every answer makes examples come alive.",
@@ -464,10 +474,10 @@ const C = {
   ok: "#3daa5c", okBg: "rgba(61,170,92,0.08)", okB: "rgba(61,170,92,0.25)",
   proBg: "rgba(175,82,222,0.08)", pro: "#af52de",
   // Card statuses
-  stNew: "#aeaeb2", stNewBg: "rgba(174,174,178,0.08)", stNewB: "rgba(174,174,178,0.25)",
-  stProg: "#e85d9a", stProgBg: "rgba(232,93,154,0.08)", stProgB: "rgba(232,93,154,0.25)",
-  stStudied: "#5b8def", stStudiedBg: "rgba(91,141,239,0.08)", stStudiedB: "rgba(91,141,239,0.25)",
-  stAcq: "#3daa5c", stAcqBg: "rgba(61,170,92,0.08)", stAcqB: "rgba(61,170,92,0.25)",
+  stNew: "#aeaeb2", stNewBg: "rgba(174,174,178,0.06)", stNewB: "rgba(174,174,178,0.25)", stNewCard: "rgba(174,174,178,0.16)",
+  stProg: "#e85d9a", stProgBg: "rgba(232,93,154,0.06)", stProgB: "rgba(232,93,154,0.25)", stProgCard: "rgba(232,93,154,0.13)",
+  stStudied: "#5b8def", stStudiedBg: "rgba(91,141,239,0.06)", stStudiedB: "rgba(91,141,239,0.25)", stStudiedCard: "rgba(91,141,239,0.13)",
+  stAcq: "#3daa5c", stAcqBg: "rgba(61,170,92,0.06)", stAcqB: "rgba(61,170,92,0.25)", stAcqCard: "rgba(61,170,92,0.13)",
 };
 
 // =============================================
@@ -821,7 +831,7 @@ async function continueChat(card, conv, action, lang) {
   const correctByPhase = {
     DISCOVERY: `The student answered correctly! Briefly confirm (1 sentence). Now reveal the official grammar name and explain the core nuance more explicitly. Show one more example that highlights a subtlety. Ask a slightly harder question to go deeper. Include MCQ options.`,
     DEEPENING: `The student answered correctly! Briefly confirm (1 sentence). Now show an edge case, a common mistake Korean learners make, or introduce a closely related/derived expression if one exists (e.g. an idiom built from this structure). Mention how this structure differs from similar ones they might confuse it with. Ask a question that tests this deeper understanding. Include MCQ options.`,
-    CONSOLIDATION: `The student answered correctly! Briefly confirm (1 sentence). Now give a mini production exercise: provide a situation in ${L} and ask the student to write a Korean sentence using "${card.korean}". IMPORTANT: when they attempt to write Korean, if they make mistakes, do NOT give the corrected sentence. Instead, point out what needs fixing with hints and let them self-correct. After they succeed (or after 2 attempts), wrap up the lesson: summarize what was covered, congratulate the student, and explicitly tell them they can click the "End lesson" button to save their progress.`,
+    CONSOLIDATION: `The student answered correctly! Briefly confirm (1 sentence). Now give a mini production exercise: provide a situation in ${L} and ask the student to write a Korean sentence using "${card.korean}". IMPORTANT: when they attempt to write Korean, if they make mistakes, do NOT give the corrected sentence. Instead, point out what needs fixing with hints and let them self-correct. After they succeed (or after 2 attempts), wrap up the lesson: summarize in 2-3 sentences what was covered and congratulate the student. Do NOT include MCQ options on this closing turn, and do NOT ask whether they want to end — the app itself shows the "end lesson / more examples / exercise" buttons.`,
   };
 
   const acts = {
@@ -861,7 +871,7 @@ ${instruction}
 
 Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.`;
   
-  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`)).text);
+  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 900)).text);
 }
 
 // Curated deep-links: each opens a trusted resource site pre-filtered to this
@@ -1427,6 +1437,52 @@ function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
   );
 }
 
+// A card rendered as a horizontal "book spine": a colored binding + the Korean form.
+// masked = hide the meaning (a "?" instead), for cards not yet learned.
+function BookSpine({ card, t, color, cardBg, masked, compact, active, onClick, onToggleStatus, onDelete }) {
+  const iconBtn = (glyph, title, handler, hover) => (
+    <button onClick={e => { e.stopPropagation(); handler(); }} title={title}
+      style={{ width: 19, height: 19, borderRadius: 5, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+      onMouseEnter={e => { e.currentTarget.style.color = hover; e.currentTarget.style.background = C.s1; }}
+      onMouseLeave={e => { e.currentTarget.style.color = C.txtM; e.currentTarget.style.background = "transparent"; }}>{glyph}</button>
+  );
+  return (
+    <div onClick={onClick}
+      style={{ display: "inline-flex", alignItems: "stretch", background: cardBg || C.s2, border: `1px solid ${active ? color : "transparent"}`, borderRadius: 6, overflow: "hidden", cursor: "pointer", transition: "border-color 0.12s, transform 0.1s" }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = "translateY(-1px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = active ? color : "transparent"; e.currentTarget.style.transform = "none"; }}>
+      <span style={{ width: compact ? 6 : 8, background: color, opacity: 0.75, flexShrink: 0 }} />
+      <span style={{ width: 1, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+      <span style={{ padding: compact ? "6px 8px 6px 11px" : "8px 10px 8px 11px", display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: compact ? 13.5 : 14.5, color: C.txt }}>{card.korean}</span>
+        {masked && <span style={{ width: 15, height: 15, borderRadius: "50%", background: C.s1, color: C.txtM, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans'" }}>?</span>}
+        {onToggleStatus && iconBtn("↩", t.toStudied, onToggleStatus, C.acc)}
+        {onDelete && iconBtn("🗑", t.deleteCard, onDelete, C.warn)}
+      </span>
+    </div>
+  );
+}
+
+// Where "today's weather" comes from, per target language (a representative city).
+const WEATHER_CITY = {
+  ko: { name: "Séoul", lat: 37.5665, lon: 126.978 },
+  de: { name: "Berlin", lat: 52.52, lon: 13.405 },
+};
+function weatherEmoji(code) {
+  if (code === 0) return "☀️";
+  if (code <= 2) return "🌤️";
+  if (code === 3) return "☁️";
+  if (code >= 45 && code <= 48) return "🌫️";
+  if (code >= 51 && code <= 67) return "🌧️";
+  if (code >= 71 && code <= 77) return "❄️";
+  if (code >= 80 && code <= 86) return "🌦️";
+  if (code >= 95) return "⛈️";
+  return "🌡️";
+}
+
+// Local calendar day, used to keep the "Aujourd'hui" set stable until the next day.
+function dayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+
 const LANG_LEVELS = ["native", "bilingual", "advanced", "intermediate"];
 function langLevelLabel(level, t) {
   return { native: t.langLevelNative, bilingual: t.langLevelBilingual, advanced: t.langLevelAdvanced, intermediate: t.langLevelIntermediate }[level] || "";
@@ -1862,6 +1918,8 @@ function AppInner() {
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab"
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
+  const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
+  const [weather, setWeather] = useState(null); // { city, temp, emoji } for the target language
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -2116,6 +2174,18 @@ function AppInner() {
     return () => window.removeEventListener("resize", onR);
   }, []);
 
+  // Today's weather in the target-language's city (Open-Meteo — free, no key).
+  useEffect(() => {
+    const city = WEATHER_CITY[tl];
+    if (!city) { setWeather(null); return; }
+    let alive = true;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code`)
+      .then(r => r.json())
+      .then(d => { if (alive && d && d.current) setWeather({ city: city.name, temp: Math.round(d.current.temperature_2m), emoji: weatherEmoji(d.current.weather_code) }); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [tl]);
+
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
   useEffect(() => {
@@ -2150,6 +2220,30 @@ function AppInner() {
   }, [kbOpen]);
 
   const save = useCallback((nd) => { setData(nd); saveData(nd, syncId); }, [syncId]);
+
+  // "Aujourd'hui" is a FIXED daily set: chosen once per calendar day from the
+  // cards still to discover, then frozen so finished cards stay (turn green)
+  // instead of being replaced. Rebuilds only when the day changes.
+  useEffect(() => {
+    const today = dayKey();
+    if (data.today && data.today.date === today) return;
+    if (!data.cards.length) return; // wait for real data to load before freezing a set
+    const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
+    const ids = data.cards.filter(c => migrateStatus(c.status) === "new").slice(0, dc).map(c => c.id);
+    save({ ...data, today: { date: today, ids } });
+  }, [data.today, data.cards, save]);
+
+  // Daily-goal bonus: when every card in today's set is finished, award +30 once.
+  useEffect(() => {
+    const sel = data.today;
+    if (!sel || sel.bonusAwarded || sel.date !== dayKey()) return;
+    const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+    if (!cards.length || !cards.every(c => migrateStatus(c.status) !== "new")) return;
+    const base = data.profile || DEFAULT_PROFILE;
+    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
+    setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
+    setTimeout(() => setPointsToast(null), 3000);
+  }, [data.today, data.cards, save]);
 
   const handleSync = async () => {
     const id = syncInput.trim();
@@ -2664,6 +2758,7 @@ function AppInner() {
   });
 
   const pickOpt = async (i, opt) => {
+    if (lLoad) return;
     const isRight = (opt.correct === true || opt.correct === "true");
     const nc = [...conv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setConv(u); setLLoad(true);
@@ -2673,6 +2768,7 @@ function AppInner() {
   };
 
   const quickAct = async (a) => {
+    if (lLoad) return;
     setTray(false); setLLoad(true);
     const labels = { resources: t.resourcesAsk, realExamples: t.realExamples };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
@@ -2694,7 +2790,7 @@ function AppInner() {
   };
 
   const sendMsg = async () => {
-    if (!inp.trim()) return; const m = inp.trim(); setInp(""); setLLoad(true);
+    if (lLoad || !inp.trim()) return; const m = inp.trim(); setInp(""); setLLoad(true);
     const u = [...conv, { role: "user", content: m }]; setConv(u);
     try { const r = await continueChat(lCard, u, m, lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("sendMsg error:", e); setConv([...u, aiError(e, () => { setInp(m); })]); }
@@ -2939,7 +3035,7 @@ function AppInner() {
       {/* POINTS TOAST */}
       {pointsToast && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.acc, color: C.onAcc, padding: "10px 20px", borderRadius: 20, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 16px rgba(123,127,245,0.35)", animation: "pop 2.5s ease-out forwards", pointerEvents: "none" }}>
-          ⭐ {t.pointsEarned(pointsToast)}
+          ⭐ {typeof pointsToast === "object" ? pointsToast.label : t.pointsEarned(pointsToast)}
         </div>
       )}
 
@@ -3184,25 +3280,88 @@ function AppInner() {
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
                 : libView === "grid"
                   ? (() => {
-                      const acq = filteredCards.filter(c => migrateStatus(c.status) === "acquired");
-                      const learning = filteredCards.filter(c => migrateStatus(c.status) !== "acquired");
+                      const groups = { new: [], in_progress: [], studied: [], acquired: [] };
+                      filteredCards.forEach(c => { const s = migrateStatus(c.status); (groups[s] || groups.new).push(c); });
+                      // "En cours" is folded into "à découvrir": lessons don't persist the
+                      // conversation, so a started card is just one still waiting to be studied.
+                      groups.new = [...groups.in_progress, ...groups.new];
+                      groups.in_progress = [];
+                      // Fixed daily set (frozen for the day); shows each card's CURRENT status.
+                      const today = (data.today?.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const shelf = (status, bg, color, cardBg, { masked, compact, expandable } = {}) => {
+                        const cs = groups[status];
+                        if (!cs.length) return null;
+                        const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
+                        return (
+                          <div style={{ background: bg, borderRadius: 14, padding: "11px 13px" }}>
+                            <div style={{ fontSize: 12, color, marginBottom: 10, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 500 }}>{statusInfo(status, t).label}</span>
+                              <span style={{ opacity: 0.7 }}>· {cs.length}</span>
+                              {masked && <span style={{ color: C.txtM }}>— {t.shelfMaskedHint}</span>}
+                              {expandable && <span style={{ color: C.txtM }}>— {t.shelfExpandHint}</span>}
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                              {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
+                                onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
+                                onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
+                                onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />)}
+                            </div>
+                            {ex && (
+                              <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
+                                <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt, marginBottom: 6 }}>{ex.korean}</div>
+                                <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>{ex.description}</div>
+                                {ex.example_kr && (
+                                  <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
+                                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>
+                                    <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 2 }}>{ex.example_tr}</div>
+                                  </div>
+                                )}
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
+                                  <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>✅ {t.markAcquired}</button>
+                                  <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>🗑</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      };
                       return (
-                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 18 }}>
-                          {learning.length > 0 && (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(270px,1fr))", gap: 12 }}>
-                              {learning.map(c => <GrammarCard key={c.id} card={c} t={t} onToggle={() => setConfirmToggle(c)} onReview={() => reviewCard(c)} onDelete={() => setCardToDelete(c)} />)}
-                            </div>
-                          )}
-                          {acq.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, textTransform: "uppercase", letterSpacing: 0.3, marginBottom: 9, display: "flex", alignItems: "center", gap: 6 }}>
-                                ✅ {t.acquired} <span style={{ fontWeight: 400 }}>· {acq.length}</span>
+                        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                          {today.length > 0 && (() => {
+                            const doneCount = today.filter(c => migrateStatus(c.status) !== "new").length;
+                            return (
+                            <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.22), rgba(255,214,102,0.10))", border: "1px solid rgba(230,180,40,0.35)", borderRadius: 14, padding: 14, display: "flex", alignItems: "stretch", gap: 14, flexWrap: "wrap" }}>
+                              {weather && (
+                                <div style={{ flexShrink: 0, minWidth: 118, background: "rgba(255,255,255,0.5)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                                  <div style={{ fontSize: 34, lineHeight: 1 }}>{weather.emoji}</div>
+                                  <div style={{ fontSize: 22, fontWeight: 600, color: C.txt, marginTop: 4 }}>{weather.temp}°</div>
+                                  <div style={{ fontSize: 12, color: C.txtS }}>{weather.city}</div>
+                                </div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 11, display: "flex", alignItems: "center", gap: 6 }}>
+                                  ☀️ {t.today} · {t.todayCards(today.length)}
+                                  {doneCount > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: C.stAcq }}>· {doneCount}/{today.length} ✓</span>}
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
+                                  {today.map(c => { const done = migrateStatus(c.status) !== "new"; return (
+                                    <div key={c.id} onClick={() => reviewCard(c)} title={done ? t.todayDone : ""}
+                                      style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "transform 0.1s" }}
+                                      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                                      onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
+                                      <div style={{ fontSize: 10, color: done ? C.stAcq : "#8a6d00", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>{done ? <>✓ {t.todayDone}</> : t.statusNew}</div>
+                                      <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
+                                    </div>
+                                  ); })}
+                                </div>
                               </div>
-                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                                {acq.map(c => <AcquiredCard key={c.id} card={c} t={t} onReview={() => reviewCard(c)} onToggle={() => setConfirmToggle(c)} onDelete={() => setCardToDelete(c)} />)}
-                              </div>
                             </div>
-                          )}
+                            );
+                          })()}
+                          {shelf("new", C.stNewBg, C.stNew, C.stNewCard, { masked: true })}
+                          {shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true })}
+                          {shelf("acquired", C.stAcqBg, C.stAcq, C.stAcqCard, { compact: true })}
                         </div>
                       );
                     })()
@@ -3503,30 +3662,37 @@ function AppInner() {
                 {!lessonDone && (<>
                   {(() => {
                     const aiTurns = conv.filter(m => m.role === "ai").length;
-                    return aiTurns >= 6 ? (
-                      <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, background: C.okBg, display: "flex", justifyContent: "center" }}>
-                        <button onClick={endLesson} disabled={lLoad}
-                          style={{ padding: "6px 18px", borderRadius: 6, border: `1px solid ${C.okB}`, background: C.s2, color: C.ok, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: lLoad ? "default" : "pointer" }}>
-                          ✓ {t.endLesson}
-                        </button>
+                    if (aiTurns < 6) return null;
+                    const showRes = lCard?.type !== "vocab";
+                    const sBtn = { padding: "7px 14px", borderRadius: 20, border: `1px solid ${C.borderS}`, background: C.s2, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: lLoad ? "default" : "pointer", opacity: lLoad ? 0.55 : 1 };
+                    return (
+                      <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.okB}`, background: C.okBg }}>
+                        <div style={{ fontSize: 12, color: C.txtS, marginBottom: 8, textAlign: "center" }}>🎓 {t.wrapUpTitle}</div>
+                        <div style={{ display: "flex", gap: 7, flexWrap: "wrap", justifyContent: "center" }}>
+                          <button onClick={endLesson} disabled={lLoad}
+                            style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: lLoad ? C.s1 : C.ok, color: lLoad ? C.txtM : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: lLoad ? "default" : "pointer" }}>✓ {t.endLesson}</button>
+                          <button onClick={() => quickAct("examples")} disabled={lLoad} style={sBtn}>💡 {t.moreExamples}</button>
+                          <button onClick={() => quickAct("exercise")} disabled={lLoad} style={sBtn}>✏️ {t.anExercise}</button>
+                          {showRes && <button onClick={() => quickAct("resources")} disabled={lLoad} style={sBtn}>📚 {t.onlineRes}</button>}
+                        </div>
                       </div>
-                    ) : null;
+                    );
                   })()}
                   {tray && (
                     <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 5, flexWrap: "wrap", background: C.s1 }}>
                       {qa.filter(a => a.k !== "resources" || lCard?.type !== "vocab").map(a => (
-                        <button key={a.k} onClick={() => quickAct(a.k)}
-                          style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: "pointer" }}>
+                        <button key={a.k} onClick={() => quickAct(a.k)} disabled={lLoad}
+                          style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: lLoad ? "default" : "pointer", opacity: lLoad ? 0.55 : 1 }}>
                           {a.i} {a.l}
                         </button>
                       ))}
                     </div>
                   )}
                   <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
-                    <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={t.yourAnswer}
-                      style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
-                    <button onClick={sendMsg} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
-                    <button onClick={() => setTray(!tray)} style={{ width: 30, height: 30, border: `1px solid ${C.borderS}`, borderRadius: 6, background: tray ? C.s1 : "none", cursor: "pointer", color: C.txtM, fontSize: 15, letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>···</button>
+                    <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={lLoad ? t.thinking : t.yourAnswer} disabled={lLoad}
+                      style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: lLoad ? 0.6 : 1 }} />
+                    <button onClick={sendMsg} disabled={lLoad} style={{ width: 30, height: 30, background: lLoad ? C.s1 : C.acc, color: lLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: lLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
+                    <button onClick={() => !lLoad && setTray(!tray)} disabled={lLoad} style={{ width: 30, height: 30, border: `1px solid ${C.borderS}`, borderRadius: 6, background: tray ? C.s1 : "none", cursor: lLoad ? "default" : "pointer", color: C.txtM, fontSize: 15, letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: lLoad ? 0.55 : 1 }}>···</button>
                   </div>
                 </>)}
               </div>
@@ -3815,6 +3981,17 @@ function AppInner() {
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.spokenLangsLabel}</label>
                 <LanguagesTable value={profileDraft.languages} onChange={rows => setProfileDraft({ ...profileDraft, languages: rows })} t={t} />
                 {savedTag("languages")}
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.dailyCountLabel}</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" min="1" max="20" value={profileDraft.dailyCount ?? 5}
+                    onChange={e => setProfileDraft({ ...profileDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                    style={{ ...fieldStyle, width: 90 }} />
+                  <span style={{ fontSize: 12, color: C.txtM }}>{t.today.toLowerCase()}</span>
+                </div>
+                {savedTag("dailyCount")}
               </div>
 
               <div>

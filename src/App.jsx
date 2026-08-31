@@ -470,10 +470,10 @@ const C = {
   ok: "#3daa5c", okBg: "rgba(61,170,92,0.08)", okB: "rgba(61,170,92,0.25)",
   proBg: "rgba(175,82,222,0.08)", pro: "#af52de",
   // Card statuses
-  stNew: "#aeaeb2", stNewBg: "rgba(174,174,178,0.08)", stNewB: "rgba(174,174,178,0.25)",
-  stProg: "#e85d9a", stProgBg: "rgba(232,93,154,0.08)", stProgB: "rgba(232,93,154,0.25)",
-  stStudied: "#5b8def", stStudiedBg: "rgba(91,141,239,0.08)", stStudiedB: "rgba(91,141,239,0.25)",
-  stAcq: "#3daa5c", stAcqBg: "rgba(61,170,92,0.08)", stAcqB: "rgba(61,170,92,0.25)",
+  stNew: "#aeaeb2", stNewBg: "rgba(174,174,178,0.06)", stNewB: "rgba(174,174,178,0.25)", stNewCard: "rgba(174,174,178,0.16)",
+  stProg: "#e85d9a", stProgBg: "rgba(232,93,154,0.06)", stProgB: "rgba(232,93,154,0.25)", stProgCard: "rgba(232,93,154,0.13)",
+  stStudied: "#5b8def", stStudiedBg: "rgba(91,141,239,0.06)", stStudiedB: "rgba(91,141,239,0.25)", stStudiedCard: "rgba(91,141,239,0.13)",
+  stAcq: "#3daa5c", stAcqBg: "rgba(61,170,92,0.06)", stAcqB: "rgba(61,170,92,0.25)", stAcqCard: "rgba(61,170,92,0.13)",
 };
 
 // =============================================
@@ -1435,7 +1435,7 @@ function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
 
 // A card rendered as a horizontal "book spine": a colored binding + the Korean form.
 // masked = hide the meaning (a "?" instead), for cards not yet learned.
-function BookSpine({ card, t, color, masked, compact, active, onClick, onToggleStatus, onDelete }) {
+function BookSpine({ card, t, color, cardBg, masked, compact, active, onClick, onToggleStatus, onDelete }) {
   const iconBtn = (glyph, title, handler, hover) => (
     <button onClick={e => { e.stopPropagation(); handler(); }} title={title}
       style={{ width: 19, height: 19, borderRadius: 5, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
@@ -1444,11 +1444,11 @@ function BookSpine({ card, t, color, masked, compact, active, onClick, onToggleS
   );
   return (
     <div onClick={onClick}
-      style={{ display: "inline-flex", alignItems: "stretch", background: C.s2, border: `1px solid ${active ? color : C.border}`, borderRadius: 6, overflow: "hidden", cursor: "pointer", transition: "border-color 0.12s, transform 0.1s" }}
+      style={{ display: "inline-flex", alignItems: "stretch", background: cardBg || C.s2, border: `1px solid ${active ? color : "transparent"}`, borderRadius: 6, overflow: "hidden", cursor: "pointer", transition: "border-color 0.12s, transform 0.1s" }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = "translateY(-1px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = active ? color : C.border; e.currentTarget.style.transform = "none"; }}>
-      <span style={{ width: compact ? 7 : 9, background: color, flexShrink: 0 }} />
-      <span style={{ width: 2, background: C.s1, flexShrink: 0 }} />
+      onMouseLeave={e => { e.currentTarget.style.borderColor = active ? color : "transparent"; e.currentTarget.style.transform = "none"; }}>
+      <span style={{ width: compact ? 6 : 8, background: color, opacity: 0.75, flexShrink: 0 }} />
+      <span style={{ width: 1, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
       <span style={{ padding: compact ? "6px 8px 6px 11px" : "8px 10px 8px 11px", display: "flex", alignItems: "center", gap: 7 }}>
         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: compact ? 13.5 : 14.5, color: C.txt }}>{card.korean}</span>
         {masked && <span style={{ width: 15, height: 15, borderRadius: "50%", background: C.s1, color: C.txtM, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans'" }}>?</span>}
@@ -3249,9 +3249,13 @@ function AppInner() {
                   ? (() => {
                       const groups = { new: [], in_progress: [], studied: [], acquired: [] };
                       filteredCards.forEach(c => { const s = migrateStatus(c.status); (groups[s] || groups.new).push(c); });
+                      // "En cours" is folded into "à découvrir": lessons don't persist the
+                      // conversation, so a started card is just one still waiting to be studied.
+                      groups.new = [...groups.in_progress, ...groups.new];
+                      groups.in_progress = [];
                       const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
-                      const today = [...groups.in_progress, ...groups.new].slice(0, dc);
-                      const shelf = (status, bg, color, { masked, compact, expandable } = {}) => {
+                      const today = groups.new.slice(0, dc);
+                      const shelf = (status, bg, color, cardBg, { masked, compact, expandable } = {}) => {
                         const cs = groups[status];
                         if (!cs.length) return null;
                         const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
@@ -3264,7 +3268,7 @@ function AppInner() {
                               {expandable && <span style={{ color: C.txtM }}>— {t.shelfExpandHint}</span>}
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                              {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} masked={masked} compact={compact} active={expandable && expandedId === c.id}
+                              {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
                                 onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
                                 onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
                                 onDelete={compact ? () => setCardToDelete(c) : undefined} />)}
@@ -3292,28 +3296,33 @@ function AppInner() {
                       return (
                         <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
                           {today.length > 0 && (
-                            <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 14px" }}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11, gap: 8, flexWrap: "wrap" }}>
-                                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.today} · {t.todayCards(today.length)}</div>
-                                {weather && <div style={{ fontSize: 12.5, color: C.txtS }}>{weather.emoji} {weather.city} · {weather.temp}°</div>}
-                              </div>
-                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
-                                {today.map(c => { const st = migrateStatus(c.status); return (
-                                  <div key={c.id} onClick={() => reviewCard(c)}
-                                    style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "border-color 0.12s" }}
-                                    onMouseEnter={e => { e.currentTarget.style.borderColor = st === "in_progress" ? C.stProg : C.stNew; }}
-                                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                                    <div style={{ fontSize: 10, color: st === "in_progress" ? C.stProg : C.txtM, marginBottom: 6 }}>{st === "in_progress" ? t.statusInProgress : t.statusNew}</div>
-                                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
-                                  </div>
-                                ); })}
+                            <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "stretch", gap: 14, flexWrap: "wrap" }}>
+                              {weather && (
+                                <div style={{ flexShrink: 0, minWidth: 118, background: "linear-gradient(160deg, rgba(91,141,239,0.14), rgba(91,141,239,0.05))", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                                  <div style={{ fontSize: 34, lineHeight: 1 }}>{weather.emoji}</div>
+                                  <div style={{ fontSize: 22, fontWeight: 600, color: C.txt, marginTop: 4 }}>{weather.temp}°</div>
+                                  <div style={{ fontSize: 12, color: C.txtS }}>{weather.city}</div>
+                                </div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 11 }}>{t.today} · {t.todayCards(today.length)}</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
+                                  {today.map(c => (
+                                    <div key={c.id} onClick={() => reviewCard(c)}
+                                      style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "border-color 0.12s" }}
+                                      onMouseEnter={e => { e.currentTarget.style.borderColor = C.stNew; }}
+                                      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                                      <div style={{ fontSize: 10, color: C.txtM, marginBottom: 6 }}>{t.statusNew}</div>
+                                      <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           )}
-                          {shelf("new", C.stNewBg, C.stNew, { masked: true })}
-                          {shelf("in_progress", C.stProgBg, C.stProg, { masked: true })}
-                          {shelf("studied", C.stStudiedBg, C.stStudied, { expandable: true })}
-                          {shelf("acquired", C.stAcqBg, C.stAcq, { compact: true })}
+                          {shelf("new", C.stNewBg, C.stNew, C.stNewCard, { masked: true })}
+                          {shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true })}
+                          {shelf("acquired", C.stAcqBg, C.stAcq, C.stAcqCard, { compact: true })}
                         </div>
                       );
                     })()

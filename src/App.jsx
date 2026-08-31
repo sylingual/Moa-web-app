@@ -152,6 +152,12 @@ const T = {
     summaryMistakes: "Points à clarifier",
     summaryNext: "Prochaines étapes",
     newLesson: "Nouvelle leçon",
+    derivedTitle: "Structures rencontrées",
+    derivedSub: "Coche celles que tu veux ajouter à ta bibliothèque (rien n'est ajouté sans toi).",
+    derivedAdd: (n) => n > 0 ? `Ajouter (${n})` : "Ajouter",
+    derivedAll: "Tout cocher",
+    derivedNone: "Tout décocher",
+    derivedSkip: "Ignorer",
     moreExercises: "Plus d'exercices",
     derivedFrom: "issu de",
     viewGrid: "Grille",
@@ -362,6 +368,12 @@ const T = {
     summaryMistakes: "Points to clarify",
     summaryNext: "Next steps",
     newLesson: "New lesson",
+    derivedTitle: "Structures you came across",
+    derivedSub: "Tick the ones you'd like to add to your library (nothing is added without you).",
+    derivedAdd: (n) => n > 0 ? `Add (${n})` : "Add",
+    derivedAll: "Select all",
+    derivedNone: "Deselect all",
+    derivedSkip: "Skip",
     moreExercises: "More exercises",
     derivedFrom: "derived from",
     viewGrid: "Grid",
@@ -1953,6 +1965,9 @@ function AppInner() {
   const [tray, setTray] = useState(false);
   const [lessonDone, setLessonDone] = useState(false);
   const [lessonSummary, setLessonSummary] = useState(null);
+  // Derived structures proposed at the end of a lesson (opt-in, not auto-added).
+  const [pendingDerived, setPendingDerived] = useState([]);
+  const [derivedSel, setDerivedSel] = useState(() => new Set());
   const [lessonRestored, setLessonRestored] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(null); // card to resume/restart when reopened with a live session, or null
   const [showRecap, setShowRecap] = useState(false);
@@ -2728,7 +2743,10 @@ function AppInner() {
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
       setPointsToast(gain);
       setTimeout(() => setPointsToast(null), 2500);
-      save({ ...data, cards: [...updatedCards, ...newDerivedCards], summaries: [...(data.summaries || []), summary], profile: withPoints });
+      // Don't auto-add derived cards — propose them for the learner to opt in.
+      save({ ...data, cards: updatedCards, summaries: [...(data.summaries || []), summary], profile: withPoints });
+      setPendingDerived(newDerivedCards);
+      setDerivedSel(new Set());
     } catch (e) {
       console.error("Summary generation error:", e);
       // Still mark the card as studied even if summary generation failed
@@ -2757,6 +2775,15 @@ function AppInner() {
     content: `⚠️ ${lang === "fr" ? "L'IA n'a pas répondu" : "AI didn't respond"}${e?.message ? ` (${e.message.substring(0, 100)})` : ""}`,
     retry: retryFn || null,
   });
+
+  // Add only the derived cards the learner ticked (opt-in, not imposed).
+  const addSelectedDerived = () => {
+    const chosen = pendingDerived
+      .filter((_, i) => derivedSel.has(i))
+      .filter(d => !data.cards.find(c => c.korean === d.korean));
+    if (chosen.length) save({ ...data, cards: [...data.cards, ...chosen] });
+    setPendingDerived([]); setDerivedSel(new Set());
+  };
 
   const pickOpt = async (i, opt) => {
     if (lLoad) return;
@@ -3641,17 +3668,48 @@ function AppInner() {
                           <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
                             {renderMarkdown(lessonSummary.grammarRecap || lessonSummary.structuresLearned, revealTr)}
                           </div>
+                          {pendingDerived.length > 0 && (
+                            <div style={{ marginTop: 14, borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 3 }}>💡 {t.derivedTitle}</div>
+                              <div style={{ fontSize: 11.5, color: C.txtM, marginBottom: 10 }}>{t.derivedSub}</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                                {pendingDerived.map((d, i) => { const on = derivedSel.has(i); return (
+                                  <label key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "9px 11px", borderRadius: 9, cursor: "pointer", background: on ? C.stNewCard : C.s1, border: `1px solid ${on ? C.stNewB : C.border}`, transition: "background 0.12s" }}>
+                                    <input type="checkbox" checked={on} onChange={() => { const ns = new Set(derivedSel); on ? ns.delete(i) : ns.add(i); setDerivedSel(ns); }} style={{ marginTop: 2, accentColor: C.acc, cursor: "pointer" }} />
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{d.korean}</div>
+                                      {d.description && <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginTop: 2 }}>{d.description}</div>}
+                                    </div>
+                                  </label>
+                                ); })}
+                              </div>
+                              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                <button onClick={addSelectedDerived} disabled={derivedSel.size === 0}
+                                  style={{ padding: "6px 15px", borderRadius: 6, border: "none", background: derivedSel.size ? C.acc : C.s1, color: derivedSel.size ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: derivedSel.size ? "pointer" : "default" }}>
+                                  ➕ {t.derivedAdd(derivedSel.size)}
+                                </button>
+                                <button onClick={() => setDerivedSel(derivedSel.size === pendingDerived.length ? new Set() : new Set(pendingDerived.map((_, i) => i)))}
+                                  style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${C.borderS}`, background: "none", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                                  {derivedSel.size === pendingDerived.length ? t.derivedNone : t.derivedAll}
+                                </button>
+                                <button onClick={() => { setPendingDerived([]); setDerivedSel(new Set()); }}
+                                  style={{ padding: "6px 12px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                                  {t.derivedSkip}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                             <button onClick={() => {
                               const cardId = data.cards.find(c => c.korean === lCard.korean)?.id;
-                              setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+                              setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set());
                               if (cardId) { setExSel(new Set([cardId])); }
                               setView("exercise");
                             }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                               ✏️ {t.moreExercises}
                             </button>
-                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setView("import"); }}
+                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set()); setView("import"); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
                               → {t.newLesson}
                             </button>

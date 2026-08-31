@@ -2184,18 +2184,6 @@ function AppInner() {
     return () => { alive = false; };
   }, [tl]);
 
-  // "Aujourd'hui" is a FIXED daily set: chosen once per calendar day from the
-  // cards still to discover, then frozen so finished cards stay (turn green)
-  // instead of being replaced. Rebuilds only when the day changes.
-  useEffect(() => {
-    const today = dayKey();
-    if (data.today && data.today.date === today) return;
-    if (!data.cards.length) return; // wait for real data to load before freezing a set
-    const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
-    const ids = data.cards.filter(c => migrateStatus(c.status) === "new").slice(0, dc).map(c => c.id);
-    save({ ...data, today: { date: today, ids } });
-  }, [data.today, data.cards, save]);
-
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
   useEffect(() => {
@@ -2230,6 +2218,18 @@ function AppInner() {
   }, [kbOpen]);
 
   const save = useCallback((nd) => { setData(nd); saveData(nd, syncId); }, [syncId]);
+
+  // "Aujourd'hui" is a FIXED daily set: chosen once per calendar day from the
+  // cards still to discover, then frozen so finished cards stay (turn green)
+  // instead of being replaced. Rebuilds only when the day changes.
+  useEffect(() => {
+    const today = dayKey();
+    if (data.today && data.today.date === today) return;
+    if (!data.cards.length) return; // wait for real data to load before freezing a set
+    const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
+    const ids = data.cards.filter(c => migrateStatus(c.status) === "new").slice(0, dc).map(c => c.id);
+    save({ ...data, today: { date: today, ids } });
+  }, [data.today, data.cards, save]);
 
   const handleSync = async () => {
     const id = syncInput.trim();

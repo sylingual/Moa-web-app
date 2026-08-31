@@ -356,6 +356,67 @@ async function fetchMastodonThread(host, id) {
   return { posts: posts.filter(function (x) { return x.text }).slice(0, 40) }
 }
 
+// ---- Daily news recap (Brave Search — separate quota from Gemini/Google) ----
+// Each section: up to 5 stories with a real description + source + link. Queried in
+// the target language, biased to the past day, so it reads like "today's paper".
+var NEWS_QUERIES = {
+  ko: { general: '오늘 한국 주요 뉴스', suffix: '한국 뉴스' },
+  de: { general: 'wichtigste Nachrichten heute Deutschland', suffix: 'Nachrichten' },
+}
+
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, '') } catch (e) { return '' } }
+
+// One Brave web-search call, biased to recent results; retries wider if today is sparse.
+async function braveNews(query, searchLang) {
+  var key = process.env.BRAVE_API_KEY || ''
+  if (!key) return { error: 'NO_BRAVE_KEY', results: [] }
+  async function run(freshness) {
+    var params = new URLSearchParams({ q: query, count: '10', text_decorations: 'false', spellcheck: '0', safesearch: 'moderate' })
+    if (searchLang) params.set('search_lang', searchLang)
+    if (freshness) params.set('freshness', freshness)
+    var r = await fetch('https://api.search.brave.com/res/v1/web/search?' + params.toString(), {
+      headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key },
+    })
+    var raw = await r.text()
+    if (!r.ok) {
+      var msg = 'Brave ' + r.status
+      try { var ej = JSON.parse(raw); msg = (ej.error && (ej.error.detail || ej.error.message)) || msg } catch (e) {}
+      return { error: msg, results: [] }
+    }
+    var data = JSON.parse(raw)
+    var web = (data.web && data.web.results) || []
+    var mapped = web.map(function (it) {
+      return {
+        title: stripTags(it.title || ''),
+        snippet: stripTags(it.description || ''),
+        link: it.url || '',
+        source: (it.profile && it.profile.name) || (it.meta_url && it.meta_url.hostname) || hostOf(it.url || ''),
+        date: it.age || '',
+        image: (it.thumbnail && it.thumbnail.src) || '',
+      }
+    }).filter(function (it) { return it.link && it.title })
+    return { results: mapped }
+  }
+  var pd = await run('pd')
+  if (pd.error) return pd
+  if ((pd.results || []).length >= 3) return pd
+  var pw = await run('pw') // widen to the past week when today is thin
+  if (pw.error) return pd
+  return { results: (pw.results || []).length ? pw.results : pd.results }
+}
+
+async function fetchNewsRecap(targetLang, interest) {
+  var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
+  var g = await braveNews(cfg.general, targetLang)
+  if (g.error) return { error: g.error }
+  var interestItems = []
+  if (interest) {
+    var ir = await braveNews(interest + ' ' + cfg.suffix, targetLang)
+    interestItems = ir.results || []
+  }
+  return { general: (g.results || []).slice(0, 5), interest: interestItems.slice(0, 5), interestQuery: interest }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -373,6 +434,13 @@ export default async function handler(req, res) {
         : await fetchBlueskyThread(body.uri)
       if (tr.error) return res.status(502).json({ error: tr.error })
       return res.status(200).json({ posts: tr.posts || [] })
+    }
+
+    // Daily news recap (Brave): general + interest sections with descriptions + sources.
+    if (body.action === 'newsRecap') {
+      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim())
+      if (nr.error) return res.status(502).json({ error: nr.error })
+      return res.status(200).json(nr)
     }
 
     // All categories work without a keyword (news falls back to top headlines).

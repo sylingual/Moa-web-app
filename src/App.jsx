@@ -253,6 +253,15 @@ const T = {
     feedCatPress: "Manchettes",
     feedCatSns: "Bluesky",
     feedCatMasto: "Mastodon",
+    feedCatRecap: "📰 Journal",
+    recapMasthead: "Le Quotidien coréen",
+    recapGeneralTitle: "À la une aujourd'hui",
+    recapInterestTitle: "Vos centres d'intérêt",
+    recapRefresh: "Rafraîchir",
+    recapLoading: "Édition du jour en préparation…",
+    recapEmpty: "Pas d'actualité trouvée pour aujourd'hui.",
+    recapInterestHint: "Ajoute un centre d'intérêt dans ton profil pour une rubrique personnalisée.",
+    recapEdition: (d) => `Édition du ${d}`,
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
     newExercise: "Nouvel exercice",
@@ -471,6 +480,15 @@ const T = {
     feedCatPress: "Headlines",
     feedCatSns: "Bluesky",
     feedCatMasto: "Mastodon",
+    feedCatRecap: "📰 Daily",
+    recapMasthead: "The Korea Daily",
+    recapGeneralTitle: "Today's headlines",
+    recapInterestTitle: "Your interests",
+    recapRefresh: "Refresh",
+    recapLoading: "Setting today's edition…",
+    recapEmpty: "No news found for today.",
+    recapInterestHint: "Add an interest in your profile for a personalized section.",
+    recapEdition: (d) => `${d} edition`,
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
     newExercise: "New exercise",
@@ -2009,6 +2027,10 @@ function AppInner() {
   const [feedCat, setFeedCat] = useState("sns");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
   const [feedThread, setFeedThread] = useState(null); // { loading, posts, link, source, error } or null
+  // Daily news recap (#57): { date, lang, interest, general:[], interest:[] }
+  const [newsRecap, setNewsRecap] = useState(null);
+  const [newsRecapLoad, setNewsRecapLoad] = useState(false);
+  const [newsRecapErr, setNewsRecapErr] = useState("");
 
   const msgsR = useRef(null);
   const exR = useRef(null);
@@ -2357,6 +2379,37 @@ function AppInner() {
     setFeedLoad(false);
   }, [tl, feedCat]);
 
+  // Daily news recap (#57): general + interest sections, cached once per day per language.
+  const loadNewsRecap = useCallback(async (force) => {
+    const interest = ((data.profile?.interests || "").split(/[\n,;]/)[0] || "").trim().slice(0, 50);
+    const key = "moa-news-recap";
+    if (!force) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(key) || "null");
+        if (cached && cached.date === dayKey() && cached.lang === tl && cached.interest === interest) {
+          setNewsRecap(cached); return;
+        }
+      } catch {}
+    }
+    setNewsRecapLoad(true); setNewsRecapErr("");
+    try {
+      const res = await fetch("/api/feed", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest }),
+      });
+      const raw = await res.text();
+      let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }
+      if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
+      const recap = { date: dayKey(), lang: tl, interest, general: d.general || [], interestItems: d.interest || [] };
+      setNewsRecap(recap);
+      try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
+    } catch (e) {
+      console.error("news recap error:", e);
+      setNewsRecapErr(e.message);
+    }
+    setNewsRecapLoad(false);
+  }, [tl, data.profile?.interests]);
+
   // Open a social post (Bluesky/Mastodon) in the in-app thread viewer.
   const openThread = async (item) => {
     setFeedThread({ loading: true, posts: [], link: item.link, source: item.source });
@@ -2388,7 +2441,10 @@ function AppInner() {
 
   // Auto-load feed when entering the tab
   useEffect(() => {
-    if (view !== "feed" || feedItems.length > 0 || feedLoad || feedKwLoad) return;
+    if (view !== "feed" || feedLoad || feedKwLoad) return;
+    // Daily recap is opt-in and keyless; load it if it's the active tab and not yet fetched.
+    if (feedCat === "recap") { if (!newsRecap && !newsRecapLoad) loadNewsRecap(); return; }
+    if (feedItems.length > 0) return;
     (async () => {
       // Keyless categories load directly (no AI keyword generation).
       if (feedCat === "sns" || feedCat === "masto" || feedCat === "press") { loadFeed("", feedCat); return; }
@@ -3878,8 +3934,8 @@ function AppInner() {
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["sns", t.feedCatSns], ["masto", t.feedCatMasto], ["news", t.feedCatNews], ["press", t.feedCatPress]].map(([k, l]) => (
-                    <button key={k} onClick={() => { setFeedCat(k); setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); }}
+                  {[["recap", t.feedCatRecap], ["sns", t.feedCatSns], ["masto", t.feedCatMasto], ["news", t.feedCatNews], ["press", t.feedCatPress]].map(([k, l]) => (
+                    <button key={k} onClick={() => { setFeedCat(k); if (k === "recap") { if (!newsRecap) loadNewsRecap(); } else { setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); } }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}
                     </button>
@@ -3902,6 +3958,50 @@ function AppInner() {
 
             {/* Items */}
             <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
+              {/* Daily news recap (#57) — newspaper layout, Brave-sourced */}
+              {feedCat === "recap" && (
+                <div>
+                  {newsRecapLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.recapLoading}</div>}
+                  {newsRecapErr && !newsRecapLoad && (
+                    <div style={{ padding: 14, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, fontSize: 12, color: C.warn, lineHeight: 1.6 }}>⚠️ {newsRecapErr}</div>
+                  )}
+                  {!newsRecapLoad && newsRecap && (() => {
+                    const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
+                    const serif = "Georgia, 'Times New Roman', 'Nanum Myeongjo', serif";
+                    const story = (it, i, lead) => (
+                      <div key={i} onClick={() => it.link && window.open(it.link, "_blank", "noopener,noreferrer")}
+                        style={{ cursor: "pointer", padding: "12px 0", borderTop: i === 0 ? "none" : `1px solid ${C.border}` }}>
+                        <div style={{ fontFamily: serif, fontSize: lead ? 19 : 16, fontWeight: 700, color: C.txt, lineHeight: 1.3, marginBottom: 5 }}>{it.title}</div>
+                        {it.snippet && <div style={{ fontFamily: serif, fontSize: 13.5, color: C.txtS, lineHeight: 1.65, marginBottom: 6 }}>{it.snippet}</div>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
+                          <span style={{ fontWeight: 600, color: C.acc, textTransform: "uppercase", letterSpacing: 0.4 }}>{it.source}</span>
+                          {it.date && <span>· {it.date}</span>}
+                        </div>
+                      </div>
+                    );
+                    const section = (title, items, hint) => (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.txt, borderBottom: `2px solid ${C.txt}`, paddingBottom: 4, marginBottom: 2 }}>{title}</div>
+                        {items.length ? items.map((it, i) => story(it, i, i === 0)) : <div style={{ fontSize: 12.5, color: C.txtM, padding: "12px 0", fontStyle: "italic" }}>{hint || t.recapEmpty}</div>}
+                      </div>
+                    );
+                    return (
+                      <div style={{ maxWidth: 640, margin: "0 auto", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 20px" }}>
+                        <div style={{ textAlign: "center", borderBottom: `3px double ${C.txt}`, paddingBottom: 10, marginBottom: 6 }}>
+                          <div style={{ fontFamily: serif, fontSize: 26, fontWeight: 800, color: C.txt, letterSpacing: 0.5 }}>{t.recapMasthead}</div>
+                          <div style={{ fontFamily: serif, fontSize: 11.5, color: C.txtM, marginTop: 3, fontStyle: "italic" }}>{t.recapEdition(dateStr)}</div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                          <button onClick={() => loadNewsRecap(true)} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>↻ {t.recapRefresh}</button>
+                        </div>
+                        {section(t.recapGeneralTitle, newsRecap.general || [])}
+                        {section(t.recapInterestTitle + (newsRecap.interest ? " · " + newsRecap.interest : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              {feedCat !== "recap" && (<>
               {feedKwLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.feedGenKeywords}</div>}
               {feedLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.feedLoading}</div>}
               {feedErr && (
@@ -3945,6 +4045,7 @@ function AppInner() {
                   ))}
                 </div>
               )}
+              </>)}
             </div>
           </div>
         )}

@@ -198,6 +198,7 @@ const T = {
     // Points
     points_: "points",
     pointsEarned: (n) => `+${n} points !`,
+    dailyGoalReached: (n) => `Objectif du jour atteint ! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Questionnaire détaillé",
     detailedSub: "Plus l'IA te connaît, plus tes leçons seront taillées pour toi. Chaque réponse rend les exemples plus vivants.",
@@ -407,6 +408,7 @@ const T = {
     // Points
     points_: "points",
     pointsEarned: (n) => `+${n} points!`,
+    dailyGoalReached: (n) => `Daily goal reached! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Detailed questionnaire",
     detailedSub: "The more the AI knows you, the more your lessons fit you. Every answer makes examples come alive.",
@@ -2231,6 +2233,18 @@ function AppInner() {
     save({ ...data, today: { date: today, ids } });
   }, [data.today, data.cards, save]);
 
+  // Daily-goal bonus: when every card in today's set is finished, award +30 once.
+  useEffect(() => {
+    const sel = data.today;
+    if (!sel || sel.bonusAwarded || sel.date !== dayKey()) return;
+    const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+    if (!cards.length || !cards.every(c => migrateStatus(c.status) !== "new")) return;
+    const base = data.profile || DEFAULT_PROFILE;
+    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
+    setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
+    setTimeout(() => setPointsToast(null), 3000);
+  }, [data.today, data.cards, save]);
+
   const handleSync = async () => {
     const id = syncInput.trim();
     if (!id) return;
@@ -3021,7 +3035,7 @@ function AppInner() {
       {/* POINTS TOAST */}
       {pointsToast && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.acc, color: C.onAcc, padding: "10px 20px", borderRadius: 20, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 16px rgba(123,127,245,0.35)", animation: "pop 2.5s ease-out forwards", pointerEvents: "none" }}>
-          ⭐ {t.pointsEarned(pointsToast)}
+          ⭐ {typeof pointsToast === "object" ? pointsToast.label : t.pointsEarned(pointsToast)}
         </div>
       )}
 
@@ -3290,7 +3304,7 @@ function AppInner() {
                               {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
                                 onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
                                 onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
-                                onDelete={compact ? () => setCardToDelete(c) : undefined} />)}
+                                onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />)}
                             </div>
                             {ex && (
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>

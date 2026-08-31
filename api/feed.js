@@ -368,54 +368,72 @@ var NEWS_QUERIES = {
 
 function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, '') } catch (e) { return '' } }
 
-// One Brave web-search call, biased to recent results; retries wider if today is sparse.
-async function braveNews(query, searchLang) {
+// Drama-streaming / fan aggregators — not industry news. Dropped from the interest section.
+var AGGREGATOR_HOSTS = ['kisskh', 'dramacool', 'mydramalist', 'kissasian', 'viki', 'viu', 'netflix',
+  'watchasian', 'dramanice', 'asianwiki', 'ondemandkorea', 'kokoa', 'newasiantv', 'dramabeans', 'soompi']
+function isAggregator(host) {
+  host = (host || '').toLowerCase()
+  return AGGREGATOR_HOSTS.some(function (h) { return host.indexOf(h) !== -1 })
+}
+
+// Recent news for a query. Prefers Brave's news endpoint (real articles); falls back to web
+// search (with its news cluster) when news isn't available. pd→pw when today is sparse.
+async function braveNews(query, searchLang, dropAggregators) {
   var key = process.env.BRAVE_API_KEY || ''
   if (!key) return { error: 'NO_BRAVE_KEY', results: [] }
-  async function run(freshness) {
-    var params = new URLSearchParams({ q: query, count: '10', text_decorations: 'false', spellcheck: '0', safesearch: 'moderate' })
-    if (searchLang) params.set('search_lang', searchLang)
-    if (freshness) params.set('freshness', freshness)
-    var r = await fetch('https://api.search.brave.com/res/v1/web/search?' + params.toString(), {
-      headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key },
-    })
-    var raw = await r.text()
-    if (!r.ok) {
-      var msg = 'Brave ' + r.status
-      try { var ej = JSON.parse(raw); msg = (ej.error && (ej.error.detail || ej.error.message)) || msg } catch (e) {}
-      return { error: msg, results: [] }
+  var headers = { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key }
+  function mapItem(it) {
+    return {
+      title: stripTags(it.title || ''),
+      snippet: stripTags(it.description || ''),
+      link: it.url || '',
+      source: (it.meta_url && it.meta_url.hostname) || (it.profile && it.profile.name) || hostOf(it.url || ''),
+      date: it.age || '',
+      image: (it.thumbnail && (it.thumbnail.src || it.thumbnail.original)) || '',
     }
-    var data = JSON.parse(raw)
-    var web = (data.web && data.web.results) || []
-    var mapped = web.map(function (it) {
-      return {
-        title: stripTags(it.title || ''),
-        snippet: stripTags(it.description || ''),
-        link: it.url || '',
-        source: (it.profile && it.profile.name) || (it.meta_url && it.meta_url.hostname) || hostOf(it.url || ''),
-        date: it.age || '',
-        image: (it.thumbnail && it.thumbnail.src) || '',
-      }
-    }).filter(function (it) { return it.link && it.title })
-    return { results: mapped }
   }
-  var pd = await run('pd')
-  if (pd.error) return pd
-  if ((pd.results || []).length >= 3) return pd
-  var pw = await run('pw') // widen to the past week when today is thin
-  if (pw.error) return pd
-  return { results: (pw.results || []).length ? pw.results : pd.results }
+  function clean(arr) { return (arr || []).map(mapItem).filter(function (it) { return it.link && it.title }) }
+  async function newsSearch(freshness) {
+    var p = new URLSearchParams({ q: query, count: '15', spellcheck: '0', safesearch: 'moderate' })
+    if (searchLang) p.set('search_lang', searchLang)
+    if (freshness) p.set('freshness', freshness)
+    var r = await fetch('https://api.search.brave.com/res/v1/news/search?' + p.toString(), { headers: headers })
+    if (!r.ok) return null // news endpoint may not be on this plan → signal fallback
+    var raw = await r.text(); var data; try { data = JSON.parse(raw) } catch (e) { return null }
+    return clean(data.results)
+  }
+  async function webSearch(freshness) {
+    var p = new URLSearchParams({ q: query, count: '12', text_decorations: 'false', spellcheck: '0', safesearch: 'moderate' })
+    if (searchLang) p.set('search_lang', searchLang)
+    if (freshness) p.set('freshness', freshness)
+    var r = await fetch('https://api.search.brave.com/res/v1/web/search?' + p.toString(), { headers: headers })
+    var raw = await r.text()
+    if (!r.ok) { var msg = 'Brave ' + r.status; try { var ej = JSON.parse(raw); msg = (ej.error && (ej.error.detail || ej.error.message)) || msg } catch (e) {} return { error: msg } }
+    var data = JSON.parse(raw)
+    return { results: clean((data.news && data.news.results) || []).concat(clean((data.web && data.web.results) || [])) }
+  }
+  var results
+  var n = await newsSearch('pd')
+  if (n && n.length < 3) { var nw = await newsSearch('pw'); if (nw && nw.length) n = nw }
+  if (n && n.length) { results = n }
+  else {
+    var w = await webSearch('pd'); if (w.error) return w
+    if ((w.results || []).length < 3) { var w2 = await webSearch('pw'); if (!w2.error && (w2.results || []).length) w = w2 }
+    results = w.results || []
+  }
+  if (dropAggregators) { var filt = results.filter(function (it) { return !isAggregator(it.source) && !isAggregator(hostOf(it.link)) }); if (filt.length) results = filt }
+  return { results: results }
 }
 
 async function fetchNewsRecap(targetLang, interestQuery) {
   var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
   // Both sections search LOCAL-language (e.g. Korean) sources for immersion + real coverage
   // of niche topics; the client translates/summarizes everything into the interface language.
-  var g = await braveNews(cfg.general, targetLang)
+  var g = await braveNews(cfg.general, targetLang, false)
   if (g.error) return { error: g.error }
   var interestItems = []
   if (interestQuery) {
-    var ir = await braveNews(interestQuery, targetLang)
+    var ir = await braveNews(interestQuery, targetLang, true) // drop drama-streaming/fan sites
     interestItems = ir.results || []
   }
   return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interestQuery }

@@ -1157,12 +1157,16 @@ async function fetchFeed(query, targetLang, category) {
   return data.items || [];
 }
 
-// Translate the learner's dream/passion into a concise target-language search query so the
-// interest section pulls from local (e.g. Korean) sources, where niche topics actually exist.
-async function dreamToSearchQuery(dream, tlName) {
-  const sys = `Turn the learner's passion/dream below into a concise ${tlName} web-search query (2 to 6 ${tlName} words) that would surface recent ${tlName}-language news about that world. Return ONLY the query text in ${tlName}, nothing else.`;
-  const q = (await callAI(sys, `Passion/dream: ${dream}`, 60, false, true)).text.trim();
-  return q.replace(/^["'`]|["'`]$/g, "").split("\n")[0].slice(0, 80);
+// Turn the learner's dream into an INDUSTRY-news search query in the target language, so the
+// interest section pulls real professional news (not fan/streaming pages) from local sources.
+async function dreamToSearchQuery(dream, tlName, uiL) {
+  const sys = `A language learner described their dream/aspiration below. Identify the real-world PROFESSION or INDUSTRY behind it, then build a search query to find recent ${tlName}-language NEWS about that industry — its professionals, projects, business and trends — NOT fan pages, wikis, or streaming/where-to-watch sites.
+
+Example: dream "talk with K-drama screenwriters to create stories together" → the industry is K-drama SCREENWRITING, so a good ${tlName} query targets drama writers / scripts / the writing industry (e.g. in Korean: 드라마 작가 집필 소식), never "watch K-drama".
+
+Return ONLY JSON: {"query":"<2-6 ${tlName} words targeting that industry's news>","label":"<a 2-4 word ${uiL} label for that world>"}`;
+  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 150)).text);
+  return { query: (parsed.query || "").toString().slice(0, 80), label: (parsed.label || "").toString().slice(0, 40) };
 }
 
 // Turn raw Brave news results (often Korean) into clean briefs in the interface language.
@@ -2421,9 +2425,10 @@ function AppInner() {
     }
     setNewsRecapLoad(true); setNewsRecapErr("");
     try {
-      // Translate the dream into a target-language query (Korean sources cover niche topics).
-      let interestQuery = interest;
-      if (interest) { try { interestQuery = await dreamToSearchQuery(interest, getTargetLangName(tl, "en")) || interest; } catch (qe) { console.warn("dream query translate failed:", qe); } }
+      // Translate the dream into an industry-news query in the target language (Korean sources
+      // cover niche topics); also get a short label for the section header.
+      let interestQuery = interest, interestLabel = interest;
+      if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
       const res = await fetch("/api/feed", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
@@ -2442,7 +2447,7 @@ function AppInner() {
         const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
         if (g.length) { general = g; interestItems = it; translated = true; }
       } catch (se) { console.warn("recap summarize failed, showing raw:", se); }
-      const recap = { date: dayKey(), lang: tl, uiLang: lang, interest, general, interestItems, translated };
+      const recap = { date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, translated };
       setNewsRecap(recap);
       try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
     } catch (e) {
@@ -4040,7 +4045,7 @@ function AppInner() {
                           <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {t.recapRawNote}</div>
                         )}
                         {section(t.recapGeneralTitle, newsRecap.general || [])}
-                        {section(t.recapInterestTitle + (newsRecap.interest ? " · " + newsRecap.interest : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
+                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
                       </div>
                     );
                   })()}

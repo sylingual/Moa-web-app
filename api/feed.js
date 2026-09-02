@@ -28,6 +28,8 @@ function stripTags(s) {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, ' ')
     .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, function (_, h) { try { return String.fromCodePoint(parseInt(h, 16)) } catch (e) { return '' } })
+    .replace(/&#(\d+);/g, function (_, d) { try { return String.fromCodePoint(parseInt(d, 10)) } catch (e) { return '' } })
     .trim()
 }
 
@@ -356,6 +358,87 @@ async function fetchMastodonThread(host, id) {
   return { posts: posts.filter(function (x) { return x.text }).slice(0, 40) }
 }
 
+// ---- Daily news recap (Brave Search — separate quota from Gemini/Google) ----
+// Each section: up to 5 stories with a real description + source + link. Queried in
+// the target language, biased to the past day, so it reads like "today's paper".
+var NEWS_QUERIES = {
+  ko: { general: '오늘 한국 주요 뉴스', suffix: '한국 뉴스' },
+  de: { general: 'wichtigste Nachrichten heute Deutschland', suffix: 'Nachrichten' },
+}
+
+function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, '') } catch (e) { return '' } }
+
+// Drama-streaming / fan aggregators — not industry news. Dropped from the interest section.
+var AGGREGATOR_HOSTS = ['kisskh', 'dramacool', 'mydramalist', 'kissasian', 'viki', 'viu', 'netflix',
+  'watchasian', 'dramanice', 'asianwiki', 'ondemandkorea', 'kokoa', 'newasiantv', 'dramabeans', 'soompi']
+function isAggregator(host) {
+  host = (host || '').toLowerCase()
+  return AGGREGATOR_HOSTS.some(function (h) { return host.indexOf(h) !== -1 })
+}
+
+// Recent news for a query. Prefers Brave's news endpoint (real articles); falls back to web
+// search (with its news cluster) when news isn't available. pd→pw when today is sparse.
+async function braveNews(query, searchLang, dropAggregators) {
+  var key = process.env.BRAVE_API_KEY || ''
+  if (!key) return { error: 'NO_BRAVE_KEY', results: [] }
+  var headers = { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key }
+  function mapItem(it) {
+    return {
+      title: stripTags(it.title || ''),
+      snippet: stripTags(it.description || ''),
+      link: it.url || '',
+      source: (it.meta_url && it.meta_url.hostname) || (it.profile && it.profile.name) || hostOf(it.url || ''),
+      date: it.age || '',
+      image: (it.thumbnail && (it.thumbnail.src || it.thumbnail.original)) || '',
+    }
+  }
+  function clean(arr) { return (arr || []).map(mapItem).filter(function (it) { return it.link && it.title }) }
+  async function newsSearch(freshness) {
+    var p = new URLSearchParams({ q: query, count: '15', spellcheck: '0', safesearch: 'moderate' })
+    if (searchLang) p.set('search_lang', searchLang)
+    if (freshness) p.set('freshness', freshness)
+    var r = await fetch('https://api.search.brave.com/res/v1/news/search?' + p.toString(), { headers: headers })
+    if (!r.ok) return null // news endpoint may not be on this plan → signal fallback
+    var raw = await r.text(); var data; try { data = JSON.parse(raw) } catch (e) { return null }
+    return clean(data.results)
+  }
+  async function webSearch(freshness) {
+    var p = new URLSearchParams({ q: query, count: '12', text_decorations: 'false', spellcheck: '0', safesearch: 'moderate' })
+    if (searchLang) p.set('search_lang', searchLang)
+    if (freshness) p.set('freshness', freshness)
+    var r = await fetch('https://api.search.brave.com/res/v1/web/search?' + p.toString(), { headers: headers })
+    var raw = await r.text()
+    if (!r.ok) { var msg = 'Brave ' + r.status; try { var ej = JSON.parse(raw); msg = (ej.error && (ej.error.detail || ej.error.message)) || msg } catch (e) {} return { error: msg } }
+    var data = JSON.parse(raw)
+    return { results: clean((data.news && data.news.results) || []).concat(clean((data.web && data.web.results) || [])) }
+  }
+  var results
+  var n = await newsSearch('pd')
+  if (n && n.length < 3) { var nw = await newsSearch('pw'); if (nw && nw.length) n = nw }
+  if (n && n.length) { results = n }
+  else {
+    var w = await webSearch('pd'); if (w.error) return w
+    if ((w.results || []).length < 3) { var w2 = await webSearch('pw'); if (!w2.error && (w2.results || []).length) w = w2 }
+    results = w.results || []
+  }
+  if (dropAggregators) { var filt = results.filter(function (it) { return !isAggregator(it.source) && !isAggregator(hostOf(it.link)) }); if (filt.length) results = filt }
+  return { results: results }
+}
+
+async function fetchNewsRecap(targetLang, interestQuery) {
+  var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
+  // Both sections search LOCAL-language (e.g. Korean) sources for immersion + real coverage
+  // of niche topics; the client translates/summarizes everything into the interface language.
+  var g = await braveNews(cfg.general, targetLang, false)
+  if (g.error) return { error: g.error }
+  var interestItems = []
+  if (interestQuery) {
+    var ir = await braveNews(interestQuery, targetLang, true) // drop drama-streaming/fan sites
+    interestItems = ir.results || []
+  }
+  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interestQuery }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -373,6 +456,13 @@ export default async function handler(req, res) {
         : await fetchBlueskyThread(body.uri)
       if (tr.error) return res.status(502).json({ error: tr.error })
       return res.status(200).json({ posts: tr.posts || [] })
+    }
+
+    // Daily news recap (Brave): general + interest sections with descriptions + sources.
+    if (body.action === 'newsRecap') {
+      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim())
+      if (nr.error) return res.status(502).json({ error: nr.error })
+      return res.status(200).json(nr)
     }
 
     // All categories work without a keyword (news falls back to top headlines).

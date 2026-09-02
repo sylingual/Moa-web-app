@@ -158,6 +158,8 @@ const T = {
     derivedAll: "Tout cocher",
     derivedNone: "Tout décocher",
     derivedSkip: "Ignorer",
+    formalityLabel: "Registre",
+    formality: { casual: "courant", neutral: "neutre", formal: "formel" },
     moreExercises: "Plus d'exercices",
     derivedFrom: "issu de",
     viewGrid: "Grille",
@@ -251,6 +253,16 @@ const T = {
     feedCatPress: "Manchettes",
     feedCatSns: "Bluesky",
     feedCatMasto: "Mastodon",
+    feedCatRecap: "📰 Journal",
+    recapMasthead: "Le Quotidien coréen",
+    recapGeneralTitle: "À la une aujourd'hui",
+    recapInterestTitle: "Autour de ton rêve",
+    recapRefresh: "Rafraîchir",
+    recapLoading: "Édition du jour en préparation…",
+    recapEmpty: "Pas d'actualité trouvée pour aujourd'hui.",
+    recapInterestHint: "Renseigne ton rêve dans le Profil pour une rubrique sur mesure.",
+    recapRawNote: "Traduction indisponible (quota IA) — titres affichés en version d'origine.",
+    recapEdition: (d) => `Édition du ${d}`,
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
     newExercise: "Nouvel exercice",
@@ -374,6 +386,8 @@ const T = {
     derivedAll: "Select all",
     derivedNone: "Deselect all",
     derivedSkip: "Skip",
+    formalityLabel: "Register",
+    formality: { casual: "casual", neutral: "neutral", formal: "formal" },
     moreExercises: "More exercises",
     derivedFrom: "derived from",
     viewGrid: "Grid",
@@ -467,6 +481,16 @@ const T = {
     feedCatPress: "Headlines",
     feedCatSns: "Bluesky",
     feedCatMasto: "Mastodon",
+    feedCatRecap: "📰 Daily",
+    recapMasthead: "The Korea Daily",
+    recapGeneralTitle: "Today's headlines",
+    recapInterestTitle: "Around your dream",
+    recapRefresh: "Refresh",
+    recapLoading: "Setting today's edition…",
+    recapEmpty: "No news found for today.",
+    recapInterestHint: "Set your dream in your Profile for a tailored section.",
+    recapRawNote: "Translation unavailable (AI quota) — showing original headlines.",
+    recapEdition: (d) => `${d} edition`,
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
     newExercise: "New exercise",
@@ -1133,6 +1157,35 @@ async function fetchFeed(query, targetLang, category) {
   return data.items || [];
 }
 
+// Turn the learner's dream into an INDUSTRY-news search query in the target language, so the
+// interest section pulls real professional news (not fan/streaming pages) from local sources.
+async function dreamToSearchQuery(dream, tlName, uiL) {
+  const sys = `A language learner described their dream/aspiration below. Identify the real-world PROFESSION or INDUSTRY behind it, then build a search query to find recent ${tlName}-language NEWS about that industry — its professionals, projects, business and trends — NOT fan pages, wikis, or streaming/where-to-watch sites.
+
+Example: dream "talk with K-drama screenwriters to create stories together" → the industry is K-drama SCREENWRITING, so a good ${tlName} query targets drama writers / scripts / the writing industry (e.g. in Korean: 드라마 작가 집필 소식), never "watch K-drama".
+
+Return ONLY JSON: {"query":"<2-6 ${tlName} words targeting that industry's news>","label":"<a 2-4 word ${uiL} label for that world>"}`;
+  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 150)).text);
+  return { query: (parsed.query || "").toString().slice(0, 80), label: (parsed.label || "").toString().slice(0, 40) };
+}
+
+// Turn raw Brave news results (often Korean) into clean briefs in the interface language.
+// Drops site homepages/boilerplate; never invents facts. Returns { general, interest }
+// arrays of { i, title, description }, i = index into the original list (to keep sources).
+async function summarizeRecap(general, interestItems, lang) {
+  const L = lang === "fr" ? "French" : "English";
+  const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 300)}`).join("\n\n") || "(none)";
+  const sys = `You are the editor of a daily news digest inside a language-learning app. Below are web/news search results (headline + snippet) in two sections, GENERAL (Korea news) and INTEREST (the learner's passion). Rewrite them as short news briefs IN ${L}, for a reader who cannot yet read Korean.
+Rules:
+- Translate/clarify each headline into natural, concise ${L} (no clickbait, no source name in the title).
+- Write a 1-3 sentence description in ${L} summarizing the story, based ONLY on the given headline + snippet. Never invent specific facts, numbers, names or quotes not present.
+- OMIT items that are just a site homepage, section page or boilerplate (e.g. titles like "Daum News | Home", "YTN channel", or snippets like "we cannot provide a description").
+- Keep at most 5 per section, most newsworthy first.
+Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":"..."}],"interest":[{"i":...,"title":"...","description":"..."}]}.`;
+  const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
+  return parseJSON((await callAI(sys, user, 1800)).text);
+}
+
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
 async function fetchThread(item) {
   const res = await fetch("/api/feed", {
@@ -1170,6 +1223,7 @@ Return JSON:
   "structuresLearned": "Internal: what the student demonstrated understanding of",
   "mistakesMade": "Internal: specific errors or confusions",
   "nextSteps": "Internal: what to work on next",
+  "formality": "ONLY for a Korean VOCABULARY WORD (card type 'vocab', target language Korean): the word's usual register, exactly one of 'casual' (everyday/informal speech), 'neutral' (standard, works in most contexts), or 'formal' (formal/polite/honorific or written register). Empty string for grammar structures, non-vocab, or non-Korean.",
   "profileInsights": {
     "interests": "New interests mentioned. Empty string if none.",
     "level": "Level observations. Empty string if none.",
@@ -1190,7 +1244,7 @@ Return JSON:
 
 For "derivedStructures": include any related patterns the TEACHER introduced. Empty array [] if none.`;
 
-  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\n\nFull conversation:\n${hist}`, 1200)).text);
+  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 1200)).text);
 }
 
 // =============================================
@@ -2004,6 +2058,10 @@ function AppInner() {
   const [feedCat, setFeedCat] = useState("sns");
   const [feedKwLoad, setFeedKwLoad] = useState(false);
   const [feedThread, setFeedThread] = useState(null); // { loading, posts, link, source, error } or null
+  // Daily news recap (#57): { date, lang, interest, general:[], interest:[] }
+  const [newsRecap, setNewsRecap] = useState(null);
+  const [newsRecapLoad, setNewsRecapLoad] = useState(false);
+  const [newsRecapErr, setNewsRecapErr] = useState("");
 
   const msgsR = useRef(null);
   const exR = useRef(null);
@@ -2352,6 +2410,53 @@ function AppInner() {
     setFeedLoad(false);
   }, [tl, feedCat]);
 
+  // Daily news recap (#57): general + dream-based sections, translated into the interface
+  // language and cached once per day (so the AI pass runs at most once a day).
+  const loadNewsRecap = useCallback(async (force) => {
+    const interest = (data.profile?.dream || "").trim().slice(0, 80);
+    const key = "moa-news-recap";
+    if (!force) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(key) || "null");
+        if (cached && cached.v === 3 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
+          setNewsRecap(cached); return;
+        }
+      } catch {}
+    }
+    setNewsRecapLoad(true); setNewsRecapErr("");
+    try {
+      // Translate the dream into an industry-news query in the target language (Korean sources
+      // cover niche topics); also get a short label for the section header.
+      let interestQuery = interest, interestLabel = interest;
+      if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
+      const res = await fetch("/api/feed", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
+      });
+      const raw = await res.text();
+      let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }
+      if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
+      const rawGeneral = d.general || [], rawInterest = d.interest || [];
+      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5), translated = false;
+      // Translate + summarize into the interface language (falls back to raw on quota/error).
+      try {
+        const s = await summarizeRecap(rawGeneral, rawInterest, lang);
+        const merge = (parsed, rawArr) => (parsed || [])
+          .map(p => { const r = rawArr[p.i]; return r ? { title: p.title || r.title, snippet: p.description || "", link: r.link, source: r.source, date: r.date, image: r.image } : null; })
+          .filter(Boolean).slice(0, 5);
+        const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
+        if (g.length) { general = g; interestItems = it; translated = true; }
+      } catch (se) { console.warn("recap summarize failed, showing raw:", se); }
+      const recap = { v: 3, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, translated };
+      setNewsRecap(recap);
+      try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
+    } catch (e) {
+      console.error("news recap error:", e);
+      setNewsRecapErr(e.message);
+    }
+    setNewsRecapLoad(false);
+  }, [tl, lang, data.profile?.dream]);
+
   // Open a social post (Bluesky/Mastodon) in the in-app thread viewer.
   const openThread = async (item) => {
     setFeedThread({ loading: true, posts: [], link: item.link, source: item.source });
@@ -2383,7 +2488,10 @@ function AppInner() {
 
   // Auto-load feed when entering the tab
   useEffect(() => {
-    if (view !== "feed" || feedItems.length > 0 || feedLoad || feedKwLoad) return;
+    if (view !== "feed" || feedLoad || feedKwLoad) return;
+    // Daily recap is opt-in and keyless; load it if it's the active tab and not yet fetched.
+    if (feedCat === "recap") { if (!newsRecap && !newsRecapLoad) loadNewsRecap(); return; }
+    if (feedItems.length > 0) return;
     (async () => {
       // Keyless categories load directly (no AI keyword generation).
       if (feedCat === "sns" || feedCat === "masto" || feedCat === "press") { loadFeed("", feedCat); return; }
@@ -2733,11 +2841,14 @@ function AppInner() {
         }));
       // Update card status: new/in_progress -> studied, studied -> studied (increment reviewCount), acquired stays acquired
       const wasFirstTime = (data.cards.find(c => c.korean === lCard.korean)?.reviewCount || 0) === 0;
+      const fmt = (result.formality || "").toLowerCase();
+      const formality = ["casual", "neutral", "formal"].includes(fmt) ? fmt : "";
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
-        if (c.status === "acquired") return { ...c, reviewCount: rc };
-        return { ...c, status: "studied", reviewCount: rc };
+        const f = formality || c.formality || "";
+        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f };
+        return { ...c, status: "studied", reviewCount: rc, formality: f };
       });
       const gain = wasFirstTime ? 20 : 10;
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
@@ -3336,7 +3447,14 @@ function AppInner() {
                             </div>
                             {ex && (
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
-                                <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt, marginBottom: 6 }}>{ex.korean}</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                                  <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
+                                  {tl === "ko" && ex.type === "vocab" && ex.formality && t.formality[ex.formality] && (
+                                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
+                                      {t.formalityLabel} · {t.formality[ex.formality]}
+                                    </span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>{ex.description}</div>
                                 {ex.example_kr && (
                                   <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
@@ -3863,8 +3981,8 @@ function AppInner() {
               {/* Categories (Korean only) */}
               {tl === "ko" && (
                 <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
-                  {[["sns", t.feedCatSns], ["masto", t.feedCatMasto], ["news", t.feedCatNews], ["press", t.feedCatPress]].map(([k, l]) => (
-                    <button key={k} onClick={() => { setFeedCat(k); setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); }}
+                  {[["recap", t.feedCatRecap], ["sns", t.feedCatSns], ["masto", t.feedCatMasto], ["news", t.feedCatNews], ["press", t.feedCatPress]].map(([k, l]) => (
+                    <button key={k} onClick={() => { setFeedCat(k); if (k === "recap") { if (!newsRecap) loadNewsRecap(); } else { setFeedItems([]); loadFeed(k === "news" ? (feedQuery || "") : "", k); } }}
                       style={{ padding: "4px 11px", borderRadius: 14, fontSize: 11.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${feedCat === k ? C.acc : C.border}`, background: feedCat === k ? C.accBg : C.s1, color: feedCat === k ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                       {l}
                     </button>
@@ -3887,6 +4005,53 @@ function AppInner() {
 
             {/* Items */}
             <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px" }}>
+              {/* Daily news recap (#57) — newspaper layout, Brave-sourced */}
+              {feedCat === "recap" && (
+                <div>
+                  {newsRecapLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.recapLoading}</div>}
+                  {newsRecapErr && !newsRecapLoad && (
+                    <div style={{ padding: 14, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, fontSize: 12, color: C.warn, lineHeight: 1.6 }}>⚠️ {newsRecapErr}</div>
+                  )}
+                  {!newsRecapLoad && newsRecap && (() => {
+                    const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
+                    const serif = "Georgia, 'Times New Roman', 'Nanum Myeongjo', serif";
+                    const story = (it, i, lead) => (
+                      <div key={i} onClick={() => it.link && window.open(it.link, "_blank", "noopener,noreferrer")}
+                        style={{ cursor: "pointer", padding: "12px 0", borderTop: i === 0 ? "none" : `1px solid ${C.border}` }}>
+                        <div style={{ fontFamily: serif, fontSize: lead ? 19 : 16, fontWeight: 700, color: C.txt, lineHeight: 1.3, marginBottom: 5 }}>{it.title}</div>
+                        {it.snippet && <div style={{ fontFamily: serif, fontSize: 13.5, color: C.txtS, lineHeight: 1.65, marginBottom: 6 }}>{it.snippet}</div>}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
+                          <span style={{ fontWeight: 600, color: C.acc, textTransform: "uppercase", letterSpacing: 0.4 }}>{it.source}</span>
+                          {it.date && <span>· {it.date}</span>}
+                        </div>
+                      </div>
+                    );
+                    const section = (title, items, hint) => (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.txt, borderBottom: `2px solid ${C.txt}`, paddingBottom: 4, marginBottom: 2 }}>{title}</div>
+                        {items.length ? items.map((it, i) => story(it, i, i === 0)) : <div style={{ fontSize: 12.5, color: C.txtM, padding: "12px 0", fontStyle: "italic" }}>{hint || t.recapEmpty}</div>}
+                      </div>
+                    );
+                    return (
+                      <div style={{ maxWidth: 640, margin: "0 auto", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: "18px 20px" }}>
+                        <div style={{ textAlign: "center", borderBottom: `3px double ${C.txt}`, paddingBottom: 10, marginBottom: 6 }}>
+                          <div style={{ fontFamily: serif, fontSize: 26, fontWeight: 800, color: C.txt, letterSpacing: 0.5 }}>{t.recapMasthead}</div>
+                          <div style={{ fontFamily: serif, fontSize: 11.5, color: C.txtM, marginTop: 3, fontStyle: "italic" }}>{t.recapEdition(dateStr)}</div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                          <button onClick={() => loadNewsRecap(true)} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>↻ {t.recapRefresh}</button>
+                        </div>
+                        {!newsRecap.translated && (
+                          <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {t.recapRawNote}</div>
+                        )}
+                        {section(t.recapGeneralTitle, newsRecap.general || [])}
+                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+              {feedCat !== "recap" && (<>
               {feedKwLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.feedGenKeywords}</div>}
               {feedLoad && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.feedLoading}</div>}
               {feedErr && (
@@ -3930,6 +4095,7 @@ function AppInner() {
                   ))}
                 </div>
               )}
+              </>)}
             </div>
           </div>
         )}

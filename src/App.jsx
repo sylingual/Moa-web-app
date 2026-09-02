@@ -855,7 +855,7 @@ Return JSON: {"message": "your teaching text", "options": [{"label": "a) ...", "
   return parseJSON((await callAI(sys, `Structure to teach: ${card.korean}
 Meaning (do NOT reveal this to the student): ${d}
 Example from the article: ${card.example_kr}
-Article context:\n${(article || "").substring(0, 800)}`, 1600)).text);
+Article context:\n${(article || "").substring(0, 800)}`, 4000)).text);
 }
 
 async function continueChat(card, conv, action, lang) {
@@ -907,7 +907,7 @@ ${instruction}
 
 Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.`;
   
-  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 900)).text);
+  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 3500)).text);
 }
 
 // Curated deep-links: each opens a trusted resource site pre-filtered to this
@@ -1244,7 +1244,7 @@ Return JSON:
 
 For "derivedStructures": include any related patterns the TEACHER introduced. Empty array [] if none.`;
 
-  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 1200)).text);
+  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 4000)).text);
 }
 
 // =============================================

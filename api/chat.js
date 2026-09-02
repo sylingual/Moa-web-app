@@ -19,9 +19,10 @@ export default async function handler(req, res) {
       parts.push({ inline_data: { mime_type: body.image.mimeType || 'image/jpeg', data: body.image.data } })
     }
 
-    // Honor the client's token budget (was a fixed 8000, which let replies run long
-    // and slow). Clamp to a sane range; lesson turns ask for ~900 and feel snappier.
-    var maxTok = Math.min(4000, Math.max(256, Number(body.max_tokens) || 2048))
+    // Honor the client's token budget, but keep a generous floor: gemini-3.6-flash spends
+    // part of maxOutputTokens on hidden "thinking" tokens, so too tight a cap truncates the
+    // visible JSON mid-string. Floor 3000 leaves room for thinking + the actual answer.
+    var maxTok = Math.min(8000, Math.max(3000, Number(body.max_tokens) || 4000))
     var payload = {
       contents: [{ role: 'user', parts: parts }],
       generationConfig: { maxOutputTokens: maxTok }

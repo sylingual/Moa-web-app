@@ -168,6 +168,9 @@ const T = {
     derivedSkip: "Ignorer",
     formalityLabel: "Registre",
     formality: { casual: "courant", neutral: "neutre", formal: "formel" },
+    registerShow: "Voir le registre (formel / courant)", registerExamples: "Exemples d'usage",
+    registerExamplesAsk: "Montre-moi des exemples qui contrastent l'usage formel et courant de ce mot, s'il te plaît",
+    registerLoading: "Analyse du registre…",
     moreExercises: "Plus d'exercices",
     derivedFrom: "issu de",
     viewGrid: "Grille",
@@ -404,6 +407,9 @@ const T = {
     derivedSkip: "Skip",
     formalityLabel: "Register",
     formality: { casual: "casual", neutral: "neutral", formal: "formal" },
+    registerShow: "Show register (formal / casual)", registerExamples: "Usage examples",
+    registerExamplesAsk: "Please show me examples contrasting the formal vs casual usage of this word",
+    registerLoading: "Analyzing register…",
     moreExercises: "More exercises",
     derivedFrom: "derived from",
     viewGrid: "Grid",
@@ -874,6 +880,19 @@ Example from the article: ${card.example_kr}
 Article context:\n${(article || "").substring(0, 800)}`, 4000)).text);
 }
 
+// Register variants of a Korean word: the formal vs casual way to express the same idea.
+async function analyzeRegister(card, lang) {
+  const L = lang === "fr" ? "French" : "English";
+  const d = lang === "fr" ? card.description_fr : card.description_en;
+  const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}, express the SAME idea in two registers:
+- "formal": the more formal / polite / honorific Korean word or short expression for this idea.
+- "casual": the everyday / casual Korean word or short expression for this idea.
+If a register has no truly distinct variant, give the closest natural option (it may equal the word itself). Keep each to a word or short phrase, Korean only.
+- "note": ONE short sentence in ${L} on the register difference or when to use each.
+Return ONLY JSON: {"formal":"...","casual":"...","note":"..."}`;
+  return parseJSON((await callAI(sys, `Word: ${card.korean}`, 3000)).text);
+}
+
 async function continueChat(card, conv, action, lang) {
   const L = lang === "fr" ? "French" : "English";
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
@@ -892,6 +911,8 @@ async function continueChat(card, conv, action, lang) {
     exercise: `The student wants a practice exercise. Create a fill-in-the-blank or sentence-building exercise that requires using "${card.korean}". Give a context sentence in ${L}, then ask the student to complete or translate it into Korean using the structure. If you include MCQ options, use "label" as the key name.`,
     
     explain: `The student is struggling. Explain the structure "${card.korean}" differently. Use an analogy with ${L} or compare it to a simpler Korean structure the student likely knows. Use concrete, visual examples rather than abstract grammar explanations. Then give one more example and ask a simpler question to rebuild confidence.`,
+
+    register: `Give 2-3 short example sentences that CONTRAST the formal vs casual way of expressing "${card.korean}". Group them clearly (a "Formal" set and a "Casual" set). For each, write the Korean sentence, then its ${L} translation on the next line, and briefly note the situation where you'd use it. Keep it concise. Do NOT include MCQ options.`,
     
     correct: correctByPhase[phase],
     
@@ -2124,6 +2145,7 @@ function AppInner() {
   const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
   const [imgReplace, setImgReplace] = useState(null); // { korean, image } when a card already has 2 images
+  const [registerLoad, setRegisterLoad] = useState(false); // #59: analyzing formal/casual register
 
   // Feed
   const [feedItems, setFeedItems] = useState([]);
@@ -2856,12 +2878,25 @@ function AppInner() {
   };
 
   // ---- RECAP QUICK PRACTICE ----
+  // On-demand register analysis for a Korean vocab card (works for older cards too).
+  const loadRegister = async () => {
+    if (!recapCard || registerLoad) return;
+    setRegisterLoad(true);
+    try {
+      const r = await analyzeRegister(recapCard, lang);
+      const upd = { registerFormal: r.formal || "", registerCasual: r.casual || "", registerNote: r.note || "" };
+      save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, ...upd } : c) });
+      setRecapCard(prev => prev ? { ...prev, ...upd } : prev);
+    } catch (e) { console.error("register error:", e); setFlash(e?.message ? e.message.slice(0, 60) : "Erreur"); setTimeout(() => setFlash(null), 2200); }
+    setRegisterLoad(false);
+  };
+
   const startRecapAction = async (action) => {
     if (!recapCard) return;
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
+    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -3897,6 +3932,33 @@ function AppInner() {
                     <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>
                     <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>
                   </div>
+                  {tl === "ko" && recapCard.type === "vocab" && (
+                    <div style={{ marginTop: 10, padding: "10px 12px", background: C.s1, borderRadius: 8 }}>
+                      {(recapCard.registerFormal || recapCard.registerCasual) ? (
+                        <>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 7 }}>🎚 {t.formalityLabel}</div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, padding: "4px 10px", borderRadius: 8, background: C.stStudiedCard, border: `1px solid ${C.stStudiedB}` }}>
+                              <span style={{ fontSize: 10, color: C.stStudied, textTransform: "uppercase", letterSpacing: 0.4 }}>{t.formality.formal}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerFormal || "—"}</span>
+                            </span>
+                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, padding: "4px 10px", borderRadius: 8, background: C.stAcqCard, border: `1px solid ${C.stAcqB}` }}>
+                              <span style={{ fontSize: 10, color: C.stAcq, textTransform: "uppercase", letterSpacing: 0.4 }}>{t.formality.casual}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerCasual || "—"}</span>
+                            </span>
+                          </div>
+                          {recapCard.registerNote && <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginTop: 7 }}>{recapCard.registerNote}</div>}
+                          <button onClick={() => startRecapAction("register")}
+                            style={{ marginTop: 9, padding: "5px 12px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>💬 {t.registerExamples}</button>
+                        </>
+                      ) : (
+                        <button onClick={loadRegister} disabled={registerLoad}
+                          style={{ padding: "6px 12px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.s2, color: registerLoad ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: registerLoad ? "default" : "pointer" }} className={registerLoad ? "pulse" : ""}>
+                          {registerLoad ? t.registerLoading : `🎚 ${t.registerShow}`}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {recapCard.type === "vocab" && (recapCard.images || []).length > 0 && (
                     <div style={{ marginTop: 10 }}>
                       <div style={{ fontSize: 11, color: C.txtM, marginBottom: 6 }}>{t.cardImages}</div>

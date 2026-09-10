@@ -85,6 +85,7 @@ const T = {
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
+    addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
@@ -317,6 +318,7 @@ const T = {
     askExplain: "Could you explain this differently? 🔄",
     anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
+    addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
     noCards: "No cards yet. Import a text to get started!",
@@ -2080,6 +2082,9 @@ function AppInner() {
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "" });
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
+  // Select any target-language word anywhere → offer to add it to the vocab library.
+  const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
+  const [flash, setFlash] = useState(null);   // brief confirmation toast text
 
   // Feed
   const [feedItems, setFeedItems] = useState([]);
@@ -2674,6 +2679,48 @@ function AppInner() {
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
   });
 
+  // Add a selected word straight to the vocab library as a bare "new" card (details get
+  // filled when it's studied). De-duplicates on the exact text.
+  const addWordToVocab = (text) => {
+    const word = (text || "").trim();
+    if (!word) return;
+    if (data.cards.find(c => c.korean === word)) { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    const card = {
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
+      korean: word, type: "vocab",
+      description: "", description_fr: "", description_en: "",
+      example_kr: "", example_tr: "",
+      status: "new", source: t.selectionSource, articleText: "", reviewCount: 0,
+      targetLang: tl || "ko",
+      date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+    };
+    save({ ...data, cards: [...data.cards, card] });
+    setSelAdd(null);
+    try { window.getSelection()?.removeAllRanges(); } catch {}
+    setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 1800);
+  };
+
+  // Watch text selections app-wide; when the selection is a short target-language snippet,
+  // surface a small "add to vocab" button near it.
+  useEffect(() => {
+    const onUp = (e) => {
+      if (e.target && e.target.closest && e.target.closest("input, textarea, [data-sel-add]")) return;
+      const sel = window.getSelection && window.getSelection();
+      const text = sel ? sel.toString().trim() : "";
+      if (!text || text.length > 40 || !hasTargetScript(text, tl)) { setSelAdd(null); return; }
+      try {
+        const rect = sel.getRangeAt(0).getBoundingClientRect();
+        if (!rect || (!rect.width && !rect.height)) { setSelAdd(null); return; }
+        setSelAdd({ text, x: rect.left + rect.width / 2, y: rect.top });
+      } catch { setSelAdd(null); }
+    };
+    const onDown = (e) => { if (!(e.target && e.target.closest && e.target.closest("[data-sel-add]"))) setSelAdd(null); };
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchend", onUp);
+    document.addEventListener("mousedown", onDown);
+    return () => { document.removeEventListener("mouseup", onUp); document.removeEventListener("touchend", onUp); document.removeEventListener("mousedown", onDown); };
+  }, [tl]);
+
   // ---- LESSON ----
   const beginLesson = async (point, art) => {
     const p = point || found[selPick]; const text = art || impText;
@@ -3218,6 +3265,20 @@ function AppInner() {
       {pointsToast && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.acc, color: C.onAcc, padding: "10px 20px", borderRadius: 20, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 16px rgba(123,127,245,0.35)", animation: "pop 2.5s ease-out forwards", pointerEvents: "none" }}>
           ⭐ {typeof pointsToast === "object" ? pointsToast.label : t.pointsEarned(pointsToast)}
+        </div>
+      )}
+
+      {/* Add-selected-word-to-vocab floating button */}
+      {selAdd && (
+        <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text)}
+          style={{ position: "fixed", left: selAdd.x, top: Math.max(8, selAdd.y - 8), transform: "translate(-50%, -100%)", zIndex: 3000, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 18, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.22)", whiteSpace: "nowrap" }}>
+          ➕ {t.addToVocab}
+        </button>
+      )}
+
+      {flash && (
+        <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.txt, color: C.s1, padding: "9px 18px", borderRadius: 20, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 16px rgba(0,0,0,0.25)", pointerEvents: "none" }}>
+          {flash}
         </div>
       )}
 

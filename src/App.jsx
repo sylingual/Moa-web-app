@@ -85,6 +85,7 @@ const T = {
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
+    otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -318,6 +319,7 @@ const T = {
     askExplain: "Could you explain this differently? 🔄",
     anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
+    otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -1198,15 +1200,15 @@ Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":
 
 // Find a few illustrative images for a vocab word via Brave image search (keyless to the
 // user; separate quota from Gemini). Resolves to [] on any error so the caller can degrade.
-async function fetchImages(query) {
+async function fetchImages(query, count) {
   try {
     const res = await fetch("/api/image", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: query }),
+      body: JSON.stringify({ q: query, count: count || 20 }),
     });
     const raw = await res.text();
     let d; try { d = JSON.parse(raw); } catch { return []; }
-    return (d.images || []).slice(0, 4);
+    return d.images || [];
   } catch { return []; }
 }
 
@@ -1420,9 +1422,10 @@ function renderMarkdown(text, revealAll) {
   return parts.length > 0 ? parts : clean;
 }
 
-function Bubble({ msg, revealAll, onResourceClick }) {
+function Bubble({ msg, revealAll, onResourceClick, onMoreImages, imgLabels = { other: "Other images", refine: "Refine…" } }) {
   const ai = msg.role === "ai";
   const [preSel, setPreSel] = useState(null);
+  const [imgRefine, setImgRefine] = useState("");
   const [clickedLinks, setClickedLinks] = useState(() => new Set());
   const confirmed = !!msg.selected;
   const canPick = ai && !confirmed && msg.options && msg.onSelect;
@@ -1440,13 +1443,29 @@ function Bubble({ msg, revealAll, onResourceClick }) {
         )}
         {ai ? renderMarkdown(msg.content, revealAll) : msg.content}
         {msg.images && msg.images.length > 0 && (
-          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {msg.images.map((im, i) => (
-              <a key={i} href={im.link || im.url || im.thumb} target="_blank" rel="noopener noreferrer" style={{ display: "block", lineHeight: 0 }}>
-                <img src={im.thumb || im.url} alt={im.title || ""} loading="lazy"
-                  style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
-              </a>
-            ))}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {msg.images.map((im, i) => (
+                <a key={i} href={im.link || im.url || im.thumb} target="_blank" rel="noopener noreferrer" style={{ display: "block", lineHeight: 0 }}>
+                  <img src={im.thumb || im.url} alt={im.title || ""} loading="lazy"
+                    style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
+                </a>
+              ))}
+            </div>
+            {onMoreImages && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => onMoreImages("")}
+                  style={{ padding: "5px 11px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>🔄 {imgLabels.other}</button>
+                <input value={imgRefine} onChange={e => setImgRefine(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && imgRefine.trim()) { onMoreImages(imgRefine); setImgRefine(""); } }}
+                  placeholder={imgLabels.refine}
+                  style={{ flex: 1, minWidth: 120, border: `1px solid ${C.border}`, borderRadius: 16, padding: "5px 11px", fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txt, background: C.s1, outline: "none" }} />
+                {imgRefine.trim() && (
+                  <button onClick={() => { onMoreImages(imgRefine); setImgRefine(""); }}
+                    style={{ padding: "5px 11px", borderRadius: 16, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>→</button>
+                )}
+              </div>
+            )}
           </div>
         )}
         {msg.sources && msg.sources.length > 0 && (
@@ -2834,9 +2853,9 @@ function AppInner() {
     try {
       if (action === "image") {
         setSearching(true);
-        const imgs = await fetchImages(recapCard.korean);
+        const pool = await fetchImages(recapCard.korean, 20);
         setSearching(false);
-        setRecapConv([...u, { role: "ai", content: imgs.length ? `📷 ${recapCard.korean}` : t.imageNone, images: imgs, options: null, selected: null }]);
+        setRecapConv([...u, { role: "ai", content: pool.length ? `📷 ${recapCard.korean}` : t.imageNone, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: recapCard.korean, options: null, selected: null }]);
       } else if (action === "resources" || action === "realExamples") {
         setSearching(true);
         const r = action === "resources"
@@ -2996,6 +3015,29 @@ function AppInner() {
     setLLoad(false);
   };
 
+  // "Other images" / refine, without any AI: cycle within the fetched pool (instant), or
+  // re-query Brave when the learner refines the search. scope picks lesson vs recap conv.
+  const moreImages = async (scope, idx, refine, word) => {
+    const setArr = scope === "recap" ? setRecapConv : setConv;
+    if (refine && refine.trim()) {
+      setSearching(true);
+      const pool = await fetchImages(word + " " + refine.trim(), 20);
+      setSearching(false);
+      setArr(prev => prev.map((m, j) => j === idx
+        ? { ...m, imagePool: pool, imgFrom: 0, images: pool.slice(0, 4), imageWord: word, content: pool.length ? `📷 ${word} · ${refine.trim()}` : t.imageNone }
+        : m));
+      return;
+    }
+    setArr(prev => prev.map((m, j) => {
+      if (j !== idx) return m;
+      const pool = m.imagePool || m.images || [];
+      if (pool.length <= 4) return m;
+      const from = ((m.imgFrom || 0) + 4) % pool.length;
+      const rotated = [...pool, ...pool].slice(from, from + 4);
+      return { ...m, imgFrom: from, images: rotated };
+    }));
+  };
+
   const quickAct = async (a) => {
     if (lLoad) return;
     setTray(false); setLLoad(true);
@@ -3004,9 +3046,9 @@ function AppInner() {
     try {
       if (a === "image") {
         setSearching(true);
-        const imgs = await fetchImages(lCard.korean);
+        const pool = await fetchImages(lCard.korean, 20);
         setSearching(false);
-        setConv([...u, { role: "ai", content: imgs.length ? `📷 ${lCard.korean}` : t.imageNone, images: imgs, options: null, selected: null }]);
+        setConv([...u, { role: "ai", content: pool.length ? `📷 ${lCard.korean}` : t.imageNone, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: lCard.korean, options: null, selected: null }]);
       } else if (a === "resources" || a === "realExamples") {
         setSearching(true);
         const r = a === "resources"
@@ -3747,7 +3789,7 @@ function AppInner() {
               <div ref={recapR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {recapConv.map((m, i) => (
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
-                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint}
+                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                   </div>
                 ))}
@@ -3863,7 +3905,7 @@ function AppInner() {
                 <div ref={msgsR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
-                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
+                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                     </div>
                   ))}
                   {lLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : lessonDone ? t.generating : t.thinking}</div>}

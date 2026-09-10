@@ -16,7 +16,8 @@ export default async function handler(req, res) {
     var q = (body.q || '').toString().trim()
     if (!q) return res.status(400).json({ error: 'No query', images: [] })
 
-    var params = new URLSearchParams({ q: q, count: '6', safesearch: 'strict' })
+    var count = Math.min(50, Math.max(4, Number(body.count) || 20))
+    var params = new URLSearchParams({ q: q, count: String(count), safesearch: 'strict' })
     var r = await fetch('https://api.search.brave.com/res/v1/images/search?' + params.toString(), {
       headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key },
     })
@@ -38,7 +39,7 @@ export default async function handler(req, res) {
       }
     }).filter(function (x) { return x.thumb || x.url })
 
-    return res.status(200).json({ images: images.slice(0, 6) })
+    return res.status(200).json({ images: images.slice(0, count) })
   } catch (err) {
     return res.status(200).json({ error: err.message, images: [] })
   }

@@ -80,6 +80,9 @@ const T = {
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
+    askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
+    askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
+    askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
     anExercise: "Un exercice", explainOther: "Expliquer autrement",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -308,6 +311,9 @@ const T = {
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
+    askExamples: "Could you give me more examples, please? 💡",
+    askExercise: "Could you give me a quick exercise, please? ✏️",
+    askExplain: "Could you explain this differently? 🔄",
     anExercise: "An exercise", explainOther: "Explain differently",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -2743,7 +2749,7 @@ function AppInner() {
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.moreExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.anExercise };
+    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -2909,7 +2915,7 @@ function AppInner() {
   const quickAct = async (a) => {
     if (lLoad) return;
     setTray(false); setLLoad(true);
-    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
       if (a === "resources" || a === "realExamples") {

@@ -768,7 +768,7 @@ ALREADY KNOWN (skip these): ${known || "none"}
 
 For each structure, provide:
 - "korean": the structure pattern (the ${TL} grammar form)
-- "type": "grammar" or "expression"
+- "type": "grammar" for a grammatical structure/pattern, or "vocab" for a lexical item (word, set phrase, idiom)
 - "description_fr": one clear sentence in French explaining what it means and when to use it
 - "description_en": same in English
 - "example_kr": the exact sentence from the text where this structure appears
@@ -1256,7 +1256,7 @@ Return JSON:
   "derivedStructures": [
     {
       "korean": "pattern name",
-      "type": "grammar or expression",
+      "type": "grammar (a grammatical pattern) or vocab (a word / set phrase / idiom)",
       "description_fr": "one sentence in French",
       "description_en": "one sentence in English",
       "example_kr": "example sentence",
@@ -1309,8 +1309,14 @@ function statusInfo(status, t) {
   }
 }
 
+// Only two card types: a grammar structure, or vocab (any lexical item — word, set phrase,
+// idiom). The old "expression" type folds into vocab; the AI/vocab/grammar distinction was
+// unreliable, so anything that isn't grammar is vocab.
+function normType(type) {
+  return type === "grammar" ? "grammar" : "vocab";
+}
 function typeLabel(type, t) {
-  return type === "grammar" ? t.grammar : type === "vocab" ? t.vocab : t.expression;
+  return normType(type) === "grammar" ? t.grammar : t.vocab;
 }
 
 // =============================================
@@ -2669,7 +2675,7 @@ function AppInner() {
 
   const makeCard = (p, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
-    korean: p.korean, type: p.type,
+    korean: p.korean, type: normType(p.type),
     description: lang === "fr" ? p.description_fr : p.description_en,
     description_fr: p.description_fr, description_en: p.description_en,
     example_kr: p.example_kr,
@@ -2912,7 +2918,7 @@ function AppInner() {
         .filter(d => d.korean && !data.cards.find(c => c.korean === d.korean))
         .map(d => ({
           id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-          korean: d.korean, type: d.type || "expression",
+          korean: d.korean, type: normType(d.type),
           description: lang === "fr" ? d.description_fr : d.description_en,
           description_fr: d.description_fr, description_en: d.description_en,
           example_kr: d.example_kr || "",

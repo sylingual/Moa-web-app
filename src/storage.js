@@ -53,6 +53,8 @@ function mergeWithDefaults(raw) {
   return {
     ...DEFAULT_DATA,
     ...raw,
+    // Card types are now just 'grammar' or 'vocab' — fold the retired 'expression' into vocab.
+    cards: (raw.cards || []).map((c) => (c && c.type && c.type !== 'grammar' && c.type !== 'vocab' ? { ...c, type: 'vocab' } : c)),
     profile: { ...DEFAULT_PROFILE, ...(raw.profile || {}) },
     summaries: raw.summaries || [],
   };

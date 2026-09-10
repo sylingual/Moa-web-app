@@ -86,6 +86,8 @@ const T = {
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
+    imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
+    cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -320,6 +322,8 @@ const T = {
     anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
+    imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
+    cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -1422,7 +1426,7 @@ function renderMarkdown(text, revealAll) {
   return parts.length > 0 ? parts : clean;
 }
 
-function Bubble({ msg, revealAll, onResourceClick, onMoreImages, imgLabels = { other: "Other images", refine: "Refine…" } }) {
+function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, imgLabels = { other: "Other images", refine: "Refine…", choose: "Choose" } }) {
   const ai = msg.role === "ai";
   const [preSel, setPreSel] = useState(null);
   const [imgRefine, setImgRefine] = useState("");
@@ -1446,10 +1450,18 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, imgLabels = { o
           <div style={{ marginTop: 8 }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {msg.images.map((im, i) => (
-                <a key={i} href={im.link || im.url || im.thumb} target="_blank" rel="noopener noreferrer" style={{ display: "block", lineHeight: 0 }}>
-                  <img src={im.thumb || im.url} alt={im.title || ""} loading="lazy"
-                    style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
-                </a>
+                <div key={i} style={{ position: "relative", lineHeight: 0 }}>
+                  <a href={im.link || im.url || im.thumb} target="_blank" rel="noopener noreferrer" style={{ display: "block", lineHeight: 0 }}>
+                    <img src={im.thumb || im.url} alt={im.title || ""} loading="lazy"
+                      style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
+                  </a>
+                  {onAttachImage && (
+                    <button onClick={() => onAttachImage(im)} title={imgLabels.choose}
+                      style={{ position: "absolute", right: 6, bottom: 6, display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 14, border: "none", background: "rgba(0,0,0,0.62)", color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                      ＋ {imgLabels.choose}
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
             {onMoreImages && (
@@ -1579,6 +1591,7 @@ function BookSpine({ card, t, color, cardBg, masked, compact, active, onClick, o
       <span style={{ width: compact ? 6 : 8, background: color, opacity: 0.75, flexShrink: 0 }} />
       <span style={{ width: 1, background: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
       <span style={{ padding: compact ? "6px 8px 6px 11px" : "8px 10px 8px 11px", display: "flex", alignItems: "center", gap: 7 }}>
+        {card.images && card.images[0] && <img src={card.images[0].thumb || card.images[0].url} alt="" style={{ width: compact ? 18 : 22, height: compact ? 18 : 22, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}
         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: compact ? 13.5 : 14.5, color: C.txt }}>{card.korean}</span>
         {masked && <span style={{ width: 15, height: 15, borderRadius: "50%", background: C.s1, color: C.txtM, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans'" }}>?</span>}
         {onToggleStatus && iconBtn("↩", t.toStudied, onToggleStatus, C.acc)}
@@ -2110,6 +2123,7 @@ function AppInner() {
   // Select any target-language word anywhere → offer to add it to the vocab library.
   const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
+  const [imgReplace, setImgReplace] = useState(null); // { korean, image } when a card already has 2 images
 
   // Feed
   const [feedItems, setFeedItems] = useState([]);
@@ -3015,6 +3029,26 @@ function AppInner() {
     setLLoad(false);
   };
 
+  // Attach/reorder/remove images on a card (max 2; images[0] is the thumbnail shown in menus).
+  const setCardImages = (korean, imgs) => {
+    const next = imgs.slice(0, 2);
+    save({ ...data, cards: data.cards.map(c => c.korean === korean ? { ...c, images: next } : c) });
+    setLCard(prev => prev && prev.korean === korean ? { ...prev, images: next } : prev);
+    setRecapCard(prev => prev && prev.korean === korean ? { ...prev, images: next } : prev);
+  };
+  const attachImage = (korean, image) => {
+    if (!korean || !image) return;
+    const card = data.cards.find(c => c.korean === korean);
+    const current = (card && card.images) || [];
+    if (current.some(x => x.thumb === image.thumb || (x.url && x.url === image.url))) {
+      setFlash(t.imgAlready); setTimeout(() => setFlash(null), 1800); return;
+    }
+    const pick = { thumb: image.thumb || image.url, url: image.url || image.thumb, link: image.link || "" };
+    if (current.length >= 2) { setImgReplace({ korean, image: pick }); return; } // ask which to replace
+    setCardImages(korean, [...current, pick]);
+    setFlash(t.imgAdded); setTimeout(() => setFlash(null), 1800);
+  };
+
   // "Other images" / refine, without any AI: cycle within the fetched pool (instant), or
   // re-query Brave when the learner refines the search. scope picks lesson vs recap conv.
   const moreImages = async (scope, idx, refine, word) => {
@@ -3349,6 +3383,35 @@ function AppInner() {
           </div>
         </div>
       )}
+
+      {/* REPLACE-IMAGE PROMPT (card already has 2 images) */}
+      {imgReplace && (() => {
+        const card = data.cards.find(c => c.korean === imgReplace.korean);
+        const cur = (card && card.images) || [];
+        return (
+          <div onClick={() => setImgReplace(null)}
+            style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 360, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.imgReplaceTitle}</div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                {cur.map((im, i) => (
+                  <button key={i} onClick={() => { const next = cur.slice(); next[i] = imgReplace.image; setCardImages(imgReplace.korean, next); setImgReplace(null); setFlash(t.imgAdded); setTimeout(() => setFlash(null), 1800); }}
+                    style={{ position: "relative", padding: 0, border: `2px solid ${C.border}`, borderRadius: 10, background: "none", cursor: "pointer", lineHeight: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                    <img src={im.thumb || im.url} alt="" style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 8 }} />
+                    {i === 0 && <span style={{ position: "absolute", left: 5, top: 5, fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 6, background: C.acc, color: C.onAcc }}>★</span>}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setImgReplace(null)}
+                style={{ padding: "9px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                {t.imgReplaceCancel}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* STUDIED <-> ACQUIRED CONFIRMATION */}
       {confirmToggle && (() => { const toAcq = migrateStatus(confirmToggle.status) !== "acquired"; return (
@@ -3789,17 +3852,20 @@ function AppInner() {
               <div ref={recapR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {recapConv.map((m, i) => (
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
-                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined}
+                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined} onAttachImage={m.images && recapCard?.type === "vocab" ? (im) => attachImage(recapCard.korean, im) : undefined}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                   </div>
                 ))}
                 {recapLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}
               </div>
-              <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
-                <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && recapSend()} placeholder={t.yourAnswer}
-                  style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
-                <button onClick={recapSend} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
-              </div>
+              {/* Images aren't a conversation — no reply bar in image mode. */}
+              {recapMode !== "image" && (
+                <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
+                  <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && recapSend()} placeholder={t.yourAnswer}
+                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
+                  <button onClick={recapSend} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
+                </div>
+              )}
             </div>
           ) : showRecap && recapCard ? (
             // RECAP SCREEN
@@ -3822,12 +3888,36 @@ function AppInner() {
                       {revealTr ? "👁" : "🙈"} {t.showTranslations}
                     </button>
                   </div>
-                  <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt, marginBottom: 4 }}>{recapCard.korean}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                    {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
+                    <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt }}>{recapCard.korean}</div>
+                  </div>
                   <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>{recapCard.description}</div>
                   <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px" }}>
                     <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>
                     <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>
                   </div>
+                  {recapCard.type === "vocab" && (recapCard.images || []).length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 11, color: C.txtM, marginBottom: 6 }}>{t.cardImages}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {(recapCard.images || []).map((im, i) => (
+                          <div key={i} style={{ position: "relative" }}>
+                            <img src={im.thumb || im.url} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 8, border: `2px solid ${i === 0 ? C.acc : C.border}`, background: C.s1 }} />
+                            {i === 0 && <span style={{ position: "absolute", left: 4, top: 4, fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 6, background: C.acc, color: C.onAcc }}>★ {t.imgMain}</span>}
+                            <div style={{ position: "absolute", right: 3, bottom: 3, display: "flex", gap: 3 }}>
+                              {(recapCard.images || []).length > 1 && i !== 0 && (
+                                <button onClick={() => setCardImages(recapCard.korean, [recapCard.images[i], ...recapCard.images.filter((_, j) => j !== i)])} title={t.imgSwap}
+                                  style={{ width: 20, height: 20, borderRadius: 5, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 11, cursor: "pointer" }}>★</button>
+                              )}
+                              <button onClick={() => setCardImages(recapCard.korean, recapCard.images.filter((_, j) => j !== i))} title={t.imgRemove}
+                                style={{ width: 20, height: 20, borderRadius: 5, border: "none", background: "rgba(0,0,0,0.6)", color: "#fff", fontSize: 10, cursor: "pointer" }}>🗑</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {recapCard.parentKorean && (
                     <div style={{ fontSize: 10, color: C.acc, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
                       <span style={{ opacity: 0.6 }}>↳</span> {t.derivedFrom} <span style={{ fontFamily: tFont, fontWeight: 500 }}>{recapCard.parentKorean}</span>
@@ -3905,7 +3995,7 @@ function AppInner() {
                 <div ref={msgsR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
-                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
+                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                     </div>
                   ))}
                   {lLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : lessonDone ? t.generating : t.thinking}</div>}

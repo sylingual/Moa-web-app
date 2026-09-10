@@ -2775,11 +2775,16 @@ function AppInner() {
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain };
+    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
-      if (action === "resources" || action === "realExamples") {
+      if (action === "image") {
+        setSearching(true);
+        const imgs = await fetchImages(recapCard.korean);
+        setSearching(false);
+        setRecapConv([...u, { role: "ai", content: imgs.length ? `📷 ${recapCard.korean}` : t.imageNone, images: imgs, options: null, selected: null }]);
+      } else if (action === "resources" || action === "realExamples") {
         setSearching(true);
         const r = action === "resources"
           ? await findResources(recapCard, lang, tl)
@@ -3746,8 +3751,9 @@ function AppInner() {
                       { k: "exercise", l: t.anExercise, i: "✏️" },
                       { k: "examples", l: t.moreExamples, i: "💡" },
                       { k: "realExamples", l: t.realExamples, i: "🔍" },
+                      { k: "image", l: t.anImage, i: "📷" },
                       { k: "resources", l: t.onlineRes, i: "📚" },
-                    ].filter(a => a.k !== "resources" || recapCard?.type !== "vocab").map(a => (
+                    ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab")).map(a => (
                       <button key={a.k} onClick={() => startRecapAction(a.k)}
                         style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 13px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
@@ -3889,6 +3895,7 @@ function AppInner() {
                             style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: lLoad ? C.s1 : C.ok, color: lLoad ? C.txtM : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: lLoad ? "default" : "pointer" }}>✓ {t.endLesson}</button>
                           <button onClick={() => quickAct("examples")} disabled={lLoad} style={sBtn}>💡 {t.moreExamples}</button>
                           <button onClick={() => quickAct("exercise")} disabled={lLoad} style={sBtn}>✏️ {t.anExercise}</button>
+                          {!showRes && <button onClick={() => quickAct("image")} disabled={lLoad} style={sBtn}>📷 {t.anImage}</button>}
                           {showRes && <button onClick={() => quickAct("resources")} disabled={lLoad} style={sBtn}>📚 {t.onlineRes}</button>}
                         </div>
                       </div>

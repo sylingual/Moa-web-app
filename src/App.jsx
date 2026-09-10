@@ -80,7 +80,11 @@ const T = {
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
-    anExercise: "Un exercice", explainOther: "Expliquer autrement",
+    askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
+    askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
+    askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
+    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image",
+    askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
@@ -308,7 +312,11 @@ const T = {
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
-    anExercise: "An exercise", explainOther: "Explain differently",
+    askExamples: "Could you give me more examples, please? 💡",
+    askExercise: "Could you give me a quick exercise, please? ✏️",
+    askExplain: "Could you explain this differently? 🔄",
+    anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image",
+    askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
     noCards: "No cards yet. Import a text to get started!",
@@ -1186,6 +1194,20 @@ Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":
   return parseJSON((await callAI(sys, user, 1800)).text);
 }
 
+// Find a few illustrative images for a vocab word via Brave image search (keyless to the
+// user; separate quota from Gemini). Resolves to [] on any error so the caller can degrade.
+async function fetchImages(query) {
+  try {
+    const res = await fetch("/api/image", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query }),
+    });
+    const raw = await res.text();
+    let d; try { d = JSON.parse(raw); } catch { return []; }
+    return (d.images || []).slice(0, 4);
+  } catch { return []; }
+}
+
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
 async function fetchThread(item) {
   const res = await fetch("/api/feed", {
@@ -1409,6 +1431,16 @@ function Bubble({ msg, revealAll, onResourceClick }) {
           </div>
         )}
         {ai ? renderMarkdown(msg.content, revealAll) : msg.content}
+        {msg.images && msg.images.length > 0 && (
+          <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {msg.images.map((im, i) => (
+              <a key={i} href={im.link || im.url || im.thumb} target="_blank" rel="noopener noreferrer" style={{ display: "block", lineHeight: 0 }}>
+                <img src={im.thumb || im.url} alt={im.title || ""} loading="lazy"
+                  style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
+              </a>
+            ))}
+          </div>
+        )}
         {msg.sources && msg.sources.length > 0 && (
           <div style={{ marginTop: 10, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: C.txtM, textTransform: "uppercase", marginBottom: 5 }}>Sources</div>
@@ -2743,11 +2775,16 @@ function AppInner() {
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.moreExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.anExercise };
+    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
-      if (action === "resources" || action === "realExamples") {
+      if (action === "image") {
+        setSearching(true);
+        const imgs = await fetchImages(recapCard.korean);
+        setSearching(false);
+        setRecapConv([...u, { role: "ai", content: imgs.length ? `📷 ${recapCard.korean}` : t.imageNone, images: imgs, options: null, selected: null }]);
+      } else if (action === "resources" || action === "realExamples") {
         setSearching(true);
         const r = action === "resources"
           ? await findResources(recapCard, lang, tl)
@@ -2909,10 +2946,15 @@ function AppInner() {
   const quickAct = async (a) => {
     if (lLoad) return;
     setTray(false); setLLoad(true);
-    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
-      if (a === "resources" || a === "realExamples") {
+      if (a === "image") {
+        setSearching(true);
+        const imgs = await fetchImages(lCard.korean);
+        setSearching(false);
+        setConv([...u, { role: "ai", content: imgs.length ? `📷 ${lCard.korean}` : t.imageNone, images: imgs, options: null, selected: null }]);
+      } else if (a === "resources" || a === "realExamples") {
         setSearching(true);
         const r = a === "resources"
           ? await findResources(lCard, lang, tl)
@@ -3000,6 +3042,7 @@ function AppInner() {
     { k: "examples", l: t.moreExamples, i: "💡" }, { k: "realExamples", l: t.realExamples, i: "🔍" },
     { k: "resources", l: t.onlineRes, i: "📚" },
     { k: "exercise", l: t.anExercise, i: "✏️" }, { k: "explain", l: t.explainOther, i: "🔄" },
+    { k: "image", l: t.anImage, i: "📷" },
   ];
 
   const fieldStyle = {
@@ -3708,8 +3751,9 @@ function AppInner() {
                       { k: "exercise", l: t.anExercise, i: "✏️" },
                       { k: "examples", l: t.moreExamples, i: "💡" },
                       { k: "realExamples", l: t.realExamples, i: "🔍" },
+                      { k: "image", l: t.anImage, i: "📷" },
                       { k: "resources", l: t.onlineRes, i: "📚" },
-                    ].filter(a => a.k !== "resources" || recapCard?.type !== "vocab").map(a => (
+                    ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab")).map(a => (
                       <button key={a.k} onClick={() => startRecapAction(a.k)}
                         style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 13px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
@@ -3851,6 +3895,7 @@ function AppInner() {
                             style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: lLoad ? C.s1 : C.ok, color: lLoad ? C.txtM : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: lLoad ? "default" : "pointer" }}>✓ {t.endLesson}</button>
                           <button onClick={() => quickAct("examples")} disabled={lLoad} style={sBtn}>💡 {t.moreExamples}</button>
                           <button onClick={() => quickAct("exercise")} disabled={lLoad} style={sBtn}>✏️ {t.anExercise}</button>
+                          {!showRes && <button onClick={() => quickAct("image")} disabled={lLoad} style={sBtn}>📷 {t.anImage}</button>}
                           {showRes && <button onClick={() => quickAct("resources")} disabled={lLoad} style={sBtn}>📚 {t.onlineRes}</button>}
                         </div>
                       </div>
@@ -3858,7 +3903,7 @@ function AppInner() {
                   })()}
                   {tray && (
                     <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 5, flexWrap: "wrap", background: C.s1 }}>
-                      {qa.filter(a => a.k !== "resources" || lCard?.type !== "vocab").map(a => (
+                      {qa.filter(a => (a.k !== "resources" || lCard?.type !== "vocab") && (a.k !== "image" || lCard?.type === "vocab")).map(a => (
                         <button key={a.k} onClick={() => quickAct(a.k)} disabled={lLoad}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: lLoad ? "default" : "pointer", opacity: lLoad ? 0.55 : 1 }}>
                           {a.i} {a.l}

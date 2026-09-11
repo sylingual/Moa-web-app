@@ -370,7 +370,8 @@ function hostOf(u) { try { return new URL(u).hostname.replace(/^www\./, '') } ca
 
 // Drama-streaming / fan aggregators — not industry news. Dropped from the interest section.
 var AGGREGATOR_HOSTS = ['kisskh', 'dramacool', 'mydramalist', 'kissasian', 'viki', 'viu', 'netflix',
-  'watchasian', 'dramanice', 'asianwiki', 'ondemandkorea', 'kokoa', 'newasiantv', 'dramabeans', 'soompi']
+  'watchasian', 'dramanice', 'asianwiki', 'ondemandkorea', 'kokoa', 'newasiantv', 'dramabeans', 'soompi',
+  'altselection', 'ouest-france', 'allocine', 'senscritique', 'imdb', 'rakuten', 'disneyplus', 'primevideo']
 function isAggregator(host) {
   host = (host || '').toLowerCase()
   return AGGREGATOR_HOSTS.some(function (h) { return host.indexOf(h) !== -1 })
@@ -425,18 +426,28 @@ async function braveNews(query, searchLang, dropAggregators) {
   return { results: results }
 }
 
-async function fetchNewsRecap(targetLang, interestQuery) {
+async function fetchNewsRecap(targetLang, interestQueries) {
   var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
   // Both sections search LOCAL-language (e.g. Korean) sources for immersion + real coverage
-  // of niche topics; the client translates/summarizes everything into the interface language.
+  // of niche topics; the client weaves/summarizes everything into the interface language.
   var g = await braveNews(cfg.general, targetLang, false)
   if (g.error) return { error: g.error }
+  // Interest: run each industry query, merge and de-duplicate by link, drop fan/streaming sites.
   var interestItems = []
-  if (interestQuery) {
-    var ir = await braveNews(interestQuery, targetLang, true) // drop drama-streaming/fan sites
-    interestItems = ir.results || []
+  var seen = {}
+  for (var i = 0; i < interestQueries.length; i++) {
+    var q = (interestQueries[i] || '').toString().trim()
+    if (!q) continue
+    var ir = await braveNews(q, targetLang, true)
+    var rs = (ir && ir.results) || []
+    for (var k = 0; k < rs.length; k++) {
+      var it = rs[k]
+      if (!it.link || seen[it.link]) continue
+      seen[it.link] = true
+      interestItems.push(it)
+    }
   }
-  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 8), interestQuery: interestQuery }
+  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 10) }
 }
 
 export default async function handler(req, res) {
@@ -460,7 +471,7 @@ export default async function handler(req, res) {
 
     // Daily news recap (Brave): general + interest sections with descriptions + sources.
     if (body.action === 'newsRecap') {
-      var nr = await fetchNewsRecap(targetLang, (body.interest || '').trim())
+      var nr = await fetchNewsRecap(targetLang, Array.isArray(body.interestQueries) ? body.interestQueries : [])
       if (nr.error) return res.status(502).json({ error: nr.error })
       return res.status(200).json(nr)
     }

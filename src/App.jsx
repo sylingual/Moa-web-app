@@ -1196,31 +1196,36 @@ async function fetchFeed(query, targetLang, category) {
 
 // Turn the learner's dream into an INDUSTRY-news search query in the target language, so the
 // interest section pulls real professional news (not fan/streaming pages) from local sources.
-async function dreamToSearchQuery(dream, tlName, uiL) {
-  const sys = `A language learner described their dream/aspiration below. Identify the real-world PROFESSION or INDUSTRY behind it, then build a search query to find recent ${tlName}-language NEWS about that industry — its professionals, projects, business and trends — NOT fan pages, wikis, or streaming/where-to-watch sites.
+async function dreamAngle(dream, tlName, uiL) {
+  const sys = `A language learner wrote their dream/aspiration below. Work out the real PROFESSION or INDUSTRY behind it AND whether they want to ENTER / PRACTISE it (not just be a fan). Then produce ${tlName}-language NEWS search queries about that industry: its professionals, projects, business and trends — and, if they aspire to enter it, the ways in: contests, open calls, submissions, auditions, recruitment, how people break in. NEVER fan pages, wikis, rankings, or "what/where to watch" lists.
 
-Example: dream "talk with K-drama screenwriters to create stories together" → the industry is K-drama SCREENWRITING, so a good ${tlName} query targets drama writers / scripts / the writing industry (e.g. in Korean: 드라마 작가 집필 소식), never "watch K-drama".
+Example — dream: "talk with K-drama screenwriters to create stories together" → industry: K-drama SCREENWRITING, and they want to become a writer. Good Korean queries: ["드라마 극본 공모전", "방송작가 채용", "드라마 작가 인터뷰"]. Bad: "드라마 추천", "볼만한 드라마", "K-drama to watch".
 
-Return ONLY JSON: {"query":"<2-6 ${tlName} words targeting that industry's news>","label":"<a 2-4 word ${uiL} label for that world>"}`;
-  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 150)).text);
-  return { query: (parsed.query || "").toString().slice(0, 80), label: (parsed.label || "").toString().slice(0, 40) };
+Give 2 to 3 focused, DISTINCT ${tlName} queries (industry news + at least one "way in" query when they aspire to the profession).
+Return ONLY JSON: {"label":"<2-4 word ${uiL} label of that world>","queries":["<${tlName} query>", "..."]}`;
+  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 500)).text);
+  const queries = Array.isArray(parsed.queries) ? parsed.queries.map(q => String(q || "").trim().slice(0, 60)).filter(Boolean).slice(0, 3) : [];
+  return { label: String(parsed.label || "").slice(0, 40), queries };
 }
 
-// Turn raw Brave news results (often Korean) into clean briefs in the interface language.
-// Drops site homepages/boilerplate; never invents facts. Returns { general, interest }
-// arrays of { i, title, description }, i = index into the original list (to keep sources).
-async function summarizeRecap(general, interestItems, lang) {
+// Turn raw Brave news results (often Korean) into a woven editorial digest in the interface
+// language: a short narrative BRIEF per section + clean per-item briefs. Grounded only in the
+// provided items; never invents. Returns { generalBrief, general[], interestBrief, interest[] }.
+async function digestRecap(general, interestItems, lang, dreamLabel) {
   const L = lang === "fr" ? "French" : "English";
-  const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 300)}`).join("\n\n") || "(none)";
-  const sys = `You are the editor of a daily news digest inside a language-learning app. Below are web/news search results (headline + snippet) in two sections, GENERAL (Korea news) and INTEREST (the learner's passion). Rewrite them as short news briefs IN ${L}, for a reader who cannot yet read Korean.
-Rules:
-- Translate/clarify each headline into natural, concise ${L} (no clickbait, no source name in the title).
-- Write a 1-3 sentence description in ${L} summarizing the story, based ONLY on the given headline + snippet. Never invent specific facts, numbers, names or quotes not present.
-- OMIT items that are just a site homepage, section page or boilerplate (e.g. titles like "Daum News | Home", "YTN channel", or snippets like "we cannot provide a description").
-- Keep at most 5 per section, most newsworthy first.
-Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":"..."}],"interest":[{"i":...,"title":"...","description":"..."}]}.`;
+  const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 320)}`).join("\n\n") || "(none)";
+  const angle = dreamLabel ? `someone who aspires to this world: "${dreamLabel}"` : "the learner's passion";
+  const sys = `You are the editor of a learner's daily Korea digest. Below are news search results (headline + snippet) in two sections: GENERAL (Korea) and INTEREST (${angle}). Write everything in ${L}, for a reader who cannot yet read Korean.
+
+Produce, grounded ONLY in the items (never invent facts, names, numbers, dates or sources):
+1. "generalBrief": 2-3 sentences weaving today's main Korea stories into a short overview.
+2. "general": up to 5 items {i,title,description} — a clarified ${L} headline + a 1-2 sentence summary. i = the item's original index. Drop homepages/section pages/boilerplate.
+3. "interestBrief": 2-4 sentences of EDITORIAL for ${angle}. Connect the interest items into a narrative: what is happening in that industry, why it matters to them, and any opportunity or trend to watch (contests, openings, how to break in). If the items are thin or clearly off-topic (e.g. only "what to watch" lists rather than industry news), SAY SO in one honest sentence instead of pretending.
+4. "interest": up to 5 items {i,title,description}. Drop fan / "where to watch" / ranking items; keep only genuine industry/professional news.
+
+Return ONLY JSON: {"generalBrief":"...","general":[{"i":0,"title":"...","description":"..."}],"interestBrief":"...","interest":[...]}.`;
   const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
-  return parseJSON((await callAI(sys, user, 1800)).text);
+  return parseJSON((await callAI(sys, user, 2600)).text);
 }
 
 // Find a few illustrative images for a vocab word via Brave image search (keyless to the
@@ -2516,36 +2521,45 @@ function AppInner() {
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem(key) || "null");
-        if (cached && cached.v === 3 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
+        if (cached && cached.v === 4 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
           setNewsRecap(cached); return;
         }
       } catch {}
     }
     setNewsRecapLoad(true); setNewsRecapErr("");
     try {
-      // Translate the dream into an industry-news query in the target language (Korean sources
-      // cover niche topics); also get a short label for the section header.
-      let interestQuery = interest, interestLabel = interest;
-      if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
+      // Turn the dream into industry-news queries IN the target language + a short label.
+      // If this fails (e.g. AI quota), we skip the interest section rather than search the raw
+      // dream text — a foreign-language phrase only returns "what to watch" fan sites.
+      let interestQueries = [], interestLabel = interest;
+      if (interest) {
+        try {
+          const dq = await dreamAngle(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English");
+          if (dq.queries.length) interestQueries = dq.queries;
+          if (dq.label) interestLabel = dq.label;
+        } catch (qe) { console.warn("dream angle failed:", qe); }
+      }
       const res = await fetch("/api/feed", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
+        body: JSON.stringify({ action: "newsRecap", targetLang: tl, interestQueries }),
       });
       const raw = await res.text();
       let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }
       if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
       const rawGeneral = d.general || [], rawInterest = d.interest || [];
-      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5), translated = false;
-      // Translate + summarize into the interface language (falls back to raw on quota/error).
+      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5);
+      let generalBrief = "", interestBrief = "", translated = false;
+      // Woven editorial digest in the interface language (falls back to raw items on quota/error).
       try {
-        const s = await summarizeRecap(rawGeneral, rawInterest, lang);
+        const s = await digestRecap(rawGeneral, rawInterest, lang, interestLabel);
         const merge = (parsed, rawArr) => (parsed || [])
           .map(p => { const r = rawArr[p.i]; return r ? { title: p.title || r.title, snippet: p.description || "", link: r.link, source: r.source, date: r.date, image: r.image } : null; })
           .filter(Boolean).slice(0, 5);
         const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
-        if (g.length) { general = g; interestItems = it; translated = true; }
-      } catch (se) { console.warn("recap summarize failed, showing raw:", se); }
-      const recap = { v: 3, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, translated };
+        if (g.length || it.length) { general = g; interestItems = it; translated = true; }
+        generalBrief = s.generalBrief || ""; interestBrief = s.interestBrief || "";
+      } catch (se) { console.warn("recap digest failed, showing raw:", se); }
+      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, hasInterestQuery: interestQueries.length > 0, translated };
       setNewsRecap(recap);
       try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
     } catch (e) {
@@ -4332,10 +4346,11 @@ function AppInner() {
                         </div>
                       </div>
                     );
-                    const section = (title, items, hint) => (
+                    const section = (title, items, brief, hint) => (
                       <div style={{ marginBottom: 20 }}>
                         <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.txt, borderBottom: `2px solid ${C.txt}`, paddingBottom: 4, marginBottom: 2 }}>{title}</div>
-                        {items.length ? items.map((it, i) => story(it, i, i === 0)) : <div style={{ fontSize: 12.5, color: C.txtM, padding: "12px 0", fontStyle: "italic" }}>{hint || t.recapEmpty}</div>}
+                        {brief && <div style={{ fontFamily: serif, fontSize: 14, color: C.txt, lineHeight: 1.7, padding: "12px 0 6px", borderBottom: items.length ? `1px solid ${C.border}` : "none" }}>{brief}</div>}
+                        {items.length ? items.map((it, i) => story(it, i, i === 0 && !brief)) : (!brief && <div style={{ fontSize: 12.5, color: C.txtM, padding: "12px 0", fontStyle: "italic" }}>{hint || t.recapEmpty}</div>)}
                       </div>
                     );
                     return (
@@ -4350,8 +4365,8 @@ function AppInner() {
                         {!newsRecap.translated && (
                           <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {t.recapRawNote}</div>
                         )}
-                        {section(t.recapGeneralTitle, newsRecap.general || [])}
-                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interest ? t.recapEmpty : t.recapInterestHint)}
+                        {section(t.recapGeneralTitle, newsRecap.general || [], newsRecap.generalBrief)}
+                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint)}
                       </div>
                     );
                   })()}

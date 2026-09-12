@@ -88,6 +88,10 @@ const T = {
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
+    studyChooseTitle: "Comment veux-tu étudier ce mot ?",
+    studyLesson: "Leçon complète", studyLessonDesc: "Découverte guidée, questions, exemples",
+    studyDirect: "Juste la traduction", studyDirectDesc: "Le sens directement (mot facile)",
+    directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -324,6 +328,10 @@ const T = {
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
+    studyChooseTitle: "How do you want to study this word?",
+    studyLesson: "Full lesson", studyLessonDesc: "Guided discovery, questions, examples",
+    studyDirect: "Just the translation", studyDirectDesc: "The meaning directly (easy word)",
+    directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -872,6 +880,16 @@ Return JSON: {"message": "your teaching text", "options": [{"label": "a) ...", "
 Meaning (do NOT reveal this to the student): ${d}
 Example from the article: ${card.example_kr}
 Article context:\n${(article || "").substring(0, 800)}`, 4000)).text);
+}
+
+// Quick dictionary-style entry for a word (used when the learner picks "just the translation"
+// for an easy vocab word, and for bare cards added by selection that have no meaning yet).
+async function quickTranslateWord(word, lang, tlCode) {
+  const L = lang === "fr" ? "French" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
+Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
+  return parseJSON((await callAI(sys, `Word: ${word}`, 3000)).text);
 }
 
 async function continueChat(card, conv, action, lang) {
@@ -2124,6 +2142,8 @@ function AppInner() {
   const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
   const [imgReplace, setImgReplace] = useState(null); // { korean, image } when a card already has 2 images
+  const [studyChoice, setStudyChoice] = useState(null); // a vocab card awaiting "lesson vs direct translation"
+  const [directLoad, setDirectLoad] = useState(false);
 
   // Feed
   const [feedItems, setFeedItems] = useState([]);
@@ -2811,7 +2831,45 @@ function AppInner() {
       setView("lesson");
       return;
     }
+    // Vocab: let the learner choose a full lesson OR just the direct translation (easy words).
+    // Grammar always goes straight to a lesson.
+    if (c.type === "vocab") { setStudyChoice(c); return; }
     startLessonFromCard(c);
+  };
+
+  // "Just the translation": show the meaning/example directly and mark the card studied,
+  // no Socratic lesson. Fetches the meaning first if the card is a bare (selection) card.
+  const directTranslate = async (c) => {
+    setStudyChoice(null);
+    let extra = {};
+    if (!c.description && !c.description_fr && !c.description_en) {
+      setDirectLoad(true);
+      try {
+        const info = await quickTranslateWord(c.korean, lang, tl);
+        extra = {
+          description_fr: info.description_fr || "", description_en: info.description_en || "",
+          description: lang === "fr" ? (info.description_fr || "") : (info.description_en || ""),
+          example_kr: info.example_kr || "", example_tr: lang === "fr" ? (info.example_fr || "") : (info.example_en || ""),
+        };
+      } catch (e) { console.error("quick translate error:", e); }
+      setDirectLoad(false);
+    }
+    const base = data.profile || DEFAULT_PROFILE;
+    const wasFirst = (data.cards.find(x => x.korean === c.korean)?.reviewCount || 0) === 0;
+    const gain = wasFirst ? 5 : 0;
+    const updatedCards = data.cards.map(x => {
+      if (x.korean !== c.korean) return x;
+      const rc = (x.reviewCount || 0) + 1;
+      const st = migrateStatus(x.status) === "acquired" ? "acquired" : "studied";
+      return { ...x, ...extra, status: st, reviewCount: rc };
+    });
+    save({ ...data, cards: updatedCards, profile: { ...base, points: (base.points || 0) + gain } });
+    if (gain) { setPointsToast(gain); setTimeout(() => setPointsToast(null), 2000); }
+    const card = updatedCards.find(x => x.korean === c.korean);
+    // Open the recap screen so the translation/summary is shown right away.
+    setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp("");
+    setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+    setView("lesson");
   };
 
   // Re-open the Import flow prefilled with a source text, to study it again.
@@ -3381,6 +3439,34 @@ function AppInner() {
               {t.cancelBtn}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* VOCAB STUDY CHOICE: full lesson vs direct translation */}
+      {studyChoice && (
+        <div onClick={() => setStudyChoice(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2000, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 20, width: "100%", maxWidth: 380, boxShadow: "0 12px 40px rgba(0,0,0,0.25)", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 20, color: C.txt, textAlign: "center" }}>{studyChoice.korean}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", marginBottom: 4 }}>{t.studyChooseTitle}</div>
+            <button onClick={() => startLessonFromCard(studyChoice)}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px", borderRadius: 10, border: `1px solid ${C.acc}`, background: C.accBg, cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans'" }}>
+              <span style={{ fontSize: 20 }}>📖</span>
+              <span><div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{t.studyLesson}</div><div style={{ fontSize: 11.5, color: C.txtS, marginTop: 1 }}>{t.studyLessonDesc}</div></span>
+            </button>
+            <button onClick={() => directTranslate(studyChoice)}
+              style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans'" }}>
+              <span style={{ fontSize: 20 }}>⚡</span>
+              <span><div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{t.studyDirect}</div><div style={{ fontSize: 11.5, color: C.txtS, marginTop: 1 }}>{t.studyDirectDesc}</div></span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {directLoad && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 2100, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="pulse" style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 22px", fontSize: 13, color: C.txtS }}>{t.directLoading}</div>
         </div>
       )}
 

@@ -1215,6 +1215,25 @@ Return ONLY JSON: {"label":"<2-4 word ${uiL} label of that world>","queries":["<
 // Turn raw Brave news results (often Korean) into a woven editorial digest in the interface
 // language: a short narrative BRIEF per section + clean per-item briefs. Grounded only in the
 // provided items; never invents. Returns { generalBrief, general[], interestBrief, interest[] }.
+// Live web-search-grounded digest (Gemini + Google Search) — the closest match to what a
+// ChatGPT-style research assistant does: it finds today's actual articles and writes a deep,
+// specific brief with real sources. Uses the Google-Search grounding quota (separate, daily).
+async function groundedRecap(dream, dreamLabel, lang) {
+  const L = lang === "fr" ? "French" : "English";
+  const today = new Date().toISOString().slice(0, 10);
+  const sys = `You are a Korea news researcher and editor. Use web search to check the LATEST Korean-language news (around ${today}). Write in ${L}, plain prose (short paragraphs), citing outlet names in-text. Use ONLY what you actually find via search — never invent facts, names, numbers or dates.
+
+Output EXACTLY in this format, keeping the two === markers on their own lines:
+===GENERAL===
+2-3 sentences weaving today's main general Korea news (politics, society, economy, culture).
+===INTEREST===
+A rich, specific editorial (2-4 short paragraphs) narrowly about the world of "${dreamLabel || dream}", for a learner who wants to BREAK INTO this field. Prioritise: new projects, script/scenario competitions and open calls, rookie/newcomer opportunities, recruitment, writer signings and interviews, and concrete industry developments — NOT "what to watch" or ranking lists. Go DEEP on the 2-3 most useful stories you find: the specifics (names, titles, what happened, the person's path and craft) AND why each matters to someone entering the field.
+Then one sentence stating what you searched (the key angles) and honestly whether any NEW contest / open call / recruitment appeared recently — if not, say so plainly.
+End with one sentence: the single story most worth digging into now, and why.`;
+  const r = await callAI(sys, `Field: ${dreamLabel || dream}. Learner's dream (verbatim): ${dream}`, 4000, true, true);
+  return { text: r.text || "", sources: r.sources || [] };
+}
+
 async function digestRecap(general, interestItems, lang, dreamLabel, searched) {
   const L = lang === "fr" ? "French" : "English";
   const packG = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 320)}`).join("\n\n") || "(none)";
@@ -2529,12 +2548,36 @@ function AppInner() {
     if (!force) {
       try {
         const cached = JSON.parse(localStorage.getItem(key) || "null");
-        if (cached && cached.v === 4 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
+        if (cached && cached.v === 5 && cached.date === dayKey() && cached.lang === tl && cached.uiLang === lang && cached.interest === interest) {
           setNewsRecap(cached); return;
         }
       } catch {}
     }
     setNewsRecapLoad(true); setNewsRecapErr("");
+    // Preferred path: a live web-search-grounded brief (Gemini + Google Search) — closest to a
+    // ChatGPT-style researcher. Falls back to the Brave path if grounding fails / quota is hit.
+    if (interest && tl === "ko") {
+      try {
+        let label = interest;
+        try { const dq = await dreamAngle(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English"); if (dq.label) label = dq.label; } catch {}
+        const gr = await groundedRecap(interest, label, lang);
+        const txt = gr.text || "";
+        let gBrief = "", iBrief = txt;
+        const mi = txt.indexOf("===INTEREST===");
+        if (mi !== -1) {
+          iBrief = txt.slice(mi + "===INTEREST===".length).trim();
+          const gg = txt.slice(0, mi).replace("===GENERAL===", "").trim();
+          if (gg) gBrief = gg;
+        }
+        if (iBrief) {
+          const recap = { v: 5, grounded: true, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel: label, generalBrief: gBrief, interestBrief: iBrief, sources: gr.sources || [], translated: true };
+          setNewsRecap(recap);
+          try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
+          setNewsRecapLoad(false);
+          return;
+        }
+      } catch (ge) { console.warn("grounded recap failed, falling back to Brave:", ge); }
+    }
     try {
       // Turn the dream into industry-news queries IN the target language + a short label.
       // If this fails (e.g. AI quota), we skip the interest section rather than search the raw
@@ -2569,7 +2612,7 @@ function AppInner() {
       } catch (se) { console.warn("recap digest failed, showing raw:", se); digestErr = se?.message || "error"; }
       const isQuota = /quota|429|rate/i.test(digestErr);
       const note = translated ? "" : (isQuota ? t.recapRawNote : (t.recapDigestErr ? t.recapDigestErr(digestErr.slice(0, 120)) : digestErr.slice(0, 140)));
-      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, searchNote, topPick, hasInterestQuery: interestQueries.length > 0, translated, note };
+      const recap = { v: 5, grounded: false, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, searchNote, topPick, hasInterestQuery: interestQueries.length > 0, translated, note };
       setNewsRecap(recap);
       // Only cache a SUCCESSFUL digest — otherwise retry on the next open / refresh (self-heals when quota returns).
       if (translated) { try { localStorage.setItem(key, JSON.stringify(recap)); } catch {} }
@@ -4379,8 +4422,33 @@ function AppInner() {
                         {!newsRecap.translated && (
                           <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {newsRecap.note || t.recapRawNote}</div>
                         )}
-                        {section(t.recapGeneralTitle, newsRecap.general || [], newsRecap.generalBrief)}
-                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint, newsRecap.searchNote, newsRecap.topPick)}
+                        {newsRecap.grounded ? (() => {
+                          const secHead = (title) => <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.txt, borderBottom: `2px solid ${C.txt}`, paddingBottom: 4, marginBottom: 8 }}>{title}</div>;
+                          const prose = (txt) => <div style={{ fontFamily: serif, fontSize: 14, color: C.txt, lineHeight: 1.72 }}>{renderMarkdown(txt, true)}</div>;
+                          const iTitle = t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : "");
+                          return (
+                            <>
+                              {newsRecap.generalBrief && <div style={{ marginBottom: 20 }}>{secHead(t.recapGeneralTitle)}{prose(newsRecap.generalBrief)}</div>}
+                              <div style={{ marginBottom: 16 }}>{secHead(iTitle)}{prose(newsRecap.interestBrief)}</div>
+                              {(newsRecap.sources || []).length > 0 && (
+                                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
+                                  <div style={{ fontSize: 10.5, fontWeight: 600, color: C.txtM, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{t.sources}</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                                    {newsRecap.sources.slice(0, 10).map((s, i) => (
+                                      <a key={i} href={s.uri} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, color: C.acc, textDecoration: "none", display: "flex", gap: 5, minWidth: 0 }}>
+                                        <span style={{ flexShrink: 0 }}>🔗</span>
+                                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title || s.uri}</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })() : (<>
+                          {section(t.recapGeneralTitle, newsRecap.general || [], newsRecap.generalBrief)}
+                          {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint, newsRecap.searchNote, newsRecap.topPick)}
+                        </>)}
                       </div>
                     );
                   })()}

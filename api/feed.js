@@ -426,6 +426,26 @@ async function braveNews(query, searchLang, dropAggregators) {
   return { results: results }
 }
 
+// Fetch a news article and extract its readable body text (best-effort, bounded). Gives the
+// AI real content to synthesize from — not just the ~300-char search snippet.
+async function fetchArticleText(url) {
+  if (!url) return ''
+  try {
+    var ctrl = new AbortController()
+    var to = setTimeout(function () { ctrl.abort() }, 6000)
+    var r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NamuBot/1.0)', 'Accept': 'text/html' }, signal: ctrl.signal })
+    clearTimeout(to)
+    if (!r.ok) return ''
+    var html = await r.text()
+    html = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ')
+    var m = html.match(/<article[\s\S]*?<\/article>/i)
+    var chunk = m ? m[0] : html
+    var text = stripTags(chunk.replace(/<\/(p|div|br|h[1-6]|li)>/gi, '\n'))
+    text = text.replace(/\n[ \t]*\n+/g, '\n').replace(/[ \t]{2,}/g, ' ').trim()
+    return text.slice(0, 2000)
+  } catch (e) { return '' }
+}
+
 async function fetchNewsRecap(targetLang, interestQueries) {
   var cfg = NEWS_QUERIES[targetLang] || NEWS_QUERIES.ko
   // Both sections search LOCAL-language (e.g. Korean) sources for immersion + real coverage
@@ -447,7 +467,13 @@ async function fetchNewsRecap(targetLang, interestQueries) {
       interestItems.push(it)
     }
   }
-  return { general: (g.results || []).slice(0, 8), interest: interestItems.slice(0, 10) }
+  interestItems = interestItems.slice(0, 10)
+  // Pull full article text for the top interest stories so the digest can go deep (like a
+  // human editor reading the pieces), not just paraphrase snippets. Parallel + bounded.
+  var top = interestItems.slice(0, 5)
+  var bodies = await Promise.all(top.map(function (it) { return fetchArticleText(it.link) }))
+  for (var b = 0; b < top.length; b++) { top[b].body = bodies[b] || '' }
+  return { general: (g.results || []).slice(0, 8), interest: interestItems, searched: interestQueries }
 }
 
 export default async function handler(req, res) {

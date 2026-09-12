@@ -274,6 +274,7 @@ const T = {
     recapInterestHint: "Renseigne ton rêve dans le Profil pour une rubrique sur mesure.",
     recapRawNote: "Traduction indisponible (quota IA) — titres affichés en version d'origine.",
     recapDigestErr: (e) => `Synthèse indisponible (${e}) — titres bruts affichés.`,
+    recapTopPick: "À creuser aujourd'hui :",
     recapEdition: (d) => `Édition du ${d}`,
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
@@ -514,6 +515,7 @@ const T = {
     recapInterestHint: "Set your dream in your Profile for a tailored section.",
     recapRawNote: "Translation unavailable (AI quota) — showing original headlines.",
     recapDigestErr: (e) => `Digest unavailable (${e}) — showing raw headlines.`,
+    recapTopPick: "Worth digging into today:",
     recapEdition: (d) => `${d} edition`,
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
@@ -1203,31 +1205,35 @@ async function dreamAngle(dream, tlName, uiL) {
 
 Example — dream: "talk with K-drama screenwriters to create stories together" → industry: K-drama SCREENWRITING, and they want to become a writer. Good Korean queries: ["드라마 극본 공모전", "방송작가 채용", "드라마 작가 인터뷰"]. Bad: "드라마 추천", "볼만한 드라마", "K-drama to watch".
 
-Give 2 to 3 focused, DISTINCT ${tlName} queries (industry news + at least one "way in" query when they aspire to the profession).
+Give 5 to 7 DISTINCT, varied ${tlName} queries covering several angles: industry news & business, new projects, professional interviews/profiles, AND — when they aspire to the profession — concrete "ways in" (contests, open calls, submissions, rookie/newcomer programmes, recruitment). Mix broad and specific terms a native would actually search.
 Return ONLY JSON: {"label":"<2-4 word ${uiL} label of that world>","queries":["<${tlName} query>", "..."]}`;
-  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 500)).text);
-  const queries = Array.isArray(parsed.queries) ? parsed.queries.map(q => String(q || "").trim().slice(0, 60)).filter(Boolean).slice(0, 3) : [];
+  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 600)).text);
+  const queries = Array.isArray(parsed.queries) ? parsed.queries.map(q => String(q || "").trim().slice(0, 60)).filter(Boolean).slice(0, 7) : [];
   return { label: String(parsed.label || "").slice(0, 40), queries };
 }
 
 // Turn raw Brave news results (often Korean) into a woven editorial digest in the interface
 // language: a short narrative BRIEF per section + clean per-item briefs. Grounded only in the
 // provided items; never invents. Returns { generalBrief, general[], interestBrief, interest[] }.
-async function digestRecap(general, interestItems, lang, dreamLabel) {
+async function digestRecap(general, interestItems, lang, dreamLabel, searched) {
   const L = lang === "fr" ? "French" : "English";
-  const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 320)}`).join("\n\n") || "(none)";
+  const packG = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 320)}`).join("\n\n") || "(none)";
+  const packI = (arr) => arr.map((it, i) => `[${i}] ${it.title} — ${it.source || ""}\nSNIPPET: ${(it.snippet || "").slice(0, 300)}${it.body ? `\nARTICLE: ${it.body.slice(0, 1600)}` : ""}`).join("\n\n") || "(none)";
   const angle = dreamLabel ? `someone who aspires to this world: "${dreamLabel}"` : "the learner's passion";
-  const sys = `You are the editor of a learner's daily Korea digest. Below are news search results (headline + snippet) in two sections: GENERAL (Korea) and INTEREST (${angle}). Write everything in ${L}, for a reader who cannot yet read Korean.
+  const sys = `You are the editor of a learner's daily Korea digest, writing in ${L} for a reader who cannot yet read Korean.
+GENERAL = Korea news. INTEREST = ${angle}. For INTEREST items you are also given the ARTICLE body text — READ IT and use concrete specifics (names, titles, what happened, the person's path and craft), never invent beyond what is provided.
 
-Produce, grounded ONLY in the items (never invent facts, names, numbers, dates or sources):
-1. "generalBrief": 2-3 sentences weaving today's main Korea stories into a short overview.
-2. "general": up to 5 items {i,title,description} — a clarified ${L} headline + a 1-2 sentence summary. i = the item's original index. Drop homepages/section pages/boilerplate.
-3. "interestBrief": 2-4 sentences of EDITORIAL for ${angle}. Connect the interest items into a narrative: what is happening in that industry, why it matters to them, and any opportunity or trend to watch (contests, openings, how to break in). If the items are thin or clearly off-topic (e.g. only "what to watch" lists rather than industry news), SAY SO in one honest sentence instead of pretending.
-4. "interest": up to 5 items {i,title,description}. Drop fan / "where to watch" / ranking items; keep only genuine industry/professional news.
+Produce, grounded ONLY in the provided material:
+1. "generalBrief": 2-3 sentences weaving today's main Korea stories.
+2. "general": up to 5 {i,title,description} (clarified ${L} headline + 1-2 sentence summary). Drop homepages/boilerplate.
+3. "interestBrief": a RICH editorial of 4-8 sentences (you may use 2 short paragraphs separated by a blank line) for ${angle}. Go deep on the 2-3 most useful stories using the ARTICLE text — the specifics of what happened AND explicitly why it matters to someone trying to break into / practise this field. Be concrete, never generic.
+4. "interest": up to 6 {i,title,description}, each with a 2-3 sentence ${L} description drawing on the article body where available. Keep only genuine industry/professional news; drop fan / "where to watch" / ranking items.
+5. "searchNote": ONE sentence in ${L} saying what was searched today (name the key angles — e.g. contests, openings, interviews) and honestly whether anything fresh turned up on the "way in" (contests/recruitment); if nothing new there, say so.
+6. "topPick": ONE sentence naming the single story most worth digging into today, and why.
 
-Return ONLY JSON: {"generalBrief":"...","general":[{"i":0,"title":"...","description":"..."}],"interestBrief":"...","interest":[...]}.`;
-  const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
-  return parseJSON((await callAI(sys, user, 4000)).text);
+Never invent facts, names, numbers, dates or sources. Return ONLY JSON: {"generalBrief":"...","general":[{"i":0,"title":"...","description":"..."}],"interestBrief":"...","interest":[...],"searchNote":"...","topPick":"..."}.`;
+  const user = `SEARCHED (target-language queries): ${(searched || []).join(" · ") || "(none)"}\n\nGENERAL:\n${packG(general)}\n\nINTEREST:\n${packI(interestItems)}`;
+  return parseJSON((await callAI(sys, user, 5000)).text);
 }
 
 // Find a few illustrative images for a vocab word via Brave image search (keyless to the
@@ -2549,21 +2555,21 @@ function AppInner() {
       let d; try { d = JSON.parse(raw); } catch { throw new Error(raw.slice(0, 150)); }
       if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
       const rawGeneral = d.general || [], rawInterest = d.interest || [];
-      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5);
-      let generalBrief = "", interestBrief = "", translated = false, digestErr = "";
+      let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 6);
+      let generalBrief = "", interestBrief = "", searchNote = "", topPick = "", translated = false, digestErr = "";
       // Woven editorial digest in the interface language (falls back to raw items on quota/error).
       try {
-        const s = await digestRecap(rawGeneral, rawInterest, lang, interestLabel);
-        const merge = (parsed, rawArr) => (parsed || [])
+        const s = await digestRecap(rawGeneral, rawInterest, lang, interestLabel, d.searched || interestQueries);
+        const merge = (parsed, rawArr, n) => (parsed || [])
           .map(p => { const r = rawArr[p.i]; return r ? { title: p.title || r.title, snippet: p.description || "", link: r.link, source: r.source, date: r.date, image: r.image } : null; })
-          .filter(Boolean).slice(0, 5);
-        const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
+          .filter(Boolean).slice(0, n);
+        const g = merge(s.general, rawGeneral, 5), it = merge(s.interest, rawInterest, 6);
         if (g.length || it.length) { general = g; interestItems = it; translated = true; }
-        generalBrief = s.generalBrief || ""; interestBrief = s.interestBrief || "";
+        generalBrief = s.generalBrief || ""; interestBrief = s.interestBrief || ""; searchNote = s.searchNote || ""; topPick = s.topPick || "";
       } catch (se) { console.warn("recap digest failed, showing raw:", se); digestErr = se?.message || "error"; }
       const isQuota = /quota|429|rate/i.test(digestErr);
       const note = translated ? "" : (isQuota ? t.recapRawNote : (t.recapDigestErr ? t.recapDigestErr(digestErr.slice(0, 120)) : digestErr.slice(0, 140)));
-      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, hasInterestQuery: interestQueries.length > 0, translated, note };
+      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, searchNote, topPick, hasInterestQuery: interestQueries.length > 0, translated, note };
       setNewsRecap(recap);
       // Only cache a SUCCESSFUL digest — otherwise retry on the next open / refresh (self-heals when quota returns).
       if (translated) { try { localStorage.setItem(key, JSON.stringify(recap)); } catch {} }
@@ -4352,11 +4358,13 @@ function AppInner() {
                         </div>
                       </div>
                     );
-                    const section = (title, items, brief, hint) => (
+                    const section = (title, items, brief, hint, searchNote, topPick) => (
                       <div style={{ marginBottom: 20 }}>
                         <div style={{ fontFamily: serif, fontSize: 12.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", color: C.txt, borderBottom: `2px solid ${C.txt}`, paddingBottom: 4, marginBottom: 2 }}>{title}</div>
-                        {brief && <div style={{ fontFamily: serif, fontSize: 14, color: C.txt, lineHeight: 1.7, padding: "12px 0 6px", borderBottom: items.length ? `1px solid ${C.border}` : "none" }}>{brief}</div>}
+                        {searchNote && <div style={{ fontSize: 11, color: C.txtM, fontStyle: "italic", padding: "8px 0 0" }}>🔎 {searchNote}</div>}
+                        {brief && <div style={{ fontFamily: serif, fontSize: 14, color: C.txt, lineHeight: 1.7, padding: "12px 0 6px", whiteSpace: "pre-wrap", borderBottom: items.length ? `1px solid ${C.border}` : "none" }}>{brief}</div>}
                         {items.length ? items.map((it, i) => story(it, i, i === 0 && !brief)) : (!brief && <div style={{ fontSize: 12.5, color: C.txtM, padding: "12px 0", fontStyle: "italic" }}>{hint || t.recapEmpty}</div>)}
+                        {topPick && <div style={{ marginTop: 12, padding: "10px 12px", background: C.accBg, borderRadius: 8, fontSize: 12.5, color: C.txt, lineHeight: 1.6, fontFamily: serif }}>⭐ <b>{t.recapTopPick}</b> {topPick}</div>}
                       </div>
                     );
                     return (
@@ -4372,7 +4380,7 @@ function AppInner() {
                           <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {newsRecap.note || t.recapRawNote}</div>
                         )}
                         {section(t.recapGeneralTitle, newsRecap.general || [], newsRecap.generalBrief)}
-                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint)}
+                        {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint, newsRecap.searchNote, newsRecap.topPick)}
                       </div>
                     );
                   })()}

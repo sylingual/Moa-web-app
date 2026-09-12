@@ -273,6 +273,7 @@ const T = {
     recapEmpty: "Pas d'actualité trouvée pour aujourd'hui.",
     recapInterestHint: "Renseigne ton rêve dans le Profil pour une rubrique sur mesure.",
     recapRawNote: "Traduction indisponible (quota IA) — titres affichés en version d'origine.",
+    recapDigestErr: (e) => `Synthèse indisponible (${e}) — titres bruts affichés.`,
     recapEdition: (d) => `Édition du ${d}`,
     feedGenKeywords: "Génération des sujets...",
     exFinished: "Exercice terminé !",
@@ -512,6 +513,7 @@ const T = {
     recapEmpty: "No news found for today.",
     recapInterestHint: "Set your dream in your Profile for a tailored section.",
     recapRawNote: "Translation unavailable (AI quota) — showing original headlines.",
+    recapDigestErr: (e) => `Digest unavailable (${e}) — showing raw headlines.`,
     recapEdition: (d) => `${d} edition`,
     feedGenKeywords: "Generating topics...",
     exFinished: "Exercise complete!",
@@ -1225,7 +1227,7 @@ Produce, grounded ONLY in the items (never invent facts, names, numbers, dates o
 
 Return ONLY JSON: {"generalBrief":"...","general":[{"i":0,"title":"...","description":"..."}],"interestBrief":"...","interest":[...]}.`;
   const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
-  return parseJSON((await callAI(sys, user, 2600)).text);
+  return parseJSON((await callAI(sys, user, 4000)).text);
 }
 
 // Find a few illustrative images for a vocab word via Brave image search (keyless to the
@@ -2548,7 +2550,7 @@ function AppInner() {
       if (!res.ok) throw new Error(d.error || raw.slice(0, 150));
       const rawGeneral = d.general || [], rawInterest = d.interest || [];
       let general = rawGeneral.slice(0, 5), interestItems = rawInterest.slice(0, 5);
-      let generalBrief = "", interestBrief = "", translated = false;
+      let generalBrief = "", interestBrief = "", translated = false, digestErr = "";
       // Woven editorial digest in the interface language (falls back to raw items on quota/error).
       try {
         const s = await digestRecap(rawGeneral, rawInterest, lang, interestLabel);
@@ -2558,10 +2560,14 @@ function AppInner() {
         const g = merge(s.general, rawGeneral), it = merge(s.interest, rawInterest);
         if (g.length || it.length) { general = g; interestItems = it; translated = true; }
         generalBrief = s.generalBrief || ""; interestBrief = s.interestBrief || "";
-      } catch (se) { console.warn("recap digest failed, showing raw:", se); }
-      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, hasInterestQuery: interestQueries.length > 0, translated };
+      } catch (se) { console.warn("recap digest failed, showing raw:", se); digestErr = se?.message || "error"; }
+      const isQuota = /quota|429|rate/i.test(digestErr);
+      const note = translated ? "" : (isQuota ? t.recapRawNote : (t.recapDigestErr ? t.recapDigestErr(digestErr.slice(0, 120)) : digestErr.slice(0, 140)));
+      const recap = { v: 4, date: dayKey(), lang: tl, uiLang: lang, interest, interestLabel, general, interestItems, generalBrief, interestBrief, hasInterestQuery: interestQueries.length > 0, translated, note };
       setNewsRecap(recap);
-      try { localStorage.setItem(key, JSON.stringify(recap)); } catch {}
+      // Only cache a SUCCESSFUL digest — otherwise retry on the next open / refresh (self-heals when quota returns).
+      if (translated) { try { localStorage.setItem(key, JSON.stringify(recap)); } catch {} }
+      else { try { localStorage.removeItem(key); } catch {} }
     } catch (e) {
       console.error("news recap error:", e);
       setNewsRecapErr(e.message);
@@ -4363,7 +4369,7 @@ function AppInner() {
                           <button onClick={() => loadNewsRecap(true)} style={{ padding: "3px 10px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>↻ {t.recapRefresh}</button>
                         </div>
                         {!newsRecap.translated && (
-                          <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {t.recapRawNote}</div>
+                          <div style={{ fontSize: 11, color: C.warn, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 8, padding: "6px 10px", marginBottom: 10, fontFamily: "'Plus Jakarta Sans'" }}>⚠️ {newsRecap.note || t.recapRawNote}</div>
                         )}
                         {section(t.recapGeneralTitle, newsRecap.general || [], newsRecap.generalBrief)}
                         {section(t.recapInterestTitle + ((newsRecap.interestLabel || newsRecap.interest) ? " · " + (newsRecap.interestLabel || newsRecap.interest) : ""), newsRecap.interestItems || [], newsRecap.interestBrief, newsRecap.hasInterestQuery ? t.recapEmpty : t.recapInterestHint)}

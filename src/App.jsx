@@ -3724,6 +3724,7 @@ function AppInner() {
         {/* LIBRARY */}
         {view === "library" && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+            <div className="wall-band wall-band-top" />
             <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, color: C.txtM }}>{filteredCards.length} {t.points} · {studiedCount} {t.statusStudied.toLowerCase()} · {acqCount} {t.statusAcquired.toLowerCase()}</span>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -3850,6 +3851,7 @@ function AppInner() {
                     })()
                   : <TreeView cards={filteredCards} t={t} onToggle={(id) => setConfirmToggle(data.cards.find(c => c.id === id))} onReview={(c) => reviewCard(c)} />
             }
+            <div className="wall-band wall-band-bottom" />
           </div>
         )}
 

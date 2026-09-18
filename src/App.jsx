@@ -77,6 +77,12 @@ const T = {
     story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
     qcm: "QCM aléatoire", qcmDesc: "Questions sur des exemples nouveaux.",
     fillBlanks: "Compléter les phrases", fillDesc: "Phrases à trous tirées de vrais articles.",
+    exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
+    exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
+    matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
+    exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
+    crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
+    crossAcross: "Horizontal", crossDown: "Vertical",
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -320,6 +326,12 @@ const T = {
     story: "Tell a story", storyDesc: "Use chosen structures in a coherent text.",
     qcm: "Random quiz", qcmDesc: "Questions on new random examples.",
     fillBlanks: "Fill in the blanks", fillDesc: "Gap-fill from real articles.",
+    exMatch: "Match", exMatchDesc: "Match each word to its definition.",
+    exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
+    matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
+    exNeedWords: "Not enough suitable words for this exercise (pick some others).",
+    crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
+    crossAcross: "Across", crossDown: "Down",
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -2085,6 +2097,232 @@ function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFi
 }
 
 // =============================================
+// NON-AI EXERCISES (#67 crossword, #68 match)
+// =============================================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// #68 — Match each word to its definition (two columns, tap a word then its definition).
+function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
+  const [round, setRound] = useState(0);
+  const pairs = useMemo(() => {
+    const p = cards.filter(c => (c.description || "").trim()).map(c => ({ id: c.id, kr: c.korean, def: (c.description || "").trim() }));
+    return shuffle(p).slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, round]);
+  const left = useMemo(() => shuffle(pairs), [pairs]);
+  const right = useMemo(() => shuffle(pairs), [pairs]);
+  const [sel, setSel] = useState(null);       // selected word id
+  const [matched, setMatched] = useState(() => new Set());
+  const [wrong, setWrong] = useState(null);    // def id flashing wrong
+  const [awarded, setAwarded] = useState(false);
+  const done = pairs.length > 0 && matched.size === pairs.length;
+
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+
+  const pickDef = (defId) => {
+    if (!sel || matched.has(defId)) return;
+    if (defId === sel) { const n = new Set(matched); n.add(defId); setMatched(n); setSel(null); }
+    else { setWrong(defId); setTimeout(() => setWrong(null), 500); setSel(null); }
+  };
+  const restart = () => { setMatched(new Set()); setSel(null); setWrong(null); setAwarded(false); setRound(r => r + 1); };
+
+  if (!pairs.length) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>🔗</div><div>{t.exNeedWords}</div>
+      <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
+    </div>
+  );
+
+  const colBtn = (active, ok) => ({ width: "100%", textAlign: "left", padding: "11px 12px", borderRadius: 10, cursor: ok ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, lineHeight: 1.4, border: `1px solid ${ok ? C.okB : active ? C.acc : C.border}`, background: ok ? C.okBg : active ? C.accBg : C.s2, color: ok ? C.ok : C.txt, transition: "background 0.12s, border-color 0.12s" });
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🔗 {t.exMatch} · {matched.size}/{pairs.length}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+      </div>
+      {done ? (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 }}>
+          <div style={{ fontSize: 30 }}>🎉</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.exFinished}</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <button onClick={restart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>↻ {t.exRestart}</button>
+            <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>← {t.back}</button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", gap: 10 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchWords}</div>
+            {left.map(p => { const ok = matched.has(p.id); return (
+              <button key={p.id} onClick={() => !ok && setSel(p.id)} style={{ ...colBtn(sel === p.id, ok), fontFamily: tFont }}>{p.kr}</button>
+            ); })}
+          </div>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchDefs}</div>
+            {right.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id; return (
+              <button key={p.id} onClick={() => pickDef(p.id)} style={{ ...colBtn(false, ok), border: `1px solid ${isWrong ? C.warn : ok ? C.okB : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : C.s2 }}>{p.def}</button>
+            ); })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// #67 — Crossword built from the selected words + their definitions as clues.
+function isHangulWord(s) {
+  if (!s) return false;
+  const chars = Array.from(s.trim());
+  if (chars.length < 2 || chars.length > 8) return false;
+  return chars.every(ch => { const cp = ch.codePointAt(0); return cp >= 0xAC00 && cp <= 0xD7A3; });
+}
+
+function buildCrossword(words) {
+  const grid = {};
+  const key = (r, c) => r + "," + c;
+  const placed = [];
+  const canPlace = (syl, r, c, dir) => {
+    for (let i = 0; i < syl.length; i++) {
+      const rr = dir === "h" ? r : r + i, cc = dir === "h" ? c + i : c;
+      const ex = grid[key(rr, cc)];
+      if (ex && ex !== syl[i]) return false;
+    }
+    return true;
+  };
+  const place = (w, r, c, dir) => {
+    const cells = [];
+    for (let i = 0; i < w.syl.length; i++) {
+      const rr = dir === "h" ? r : r + i, cc = dir === "h" ? c + i : c;
+      grid[key(rr, cc)] = w.syl[i];
+      cells.push({ r: rr, c: cc, ch: w.syl[i] });
+    }
+    placed.push({ id: w.id, clue: w.clue, answer: w.answer, cells, dir, r, c });
+  };
+  const sorted = [...words].sort((a, b) => b.syl.length - a.syl.length);
+  if (!sorted.length) return { placed: [], sol: {}, rows: 0, cols: 0 };
+  place(sorted[0], 0, 0, "h");
+  for (let i = 1; i < sorted.length; i++) {
+    const w = sorted[i];
+    let ok = false;
+    outer:
+    for (const p of placed) {
+      for (const cell of p.cells) {
+        for (let si = 0; si < w.syl.length; si++) {
+          if (w.syl[si] === cell.ch) {
+            const dir = p.dir === "h" ? "v" : "h";
+            const r = dir === "v" ? cell.r - si : cell.r;
+            const c = dir === "v" ? cell.c : cell.c - si;
+            if (canPlace(w.syl, r, c, dir)) { place(w, r, c, dir); ok = true; break outer; }
+          }
+        }
+      }
+    }
+    if (!ok) { let maxR = 0; for (const k in grid) { const rr = +k.split(",")[0]; if (rr > maxR) maxR = rr; } place(w, maxR + 2, 0, "h"); }
+  }
+  // Normalize to (0,0)
+  let minR = Infinity, minC = Infinity, maxR = -Infinity, maxC = -Infinity;
+  for (const k in grid) { const [r, c] = k.split(",").map(Number); minR = Math.min(minR, r); minC = Math.min(minC, c); maxR = Math.max(maxR, r); maxC = Math.max(maxC, c); }
+  const sol = {};
+  placed.forEach(p => { p.cells = p.cells.map(ce => ({ ...ce, r: ce.r - minR, c: ce.c - minC })); p.r -= minR; p.c -= minC; p.cells.forEach(ce => { sol[key(ce.r, ce.c)] = ce.ch; }); });
+  // Numbering: entry start cells in reading order
+  const starts = {};
+  placed.forEach(p => { starts[key(p.r, p.c)] = true; });
+  const startKeys = Object.keys(starts).sort((a, b) => { const [ra, ca] = a.split(",").map(Number), [rb, cb] = b.split(",").map(Number); return ra - rb || ca - cb; });
+  const num = {}; startKeys.forEach((k, i) => { num[k] = i + 1; });
+  placed.forEach(p => { p.num = num[key(p.r, p.c)]; });
+  return { placed, sol, num, rows: maxR - minR + 1, cols: maxC - minC + 1 };
+}
+
+function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
+  const [round, setRound] = useState(0);
+  const words = useMemo(() => {
+    const w = cards
+      .filter(c => isHangulWord(c.korean) && (c.description || "").trim())
+      .map(c => ({ id: c.id, answer: c.korean.trim(), clue: (c.description || "").trim(), syl: Array.from(c.korean.trim()) }));
+    return shuffle(w).slice(0, 8);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, round]);
+  const cw = useMemo(() => buildCrossword(words), [words]);
+  const [vals, setVals] = useState({});
+  const [checked, setChecked] = useState(false);
+  const [awarded, setAwarded] = useState(false);
+  const key = (r, c) => r + "," + c;
+
+  const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
+  useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
+
+  const restart = () => { setVals({}); setChecked(false); setAwarded(false); setRound(r => r + 1); };
+
+  if (cw.placed.length < 2) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>🧩</div><div>{t.exNeedWords}</div>
+      <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
+    </div>
+  );
+
+  const across = cw.placed.filter(p => p.dir === "h").sort((a, b) => a.num - b.num);
+  const down = cw.placed.filter(p => p.dir === "v").sort((a, b) => a.num - b.num);
+  const CELL = 34;
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🧩 {t.exCross}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+      </div>
+      <div style={{ flex: 1, overflow: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 14 }}>
+        {solved && (
+          <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, color: C.ok, fontSize: 13, fontWeight: 600 }}>🎉 {t.crossSolved}</div>
+        )}
+        <div style={{ fontSize: 11, color: C.txtM }}>{t.crossHint}</div>
+        <div style={{ overflowX: "auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cw.cols}, ${CELL}px)`, gap: 2, width: cw.cols * (CELL + 2) }}>
+            {Array.from({ length: cw.rows }).map((_, r) => Array.from({ length: cw.cols }).map((__, c) => {
+              const k = key(r, c);
+              const isCell = cw.sol[k] != null;
+              if (!isCell) return <div key={k} style={{ width: CELL, height: CELL }} />;
+              const v = vals[k] || "";
+              const right = checked && v && v === cw.sol[k];
+              const bad = checked && v && v !== cw.sol[k];
+              return (
+                <div key={k} style={{ position: "relative", width: CELL, height: CELL }}>
+                  {cw.num[k] && <span style={{ position: "absolute", top: 0, left: 1, fontSize: 8, color: C.txtM, lineHeight: 1 }}>{cw.num[k]}</span>}
+                  <input value={v} onChange={e => { const ch = Array.from(e.target.value).slice(-1)[0] || ""; setVals(s => ({ ...s, [k]: ch })); setChecked(false); }}
+                    style={{ width: CELL, height: CELL, textAlign: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bad ? C.warn : right ? C.ok : C.borderS}`, borderRadius: 4, background: bad ? C.warnBg : right ? C.okBg : "#fff", color: C.txt, outline: "none", padding: 0 }} />
+                </div>
+              );
+            }))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setChecked(true)} style={{ padding: "7px 16px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>✓ {t.crossCheck}</button>
+          {solved && <button onClick={restart} style={{ padding: "7px 16px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>↻ {t.exRestart}</button>}
+        </div>
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+          {across.length > 0 && (
+            <div style={{ minWidth: 160, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossAcross}</div>
+              {across.map(p => <div key={p.id} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3 }}><b>{p.num}.</b> {p.clue}</div>)}
+            </div>
+          )}
+          {down.length > 0 && (
+            <div style={{ minWidth: 160, flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossDown}</div>
+              {down.map(p => <div key={p.id} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3 }}><b>{p.num}.</b> {p.clue}</div>)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================
 // MAIN APP
 // =============================================
 function AppInner() {
@@ -3230,6 +3468,8 @@ function AppInner() {
   // ---- EXERCISE ----
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
+    // Non-AI exercises render their own component; no generation call.
+    if (exMode === "match" || exMode === "cross") { setExConv([]); setExDone(false); setExOn(true); return; }
     setExOn(true); setExLoad(true); setExDone(false);
     try { const r = await genExercise(sel, exMode, lang, context, tl); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx())]); }
@@ -4340,7 +4580,7 @@ function AppInner() {
                 <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
                 <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
                 <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
-                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }].map(m => (
+                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }].map(m => (
                     <button key={m.k} onClick={() => setExMode(m.k)}
                       style={{ flex: "1 1 130px", background: exMode === m.k ? C.accBg : C.s2, border: `1px solid ${exMode === m.k ? C.acc : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'" }}>
                       <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
@@ -4380,6 +4620,10 @@ function AppInner() {
                   </button>
                 )}
               </div>
+            ) : exMode === "match" ? (
+              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+            ) : exMode === "cross" ? (
+              <CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

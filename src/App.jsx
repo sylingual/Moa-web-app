@@ -3278,7 +3278,7 @@ function AppInner() {
   // Welcome / login screen if no sync code
   if (!syncId) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
             모<span style={{ color: C.acc }}>아</span>
@@ -3342,7 +3342,7 @@ function AppInner() {
   // Language selection screen if no target language chosen yet
   if (!tl || enabledTLs.length === 0) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
             모<span style={{ color: C.acc }}>아</span>
@@ -3371,7 +3371,7 @@ function AppInner() {
   if (!data.profile?.onboarded) {
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Progress */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3433,7 +3433,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: C.s0, overflow: "hidden" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden" }}>
       <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}`}</style>
 
       {/* POINTS TOAST */}
@@ -3634,7 +3634,7 @@ function AppInner() {
       )}
 
       {/* NAV */}
-      <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+      <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: "var(--panel-bg)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
           모<span style={{ color: C.acc }}>아</span>
         </span>

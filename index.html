@@ -9,18 +9,34 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; }
+    :root {
+      /* Opaque on desktop: the wallpaper frames the floating card, the card stays crisp white.
+         Overridden to a translucent scrim on mobile so the wallpaper shows softly behind the UI. */
+      --screen-bg: #ffffff;
+      --panel-bg: #ffffff;
+    }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #f0f0f3;
+      /* Landscape wallpaper (default / desktop) */
+      background: #dfe3ea url('/bg-desktop.webp') center center / cover no-repeat fixed;
     }
     /* Mobile: lock the page so only inner panes scroll, and follow the
        visible viewport so the on-screen keyboard shrinks the app. */
     @media (max-width: 699px) {
+      :root {
+        /* Translucent scrim: the portrait wallpaper stays visible behind the app,
+           while text on the frosted backdrop remains readable. */
+        --screen-bg: rgba(255,255,255,0.80);
+        --panel-bg: rgba(255,255,255,0.86);
+      }
       html, body {
         height: var(--app-h, 100dvh);
         overflow: hidden;
         position: fixed;
         width: 100%;
+        /* Portrait wallpaper for phones. `background-attachment: fixed` is unreliable on mobile
+           Safari, so pin it to the fixed body instead. */
+        background: #dfe3ea url('/bg-mobile.webp') center center / cover no-repeat;
       }
       #root { height: var(--app-h, 100dvh); }
     }
@@ -29,7 +45,7 @@
       #root {
         width: 100%; max-width: 1100px; height: 88vh; min-height: 550px;
         border-radius: 14px; overflow: hidden;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08);
       }
     }
   </style>

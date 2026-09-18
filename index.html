@@ -15,6 +15,11 @@
       --screen-bg: #ffffff;
       --panel-bg: #ffffff;
       --wall-text-shadow: none;
+      /* Entry (welcome/login) screen: opaque on desktop; on mobile the screen goes
+         transparent to reveal the wallpaper, and the text sits on a readable panel. */
+      --entry-bg: #ffffff;
+      --entry-panel-bg: transparent;
+      --entry-panel-shadow: none;
     }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -30,6 +35,9 @@
         --screen-bg: #ffffff;
         --panel-bg: #ffffff;
         --wall-text-shadow: none;
+        --entry-bg: transparent;
+        --entry-panel-bg: rgba(248,248,250,0.9);
+        --entry-panel-shadow: 0 6px 24px rgba(0,0,0,0.18);
       }
       html, body {
         height: var(--app-h, 100dvh);
@@ -40,7 +48,16 @@
            Safari, so pin it to the fixed body instead. */
         background: #dfe3ea url('/bg-mobile.webp') center center / cover no-repeat;
       }
-      #root { height: var(--app-h, 100dvh); }
+      /* Thin frame so the wallpaper peeks along the sides (and corners) of the app. */
+      #root {
+        height: var(--app-h, 100dvh);
+        padding: 5px;
+      }
+      #root > * {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+      }
       /* Decorative scenery bands inside the library scroll (mobile only): the forest crown
          of the wallpaper as a header, the scholar-by-the-stream as a footer at the end of
          the list. The app UI in between stays fully opaque and legible. */

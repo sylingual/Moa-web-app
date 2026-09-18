@@ -3278,8 +3278,8 @@ function AppInner() {
   // Welcome / login screen if no sync code
   if (!syncId) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>

@@ -3639,8 +3639,8 @@ function AppInner() {
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
           모<span style={{ color: C.acc }}>아</span>
         </span>
-        {/* Target language selector */}
-        <div style={{ display: "flex", alignItems: "center", marginRight: 8, flexShrink: 0 }}>
+        {/* Target language selector (moves into the hamburger menu on mobile) */}
+        <div className="nav-hide-mobile" style={{ display: "flex", alignItems: "center", marginRight: 8, flexShrink: 0 }}>
           <button onClick={e => { e.stopPropagation(); setTlOpen(!tlOpen); setLangOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>
             {tlConf?.flag} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
@@ -3671,8 +3671,8 @@ function AppInner() {
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 13, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, flexShrink: 0, padding: 0 }}>
             👤
           </button>
-          {/* Lang */}
-          <div style={{ position: "relative" }}>
+          {/* Lang (moves into the hamburger menu on mobile) */}
+          <div className="nav-hide-mobile" style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(!langOpen)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 6px", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14 }}>
               {lang === "fr" ? "🇫🇷" : "🇬🇧"} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
             </button>
@@ -3699,6 +3699,32 @@ function AppInner() {
               {label}
             </button>
           ))}
+          {/* Language to study */}
+          <div style={{ padding: "12px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM }}>{lang === "fr" ? "Langue à étudier" : "Language to study"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "0 18px 12px" }}>
+            {enabledTLs.map(code => (
+              <button key={code} onClick={() => { switchTargetLang(code); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: tl === code ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: tl === code ? C.accBg : C.s1, color: tl === code ? C.acc : C.txt, fontWeight: tl === code ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
+                {TARGET_LANGS[code]?.flag} {getTargetLangName(code, lang)}
+              </button>
+            ))}
+            {Object.keys(TARGET_LANGS).filter(code => !enabledTLs.includes(code)).map(code => (
+              <button key={code} onClick={() => { addTargetLang(code); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
+                + {TARGET_LANGS[code]?.flag} {getTargetLangName(code, lang)}
+              </button>
+            ))}
+          </div>
+          {/* Interface language */}
+          <div style={{ padding: "4px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM, borderTop: `1px solid ${C.border}` }}>{lang === "fr" ? "Langue de l'appli" : "App language"}</div>
+          <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
+            {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"]].map(([k, l]) => (
+              <button key={k} onClick={() => { changeLang(k); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: lang === k ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: lang === k ? C.accBg : C.s1, color: lang === k ? C.acc : C.txt, fontWeight: lang === k ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

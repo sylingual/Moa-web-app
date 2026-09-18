@@ -2100,6 +2100,7 @@ function AppInner() {
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false); // mobile hamburger menu
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
   const [syncInput, setSyncInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
@@ -3342,9 +3343,9 @@ function AppInner() {
   // Language selection screen if no target language chosen yet
   if (!tl || enabledTLs.length === 0) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
+          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>
           <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.chooseLang}</div>
@@ -3371,8 +3372,8 @@ function AppInner() {
   if (!data.profile?.onboarded) {
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "22px 20px" }}>
           {/* Progress */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
@@ -3645,8 +3646,8 @@ function AppInner() {
             {tlConf?.flag} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
           </button>
         </div>
-        {/* Scrollable tabs */}
-        <div style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
+        {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
+        <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
@@ -3654,7 +3655,13 @@ function AppInner() {
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
+          {/* Hamburger (mobile only) */}
+          <button className="nav-burger" onClick={e => { e.stopPropagation(); setNavMenuOpen(!navMenuOpen); setLangOpen(false); setTlOpen(false); }}
+            aria-label="Menu"
+            style={{ alignItems: "center", justifyContent: "center", width: 30, height: 28, borderRadius: 7, border: `1px solid ${C.border}`, background: navMenuOpen ? C.accBg : C.s1, color: navMenuOpen ? C.acc : C.txtS, cursor: "pointer", fontSize: 15, flexShrink: 0, padding: 0 }}>
+            ☰
+          </button>
           <span style={{ fontSize: 11, fontWeight: 600, color: C.acc, background: C.accBg, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
             ⭐ {data.profile?.points || 0}
           </span>
@@ -3682,6 +3689,18 @@ function AppInner() {
           </div>
         </div>
       </header>
+
+      {/* MOBILE NAV MENU (hamburger) */}
+      {navMenuOpen && (
+        <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
+          {[["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+            <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* SYNC BAR */}
       {showSync && (
@@ -3719,7 +3738,7 @@ function AppInner() {
       )}
 
       {/* VIEWS */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex" }} onClick={() => { setLangOpen(false); setTlOpen(false); }}>
+      <div style={{ flex: 1, overflow: "hidden", display: "flex" }} onClick={() => { setLangOpen(false); setTlOpen(false); setNavMenuOpen(false); }}>
 
         {/* LIBRARY */}
         {view === "library" && (

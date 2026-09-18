@@ -21,6 +21,9 @@
       --entry-panel-bg: transparent;
       --entry-panel-shadow: none;
     }
+    /* Nav: inline tabs on desktop, hamburger menu on mobile. */
+    .nav-burger { display: none; }
+    .nav-menu { display: none; }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       /* Landscape wallpaper (default / desktop) */
@@ -64,6 +67,10 @@
       .wall-band { display: block; flex-shrink: 0; background-image: url('/bg-mobile.webp'); background-repeat: no-repeat; background-size: cover; }
       .wall-band-top { height: 138px; background-position: center 9%; }
       .wall-band-bottom { height: 340px; background-position: center bottom; }
+      /* Swap the scrollable tabs for the hamburger + dropdown menu. */
+      .nav-tabs { display: none !important; }
+      .nav-burger { display: flex !important; }
+      .nav-menu { display: flex !important; }
     }
     /* Hidden on desktop, where the wallpaper already frames the floating card. */
     @media (min-width: 700px) { .wall-band { display: none; } }

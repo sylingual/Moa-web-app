@@ -9,27 +9,78 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { height: 100%; }
+    :root {
+      /* Opaque on desktop: the wallpaper frames the floating card, the card stays crisp white.
+         Overridden to a translucent scrim on mobile so the wallpaper shows softly behind the UI. */
+      --screen-bg: #ffffff;
+      --panel-bg: #ffffff;
+      --wall-text-shadow: none;
+      /* Entry (welcome/login) screen: opaque on desktop; on mobile the screen goes
+         transparent to reveal the wallpaper, and the text sits on a readable panel. */
+      --entry-bg: #ffffff;
+      --entry-panel-bg: transparent;
+      --entry-panel-shadow: none;
+    }
+    /* Nav: inline tabs on desktop, hamburger menu on mobile. */
+    .nav-burger { display: none; }
+    .nav-menu { display: none; }
+    @media (max-width: 699px) { .nav-hide-mobile { display: none !important; } }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #f0f0f3;
+      /* Landscape wallpaper (default / desktop) */
+      background: #dfe3ea url('/bg-desktop.webp') center center / cover no-repeat fixed;
     }
     /* Mobile: lock the page so only inner panes scroll, and follow the
        visible viewport so the on-screen keyboard shrinks the app. */
     @media (max-width: 699px) {
+      :root {
+        /* The app stays fully opaque on mobile (its cards are translucent pastels made for a
+           white base), and floats as a readable panel so the wallpaper frames it instead. */
+        --screen-bg: #ffffff;
+        --panel-bg: #ffffff;
+        --wall-text-shadow: none;
+        --entry-bg: transparent;
+        --entry-panel-bg: rgba(248,248,250,0.9);
+        --entry-panel-shadow: 0 6px 24px rgba(0,0,0,0.18);
+      }
       html, body {
         height: var(--app-h, 100dvh);
         overflow: hidden;
         position: fixed;
         width: 100%;
+        /* Portrait wallpaper for phones. `background-attachment: fixed` is unreliable on mobile
+           Safari, so pin it to the fixed body instead. */
+        background: #dfe3ea url('/bg-mobile.webp') center center / cover no-repeat;
       }
-      #root { height: var(--app-h, 100dvh); }
+      /* Thin frame so the wallpaper peeks along the sides (and corners) of the app. */
+      #root {
+        height: var(--app-h, 100dvh);
+        padding: 5px;
+      }
+      #root > * {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 18px rgba(0,0,0,0.22);
+      }
+      /* Decorative scenery bands inside the library scroll (mobile only): the forest crown
+         of the wallpaper as a header, the scholar-by-the-stream as a footer at the end of
+         the list. The app UI in between stays fully opaque and legible. */
+      .wall-band { display: block; flex-shrink: 0; background-image: url('/bg-mobile.webp'); background-repeat: no-repeat; background-size: cover; }
+      .wall-band-top { height: 138px; background-position: center 9%; }
+      .wall-band-bottom { height: 340px; background-position: center bottom; }
+      /* Swap the scrollable tabs for the hamburger + dropdown menu. */
+      .nav-tabs { display: none !important; }
+      .nav-burger { display: flex !important; }
+      .nav-menu { display: flex !important; }
     }
+    /* Hidden on desktop, where the wallpaper already frames the floating card. */
+    @media (min-width: 700px) { .wall-band { display: none; } }
     @media (min-width: 700px) {
       body { display: flex; align-items: center; justify-content: center; padding: 20px; }
       #root {
         width: 100%; max-width: 1100px; height: 88vh; min-height: 550px;
         border-radius: 14px; overflow: hidden;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+        box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.08);
       }
     }
   </style>

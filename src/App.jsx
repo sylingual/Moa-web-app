@@ -2100,6 +2100,7 @@ function AppInner() {
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
+  const [navMenuOpen, setNavMenuOpen] = useState(false); // mobile hamburger menu
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
   const [syncInput, setSyncInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
@@ -3278,15 +3279,15 @@ function AppInner() {
   // Welcome / login screen if no sync code
   if (!syncId) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
+          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>
-          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center", textShadow: "var(--wall-text-shadow)" }}>
             {welcomeMode === "login" ? t.welcomeLoginTitle : welcomeMode === "create" ? t.welcomeCreateTitle : t.welcomeTitle}
           </div>
-          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7 }}>
+          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7, textShadow: "var(--wall-text-shadow)" }}>
             {welcomeMode === "login" ? t.welcomeLoginSub : welcomeMode === "create" ? t.welcomeCreateSub : t.welcomeSub}
           </div>
           {!welcomeMode ? (
@@ -3342,9 +3343,9 @@ function AppInner() {
   // Language selection screen if no target language chosen yet
   if (!tl || enabledTLs.length === 0) {
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
+          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>
           <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.chooseLang}</div>
@@ -3371,8 +3372,8 @@ function AppInner() {
   if (!data.profile?.onboarded) {
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: C.s0, alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "22px 20px" }}>
           {/* Progress */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
@@ -3433,7 +3434,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: C.s0, overflow: "hidden" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden" }}>
       <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}`}</style>
 
       {/* POINTS TOAST */}
@@ -3634,19 +3635,19 @@ function AppInner() {
       )}
 
       {/* NAV */}
-      <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: C.s2, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+      <header style={{ display: "flex", alignItems: "stretch", padding: "0 12px", height: 46, background: "var(--panel-bg)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <span style={{ fontSize: 18, fontWeight: 600, color: C.txt, letterSpacing: -0.5, marginRight: 8, display: "flex", alignItems: "center", flexShrink: 0 }}>
           모<span style={{ color: C.acc }}>아</span>
         </span>
-        {/* Target language selector */}
-        <div style={{ display: "flex", alignItems: "center", marginRight: 8, flexShrink: 0 }}>
+        {/* Target language selector (moves into the hamburger menu on mobile) */}
+        <div className="nav-hide-mobile" style={{ display: "flex", alignItems: "center", marginRight: 8, flexShrink: 0 }}>
           <button onClick={e => { e.stopPropagation(); setTlOpen(!tlOpen); setLangOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>
             {tlConf?.flag} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
           </button>
         </div>
-        {/* Scrollable tabs */}
-        <div style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
+        {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
+        <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
@@ -3654,7 +3655,13 @@ function AppInner() {
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
+          {/* Hamburger (mobile only) */}
+          <button className="nav-burger" onClick={e => { e.stopPropagation(); setNavMenuOpen(!navMenuOpen); setLangOpen(false); setTlOpen(false); }}
+            aria-label="Menu"
+            style={{ alignItems: "center", justifyContent: "center", width: 30, height: 28, borderRadius: 7, border: `1px solid ${C.border}`, background: navMenuOpen ? C.accBg : C.s1, color: navMenuOpen ? C.acc : C.txtS, cursor: "pointer", fontSize: 15, flexShrink: 0, padding: 0 }}>
+            ☰
+          </button>
           <span style={{ fontSize: 11, fontWeight: 600, color: C.acc, background: C.accBg, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
             ⭐ {data.profile?.points || 0}
           </span>
@@ -3664,8 +3671,8 @@ function AppInner() {
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 13, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, flexShrink: 0, padding: 0 }}>
             👤
           </button>
-          {/* Lang */}
-          <div style={{ position: "relative" }}>
+          {/* Lang (moves into the hamburger menu on mobile) */}
+          <div className="nav-hide-mobile" style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(!langOpen)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 6px", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14 }}>
               {lang === "fr" ? "🇫🇷" : "🇬🇧"} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
             </button>
@@ -3682,6 +3689,44 @@ function AppInner() {
           </div>
         </div>
       </header>
+
+      {/* MOBILE NAV MENU (hamburger) */}
+      {navMenuOpen && (
+        <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
+          {[["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+            <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
+              {label}
+            </button>
+          ))}
+          {/* Language to study */}
+          <div style={{ padding: "12px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM }}>{lang === "fr" ? "Langue à étudier" : "Language to study"}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "0 18px 12px" }}>
+            {enabledTLs.map(code => (
+              <button key={code} onClick={() => { switchTargetLang(code); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: tl === code ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: tl === code ? C.accBg : C.s1, color: tl === code ? C.acc : C.txt, fontWeight: tl === code ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
+                {TARGET_LANGS[code]?.flag} {getTargetLangName(code, lang)}
+              </button>
+            ))}
+            {Object.keys(TARGET_LANGS).filter(code => !enabledTLs.includes(code)).map(code => (
+              <button key={code} onClick={() => { addTargetLang(code); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
+                + {TARGET_LANGS[code]?.flag} {getTargetLangName(code, lang)}
+              </button>
+            ))}
+          </div>
+          {/* Interface language */}
+          <div style={{ padding: "4px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM, borderTop: `1px solid ${C.border}` }}>{lang === "fr" ? "Langue de l'appli" : "App language"}</div>
+          <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
+            {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"]].map(([k, l]) => (
+              <button key={k} onClick={() => { changeLang(k); setNavMenuOpen(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: lang === k ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: lang === k ? C.accBg : C.s1, color: lang === k ? C.acc : C.txt, fontWeight: lang === k ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SYNC BAR */}
       {showSync && (
@@ -3719,11 +3764,12 @@ function AppInner() {
       )}
 
       {/* VIEWS */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex" }} onClick={() => { setLangOpen(false); setTlOpen(false); }}>
+      <div style={{ flex: 1, overflow: "hidden", display: "flex" }} onClick={() => { setLangOpen(false); setTlOpen(false); setNavMenuOpen(false); }}>
 
         {/* LIBRARY */}
         {view === "library" && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+            <div className="wall-band wall-band-top" />
             <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, borderBottom: `1px solid ${C.border}`, flexWrap: "wrap" }}>
               <span style={{ fontSize: 12, color: C.txtM }}>{filteredCards.length} {t.points} · {studiedCount} {t.statusStudied.toLowerCase()} · {acqCount} {t.statusAcquired.toLowerCase()}</span>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -3850,6 +3896,7 @@ function AppInner() {
                     })()
                   : <TreeView cards={filteredCards} t={t} onToggle={(id) => setConfirmToggle(data.cards.find(c => c.id === id))} onReview={(c) => reviewCard(c)} />
             }
+            <div className="wall-band wall-band-bottom" />
           </div>
         )}
 

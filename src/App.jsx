@@ -2092,7 +2092,8 @@ function AppInner() {
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState("library");
   const [libView, setLibView] = useState("grid");
-  const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab"
+  const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab" (library)
+  const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
@@ -2213,7 +2214,15 @@ function AppInner() {
   const revCount = filteredCards.filter(c => c.status === "new" || c.status === "review" || c.status === "in_progress").length;
   const studiedCount = filteredCards.filter(c => c.status === "studied").length;
   const acqCount = filteredCards.filter(c => c.status === "acquired").length;
-  const exerciseCards = useMemo(() => filteredCards.filter(c => c.status === "studied" || c.status === "acquired"), [filteredCards]);
+  // Exercise cards are independent of the library filter: all studied/acquired cards for the
+  // current target language, filtered by the Exercise tab's own vocab/grammar toggle.
+  const exerciseCards = useMemo(() => {
+    let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
+    base = base.filter(c => c.status === "studied" || c.status === "acquired");
+    if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
+    else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
+    return base;
+  }, [allCards, tl, exFilter]);
   const context = useMemo(() => buildContext(data, lang), [data, lang]);
 
   // Load
@@ -2353,6 +2362,12 @@ function AppInner() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, tl]);
+
+  // Changing the Exercise vocab/grammar filter re-selects the whole filtered set (intuitive default).
+  useEffect(() => {
+    if (view === "exercise" && !exOn) setExSel(new Set(exerciseCards.map(c => c.id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exFilter]);
 
   // Feed is Korean-only for now: never leave the learner stranded on it in another language.
   useEffect(() => {
@@ -4335,7 +4350,17 @@ function AppInner() {
                   ))}
                 </div>
                 <div style={{ width: "100%", maxWidth: 460 }}>
-                  <div style={{ fontSize: 12, color: C.txtM, marginBottom: 8 }}>{t.availableCards}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
+                    <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
+                      {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
+                        <button key={k} onClick={() => setExFilter(k)}
+                          style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: exFilter === k ? C.s2 : "transparent", color: exFilter === k ? C.acc : C.txtM, fontWeight: exFilter === k ? 500 : 400, boxShadow: exFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   {exerciseCards.length === 0
                     ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{t.noAcquired}</div>
                     : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>

@@ -25,12 +25,11 @@
        visible viewport so the on-screen keyboard shrinks the app. */
     @media (max-width: 699px) {
       :root {
-        /* No white veil on mobile: the shell is fully transparent so the portrait
-           wallpaper shows at full vividness behind the app; panels/cards stay opaque. */
-        --screen-bg: transparent;
+        /* The app stays fully opaque on mobile (its cards are translucent pastels made for a
+           white base), and floats as a readable panel so the wallpaper frames it instead. */
+        --screen-bg: #ffffff;
         --panel-bg: #ffffff;
-        /* White halo so dark text over the vivid wallpaper (welcome screen) stays readable. */
-        --wall-text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 8px rgba(255,255,255,0.75);
+        --wall-text-shadow: none;
       }
       html, body {
         height: var(--app-h, 100dvh);
@@ -41,7 +40,17 @@
            Safari, so pin it to the fixed body instead. */
         background: #dfe3ea url('/bg-mobile.webp') center center / cover no-repeat;
       }
-      #root { height: var(--app-h, 100dvh); }
+      /* Float the app as a rounded card: the wallpaper shows as a frame — forest at the top,
+         the stream & scholar along the bottom — while the UI itself stays crisp and legible. */
+      #root {
+        height: var(--app-h, 100dvh);
+        padding: 40px 12px 76px;
+      }
+      #root > * {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.32);
+      }
     }
     @media (min-width: 700px) {
       body { display: flex; align-items: center; justify-content: center; padding: 20px; }

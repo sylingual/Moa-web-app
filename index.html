@@ -14,6 +14,7 @@
          Overridden to a translucent scrim on mobile so the wallpaper shows softly behind the UI. */
       --screen-bg: #ffffff;
       --panel-bg: #ffffff;
+      --wall-text-shadow: none;
     }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -24,10 +25,12 @@
        visible viewport so the on-screen keyboard shrinks the app. */
     @media (max-width: 699px) {
       :root {
-        /* Translucent scrim: the portrait wallpaper stays visible behind the app,
-           while text on the frosted backdrop remains readable. */
-        --screen-bg: rgba(255,255,255,0.80);
-        --panel-bg: rgba(255,255,255,0.86);
+        /* No white veil on mobile: the shell is fully transparent so the portrait
+           wallpaper shows at full vividness behind the app; panels/cards stay opaque. */
+        --screen-bg: transparent;
+        --panel-bg: #ffffff;
+        /* White halo so dark text over the vivid wallpaper (welcome screen) stays readable. */
+        --wall-text-shadow: 0 1px 2px rgba(255,255,255,0.95), 0 0 8px rgba(255,255,255,0.75);
       }
       html, body {
         height: var(--app-h, 100dvh);

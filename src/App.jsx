@@ -3280,13 +3280,13 @@ function AppInner() {
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--screen-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1 }}>
+          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
           </span>
-          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center", textShadow: "var(--wall-text-shadow)" }}>
             {welcomeMode === "login" ? t.welcomeLoginTitle : welcomeMode === "create" ? t.welcomeCreateTitle : t.welcomeTitle}
           </div>
-          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7 }}>
+          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7, textShadow: "var(--wall-text-shadow)" }}>
             {welcomeMode === "login" ? t.welcomeLoginSub : welcomeMode === "create" ? t.welcomeCreateSub : t.welcomeSub}
           </div>
           {!welcomeMode ? (

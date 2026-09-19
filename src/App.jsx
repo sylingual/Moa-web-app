@@ -83,6 +83,8 @@ const T = {
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
     crossAcross: "Horizontal", crossDown: "Vertical",
+    crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire",
+    exRandom: "Au hasard",
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -332,6 +334,8 @@ const T = {
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
     crossAcross: "Across", crossDown: "Down",
+    crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory",
+    exRandom: "Random",
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -2251,6 +2255,8 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const [vals, setVals] = useState({});
   const [checked, setChecked] = useState(false);
   const [awarded, setAwarded] = useState(false);
+  const [showWords, setShowWords] = useState(true); // level 1 (words shown) vs level 2 (from memory)
+  const bank = useMemo(() => shuffle(cw.placed.map(p => p.answer)), [cw]);
   const key = (r, c) => r + "," + c;
 
   const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
@@ -2279,7 +2285,23 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
         {solved && (
           <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, color: C.ok, fontSize: 13, fontWeight: 600 }}>🎉 {t.crossSolved}</div>
         )}
+        {/* Level: show the words (writing practice) vs hidden (memory) */}
+        <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, alignSelf: "flex-start" }}>
+          {[[true, t.crossLvl1], [false, t.crossLvl2]].map(([v, label]) => (
+            <button key={String(v)} onClick={() => setShowWords(v)}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: showWords === v ? C.s2 : "transparent", color: showWords === v ? C.acc : C.txtM, fontWeight: showWords === v ? 600 : 400, boxShadow: showWords === v ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+              {label}
+            </button>
+          ))}
+        </div>
         <div style={{ fontSize: 11, color: C.txtM }}>{t.crossHint}</div>
+        {showWords && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {bank.map((w, i) => (
+              <span key={i} style={{ padding: "4px 10px", borderRadius: 14, background: C.accBg, color: C.acc, fontFamily: tFont, fontSize: 13, border: `1px solid ${C.border}` }}>{w}</span>
+            ))}
+          </div>
+        )}
         <div style={{ overflowX: "auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${cw.cols}, ${CELL}px)`, gap: 2, width: cw.cols * (CELL + 2) }}>
             {Array.from({ length: cw.rows }).map((_, r) => Array.from({ length: cw.cols }).map((__, c) => {
@@ -4592,13 +4614,21 @@ function AppInner() {
                 <div style={{ width: "100%", maxWidth: 460 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
-                    <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
-                      {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
-                        <button key={k} onClick={() => setExFilter(k)}
-                          style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: exFilter === k ? C.s2 : "transparent", color: exFilter === k ? C.acc : C.txtM, fontWeight: exFilter === k ? 500 : 400, boxShadow: exFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
-                          {label}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      {exerciseCards.length > 0 && (
+                        <button onClick={() => setExSel(new Set(shuffle(exerciseCards).slice(0, Math.min(8, exerciseCards.length)).map(c => c.id)))}
+                          style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                          🎲 {t.exRandom}
                         </button>
-                      ))}
+                      )}
+                      <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
+                        {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
+                          <button key={k} onClick={() => setExFilter(k)}
+                            style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: exFilter === k ? C.s2 : "transparent", color: exFilter === k ? C.acc : C.txtM, fontWeight: exFilter === k ? 500 : 400, boxShadow: exFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   {exerciseCards.length === 0

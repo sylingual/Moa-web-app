@@ -2258,9 +2258,25 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const [showWords, setShowWords] = useState(true); // level 1 (words shown) vs level 2 (from memory)
   const bank = useMemo(() => shuffle(cw.placed.map(p => p.answer)), [cw]);
   const key = (r, c) => r + "," + c;
+  const gridRef = useRef(null);
 
   const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
   useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
+
+  // When a crossword input is focused, scroll the grid into view so the
+  // keyboard doesn't hide it. Uses visualViewport when available.
+  useEffect(() => {
+    const scrollToFocused = () => {
+      requestAnimationFrame(() => {
+        const el = document.activeElement;
+        if (el && el.tagName === "INPUT" && gridRef.current && gridRef.current.contains(el)) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      });
+    };
+    const vv = window.visualViewport;
+    if (vv) { vv.addEventListener("resize", scrollToFocused); return () => vv.removeEventListener("resize", scrollToFocused); }
+  }, []);
 
   const restart = () => { setVals({}); setChecked(false); setAwarded(false); setRound(r => r + 1); };
 
@@ -2276,12 +2292,12 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const CELL = 34;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, background: C.bg }}>
         <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🧩 {t.exCross}</span>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
       </div>
-      <div style={{ flex: 1, overflow: "auto", padding: 14, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ flex: 1, overflowY: "scroll", WebkitOverflowScrolling: "touch", padding: 14, display: "flex", flexDirection: "column", gap: 14 }}>
         {solved && (
           <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, color: C.ok, fontSize: 13, fontWeight: 600 }}>🎉 {t.crossSolved}</div>
         )}
@@ -2302,7 +2318,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
             ))}
           </div>
         )}
-        <div style={{ overflowX: "auto" }}>
+        <div ref={gridRef} style={{ overflowX: "auto", flexShrink: 0 }}>
           <div style={{ display: "grid", gridTemplateColumns: `repeat(${cw.cols}, ${CELL}px)`, gap: 2, width: cw.cols * (CELL + 2) }}>
             {Array.from({ length: cw.rows }).map((_, r) => Array.from({ length: cw.cols }).map((__, c) => {
               const k = key(r, c);
@@ -2321,11 +2337,11 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
             }))}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
           <button onClick={() => setChecked(true)} style={{ padding: "7px 16px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>✓ {t.crossCheck}</button>
           {solved && <button onClick={restart} style={{ padding: "7px 16px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>↻ {t.exRestart}</button>}
         </div>
-        <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", flexShrink: 0 }}>
           {across.length > 0 && (
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossAcross}</div>
@@ -2339,6 +2355,8 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
             </div>
           )}
         </div>
+        {/* Extra padding so the grid stays scrollable above the keyboard */}
+        <div style={{ minHeight: 200, flexShrink: 0 }} />
       </div>
     </div>
   );
@@ -4708,7 +4726,7 @@ function AppInner() {
             ) : exMode === "match" ? (
               <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
             ) : exMode === "cross" ? (
-              <CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} /></div>
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

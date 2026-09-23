@@ -48,7 +48,7 @@ const T = {
     toStudiedTitle: "Remettre en Étudié ?", toStudiedMsg: (k) => `« ${k} » repassera parmi les cartes en apprentissage.`,
     confirmBtn: "Confirmer", learningShelf: "En apprentissage",
     statusNew: "Nouveau", statusInProgress: "En cours", statusStudied: "Étudié", statusAcquired: "Acquis",
-    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Rien à étudier aujourd'hui — importe un texte pour commencer !", todayDone: "fait !",
+    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Rien de nouveau pour aujourd'hui, beau travail ! 🎉", todayDone: "fait !",
     shelfMaskedHint: "sens masqué, à toi de deviner", shelfExpandHint: "clic pour dérouler", toStudied: "Remettre en Étudié",
     dailyCountLabel: "Cartes proposées chaque jour", markAcquired: "Marquer acquis",
     reviewCount: (n) => `${n} révision${n > 1 ? "s" : ""}`,
@@ -299,7 +299,7 @@ const T = {
     toStudiedTitle: "Move back to Studied?", toStudiedMsg: (k) => `"${k}" will return to the cards you're still learning.`,
     confirmBtn: "Confirm", learningShelf: "Learning",
     statusNew: "New", statusInProgress: "In progress", statusStudied: "Studied", statusAcquired: "Acquired",
-    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "Nothing to study today — import a text to get started!", todayDone: "done!",
+    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "Nothing new for today, great job! 🎉", todayDone: "done!",
     shelfMaskedHint: "meaning hidden — guess it", shelfExpandHint: "click to expand", toStudied: "Move back to Studied",
     dailyCountLabel: "Cards suggested each day", markAcquired: "Mark acquired",
     reviewCount: (n) => `${n} review${n > 1 ? "s" : ""}`,
@@ -2449,6 +2449,7 @@ function AppInner() {
   const lastExMsgRef = useRef(null);
   const recapR = useRef(null);
   const lastRecapMsgRef = useRef(null);
+  const skipExResetRef = useRef(false); // skip exercise-tab reset when navigating with a pre-selected card
 
   const lang = data.lang || "fr";
   const t = T[lang];
@@ -2615,7 +2616,11 @@ function AppInner() {
   // Reset exercise only when entering the exercise tab or switching target language
   useEffect(() => {
     if (view === "exercise") {
-      setExSel(new Set(exerciseCards.map(c => c.id)));
+      if (skipExResetRef.current) {
+        skipExResetRef.current = false;
+      } else {
+        setExSel(new Set(exerciseCards.map(c => c.id)));
+      }
       setExOn(false);
       setExConv([]);
       setExDone(false);
@@ -2688,17 +2693,18 @@ function AppInner() {
 
   const save = useCallback((nd) => { setData(nd); saveData(nd, syncId); }, [syncId]);
 
-  // "Aujourd'hui" is a FIXED daily set: chosen once per calendar day from the
-  // cards still to discover, then frozen so finished cards stay (turn green)
-  // instead of being replaced. Rebuilds only when the day changes.
+  // "Aujourd'hui" is a FIXED daily set per target language: chosen once per
+  // calendar day from the cards still to discover in that language, then frozen
+  // so finished cards stay (turn green) instead of being replaced.
+  // Rebuilds when the day or target language changes.
   useEffect(() => {
     const today = dayKey();
-    if (data.today && data.today.date === today) return;
+    if (data.today && data.today.date === today && data.today.tl === tl) return;
     if (!data.cards.length) return; // wait for real data to load before freezing a set
     const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
-    const ids = data.cards.filter(c => migrateStatus(c.status) === "new").slice(0, dc).map(c => c.id);
-    save({ ...data, today: { date: today, ids } });
-  }, [data.today, data.cards, save]);
+    const ids = data.cards.filter(c => migrateStatus(c.status) === "new" && (c.targetLang || "ko") === tl).slice(0, dc).map(c => c.id);
+    save({ ...data, today: { date: today, tl, ids } });
+  }, [data.today, data.cards, tl, save]);
 
   // Daily-goal bonus: when every card in today's set is finished, award +30 once.
   useEffect(() => {
@@ -3090,7 +3096,8 @@ function AppInner() {
     } else {
       save({ ...data, cards: [...data.cards, card] });
     }
-    setLCard(existing || card); setLArticle(text); setConv([]); setLLoad(true); setView("lesson");
+    setLCard(existing || card); setLArticle(text); setConv([]); setLLoad(true);
+    window.history.pushState({ view: "lesson" }, ""); setView("lesson");
     setLessonDone(false); setLessonSummary(null); setShowRecap(false); setRecapCard(null);
     try { const r = await startSocratic(card, text, lang, context, tl); setConv([{ role: "ai", content: r.message, options: r.options, selected: null }]); }
     catch (e) {
@@ -3106,12 +3113,42 @@ function AppInner() {
 
   // Nav-tab handler. An in-progress lesson auto-saves continuously (localStorage), so
   // leaving never needs a prompt — just navigate.
+  // Browser history integration: push state on tab navigation so the mobile
+  // back gesture (and browser back button) returns to the previous view
+  // instead of leaving the app entirely.
+  const historyNavRef = useRef(false); // true when popstate is driving the navigation
+  useEffect(() => {
+    // Seed the initial state so the first "back" stays inside the app.
+    window.history.replaceState({ view: "library" }, "");
+    const onPop = (e) => {
+      const st = e.state;
+      if (st && st.view) {
+        historyNavRef.current = true;
+        setView(st.view);
+        // Restore recap/lesson state from history when going back
+        if (st.view !== "lesson") {
+          setShowRecap(false); setRecapCard(null); setLCard(null); setConv([]);
+        }
+      } else {
+        // No state means we'd leave the app. Push current view back.
+        window.history.pushState({ view }, "");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const navTo = (target) => {
     // Flush any unsaved profile edits before leaving the profile.
     if (view === "profile" && profileDraft && JSON.stringify(profileDraft) !== JSON.stringify(data.profile || {})) {
       save({ ...data, profile: { ...profileDraft } });
     }
     if (target === "import") setImpStep("input");
+    // Push history entry unless this navigation was triggered by popstate itself.
+    if (!historyNavRef.current) {
+      window.history.pushState({ view: target }, "");
+    }
+    historyNavRef.current = false;
     setView(target);
   };
 
@@ -3126,6 +3163,7 @@ function AppInner() {
       setShowRecap(true);
       setRecapConv([]); setRecapMode(null); setRecapInp("");
       setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+      window.history.pushState({ view: "lesson" }, "");
       setView("lesson");
       return;
     }
@@ -3167,7 +3205,7 @@ function AppInner() {
     // Open the recap screen so the translation/summary is shown right away.
     setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp("");
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
-    setView("lesson");
+    window.history.pushState({ view: "lesson" }, ""); setView("lesson");
   };
 
   // Re-open the Import flow prefilled with a source text, to study it again.
@@ -4133,7 +4171,7 @@ function AppInner() {
                       };
                       return (
                         <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-                          {today.length > 0 && (() => {
+                          {(() => {
                             const isDone = c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired"; };
                             const doneCount = today.filter(isDone).length;
                             return (
@@ -4147,9 +4185,10 @@ function AppInner() {
                               )}
                               <div style={{ flex: 1, minWidth: 200 }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 11, display: "flex", alignItems: "center", gap: 6 }}>
-                                  ☀️ {t.today} · {t.todayCards(today.length)}
+                                  ☀️ {t.today} {today.length > 0 && <>· {t.todayCards(today.length)}</>}
                                   {doneCount > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: C.stAcq }}>· {doneCount}/{today.length} ✓</span>}
                                 </div>
+                                {today.length > 0 ? (
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
                                   {today.map(c => { const done = isDone(c); return (
                                     <div key={c.id} onClick={() => reviewCard(c)} title={done ? t.todayDone : ""}
@@ -4161,6 +4200,9 @@ function AppInner() {
                                     </div>
                                   ); })}
                                 </div>
+                                ) : (
+                                <div style={{ fontSize: 12, color: "#8a6d00", opacity: 0.8, lineHeight: 1.5 }}>{t.todayEmpty}</div>
+                                )}
                               </div>
                             </div>
                             );
@@ -4391,8 +4433,12 @@ function AppInner() {
                     </div>
                   )}
                   {recapCard.parentKorean && (
-                    <div style={{ fontSize: 10, color: C.acc, marginTop: 8, display: "flex", alignItems: "center", gap: 4 }}>
-                      <span style={{ opacity: 0.6 }}>↳</span> {t.derivedFrom} <span style={{ fontFamily: tFont, fontWeight: 500 }}>{recapCard.parentKorean}</span>
+                    <div onClick={(e) => {
+                      e.stopPropagation();
+                      const parent = data.cards.find(c => c.korean === recapCard.parentKorean);
+                      if (parent) openCardFresh(parent);
+                    }} style={{ fontSize: 10, color: C.acc, marginTop: 8, display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                      <span style={{ opacity: 0.6 }}>↳</span> {t.derivedFrom} <span style={{ fontFamily: tFont, fontWeight: 500, textDecoration: "underline", textUnderlineOffset: 2 }}>{recapCard.parentKorean}</span>
                     </div>
                   )}
                 </div>
@@ -4425,7 +4471,16 @@ function AppInner() {
                       { k: "image", l: t.anImage, i: "📷" },
                       { k: "resources", l: t.onlineRes, i: "📚" },
                     ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab")).map(a => (
-                      <button key={a.k} onClick={() => startRecapAction(a.k)}
+                      <button key={a.k} onClick={() => {
+                        if (a.k === "exercise") {
+                          const cardId = data.cards.find(c => c.korean === recapCard.korean)?.id;
+                          if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
+                          setShowRecap(false); setRecapCard(null);
+                          setView("exercise");
+                        } else {
+                          startRecapAction(a.k);
+                        }
+                      }}
                         style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 13px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
@@ -4536,7 +4591,7 @@ function AppInner() {
                             <button onClick={() => {
                               const cardId = data.cards.find(c => c.korean === lCard.korean)?.id;
                               setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set());
-                              if (cardId) { setExSel(new Set([cardId])); }
+                              if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
                               setView("exercise");
                             }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>

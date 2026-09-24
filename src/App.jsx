@@ -81,6 +81,7 @@ const T = {
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
     exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
+    flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
@@ -334,6 +335,7 @@ const T = {
     exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
     exFlash: "Flashcards", exFlashDesc: "Flip cards to review vocabulary.",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
+    flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
@@ -2189,33 +2191,39 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
 
 // #69 — Flashcard (Quizlet-style): show Korean front, flip to reveal definition + example.
 function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
-  const [round, setRound] = useState(0);
-  const deck = useMemo(() => {
+  const initial = useMemo(() => {
     const d = cards.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
       id: c.id, kr: c.korean, def: (c.description || "").trim(),
       ex: (c.example || "").trim(), exTr: (c.exampleTranslation || c.exTranslation || "").trim(),
     }));
     return shuffle(d);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards, round]);
-  const [idx, setIdx] = useState(0);
+  }, [cards]);
+  const [queue, setQueue] = useState(() => [...initial]);
   const [flipped, setFlipped] = useState(false);
-  const [known, setKnown] = useState([]);
-  const [review, setReview] = useState([]);
+  const [knownSet, setKnownSet] = useState(() => new Set());
   const [awarded, setAwarded] = useState(false);
-  const done = deck.length > 0 && idx >= deck.length;
+  const done = initial.length > 0 && queue.length === 0;
 
   useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
 
   const answer = (isKnown) => {
-    if (isKnown) setKnown(k => [...k, deck[idx].id]);
-    else setReview(r => [...r, deck[idx].id]);
+    const current = queue[0];
     setFlipped(false);
-    setIdx(i => i + 1);
+    if (isKnown) {
+      setKnownSet(s => { const n = new Set(s); n.add(current.id); return n; });
+      setQueue(q => q.slice(1));
+    } else {
+      setQueue(q => {
+        const rest = q.slice(1);
+        const insertAt = Math.min(rest.length, 3 + Math.floor(Math.random() * 3));
+        rest.splice(insertAt, 0, current);
+        return rest;
+      });
+    }
   };
-  const restart = () => { setIdx(0); setFlipped(false); setKnown([]); setReview([]); setAwarded(false); setRound(r => r + 1); };
+  const restart = () => { setQueue(shuffle([...initial])); setFlipped(false); setKnownSet(new Set()); setAwarded(false); };
 
-  if (!deck.length) return (
+  if (!initial.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
       <div style={{ fontSize: 30 }}>🃏</div><div>{t.exNeedWords}</div>
       <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
@@ -2225,8 +2233,7 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
   if (done) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 }}>
       <div style={{ fontSize: 30 }}>🎉</div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.exFinished}</div>
-      <div style={{ fontSize: 13, color: C.txtM }}>{t.flashScore(known.length, review.length)}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.flashDone}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
         <button onClick={restart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>↻ {t.exRestart}</button>
         <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>← {t.back}</button>
@@ -2234,11 +2241,12 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
     </div>
   );
 
-  const card = deck[idx];
+  const card = queue[0];
+  const remaining = queue.length;
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🃏 {t.exFlash} · {t.flashProgress(idx + 1, deck.length)}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🃏 {t.exFlash} · {t.flashProgress(knownSet.size, initial.length)}</span>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 20 }}>
@@ -2250,7 +2258,6 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
             width: "100%", minHeight: 220, position: "relative", transformStyle: "preserve-3d",
             transition: "transform 0.45s ease", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
           }}>
-            {/* Front */}
             <div style={{
               position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
@@ -2259,7 +2266,6 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
               <div style={{ fontSize: 32, fontFamily: tFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{card.kr}</div>
               <div style={{ fontSize: 12, color: C.txtM, marginTop: 8 }}>tap to flip</div>
             </div>
-            {/* Back */}
             <div style={{
               position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
               transform: "rotateY(180deg)",
@@ -2287,8 +2293,8 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
         )}
       </div>
       <div style={{ padding: "6px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: C.txtM, flexShrink: 0 }}>
-        <span style={{ color: C.ok }}>✓ {known.length}</span>
-        <span style={{ color: C.warn }}>✗ {review.length}</span>
+        <span style={{ color: C.ok }}>✓ {knownSet.size}</span>
+        <span style={{ color: C.txtM }}>{t.flashRemaining(remaining)}</span>
       </div>
     </div>
   );

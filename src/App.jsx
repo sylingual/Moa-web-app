@@ -2119,20 +2119,25 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
   }, [cards, round]);
   const left = useMemo(() => shuffle(pairs), [pairs]);
   const right = useMemo(() => shuffle(pairs), [pairs]);
-  const [sel, setSel] = useState(null);       // selected word id
+  const [sel, setSel] = useState(null);       // selected item id
+  const [selSide, setSelSide] = useState(null); // "left" or "right"
   const [matched, setMatched] = useState(() => new Set());
-  const [wrong, setWrong] = useState(null);    // def id flashing wrong
+  const [wrong, setWrong] = useState(null);    // id flashing wrong
+  const [wrongSide, setWrongSide] = useState(null); // "left" or "right"
   const [awarded, setAwarded] = useState(false);
   const done = pairs.length > 0 && matched.size === pairs.length;
 
   useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
 
-  const pickDef = (defId) => {
-    if (!sel || matched.has(defId)) return;
-    if (defId === sel) { const n = new Set(matched); n.add(defId); setMatched(n); setSel(null); }
-    else { setWrong(defId); setTimeout(() => setWrong(null), 500); setSel(null); }
+  const pick = (id, side) => {
+    if (matched.has(id)) return;
+    // Nothing selected yet, or same side clicked: just select this one
+    if (!sel || selSide === side) { setSel(id); setSelSide(side); return; }
+    // Other side already selected: check match
+    if (id === sel) { const n = new Set(matched); n.add(id); setMatched(n); setSel(null); setSelSide(null); }
+    else { setWrong(id); setWrongSide(side); setTimeout(() => { setWrong(null); setWrongSide(null); }, 500); setSel(null); setSelSide(null); }
   };
-  const restart = () => { setMatched(new Set()); setSel(null); setWrong(null); setAwarded(false); setRound(r => r + 1); };
+  const restart = () => { setMatched(new Set()); setSel(null); setSelSide(null); setWrong(null); setWrongSide(null); setAwarded(false); setRound(r => r + 1); };
 
   if (!pairs.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
@@ -2162,14 +2167,14 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
         <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", gap: 10 }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchWords}</div>
-            {left.map(p => { const ok = matched.has(p.id); return (
-              <button key={p.id} onClick={() => !ok && setSel(p.id)} style={{ ...colBtn(sel === p.id, ok), fontFamily: tFont }}>{p.kr}</button>
+            {left.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id && wrongSide === "left"; return (
+              <button key={p.id} onClick={() => pick(p.id, "left")} style={{ ...colBtn(sel === p.id && selSide === "left", ok), fontFamily: tFont, border: `1px solid ${isWrong ? C.warn : ok ? C.okB : sel === p.id && selSide === "left" ? C.acc : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : sel === p.id && selSide === "left" ? C.accBg : C.s2 }}>{p.kr}</button>
             ); })}
           </div>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchDefs}</div>
-            {right.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id; return (
-              <button key={p.id} onClick={() => pickDef(p.id)} style={{ ...colBtn(false, ok), border: `1px solid ${isWrong ? C.warn : ok ? C.okB : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : C.s2 }}>{p.def}</button>
+            {right.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id && wrongSide === "right"; return (
+              <button key={p.id} onClick={() => pick(p.id, "right")} style={{ ...colBtn(sel === p.id && selSide === "right", ok), border: `1px solid ${isWrong ? C.warn : ok ? C.okB : sel === p.id && selSide === "right" ? C.acc : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : sel === p.id && selSide === "right" ? C.accBg : C.s2 }}>{p.def}</button>
             ); })}
           </div>
         </div>

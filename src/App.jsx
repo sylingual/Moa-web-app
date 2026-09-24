@@ -82,6 +82,9 @@ const T = {
     exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
+    exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
+    imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
+    exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
@@ -336,6 +339,9 @@ const T = {
     exFlash: "Flashcards", exFlashDesc: "Flip cards to review vocabulary.",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
+    exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
+    imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
+    exNeedImages: "Not enough words with images for this exercise (pick some others).",
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
@@ -2195,6 +2201,7 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
     const d = cards.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
       id: c.id, kr: c.korean, def: (c.description || "").trim(),
       ex: (c.example || "").trim(), exTr: (c.exampleTranslation || c.exTranslation || "").trim(),
+      img: (c.images && c.images[0]) ? (c.images[0].thumb || c.images[0].url) : null,
     }));
     return shuffle(d);
   }, [cards]);
@@ -2272,6 +2279,7 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
               borderRadius: 16, border: `2px solid ${C.acc}`, background: C.accBg, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
             }}>
+              {card.img && <img src={card.img} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10, marginBottom: 4 }} />}
               <div style={{ fontSize: 24, fontFamily: tFont, fontWeight: 600, color: C.txt }}>{card.kr}</div>
               <div style={{ fontSize: 14, color: C.txt, textAlign: "center", lineHeight: 1.6 }}>{card.def}</div>
               {card.ex && <div style={{ fontSize: 13, color: C.txtM, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>{card.ex}</div>}
@@ -2295,6 +2303,90 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
       <div style={{ padding: "6px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: C.txtM, flexShrink: 0 }}>
         <span style={{ color: C.ok }}>✓ {knownSet.size}</span>
         <span style={{ color: C.txtM }}>{t.flashRemaining(remaining)}</span>
+      </div>
+    </div>
+  );
+}
+
+// #69 — Image Write: show the card's image, user types the word.
+function normalizeAnswer(s) {
+  return s.replace(/\s+/g, "").toLowerCase();
+}
+function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
+  const [round, setRound] = useState(0);
+  const deck = useMemo(() => {
+    const d = cards.filter(c => c.type === "vocab" && c.images && c.images.length > 0).map(c => ({
+      id: c.id, kr: c.korean.trim(), img: c.images[0].thumb || c.images[0].url, def: (c.description || "").trim(),
+    }));
+    return shuffle(d);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, round]);
+  const [idx, setIdx] = useState(0);
+  const [input, setInput] = useState("");
+  const [result, setResult] = useState(null);
+  const [score, setScore] = useState(0);
+  const [awarded, setAwarded] = useState(false);
+  const done = deck.length > 0 && idx >= deck.length;
+
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+
+  const check = () => {
+    if (!input.trim()) return;
+    const correct = normalizeAnswer(input) === normalizeAnswer(deck[idx].kr);
+    if (correct) setScore(s => s + 1);
+    setResult(correct ? "ok" : "wrong");
+  };
+  const next = () => { setIdx(i => i + 1); setInput(""); setResult(null); };
+  const restart = () => { setIdx(0); setInput(""); setResult(null); setScore(0); setAwarded(false); setRound(r => r + 1); };
+
+  if (!deck.length) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>🖼️</div><div>{t.exNeedImages}</div>
+      <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
+    </div>
+  );
+
+  if (done) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 }}>
+      <div style={{ fontSize: 30 }}>🎉</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.flashDone}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <button onClick={restart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>↻ {t.exRestart}</button>
+        <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>← {t.back}</button>
+      </div>
+    </div>
+  );
+
+  const card = deck[idx];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🖼️ {t.exImgWrite} · {idx + 1}/{deck.length}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 16 }}>
+        <img src={card.img} alt="" style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 16, border: `2px solid ${C.border}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }} />
+        {card.def && <div style={{ fontSize: 13, color: C.txtM, textAlign: "center", maxWidth: 320 }}>{card.def}</div>}
+        <div style={{ fontSize: 12, color: C.txtS }}>{t.imgWriteHint}</div>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") { result ? next() : check(); } }}
+          disabled={!!result}
+          autoFocus
+          style={{ width: "100%", maxWidth: 280, padding: "10px 14px", borderRadius: 10, border: `2px solid ${result === "ok" ? C.ok : result === "wrong" ? C.warn : C.border}`, fontFamily: tFont, fontSize: 18, textAlign: "center", outline: "none", background: result === "ok" ? C.okBg : result === "wrong" ? C.warnBg : "#fff", color: C.txt }}
+        />
+        {result === "ok" && <div style={{ fontSize: 14, color: C.ok, fontWeight: 600 }}>{t.imgWriteCorrect}</div>}
+        {result === "wrong" && <div style={{ fontSize: 14, color: C.warn, fontWeight: 500 }}>{t.imgWriteWrong(card.kr)}</div>}
+        {!result ? (
+          <button onClick={check} disabled={!input.trim()} style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: input.trim() ? "pointer" : "default" }}>{t.imgWriteCheck}</button>
+        ) : (
+          <button onClick={next} style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>{t.imgWriteNext} →</button>
+        )}
+      </div>
+      <div style={{ padding: "6px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: C.txtM, flexShrink: 0 }}>
+        <span style={{ color: C.ok }}>✓ {score}</span>
+        <span style={{ color: C.warn }}>✗ {idx - score + (result === "wrong" ? 0 : 0)}</span>
       </div>
     </div>
   );
@@ -3669,7 +3761,7 @@ function AppInner() {
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
-    if (exMode === "match" || exMode === "cross" || exMode === "flash") { setExConv([]); setExDone(false); setExOn(true); return; }
+    if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setExOn(true); return; }
     setExOn(true); setExLoad(true); setExDone(false);
     try { const r = await genExercise(sel, exMode, lang, context, tl); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx())]); }
@@ -4797,8 +4889,8 @@ function AppInner() {
                 <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
                 <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
                 <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
-                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }, { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏" }].map(m => (
-                    <button key={m.k} onClick={() => { setExMode(m.k); if (m.k === "flash") setExFilter("vocab"); }}
+                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }, { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏" }, { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️" }].map(m => (
+                    <button key={m.k} onClick={() => { setExMode(m.k); if (m.k === "flash" || m.k === "imgwrite") setExFilter("vocab"); }}
                       style={{ flex: "1 1 130px", background: exMode === m.k ? C.accBg : C.s2, border: `1px solid ${exMode === m.k ? C.acc : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'" }}>
                       <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
                       <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
@@ -4851,6 +4943,8 @@ function AppInner() {
               <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} /></div>
             ) : exMode === "flash" ? (
               <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+            ) : exMode === "imgwrite" ? (
+              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

@@ -97,7 +97,7 @@ const T = {
     askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
     askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
-    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image",
+    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "En video",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
@@ -354,7 +354,7 @@ const T = {
     askExamples: "Could you give me more examples, please? 💡",
     askExercise: "Could you give me a quick exercise, please? ✏️",
     askExplain: "Could you explain this differently? 🔄",
-    anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image",
+    anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image", youglishBtn: "In video",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
@@ -2113,6 +2113,68 @@ function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFi
 }
 
 // =============================================
+// YOUGLISH WIDGET — video context for vocabulary
+// =============================================
+const YG_LANG_MAP = { ko: "korean", de: "german", it: "italian", fr: "french", es: "spanish", pt: "portuguese", ja: "japanese", zh: "chinese", ru: "russian", ar: "arabic", nl: "dutch", pl: "polish", tr: "turkish" };
+
+function YouglishPanel({ word, lang }) {
+  const containerRef = useRef(null);
+  const widgetRef = useRef(null);
+  const [total, setTotal] = useState(null);
+  const [current, setCurrent] = useState(0);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!word || !containerRef.current) return;
+    setTotal(null); setCurrent(0); setError(false);
+    widgetRef.current = null;
+    containerRef.current.innerHTML = '<div id="yg-widget"></div>';
+
+    const ygLang = YG_LANG_MAP[lang] || "korean";
+    const initWidget = () => {
+      try {
+        const w = new window.YG.Widget("yg-widget", {
+          components: 9,
+          events: {
+            onFetchDone: (e) => { if (e.totalResult === 0) setError(true); else setTotal(e.totalResult); },
+            onVideoChange: (e) => { setCurrent(e.index + 1); },
+            onError: () => { setError(true); },
+          },
+        });
+        widgetRef.current = w;
+        w.fetch(word, ygLang);
+      } catch (e) { setError(true); }
+    };
+
+    if (window.YG) { initWidget(); return; }
+    const script = document.createElement("script");
+    script.src = "https://youglish.com/public/emb/widget.js";
+    script.async = true;
+    script.onload = () => { setTimeout(initWidget, 100); };
+    script.onerror = () => setError(true);
+    document.head.appendChild(script);
+
+    return () => { widgetRef.current = null; };
+  }, [word, lang]);
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
+      {error && (
+        <div style={{ padding: 32, textAlign: "center", color: C.txtM, fontSize: 13, lineHeight: 1.6 }}>
+          Aucune video trouvee pour "{word}".
+        </div>
+      )}
+      {!error && total !== null && (
+        <div style={{ padding: "6px 14px", fontSize: 11, color: C.txtM, textAlign: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+          {current}/{total} videos
+        </div>
+      )}
+      <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 8 }} />
+    </div>
+  );
+}
+
+// =============================================
 // NON-AI EXERCISES (#67 crossword, #68 match)
 // =============================================
 function shuffle(arr) {
@@ -2643,6 +2705,7 @@ function AppInner() {
   const [resumePrompt, setResumePrompt] = useState(null); // card to resume/restart when reopened with a live session, or null
   const [showRecap, setShowRecap] = useState(false);
   const [recapCard, setRecapCard] = useState(null);
+  const [youglishWord, setYouglishWord] = useState(null);
   const [recapConv, setRecapConv] = useState([]);
   const [recapLoad, setRecapLoad] = useState(false);
   const [recapInp, setRecapInp] = useState("");
@@ -3824,7 +3887,7 @@ function AppInner() {
     { k: "examples", l: t.moreExamples, i: "💡" }, { k: "realExamples", l: t.realExamples, i: "🔍" },
     { k: "resources", l: t.onlineRes, i: "📚" },
     { k: "exercise", l: t.anExercise, i: "✏️" }, { k: "explain", l: t.explainOther, i: "🔄" },
-    { k: "image", l: t.anImage, i: "📷" },
+    { k: "image", l: t.anImage, i: "📷" }, { k: "youglish", l: t.youglishBtn, i: "🎬" },
   ];
 
   const fieldStyle = {
@@ -4189,6 +4252,22 @@ function AppInner() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Youglish modal */}
+      {youglishWord && (
+        <div onClick={() => setYouglishWord(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 2500, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 14, width: "100%", maxWidth: 560, height: "80vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: C.txt, flex: 1 }}>🎬 {youglishWord}</span>
+              <button onClick={() => setYouglishWord(null)}
+                style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+            </div>
+            <YouglishPanel word={youglishWord} lang={tl} />
           </div>
         </div>
       )}
@@ -4713,14 +4792,17 @@ function AppInner() {
                       { k: "examples", l: t.moreExamples, i: "💡" },
                       { k: "realExamples", l: t.realExamples, i: "🔍" },
                       { k: "image", l: t.anImage, i: "📷" },
+                      { k: "youglish", l: t.youglishBtn, i: "🎬" },
                       { k: "resources", l: t.onlineRes, i: "📚" },
-                    ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab")).map(a => (
+                    ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
                       <button key={a.k} onClick={() => {
                         if (a.k === "exercise") {
                           const cardId = data.cards.find(c => c.korean === recapCard.korean)?.id;
                           if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
                           setShowRecap(false); setRecapCard(null);
                           setView("exercise");
+                        } else if (a.k === "youglish") {
+                          setYouglishWord(recapCard.korean);
                         } else {
                           startRecapAction(a.k);
                         }
@@ -4866,6 +4948,7 @@ function AppInner() {
                           <button onClick={() => quickAct("examples")} disabled={lLoad} style={sBtn}>💡 {t.moreExamples}</button>
                           <button onClick={() => quickAct("exercise")} disabled={lLoad} style={sBtn}>✏️ {t.anExercise}</button>
                           {!showRes && <button onClick={() => quickAct("image")} disabled={lLoad} style={sBtn}>📷 {t.anImage}</button>}
+                          {!showRes && <button onClick={() => setYouglishWord(lCard?.korean)} disabled={lLoad} style={sBtn}>🎬 {t.youglishBtn}</button>}
                           {showRes && <button onClick={() => quickAct("resources")} disabled={lLoad} style={sBtn}>📚 {t.onlineRes}</button>}
                         </div>
                       </div>
@@ -4873,8 +4956,8 @@ function AppInner() {
                   })()}
                   {tray && (
                     <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 5, flexWrap: "wrap", background: C.s1 }}>
-                      {qa.filter(a => (a.k !== "resources" || lCard?.type !== "vocab") && (a.k !== "image" || lCard?.type === "vocab")).map(a => (
-                        <button key={a.k} onClick={() => quickAct(a.k)} disabled={lLoad}
+                      {qa.filter(a => (a.k !== "resources" || lCard?.type !== "vocab") && (a.k !== "image" || lCard?.type === "vocab") && (a.k !== "youglish" || lCard?.type === "vocab")).map(a => (
+                        <button key={a.k} onClick={() => a.k === "youglish" ? setYouglishWord(lCard?.korean) : quickAct(a.k)} disabled={lLoad}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: lLoad ? "default" : "pointer", opacity: lLoad ? 0.55 : 1 }}>
                           {a.i} {a.l}
                         </button>

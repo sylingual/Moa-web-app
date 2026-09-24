@@ -97,7 +97,7 @@ const T = {
     askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
     askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
-    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "En video",
+    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
@@ -190,7 +190,7 @@ const T = {
     registerExamplesAsk: "Montre-moi des exemples qui contrastent l'usage formel et courant de ce mot, s'il te plaît",
     registerLoading: "Analyse du registre…",
     moreExercises: "Plus d'exercices",
-    derivedFrom: "issu de",
+    derivedFrom: "issu de", derivedChildren: "a donné",
     viewGrid: "Grille",
     viewTree: "Arbre",
     viewSources: "Textes",
@@ -447,7 +447,7 @@ const T = {
     registerExamplesAsk: "Please show me examples contrasting the formal vs casual usage of this word",
     registerLoading: "Analyzing register…",
     moreExercises: "More exercises",
-    derivedFrom: "derived from",
+    derivedFrom: "derived from", derivedChildren: "led to",
     viewGrid: "Grid",
     viewTree: "Tree",
     viewSources: "Texts",
@@ -4764,6 +4764,21 @@ function AppInner() {
                       <span style={{ opacity: 0.6 }}>↳</span> {t.derivedFrom} <span style={{ fontFamily: tFont, fontWeight: 500, textDecoration: "underline", textUnderlineOffset: 2 }}>{recapCard.parentKorean}</span>
                     </div>
                   )}
+                  {(() => {
+                    const children = data.cards.filter(c => c.parentKorean === recapCard.korean);
+                    return children.length > 0 ? (
+                      <div style={{ fontSize: 10, color: C.txtM, marginTop: recapCard.parentKorean ? 4 : 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                        <span style={{ opacity: 0.6 }}>↴</span> {t.derivedChildren}
+                        {children.map((ch, i) => (
+                          <span key={ch.id || i}>
+                            <span onClick={(e) => { e.stopPropagation(); openCardFresh(ch); }}
+                              style={{ fontFamily: tFont, fontWeight: 500, color: C.acc, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}>{ch.korean}</span>
+                            {i < children.length - 1 && <span style={{ color: C.txtM }}>, </span>}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
                 </div>
 
                 {/* Past lesson summaries */}

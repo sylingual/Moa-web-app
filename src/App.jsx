@@ -2121,12 +2121,12 @@ function YouglishPanel({ word, lang }) {
   const containerRef = useRef(null);
   const widgetRef = useRef(null);
   const [total, setTotal] = useState(null);
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(1);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!word || !containerRef.current) return;
-    setTotal(null); setCurrent(0); setError(false);
+    setTotal(null); setCurrent(1); setError(false);
     widgetRef.current = null;
     containerRef.current.innerHTML = '<div id="yg-widget"></div>';
 
@@ -2136,8 +2136,8 @@ function YouglishPanel({ word, lang }) {
         const w = new window.YG.Widget("yg-widget", {
           components: 9,
           events: {
-            onFetchDone: (e) => { if (e.totalResult === 0) setError(true); else setTotal(e.totalResult); },
-            onVideoChange: (e) => { setCurrent(e.index + 1); },
+            onFetchDone: (e) => { if (e.totalResult === 0) setError(true); else { setTotal(e.totalResult); setCurrent(1); } },
+            onVideoChange: (e) => { setCurrent((e.index || 0) + 1); },
             onError: () => { setError(true); },
           },
         });
@@ -2157,16 +2157,23 @@ function YouglishPanel({ word, lang }) {
     return () => { widgetRef.current = null; };
   }, [word, lang]);
 
+  const goNext = () => { if (widgetRef.current) widgetRef.current.next(); };
+  const goPrev = () => { if (widgetRef.current) widgetRef.current.previous(); };
+
+  const navBtn = { padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 };
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
       {error && (
         <div style={{ padding: 32, textAlign: "center", color: C.txtM, fontSize: 13, lineHeight: 1.6 }}>
-          Aucune video trouvee pour "{word}".
+          Aucune vidéo trouvée pour "{word}".
         </div>
       )}
       {!error && total !== null && (
-        <div style={{ padding: "6px 14px", fontSize: 11, color: C.txtM, textAlign: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          {current}/{total} videos
+        <div style={{ padding: "6px 14px", fontSize: 11, color: C.txtM, textAlign: "center", borderBottom: `1px solid ${C.border}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+          <button onClick={goPrev} style={navBtn}>←</button>
+          <span>{current} / {total} vidéos</span>
+          <button onClick={goNext} style={navBtn}>→</button>
         </div>
       )}
       <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: "auto", padding: 8 }} />

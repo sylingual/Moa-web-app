@@ -79,6 +79,8 @@ const T = {
     fillBlanks: "Compléter les phrases", fillDesc: "Phrases à trous tirées de vrais articles.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
+    exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
+    flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
@@ -330,6 +332,8 @@ const T = {
     fillBlanks: "Fill in the blanks", fillDesc: "Gap-fill from real articles.",
     exMatch: "Match", exMatchDesc: "Match each word to its definition.",
     exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
+    exFlash: "Flashcards", exFlashDesc: "Flip cards to review vocabulary.",
+    flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
@@ -2183,6 +2187,113 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
+// #69 — Flashcard (Quizlet-style): show Korean front, flip to reveal definition + example.
+function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
+  const [round, setRound] = useState(0);
+  const deck = useMemo(() => {
+    const d = cards.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
+      id: c.id, kr: c.korean, def: (c.description || "").trim(),
+      ex: (c.example || "").trim(), exTr: (c.exampleTranslation || c.exTranslation || "").trim(),
+    }));
+    return shuffle(d);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards, round]);
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [known, setKnown] = useState([]);
+  const [review, setReview] = useState([]);
+  const [awarded, setAwarded] = useState(false);
+  const done = deck.length > 0 && idx >= deck.length;
+
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+
+  const answer = (isKnown) => {
+    if (isKnown) setKnown(k => [...k, deck[idx].id]);
+    else setReview(r => [...r, deck[idx].id]);
+    setFlipped(false);
+    setIdx(i => i + 1);
+  };
+  const restart = () => { setIdx(0); setFlipped(false); setKnown([]); setReview([]); setAwarded(false); setRound(r => r + 1); };
+
+  if (!deck.length) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>🃏</div><div>{t.exNeedWords}</div>
+      <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
+    </div>
+  );
+
+  if (done) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 }}>
+      <div style={{ fontSize: 30 }}>🎉</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.exFinished}</div>
+      <div style={{ fontSize: 13, color: C.txtM }}>{t.flashScore(known.length, review.length)}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <button onClick={restart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>↻ {t.exRestart}</button>
+        <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>← {t.back}</button>
+      </div>
+    </div>
+  );
+
+  const card = deck[idx];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🃏 {t.exFlash} · {t.flashProgress(idx + 1, deck.length)}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 20 }}>
+        <div onClick={() => setFlipped(f => !f)} style={{
+          width: "100%", maxWidth: 380, minHeight: 220, borderRadius: 16, cursor: "pointer", perspective: 800,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            width: "100%", minHeight: 220, position: "relative", transformStyle: "preserve-3d",
+            transition: "transform 0.45s ease", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+          }}>
+            {/* Front */}
+            <div style={{
+              position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
+              borderRadius: 16, border: `2px solid ${C.border}`, background: C.s1, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+            }}>
+              <div style={{ fontSize: 32, fontFamily: tFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{card.kr}</div>
+              <div style={{ fontSize: 12, color: C.txtM, marginTop: 8 }}>tap to flip</div>
+            </div>
+            {/* Back */}
+            <div style={{
+              position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+              transform: "rotateY(180deg)",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+              borderRadius: 16, border: `2px solid ${C.acc}`, background: C.accBg, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+            }}>
+              <div style={{ fontSize: 24, fontFamily: tFont, fontWeight: 600, color: C.txt }}>{card.kr}</div>
+              <div style={{ fontSize: 14, color: C.txt, textAlign: "center", lineHeight: 1.6 }}>{card.def}</div>
+              {card.ex && <div style={{ fontSize: 13, color: C.txtM, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>{card.ex}</div>}
+              {card.exTr && <div style={{ fontSize: 12, color: C.txtS, textAlign: "center", lineHeight: 1.4 }}>{card.exTr}</div>}
+            </div>
+          </div>
+        </div>
+        {flipped && (
+          <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+            <button onClick={() => answer(false)} style={{
+              padding: "10px 28px", borderRadius: 10, border: `1px solid ${C.warn}`, background: C.warnBg,
+              color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            }}>{t.flashReview}</button>
+            <button onClick={() => answer(true)} style={{
+              padding: "10px 28px", borderRadius: 10, border: "none", background: C.ok,
+              color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            }}>{t.flashKnow}</button>
+          </div>
+        )}
+      </div>
+      <div style={{ padding: "6px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: C.txtM, flexShrink: 0 }}>
+        <span style={{ color: C.ok }}>✓ {known.length}</span>
+        <span style={{ color: C.warn }}>✗ {review.length}</span>
+      </div>
+    </div>
+  );
+}
+
 // #67 — Crossword built from the selected words + their definitions as clues.
 function isHangulWord(s) {
   if (!s) return false;
@@ -3552,7 +3663,7 @@ function AppInner() {
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
-    if (exMode === "match" || exMode === "cross") { setExConv([]); setExDone(false); setExOn(true); return; }
+    if (exMode === "match" || exMode === "cross" || exMode === "flash") { setExConv([]); setExDone(false); setExOn(true); return; }
     setExOn(true); setExLoad(true); setExDone(false);
     try { const r = await genExercise(sel, exMode, lang, context, tl); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx())]); }
@@ -4680,8 +4791,8 @@ function AppInner() {
                 <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
                 <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
                 <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
-                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }].map(m => (
-                    <button key={m.k} onClick={() => setExMode(m.k)}
+                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }, { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏" }].map(m => (
+                    <button key={m.k} onClick={() => { setExMode(m.k); if (m.k === "flash") setExFilter("vocab"); }}
                       style={{ flex: "1 1 130px", background: exMode === m.k ? C.accBg : C.s2, border: `1px solid ${exMode === m.k ? C.acc : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'" }}>
                       <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
                       <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
@@ -4732,6 +4843,8 @@ function AppInner() {
               <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
             ) : exMode === "cross" ? (
               <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} /></div>
+            ) : exMode === "flash" ? (
+              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

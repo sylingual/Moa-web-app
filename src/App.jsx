@@ -102,6 +102,12 @@ const T = {
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire",
     exRandom: "Au hasard",
+    progressTitle: "Progression", progressGlobal: "Global",
+    progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
+    progressDays: (n, max) => `${n}/${max} jour${n > 1 ? "s" : ""}`,
+    progressComplete: "Completee !",
+    progressAutoAcquired: "Carte acquise automatiquement ! Toutes les categories sont completees.",
+    progressCatDone: (cat) => `Categorie ${cat} completee !`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -370,6 +376,12 @@ const T = {
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory",
     exRandom: "Random",
+    progressTitle: "Progress", progressGlobal: "Overall",
+    progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
+    progressDays: (n, max) => `${n}/${max} day${n > 1 ? "s" : ""}`,
+    progressComplete: "Complete!",
+    progressAutoAcquired: "Card auto-acquired! All categories completed.",
+    progressCatDone: (cat) => `${cat} category complete!`,
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -1412,6 +1424,43 @@ function normType(type) {
 }
 function typeLabel(type, t) {
   return normType(type) === "grammar" ? t.grammar : t.vocab;
+}
+
+// =============================================
+// CARD PROGRESSION (Issue #72)
+// =============================================
+const PROGRESS_TARGETS = { ce: 7, co: 7, pe: 3, po: 3 };
+
+function exModeToCategory(mode) {
+  switch (mode) {
+    case "flash": case "match": case "qcm": case "fill": return "ce";
+    case "youglish": case "dictation": return "co";
+    case "imgwrite": case "cross": case "story": case "dialoguefill": return "pe";
+    default: return null;
+  }
+}
+
+function recordExerciseProgress(dataObj, cardIds, exMode) {
+  const cat = exModeToCategory(exMode);
+  if (!cat || !cardIds.length) return { data: dataObj, autoAcquiredIds: [] };
+  const today = new Date().toISOString().slice(0, 10);
+  let autoAcquiredIds = [];
+  const cards = dataObj.cards.map(c => {
+    if (!cardIds.includes(c.id)) return c;
+    const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+    const days = prog[cat] || [];
+    if (!days.includes(today)) {
+      prog[cat] = [...days, today];
+    }
+    const isComplete = Object.keys(PROGRESS_TARGETS).every(k => (prog[k] || []).length >= PROGRESS_TARGETS[k]);
+    let newStatus = c.status;
+    if (isComplete && c.status !== "acquired") {
+      newStatus = "acquired";
+      autoAcquiredIds.push(c.id);
+    }
+    return { ...c, progress: prog, status: newStatus };
+  });
+  return { data: { ...dataObj, cards }, autoAcquiredIds };
 }
 
 // =============================================
@@ -3863,6 +3912,35 @@ function AppInner() {
     setCardToDelete(null);
   };
 
+  // ---- EXERCISE PROGRESSION ----
+  const [progressToast, setProgressToast] = useState(null);
+
+  const completeExercise = (mode, cardIds) => {
+    const result = recordExerciseProgress(data, cardIds, mode);
+    let nd = awardPoints(15, result.data);
+    if (result.autoAcquiredIds.length > 0) {
+      setProgressToast(t.progressAutoAcquired);
+      setTimeout(() => setProgressToast(null), 4000);
+    } else {
+      const cat = exModeToCategory(mode);
+      if (cat) {
+        const catUp = cat.toUpperCase();
+        const target = PROGRESS_TARGETS[cat];
+        const today = new Date().toISOString().slice(0, 10);
+        const justCompleted = cardIds.some(id => {
+          const card = nd.cards.find(c => c.id === id);
+          const days = card?.progress?.[cat] || [];
+          return days.length === target && days[days.length - 1] === today;
+        });
+        if (justCompleted) {
+          setProgressToast(t.progressCatDone(catUp));
+          setTimeout(() => setProgressToast(null), 3000);
+        }
+      }
+    }
+    save(nd);
+  };
+
   // ---- EXERCISE ----
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
@@ -3883,7 +3961,7 @@ function AppInner() {
       const wasLast = u.filter(m => m.role === "ai").length >= 3;
       const r = await continueExercise(sel, exMode, lang, u, isRight, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
-      if (wasLast) { setExDone(true); save(awardPoints(15)); }
+      if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
     }
     catch (e) { console.error("exOpt error:", e); setExConv([...u, aiError(e)]); }
     setExLoad(false);
@@ -3894,10 +3972,11 @@ function AppInner() {
     const u = [...exConv, { role: "user", content: m }]; setExConv(u);
     try {
       const sel = exerciseCards.filter(c => exSel.has(c.id));
-      const wasLast = u.filter(msg => msg.role === "ai").length >= 3;
+      const isFill = exMode === "fill" || exMode === "dialoguefill";
+      const wasLast = isFill ? u.filter(msg => msg.role === "user").length >= 1 : u.filter(msg => msg.role === "ai").length >= 3;
       const r = await continueExercise(sel, exMode, lang, u, null, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
-      if (wasLast) { setExDone(true); save(awardPoints(15)); }
+      if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
     } catch (e) { console.error("exSend error:", e); setExConv([...u, aiError(e)]); }
     setExLoad(false);
   };
@@ -4094,6 +4173,12 @@ function AppInner() {
       {pointsToast && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.acc, color: C.onAcc, padding: "10px 20px", borderRadius: 20, fontSize: 14, fontWeight: 600, boxShadow: "0 4px 16px rgba(123,127,245,0.35)", animation: "pop 2.5s ease-out forwards", pointerEvents: "none" }}>
           ⭐ {typeof pointsToast === "object" ? pointsToast.label : t.pointsEarned(pointsToast)}
+        </div>
+      )}
+
+      {progressToast && (
+        <div style={{ position: "fixed", bottom: 130, left: "50%", transform: "translateX(-50%)", zIndex: 1001, background: "#34C759", color: "#fff", padding: "10px 20px", borderRadius: 20, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 16px rgba(52,199,89,0.35)", animation: "pop 3.5s ease-out forwards", pointerEvents: "none" }}>
+          🎉 {progressToast}
         </div>
       )}
 
@@ -4812,6 +4897,50 @@ function AppInner() {
                   })()}
                 </div>
 
+                {/* Progression bars */}
+                {(() => {
+                  const prog = recapCard.progress || { ce: [], co: [], pe: [], po: [] };
+                  const cats = [
+                    { key: "ce", label: t.progressCE, color: "#4A90D9", max: PROGRESS_TARGETS.ce },
+                    { key: "co", label: t.progressCO, color: "#E8A838", max: PROGRESS_TARGETS.co },
+                    { key: "pe", label: t.progressPE, color: "#7B7FF5", max: PROGRESS_TARGETS.pe },
+                    { key: "po", label: t.progressPO, color: "#E06B6B", max: PROGRESS_TARGETS.po },
+                  ];
+                  const totalDone = cats.reduce((s, c) => s + Math.min((prog[c.key] || []).length, c.max), 0);
+                  const totalMax = cats.reduce((s, c) => s + c.max, 0);
+                  const globalPct = Math.round((totalDone / totalMax) * 100);
+                  return (
+                    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
+                        <span style={{ fontSize: 11, color: C.txtM }}>{t.progressGlobal} {globalPct}%</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 14, overflow: "hidden" }}>
+                        <div style={{ height: "100%", borderRadius: 3, background: globalPct === 100 ? "#34C759" : C.acc, width: `${globalPct}%`, transition: "width 0.3s" }} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        {cats.map(c => {
+                          const done = Math.min((prog[c.key] || []).length, c.max);
+                          const pct = Math.round((done / c.max) * 100);
+                          return (
+                            <div key={c.key} style={{ padding: "8px 10px", borderRadius: 8, background: C.s1 }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: c.color }}>{c.label}</span>
+                                <span style={{ fontSize: 10, color: pct === 100 ? "#34C759" : C.txtM }}>
+                                  {pct === 100 ? t.progressComplete : t.progressDays(done, c.max)}
+                                </span>
+                              </div>
+                              <div style={{ height: 4, borderRadius: 2, background: C.s2, overflow: "hidden" }}>
+                                <div style={{ height: "100%", borderRadius: 2, background: pct === 100 ? "#34C759" : c.color, width: `${pct}%`, transition: "width 0.3s" }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Past lesson summaries */}
                 {(() => {
                   const cardSummaries = (data.summaries || []).filter(s => s.cardKorean === recapCard.korean);
@@ -5148,13 +5277,13 @@ function AppInner() {
                 </>)}
               </div>
             ) : exMode === "match" ? (
-              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("match", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "cross" ? (
-              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
+              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("cross", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
             ) : exMode === "flash" ? (
-              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
-              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

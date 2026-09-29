@@ -72,14 +72,25 @@ const T = {
     vocabNext: "Suivant", vocabNextWord: "Mot suivant →", vocabFinishBtn: "Terminer",
     vocabCorrect: "Correct ✓", vocabWrong: "Pas tout à fait", vocabWordOf: (i, n) => `Mot ${i}/${n}`,
     vocabDone: "Vocab étudié ✓", vocabExitConfirm: "Quitter l'étude du vocabulaire ?",
-    exerciseTitle: "Exercice global",
-    exerciseSub: "Choisis un mode et les cartes que tu veux travailler.",
+    exerciseTitle: "Exercices",
+    exerciseSub: "Choisis une catégorie, puis un exercice.",
+    exCatCE: "Compréhension Ecrite", exCatCEDesc: "Lire et comprendre",
+    exCatCO: "Compréhension Orale", exCatCODesc: "Ecouter et comprendre",
+    exCatPE: "Production Ecrite", exCatPEDesc: "Ecrire et produire",
+    exCatPO: "Production Orale", exCatPODesc: "Parler et s'exprimer",
+    exPickExercise: "Choisis un exercice",
+    exPickCards: "Choisis les cartes à travailler",
+    exBackToCat: "Catégories",
+    exBackToEx: "Exercices",
     story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
     qcm: "QCM aléatoire", qcmDesc: "Questions sur des exemples nouveaux.",
-    fillBlanks: "Compléter les phrases", fillDesc: "Phrases à trous tirées de vrais articles.",
+    fillBlanks: "Phrases à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
     exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
+    exDictation: "Dictée", exDictationDesc: "Ecoute le mot ou la phrase et écris-le.",
+    exYouglish: "Vidéo en contexte", exYouglishDesc: "Voir le mot utilisé dans une vraie vidéo.",
+    exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
@@ -329,14 +340,25 @@ const T = {
     vocabNext: "Next", vocabNextWord: "Next word →", vocabFinishBtn: "Finish",
     vocabCorrect: "Correct ✓", vocabWrong: "Not quite", vocabWordOf: (i, n) => `Word ${i}/${n}`,
     vocabDone: "Vocab studied ✓", vocabExitConfirm: "Leave vocabulary study?",
-    exerciseTitle: "Global exercise",
-    exerciseSub: "Choose a mode and cards to work on.",
+    exerciseTitle: "Exercises",
+    exerciseSub: "Choose a category, then an exercise.",
+    exCatCE: "Reading Comprehension", exCatCEDesc: "Read and understand",
+    exCatCO: "Listening Comprehension", exCatCODesc: "Listen and understand",
+    exCatPE: "Written Production", exCatPEDesc: "Write and produce",
+    exCatPO: "Oral Production", exCatPODesc: "Speak and express",
+    exPickExercise: "Choose an exercise",
+    exPickCards: "Choose the cards to work on",
+    exBackToCat: "Categories",
+    exBackToEx: "Exercises",
     story: "Tell a story", storyDesc: "Use chosen structures in a coherent text.",
     qcm: "Random quiz", qcmDesc: "Questions on new random examples.",
-    fillBlanks: "Fill in the blanks", fillDesc: "Gap-fill from real articles.",
+    fillBlanks: "Fill in the blanks", fillDesc: "Complete a generated story with chosen words.",
     exMatch: "Match", exMatchDesc: "Match each word to its definition.",
     exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
     exFlash: "Flashcards", exFlashDesc: "Flip cards to review vocabulary.",
+    exDictation: "Dictation", exDictationDesc: "Listen to the word or sentence and write it.",
+    exYouglish: "Video in context", exYouglishDesc: "See the word used in a real video.",
+    exDialogueFill: "Dialogue fill-in", exDialogueFillDesc: "Complete a generated dialogue with chosen words.",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
@@ -2720,6 +2742,8 @@ function AppInner() {
 
   // Exercise
   const [exMode, setExMode] = useState("story");
+  const [exCategory, setExCategory] = useState(null);
+  const [exStep, setExStep] = useState("category");
   const [exSel, setExSel] = useState(new Set());
   const [exConv, setExConv] = useState([]);
   const [exLoad, setExLoad] = useState(false);
@@ -4822,6 +4846,7 @@ function AppInner() {
                           const cardId = data.cards.find(c => c.korean === recapCard.korean)?.id;
                           if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
                           setShowRecap(false); setRecapCard(null);
+                          setExStep("category"); setExCategory(null);
                           setView("exercise");
                         } else if (a.k === "youglish") {
                           setYouglishWord(recapCard.korean);
@@ -5004,64 +5029,132 @@ function AppInner() {
             {!exOn ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 24px", gap: 18 }}>
                 <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
-                <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
-                <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
-                  {[{ k: "story", l: t.story, d: t.storyDesc, i: "✍️" }, { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀" }, { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" }, { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗" }, { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩" }, { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏" }, { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️" }].map(m => (
-                    <button key={m.k} onClick={() => { setExMode(m.k); if (m.k === "flash" || m.k === "imgwrite") setExFilter("vocab"); }}
-                      style={{ flex: "1 1 130px", background: exMode === m.k ? C.accBg : C.s2, border: `1px solid ${exMode === m.k ? C.acc : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'" }}>
-                      <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
-                      <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>
-                    </button>
-                  ))}
-                </div>
-                <div style={{ width: "100%", maxWidth: 460 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      {exerciseCards.length > 0 && (
-                        <button onClick={() => setExSel(new Set(shuffle(exerciseCards).slice(0, Math.min(8, exerciseCards.length)).map(c => c.id)))}
-                          style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                          🎲 {t.exRandom}
-                        </button>
-                      )}
-                      <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
-                        {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
-                          <button key={k} onClick={() => setExFilter(k)}
-                            style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: exFilter === k ? C.s2 : "transparent", color: exFilter === k ? C.acc : C.txtM, fontWeight: exFilter === k ? 500 : 400, boxShadow: exFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                {exStep === "category" && (<>
+                  <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
+                  <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
+                    {[
+                      { k: "CE", l: t.exCatCE, d: t.exCatCEDesc, i: "📖", clr: "#4A90D9" },
+                      { k: "CO", l: t.exCatCO, d: t.exCatCODesc, i: "🎧", clr: "#E8A838" },
+                      { k: "PE", l: t.exCatPE, d: t.exCatPEDesc, i: "✏️", clr: "#50B87A" },
+                      { k: "PO", l: t.exCatPO, d: t.exCatPODesc, i: "🎤", clr: "#D96A6A" },
+                    ].map(cat => (
+                      <button key={cat.k} onClick={() => { setExCategory(cat.k); setExStep("exercise"); setExFilter("all"); }}
+                        style={{ flex: "1 1 200px", background: C.s2, border: `2px solid ${C.border}`, borderRadius: 14, padding: "22px 16px", cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", transition: "border-color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = cat.clr} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                        <div style={{ fontSize: 32, marginBottom: 10 }}>{cat.i}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{cat.l}</div>
+                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{cat.d}</div>
+                        <div style={{ marginTop: 8, fontSize: 10, color: cat.clr, fontWeight: 600, letterSpacing: 0.5 }}>{cat.k}</div>
+                      </button>
+                    ))}
                   </div>
-                  {exerciseCards.length === 0
-                    ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{t.noAcquired}</div>
-                    : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {exerciseCards.map(c => (
-                          <button key={c.id} onClick={() => { const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
-                            style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
-                          </button>
-                        ))}
-                      </div>
-                  }
-                </div>
-                {exerciseCards.length > 0 && (
-                  <button onClick={launchEx} disabled={exSel.size === 0}
-                    style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
-                    ▶ {t.launchEx}
+                </>)}
+                {exStep === "exercise" && (<>
+                  <button onClick={() => { setExStep("category"); setExCategory(null); }}
+                    style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                    ← {t.exBackToCat}
                   </button>
-                )}
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.txtM }}>{t.exPickExercise}</div>
+                  <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
+                    {(exCategory === "CE" ? [
+                      { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
+                      { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
+                      { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true },
+                      { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" },
+                    ] : exCategory === "CO" ? [
+                      { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
+                      { k: "dictation", l: t.exDictation, d: t.exDictationDesc, i: "🎧", disabled: true },
+                    ] : exCategory === "PE" ? [
+                      { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️", vocabOnly: true },
+                      { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩", vocabOnly: true },
+                      { k: "story", l: t.story, d: t.storyDesc, i: "✍️" },
+                      { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", disabled: true },
+                    ] : [
+                    ]).map(m => (
+                      <button key={m.k} onClick={() => { if (m.disabled) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}
+                        style={{ flex: "1 1 130px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: m.disabled ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", opacity: m.disabled ? 0.45 : 1, position: "relative" }}>
+                        <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
+                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>
+                        {m.disabled && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>bientot</div>}
+                      </button>
+                    ))}
+                  </div>
+                </>)}
+                {exStep === "cards" && (<>
+                  <div style={{ display: "flex", gap: 8, alignSelf: "flex-start" }}>
+                    <button onClick={() => setExStep("exercise")}
+                      style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                      ← {t.exBackToEx}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.txtM }}>{t.exPickCards}</div>
+                  {exMode === "youglish" ? (
+                    <div style={{ width: "100%", maxWidth: 460 }}>
+                      {exerciseCards.filter(c => c.type === "vocab").length === 0
+                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{t.noAcquired}</div>
+                        : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {exerciseCards.filter(c => c.type === "vocab").map(c => (
+                              <button key={c.id} onClick={() => { setYouglishWord(c.korean); }}
+                                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                              </button>
+                            ))}
+                          </div>
+                      }
+                    </div>
+                  ) : (<>
+                    <div style={{ width: "100%", maxWidth: 460 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          {exerciseCards.length > 0 && (
+                            <button onClick={() => setExSel(new Set(shuffle(exerciseCards).slice(0, Math.min(8, exerciseCards.length)).map(c => c.id)))}
+                              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              🎲 {t.exRandom}
+                            </button>
+                          )}
+                          {!["flash", "imgwrite", "match", "cross"].includes(exMode) && (
+                            <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
+                              {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
+                                <button key={k} onClick={() => setExFilter(k)}
+                                  style={{ padding: "3px 10px", borderRadius: 4, border: "none", fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: exFilter === k ? C.s2 : "transparent", color: exFilter === k ? C.acc : C.txtM, fontWeight: exFilter === k ? 500 : 400, boxShadow: exFilter === k ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {exerciseCards.length === 0
+                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{t.noAcquired}</div>
+                        : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                            {exerciseCards.map(c => (
+                              <button key={c.id} onClick={() => { const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
+                                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
+                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                              </button>
+                            ))}
+                          </div>
+                      }
+                    </div>
+                    {exerciseCards.length > 0 && (
+                      <button onClick={launchEx} disabled={exSel.size === 0}
+                        style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
+                        ▶ {t.launchEx}
+                      </button>
+                    )}
+                  </>)}
+                </>)}
               </div>
             ) : exMode === "match" ? (
-              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "cross" ? (
-              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} /></div>
+              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
             ) : exMode === "flash" ? (
-              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
-              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => setExOn(false)} />
+              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => save(awardPoints(15))} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -5073,7 +5166,7 @@ function AppInner() {
                       style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁 " : "🙈 "}{t.showTranslations}
                     </button>
-                    <button onClick={() => setExOn(false)} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+                    <button onClick={() => { setExOn(false); setExStep("category"); setExCategory(null); }} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
                   </div>
                 </div>
                 <div ref={exR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -5088,11 +5181,11 @@ function AppInner() {
                       <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 14 }}>{t.exFinished}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); }}
+                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ▶ {t.newExercise}
                         </button>
-                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setView("library"); }}
+                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); setView("library"); }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
                           📚 {t.backToLibrary}
                         </button>

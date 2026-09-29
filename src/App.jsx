@@ -48,7 +48,7 @@ const T = {
     toStudiedTitle: "Remettre en Étudié ?", toStudiedMsg: (k) => `« ${k} » repassera parmi les cartes en apprentissage.`,
     confirmBtn: "Confirmer", learningShelf: "En apprentissage",
     statusNew: "Nouveau", statusInProgress: "En cours", statusStudied: "Étudié", statusAcquired: "Acquis",
-    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Rien de nouveau pour aujourd'hui, beau travail ! 🎉", todayDone: "fait !",
+    today: "Aujourd'hui", todayCards: (n) => `${n} carte${n > 1 ? "s" : ""}`, todayEmpty: "Toutes les cartes sont acquises, bravo ! 🎉", todayDone: "fait !",
     shelfMaskedHint: "sens masqué, à toi de deviner", shelfExpandHint: "clic pour dérouler", toStudied: "Remettre en Étudié",
     dailyCountLabel: "Cartes proposées chaque jour", markAcquired: "Marquer acquis",
     reviewCount: (n) => `${n} révision${n > 1 ? "s" : ""}`,
@@ -322,7 +322,7 @@ const T = {
     toStudiedTitle: "Move back to Studied?", toStudiedMsg: (k) => `"${k}" will return to the cards you're still learning.`,
     confirmBtn: "Confirm", learningShelf: "Learning",
     statusNew: "New", statusInProgress: "In progress", statusStudied: "Studied", statusAcquired: "Acquired",
-    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "Nothing new for today, great job! 🎉", todayDone: "done!",
+    today: "Today", todayCards: (n) => `${n} card${n > 1 ? "s" : ""}`, todayEmpty: "All cards acquired, great job! 🎉", todayDone: "done!",
     shelfMaskedHint: "meaning hidden — guess it", shelfExpandHint: "click to expand", toStudied: "Move back to Studied",
     dailyCountLabel: "Cards suggested each day", markAcquired: "Mark acquired",
     reviewCount: (n) => `${n} review${n > 1 ? "s" : ""}`,
@@ -3113,8 +3113,14 @@ function AppInner() {
     if (data.today && data.today.date === today && data.today.tl === tl) return;
     if (!data.cards.length) return; // wait for real data to load before freezing a set
     const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
-    const ids = data.cards.filter(c => migrateStatus(c.status) === "new" && (c.targetLang || "ko") === tl).slice(0, dc).map(c => c.id);
-    save({ ...data, today: { date: today, tl, ids } });
+    const langCards = data.cards.filter(c => (c.targetLang || "ko") === tl);
+    const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
+    const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
+    const picked = [...newCards.slice(0, dc), ...reviewCards.sort(() => Math.random() - 0.5).slice(0, Math.max(0, dc - newCards.length))].slice(0, dc);
+    const ids = picked.map(c => c.id);
+    const originalStatus = {};
+    picked.forEach(c => { originalStatus[c.id] = migrateStatus(c.status); });
+    save({ ...data, today: { date: today, tl, ids, originalStatus } });
   }, [data.today, data.cards, tl, save]);
 
   // Daily-goal bonus: when every card in today's set is finished, award +30 once.
@@ -3122,7 +3128,15 @@ function AppInner() {
     const sel = data.today;
     if (!sel || sel.bonusAwarded || sel.date !== dayKey()) return;
     const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
-    const isDone = c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired"; };
+    const origSt = sel.originalStatus || {};
+    const todayDate = sel.date;
+    const exercisedToday = c => { const p = c.progress; return p && ["ce","co","pe","po"].some(k => (p[k] || []).includes(todayDate)); };
+    const isDone = c => {
+      const s = migrateStatus(c.status);
+      if (s === "acquired") return true;
+      if ((origSt[c.id] || "new") === "new") return s === "studied" || s === "acquired";
+      return exercisedToday(c);
+    };
     if (!cards.length || !cards.every(isDone)) return;
     const base = data.profile || DEFAULT_PROFILE;
     save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
@@ -4636,7 +4650,20 @@ function AppInner() {
                       return (
                         <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
                           {(() => {
-                            const isDone = c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired"; };
+                            const todayDate = dayKey();
+                            const origSt = data.today?.originalStatus || {};
+                            const exercisedToday = c => {
+                              const p = c.progress;
+                              if (!p) return false;
+                              return ["ce","co","pe","po"].some(k => (p[k] || []).includes(todayDate));
+                            };
+                            const isDone = c => {
+                              const s = migrateStatus(c.status);
+                              const orig = origSt[c.id] || "new";
+                              if (s === "acquired") return true;
+                              if (orig === "new") return s === "studied" || s === "acquired";
+                              return exercisedToday(c);
+                            };
                             const doneCount = today.filter(isDone).length;
                             return (
                             <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.22), rgba(255,214,102,0.10))", border: "1px solid rgba(230,180,40,0.35)", borderRadius: 14, padding: 14, display: "flex", alignItems: "stretch", gap: 14, flexWrap: "wrap" }}>
@@ -4659,7 +4686,7 @@ function AppInner() {
                                       style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "transform 0.1s" }}
                                       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                       onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                      <div style={{ fontSize: 10, color: done ? C.stAcq : "#8a6d00", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>{done ? <>✓ {t.todayDone}</> : t.statusNew}</div>
+                                      <div style={{ fontSize: 10, color: done ? C.stAcq : "#8a6d00", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>{done ? <>✓ {t.todayDone}</> : statusInfo(origSt[c.id] || "new", t).label}</div>
                                       <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
                                     </div>
                                   ); })}

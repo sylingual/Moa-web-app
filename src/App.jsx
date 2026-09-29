@@ -3482,6 +3482,7 @@ function AppInner() {
       save({ ...data, profile: { ...profileDraft } });
     }
     if (target === "import") setImpStep("input");
+    if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
       window.history.pushState({ view: target }, "");
@@ -4965,6 +4966,7 @@ function AppInner() {
                               const cardId = data.cards.find(c => c.korean === lCard.korean)?.id;
                               setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set());
                               if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
+                              setExStep("category"); setExCategory(null);
                               setView("exercise");
                             }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
@@ -5054,7 +5056,8 @@ function AppInner() {
                     style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                     ← {t.exBackToCat}
                   </button>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: C.txtM }}>{t.exPickExercise}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`}</div>
+                  <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickExercise}</div>
                   <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
                     {(exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
@@ -5088,7 +5091,8 @@ function AppInner() {
                       ← {t.exBackToEx}
                     </button>
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: C.txtM }}>{t.exPickCards}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`}</div>
+                  <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
                     <div style={{ width: "100%", maxWidth: 460 }}>
                       {exerciseCards.filter(c => c.type === "vocab").length === 0
@@ -5103,13 +5107,15 @@ function AppInner() {
                           </div>
                       }
                     </div>
-                  ) : (<>
+                  ) : (() => {
+                    const visibleCards = exMode === "imgwrite" ? exerciseCards.filter(c => c.images && c.images.length > 0) : exerciseCards;
+                    return (<>
                     <div style={{ width: "100%", maxWidth: 460 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          {exerciseCards.length > 0 && (
-                            <button onClick={() => setExSel(new Set(shuffle(exerciseCards).slice(0, Math.min(8, exerciseCards.length)).map(c => c.id)))}
+                          {visibleCards.length > 0 && (
+                            <button onClick={() => setExSel(new Set(shuffle(visibleCards).slice(0, Math.min(8, visibleCards.length)).map(c => c.id)))}
                               style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                               🎲 {t.exRandom}
                             </button>
@@ -5126,10 +5132,10 @@ function AppInner() {
                           )}
                         </div>
                       </div>
-                      {exerciseCards.length === 0
-                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{t.noAcquired}</div>
+                      {visibleCards.length === 0
+                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{exMode === "imgwrite" ? t.exNeedImages : t.noAcquired}</div>
                         : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                            {exerciseCards.map(c => (
+                            {visibleCards.map(c => (
                               <button key={c.id} onClick={() => { const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
                                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
@@ -5138,13 +5144,13 @@ function AppInner() {
                           </div>
                       }
                     </div>
-                    {exerciseCards.length > 0 && (
+                    {visibleCards.length > 0 && (
                       <button onClick={launchEx} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
                         ▶ {t.launchEx}
                       </button>
                     )}
-                  </>)}
+                  </>); })()}
                 </>)}
               </div>
             ) : exMode === "match" ? (

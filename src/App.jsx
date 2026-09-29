@@ -4948,7 +4948,20 @@ function AppInner() {
                           const done = Math.min((prog[c.key] || []).length, c.max);
                           const pct = Math.round((done / c.max) * 100);
                           return (
-                            <div key={c.key} style={{ padding: "8px 10px", borderRadius: 8, background: C.s1 }}>
+                            <div key={c.key} onClick={() => {
+                              const cardId = data.cards.find(x => x.korean === recapCard.korean)?.id;
+                              const eligible = data.cards.filter(x => (x.status === "studied" || x.status === "acquired") && (x.targetLang || "ko") === tl && x.id !== cardId);
+                              const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
+                              const ids = new Set([cardId, ...shuffled.map(x => x.id)].filter(Boolean));
+                              skipExResetRef.current = true;
+                              setExSel(ids);
+                              setExCategory(c.key.toUpperCase());
+                              setExStep("exercise");
+                              setShowRecap(false); setRecapCard(null);
+                              setView("exercise");
+                            }} style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, cursor: "pointer", transition: "border-color 0.15s", border: `1px solid transparent` }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = c.color; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                                 <span style={{ fontSize: 11, fontWeight: 600, color: c.color }}>{c.label}</span>
                                 <span style={{ fontSize: 10, color: pct === 100 ? "#34C759" : C.txtM }}>
@@ -4988,7 +5001,6 @@ function AppInner() {
                   <div style={{ fontSize: 12, color: C.txtM, marginBottom: 10, lineHeight: 1.5 }}>{t.quickPracticeSub}</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
                     {[
-                      { k: "exercise", l: t.anExercise, i: "✏️" },
                       { k: "examples", l: t.moreExamples, i: "💡" },
                       { k: "realExamples", l: t.realExamples, i: "🔍" },
                       { k: "image", l: t.anImage, i: "📷" },
@@ -4996,13 +5008,7 @@ function AppInner() {
                       { k: "resources", l: t.onlineRes, i: "📚" },
                     ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
                       <button key={a.k} onClick={() => {
-                        if (a.k === "exercise") {
-                          const cardId = data.cards.find(c => c.korean === recapCard.korean)?.id;
-                          if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
-                          setShowRecap(false); setRecapCard(null);
-                          setExStep("category"); setExCategory(null);
-                          setView("exercise");
-                        } else if (a.k === "youglish") {
+                        if (a.k === "youglish") {
                           setYouglishWord(recapCard.korean);
                         } else {
                           startRecapAction(a.k);

@@ -84,7 +84,7 @@ const T = {
     exBackToEx: "Exercices",
     story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
     qcm: "QCM aléatoire", qcmDesc: "Questions sur des exemples nouveaux.",
-    fillBlanks: "Phrases à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
+    fillBlanks: "Histoire à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
     exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
@@ -352,7 +352,7 @@ const T = {
     exBackToEx: "Exercises",
     story: "Tell a story", storyDesc: "Use chosen structures in a coherent text.",
     qcm: "Random quiz", qcmDesc: "Questions on new random examples.",
-    fillBlanks: "Fill in the blanks", fillDesc: "Complete a generated story with chosen words.",
+    fillBlanks: "Story fill-in", fillDesc: "Complete a generated story with chosen words.",
     exMatch: "Match", exMatchDesc: "Match each word to its definition.",
     exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
     exFlash: "Flashcards", exFlashDesc: "Flip cards to review vocabulary.",
@@ -1160,15 +1160,35 @@ Structure your message like this:
 
 Keep the whole message SHORT and focused on this single question. Do NOT preview or list the other questions. Do NOT use markdown headers (###). Use "label" as the key for option text.`,
 
-    fill: `FILL-IN-THE-BLANK MODE: Give exactly ONE fill-in-the-blank exercise now. This is exercise 1 of 3 in a series.
+    fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses ALL the vocabulary words listed below.
 
-Structure your message like this:
-1. A brief one-line intro (only for exercise 1)
-2. The ${L} translation of the full sentence
-3. The sentence in the target language with a blank (use ______)
-4. Ask the student to write the missing part
+If you know the student's interests (see LEARNER PROFILE), set the story in a context they care about. The story should feel natural and immersive, not like a textbook exercise.
 
-Keep it SHORT. Do NOT preview the other exercises. Do NOT use markdown headers (###). The student answers in the text field, so no MCQ options needed unless the choice is genuinely ambiguous.`
+Replace each vocabulary word in the text with a numbered blank: (1)______, (2)______, etc.
+Below the story, provide a WORD BANK listing the words to fill in (shuffled, not in order of appearance).
+
+Structure your message exactly like this:
+1. A brief one-line intro setting up the story context
+2. The story text with numbered blanks
+3. A line saying "Word bank:" followed by the shuffled words separated by " | "
+
+The student will type each answer. Do NOT use markdown headers (###). Do NOT give MCQ options.
+Return JSON: {"message": "your story with blanks and word bank"}`,
+
+    dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses ALL the vocabulary words listed below.
+
+If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about. Give the characters names and a realistic situation.
+
+Replace each vocabulary word with a numbered blank: (1)______, (2)______, etc.
+Below the dialogue, provide a WORD BANK listing the words to fill in (shuffled).
+
+Structure your message exactly like this:
+1. A brief one-line intro describing the situation
+2. The dialogue with character names and numbered blanks
+3. A line saying "Word bank:" followed by the shuffled words separated by " | "
+
+The student will type each answer. Do NOT use markdown headers (###). Do NOT give MCQ options.
+Return JSON: {"message": "your dialogue with blanks and word bank"}`
   };
 
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
@@ -1194,14 +1214,18 @@ async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {
   const asked = conv.filter(m => m.role === "ai").length;
   const isLast = asked >= 3;
 
+  const isFillMode = mode === "fill" || mode === "dialoguefill";
+
   const feedback = wasCorrect === true
     ? "The student answered CORRECTLY. Confirm briefly (1 sentence) and explain why in 1-2 sentences."
     : wasCorrect === false
       ? "The student answered INCORRECTLY. Say which answer was right and explain why in 2-3 sentences. Be encouraging."
-      : "Evaluate the student's written answer. If correct, confirm and explain. If not, point out what to fix and give the correct form.";
+      : isFillMode
+        ? "The student submitted their answers for the blanks. Check each answer: list which ones are correct and which are wrong. For wrong answers, give the correct word and a brief explanation. Be encouraging."
+        : "Evaluate the student's written answer. If correct, confirm and explain. If not, point out what to fix and give the correct form.";
 
-  const next = isLast
-    ? `This was the last question. After your feedback, wrap up with a short encouraging summary of how the session went (2-3 sentences). Do NOT ask another question, do NOT include options, and do NOT tell the student where to click or which tab to open: the app already shows them the buttons.`
+  const next = (isLast || isFillMode)
+    ? `${isFillMode ? "This is a fill-in exercise, so after your correction feedback," : "This was the last question. After your feedback,"} wrap up with a short encouraging summary of how the session went (2-3 sentences). Do NOT ask another question, do NOT include options, and do NOT tell the student where to click or which tab to open: the app already shows them the buttons.`
     : mode === "qcm"
       ? `Then ask question ${asked + 1} of 3: a NEW multiple-choice question on one of the structures, with a short real-world context line, the sentence in ${TL}, the question, and exactly 3 options (one correct). Keep it short.`
       : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
@@ -3895,7 +3919,8 @@ function AppInner() {
     const u = [...exConv, { role: "user", content: m }]; setExConv(u);
     try {
       const sel = exerciseCards.filter(c => exSel.has(c.id));
-      const wasLast = u.filter(msg => msg.role === "ai").length >= 3;
+      const isFill = exMode === "fill" || exMode === "dialoguefill";
+      const wasLast = isFill ? u.filter(msg => msg.role === "user").length >= 1 : u.filter(msg => msg.role === "ai").length >= 3;
       const r = await continueExercise(sel, exMode, lang, u, null, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
       if (wasLast) { setExDone(true); save(awardPoints(15)); }
@@ -5062,20 +5087,21 @@ function AppInner() {
                     {(exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
-                      { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true },
-                      { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄" },
+                      { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true, ai: true },
+                      { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [
                       { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
                       { k: "dictation", l: t.exDictation, d: t.exDictationDesc, i: "🎧", disabled: true },
                     ] : exCategory === "PE" ? [
                       { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️", vocabOnly: true },
                       { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩", vocabOnly: true },
-                      { k: "story", l: t.story, d: t.storyDesc, i: "✍️" },
-                      { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", disabled: true },
+                      { k: "story", l: t.story, d: t.storyDesc, i: "✍️", ai: true },
+                      { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", ai: true },
                     ] : [
                     ]).map(m => (
                       <button key={m.k} onClick={() => { if (m.disabled) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}
                         style={{ flex: "1 1 130px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: m.disabled ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", opacity: m.disabled ? 0.45 : 1, position: "relative" }}>
+                        {m.ai && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, background: "#EDE9FE", color: "#7C3AED", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>IA</div>}
                         <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
                         <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>

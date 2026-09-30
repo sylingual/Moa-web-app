@@ -1648,10 +1648,11 @@ function CelebrationOverlay({ visible, onClose, lang }) {
       <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
         🎉 {msg}
       </div>
-      <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative" }}>
+      <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: 100, position: "absolute", zIndex: 0 }}>🥳</span>
         <iframe
           src={`https://tenor.com/embed/${entry.id}`}
-          style={{ position: "absolute", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)", border: "none", pointerEvents: "none" }}
+          style={{ position: "absolute", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)", border: "none", pointerEvents: "none", zIndex: 1 }}
           allowFullScreen
           title="celebration"
         />
@@ -3320,7 +3321,8 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cursorCell, activeDir, cw.placed]);
 
-  const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
+  const allCorrect = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
+  const solved = checked && allCorrect;
   useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
 
   useEffect(() => {

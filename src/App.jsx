@@ -3194,10 +3194,13 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     const pc = dir === "h" ? c - 1 : c;
     if (cw.sol[key(pr, pc)] != null) focusCell(pr, pc);
   };
+  const [focusedCell, setFocusedCell] = useState(null);
   const handleFocus = (r, c) => {
+    setFocusedCell({ r, c });
     const cws = cellWords[key(r, c)] || [];
     if (cws.length === 1) setActiveDir(cws[0].dir);
   };
+  const handleBlur = () => { setFocusedCell(null); };
   const handleCellClick = (r, c) => {
     const k2 = key(r, c);
     const cws = cellWords[k2] || [];
@@ -3220,6 +3223,24 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     const target = empty || word.cells[0];
     focusCell(target.r, target.c);
   };
+  // Highlight the active word's cells
+  const highlightKeys = useMemo(() => {
+    if (!focusedCell) return new Set();
+    const dir = activeDirRef.current;
+    const fc = key(focusedCell.r, focusedCell.c);
+    for (const p of cw.placed) {
+      if (p.dir === dir && p.cells.some(ce => key(ce.r, ce.c) === fc)) {
+        return new Set(p.cells.map(ce => key(ce.r, ce.c)));
+      }
+    }
+    for (const p of cw.placed) {
+      if (p.cells.some(ce => key(ce.r, ce.c) === fc)) {
+        return new Set(p.cells.map(ce => key(ce.r, ce.c)));
+      }
+    }
+    return new Set();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedCell, activeDir, cw.placed]);
 
   const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
   useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
@@ -3286,22 +3307,36 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
               const v = vals[k] || "";
               const right = checked && v && v === cw.sol[k];
               const bad = checked && v && v !== cw.sol[k];
+              const hl = highlightKeys.has(k);
+              const isFoc = focusedCell && focusedCell.r === r && focusedCell.c === c;
+              const bg = bad ? C.warnBg : right ? C.okBg : isFoc ? "#e0edff" : hl ? "#f0f5ff" : "#fff";
+              const bdr = bad ? C.warn : right ? C.ok : isFoc ? C.acc : hl ? "#b0c4ff" : C.borderS;
               return (
                 <div key={k} style={{ position: "relative", width: CELL, height: CELL }}>
-                  {cw.num[k] && <span style={{ position: "absolute", top: 0, left: 1, fontSize: 8, color: C.txtM, lineHeight: 1 }}>{cw.num[k]}</span>}
+                  {cw.num[k] && <span style={{ position: "absolute", top: 0, left: 1, fontSize: 8, color: C.txtM, lineHeight: 1, zIndex: 1 }}>{cw.num[k]}</span>}
                   <input ref={el => { inputRefs.current[k] = el; }} value={v}
-                    onFocus={() => handleFocus(r, c)} onClick={() => handleCellClick(r, c)}
+                    onFocus={() => handleFocus(r, c)} onBlur={handleBlur} onClick={() => handleCellClick(r, c)}
                     onKeyDown={e => handleKeyDown(e, r, c)}
                     onCompositionStart={() => { composingRef.current = true; }}
-                    onCompositionEnd={() => { composingRef.current = false; setTimeout(() => advanceFrom(r, c), 10); }}
+                    onCompositionEnd={e => {
+                      composingRef.current = false;
+                      if (e.data) { const ch = Array.from(e.data)[0] || ""; setVals(s => ({ ...s, [k]: ch })); }
+                      setTimeout(() => advanceFrom(r, c), 20);
+                    }}
                     onChange={e => {
                       const raw = e.target.value;
-                      const ch = Array.from(raw).slice(-1)[0] || "";
-                      const val = isKorean ? ch : stripAccents(ch).toUpperCase();
-                      setVals(s => ({ ...s, [k]: val })); setChecked(false);
-                      if (!composingRef.current && !isKorean && val) setTimeout(() => advanceFrom(r, c), 0);
+                      const chars = Array.from(raw);
+                      if (isKorean && chars.length > 1) {
+                        setVals(s => ({ ...s, [k]: chars[0] })); setChecked(false);
+                        setTimeout(() => advanceFrom(r, c), 0);
+                      } else {
+                        const ch = chars[chars.length - 1] || "";
+                        const val = isKorean ? ch : stripAccents(ch).toUpperCase();
+                        setVals(s => ({ ...s, [k]: val })); setChecked(false);
+                        if (!composingRef.current && val) setTimeout(() => advanceFrom(r, c), 0);
+                      }
                     }}
-                    style={{ width: CELL, height: CELL, textAlign: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bad ? C.warn : right ? C.ok : C.borderS}`, borderRadius: 4, background: bad ? C.warnBg : right ? C.okBg : "#fff", color: C.txt, outline: "none", padding: 0 }} />
+                    style={{ width: CELL, height: CELL, textAlign: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bdr}`, borderRadius: 4, background: bg, color: C.txt, outline: "none", padding: 0 }} />
                 </div>
               );
             }))}

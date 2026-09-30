@@ -3071,6 +3071,15 @@ function isHangulWord(s) {
   if (chars.length < 2 || chars.length > 8) return false;
   return chars.every(ch => { const cp = ch.codePointAt(0); return cp >= 0xAC00 && cp <= 0xD7A3; });
 }
+function isHangulChar(ch) { const cp = ch.codePointAt(0); return cp >= 0xAC00 && cp <= 0xD7A3; }
+function isCrosswordWord(s) {
+  if (!s) return false;
+  const w = s.trim();
+  if (w.includes(' ') || w.includes('-')) return false;
+  const chars = Array.from(w);
+  return chars.length >= 2 && chars.length <= 8;
+}
+function stripAccents(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, ""); }
 
 function buildCrossword(words) {
   const grid = {};
@@ -3132,25 +3141,89 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const [round, setRound] = useState(0);
   const words = useMemo(() => {
     const w = cards
-      .filter(c => isHangulWord(c.korean) && (c.description || "").trim())
-      .map(c => ({ id: c.id, answer: c.korean.trim(), clue: (c.description || "").trim(), syl: Array.from(c.korean.trim()) }));
+      .filter(c => isCrosswordWord(c.korean) && (c.description || "").trim())
+      .map(c => {
+        const raw = c.korean.trim();
+        const hangul = Array.from(raw).every(ch => isHangulChar(ch));
+        const display = hangul ? raw : stripAccents(raw).toUpperCase();
+        return { id: c.id, answer: display, clue: (c.description || "").trim(), syl: Array.from(display), hangul };
+      });
     return shuffle(w).slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards, round]);
+  const isKorean = words.length > 0 && words.some(w => w.hangul);
   const cw = useMemo(() => buildCrossword(words), [words]);
   const [vals, setVals] = useState({});
   const [checked, setChecked] = useState(false);
   const [awarded, setAwarded] = useState(false);
-  const [showWords, setShowWords] = useState(true); // level 1 (words shown) vs level 2 (from memory)
+  const [showWords, setShowWords] = useState(true);
+  const [activeDir, _setActiveDir] = useState("h");
+  const activeDirRef = useRef("h");
+  const setActiveDir = (d) => { const v = typeof d === "function" ? d(activeDirRef.current) : d; _setActiveDir(v); activeDirRef.current = v; };
   const bank = useMemo(() => shuffle(cw.placed.map(p => p.answer)), [cw]);
   const key = (r, c) => r + "," + c;
   const gridRef = useRef(null);
+  const inputRefs = useRef({});
+  const composingRef = useRef(false);
+
+  const cellWords = useMemo(() => {
+    const m = {};
+    cw.placed.forEach(p => {
+      p.cells.forEach((ce) => {
+        const k = key(ce.r, ce.c);
+        if (!m[k]) m[k] = [];
+        m[k].push({ dir: p.dir });
+      });
+    });
+    return m;
+  }, [cw]);
+
+  const focusCell = (r, c) => {
+    const ref = inputRefs.current[key(r, c)];
+    if (ref) { ref.focus(); ref.select(); }
+  };
+  const advanceFrom = (r, c) => {
+    const dir = activeDirRef.current;
+    const nr = dir === "v" ? r + 1 : r;
+    const nc = dir === "h" ? c + 1 : c;
+    if (cw.sol[key(nr, nc)] != null) focusCell(nr, nc);
+  };
+  const retreatFrom = (r, c) => {
+    const dir = activeDirRef.current;
+    const pr = dir === "v" ? r - 1 : r;
+    const pc = dir === "h" ? c - 1 : c;
+    if (cw.sol[key(pr, pc)] != null) focusCell(pr, pc);
+  };
+  const handleFocus = (r, c) => {
+    const cws = cellWords[key(r, c)] || [];
+    if (cws.length === 1) setActiveDir(cws[0].dir);
+  };
+  const handleCellClick = (r, c) => {
+    const k2 = key(r, c);
+    const cws = cellWords[k2] || [];
+    if (cws.length > 1 && document.activeElement === inputRefs.current[k2]) {
+      setActiveDir(d => d === "h" ? "v" : "h");
+    }
+  };
+  const handleKeyDown = (e, r, c) => {
+    if (composingRef.current) return;
+    const k2 = key(r, c);
+    if (e.key === "Backspace" && !(vals[k2] || "")) { e.preventDefault(); retreatFrom(r, c); }
+    else if (e.key === "ArrowRight") { e.preventDefault(); if (cw.sol[key(r, c + 1)] != null) focusCell(r, c + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); if (cw.sol[key(r, c - 1)] != null) focusCell(r, c - 1); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); if (cw.sol[key(r + 1, c)] != null) focusCell(r + 1, c); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (cw.sol[key(r - 1, c)] != null) focusCell(r - 1, c); }
+  };
+  const focusWord = (word) => {
+    setActiveDir(word.dir);
+    const empty = word.cells.find(ce => !(vals[key(ce.r, ce.c)]));
+    const target = empty || word.cells[0];
+    focusCell(target.r, target.c);
+  };
 
   const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
   useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
 
-  // When a crossword input is focused, scroll the grid into view so the
-  // keyboard doesn't hide it. Uses visualViewport when available.
   useEffect(() => {
     const scrollToFocused = () => {
       requestAnimationFrame(() => {
@@ -3216,7 +3289,18 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
               return (
                 <div key={k} style={{ position: "relative", width: CELL, height: CELL }}>
                   {cw.num[k] && <span style={{ position: "absolute", top: 0, left: 1, fontSize: 8, color: C.txtM, lineHeight: 1 }}>{cw.num[k]}</span>}
-                  <input value={v} onChange={e => { const ch = Array.from(e.target.value).slice(-1)[0] || ""; setVals(s => ({ ...s, [k]: ch })); setChecked(false); }}
+                  <input ref={el => { inputRefs.current[k] = el; }} value={v}
+                    onFocus={() => handleFocus(r, c)} onClick={() => handleCellClick(r, c)}
+                    onKeyDown={e => handleKeyDown(e, r, c)}
+                    onCompositionStart={() => { composingRef.current = true; }}
+                    onCompositionEnd={() => { composingRef.current = false; setTimeout(() => advanceFrom(r, c), 10); }}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      const ch = Array.from(raw).slice(-1)[0] || "";
+                      const val = isKorean ? ch : stripAccents(ch).toUpperCase();
+                      setVals(s => ({ ...s, [k]: val })); setChecked(false);
+                      if (!composingRef.current && !isKorean && val) setTimeout(() => advanceFrom(r, c), 0);
+                    }}
                     style={{ width: CELL, height: CELL, textAlign: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bad ? C.warn : right ? C.ok : C.borderS}`, borderRadius: 4, background: bad ? C.warnBg : right ? C.okBg : "#fff", color: C.txt, outline: "none", padding: 0 }} />
                 </div>
               );
@@ -3231,13 +3315,13 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
           {across.length > 0 && (
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossAcross}</div>
-              {across.map(p => <div key={p.id} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3 }}><b>{p.num}.</b> {p.clue}</div>)}
+              {across.map(p => <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer" }}><b>{p.num}.</b> {p.clue}</div>)}
             </div>
           )}
           {down.length > 0 && (
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossDown}</div>
-              {down.map(p => <div key={p.id} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3 }}><b>{p.num}.</b> {p.clue}</div>)}
+              {down.map(p => <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer" }}><b>{p.num}.</b> {p.clue}</div>)}
             </div>
           )}
         </div>

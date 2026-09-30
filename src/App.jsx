@@ -117,6 +117,9 @@ const T = {
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Générer la définition", genTargetDescDone: "Définition générée !",
+    exGender: "Le ou La ?", exGenderDesc: "Choisis le bon article pour chaque nom.",
+    genderQuestion: "Masculin ou féminin ?", genderDone: "Bravo !",
+    genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     exRandom: "Au hasard",
     exMusicOn: "Musique", exMusicOff: "Musique",
     progressTitle: "Progression", progressGlobal: "Global",
@@ -412,6 +415,9 @@ const T = {
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Generate definition", genTargetDescDone: "Definition generated!",
+    exGender: "Le or La?", exGenderDesc: "Pick the correct article for each noun.",
+    genderQuestion: "Masculine or feminine?", genderDone: "Well done!",
+    genderScore: (c, t) => `${c}/${t} correct`,
     exRandom: "Random",
     exMusicOn: "Music", exMusicOff: "Music",
     progressTitle: "Progress", progressGlobal: "Overall",
@@ -932,6 +938,7 @@ ALREADY KNOWN (skip these): ${known || "none"}
 For each item provide:
 - "word": the word/expression (dictionary form if inflected)
 - "reading": pronunciation/romanization if helpful (or "")
+- "gender": for nouns in gendered languages (French, German, etc.), "m" for masculine, "f" for feminine, "n" for neuter; "" for verbs/adjectives/other
 - "meaning_fr": short French meaning
 - "meaning_en": short English meaning
 - "description_target": a clear, natural monolingual definition in ${TL} (as in a ${TL}-${TL} dictionary for learners, NOT a translation)
@@ -1066,7 +1073,7 @@ async function quickTranslateWord(word, lang, tlCode) {
   const L = lang === "fr" ? "French" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
-Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
+Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","gender":"<for nouns in gendered languages: m/f/n; empty string for non-nouns>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
   return parseJSON((await callAI(sys, `Word: ${word}`, 3000)).text);
 }
 
@@ -3093,6 +3100,126 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
+// #60 — Gender exercise (FLE): pick Le/La for French nouns.
+function GenderExercise({ cards, tFont, t, lang, onComplete, onExit, onSaveGenders }) {
+  const [items, setItems] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [idx, setIdx] = useState(0);
+  const [score, setScore] = useState({ correct: 0, wrong: 0 });
+  const [feedback, setFeedback] = useState(null);
+  const [awarded, setAwarded] = useState(false);
+
+  useEffect(() => {
+    const vocabCards = cards.filter(c => c.type === "vocab" && (c.korean || "").trim());
+    if (!vocabCards.length) { setLoading(false); return; }
+    const withGender = vocabCards.filter(c => c.gender);
+    if (withGender.length >= 5) {
+      setItems(shuffle(withGender.map(c => ({ id: c.id, word: c.korean, gender: c.gender, desc: c.description || "" }))));
+      setLoading(false);
+      return;
+    }
+    const batch = shuffle(vocabCards).slice(0, 12);
+    const wordList = batch.map(c => c.korean).join(", ");
+    const sys = `You are a French grammar expert. For each French word below, determine its grammatical gender.
+Return ONLY a JSON array of objects: [{"word":"...","gender":"m" or "f","article":"le" or "la"}]
+Use "m" for masculine and "f" for feminine. For words starting with a vowel or silent h, still specify the underlying gender.
+Words: ${wordList}`;
+    callAI(sys, `Determine gender: ${wordList}`, 1000)
+      .then(res => {
+        const genders = parseJSON(res.text);
+        if (!Array.isArray(genders)) throw new Error("bad response");
+        const gMap = {};
+        genders.forEach(g => { gMap[(g.word || "").trim().toLowerCase()] = g.gender; });
+        const result = batch.map(c => {
+          const g = gMap[c.korean.trim().toLowerCase()];
+          return g ? { id: c.id, word: c.korean, gender: g, desc: c.description || "" } : null;
+        }).filter(Boolean);
+        if (result.length > 0) {
+          onSaveGenders(result.map(r => ({ id: r.id, gender: r.gender })));
+          setItems(shuffle(result));
+        }
+        setLoading(false);
+      })
+      .catch(e => { console.error("Gender fetch error:", e); setLoading(false); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const done = items && idx >= items.length;
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+
+  const answer = (picked) => {
+    const item = items[idx];
+    const correct = item.gender === picked;
+    setScore(s => correct ? { ...s, correct: s.correct + 1 } : { ...s, wrong: s.wrong + 1 });
+    setFeedback({ correct, answer: item.gender === "m" ? "masculin" : "féminin", article: item.gender === "m" ? "le" : "la", word: item.word });
+    setTimeout(() => { setFeedback(null); setIdx(i => i + 1); }, correct ? 800 : 1800);
+  };
+
+  const restart = () => { setIdx(0); setScore({ correct: 0, wrong: 0 }); setFeedback(null); setItems(i => shuffle([...i])); setAwarded(false); };
+
+  if (loading) return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.txtM, fontSize: 13 }}>
+      {t.searching || "..."}
+    </div>
+  );
+
+  if (!items || !items.length) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>🔤</div><div>{t.exNeedWords}</div>
+      <button onClick={onExit} style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${C.borderS}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 }}>← {t.back}</button>
+    </div>
+  );
+
+  if (done) return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24 }}>
+      <div style={{ fontSize: 30 }}>🎉</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.genderDone}</div>
+      <div style={{ fontSize: 13, color: C.txtS }}>{t.genderScore(score.correct, items.length)}</div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        <button onClick={restart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>↻ {t.exRestart}</button>
+        <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>← {t.back}</button>
+      </div>
+    </div>
+  );
+
+  const item = items[idx];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🔤 {t.exGender} · {idx + 1}/{items.length}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+      </div>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 24 }}>
+        <div style={{ fontSize: 13, color: C.txtM }}>{t.genderQuestion}</div>
+        <div style={{ fontSize: 32, fontFamily: tFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{item.word}</div>
+        {item.desc && <div style={{ fontSize: 12, color: C.txtS, textAlign: "center", maxWidth: 300 }}>{item.desc}</div>}
+        {feedback ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 40 }}>{feedback.correct ? "✅" : "❌"}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: feedback.correct ? C.ok : C.warn }}>
+              {feedback.article} {feedback.word} ({feedback.answer})
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 16 }}>
+            <button onClick={() => answer("m")}
+              style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid #3B82F6`, background: "#EFF6FF", color: "#1D4ED8", fontFamily: "'Plus Jakarta Sans'", fontSize: 18, fontWeight: 700, cursor: "pointer", minWidth: 100 }}>
+              Le
+            </button>
+            <button onClick={() => answer("f")}
+              style={{ padding: "14px 32px", borderRadius: 12, border: `2px solid #EC4899`, background: "#FDF2F8", color: "#BE185D", fontFamily: "'Plus Jakarta Sans'", fontSize: 18, fontWeight: 700, cursor: "pointer", minWidth: 100 }}>
+              La
+            </button>
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: C.txtM }}>
+          ✅ {score.correct} · ❌ {score.wrong}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // #67 — Crossword built from the selected words + their definitions as clues.
 function isHangulWord(s) {
   if (!s) return false;
@@ -4131,6 +4258,7 @@ function AppInner() {
     description: lang === "fr" ? v.meaning_fr : v.meaning_en,
     description_fr: v.meaning_fr, description_en: v.meaning_en,
     description_target: v.description_target || "",
+    gender: v.gender || "",
     example_kr: v.example_kr || "",
     example_tr: lang === "fr" ? v.example_fr : v.example_en,
     reading: v.reading || "",
@@ -4357,6 +4485,7 @@ function AppInner() {
           description_fr: info.description_fr || "", description_en: info.description_en || "",
           description: lang === "fr" ? (info.description_fr || "") : (info.description_en || ""),
           description_target: info.description_target || "",
+          gender: info.gender || "",
           example_kr: info.example_kr || "", example_tr: lang === "fr" ? (info.example_fr || "") : (info.example_en || ""),
         };
       } catch (e) { console.error("quick translate error:", e); }
@@ -5428,6 +5557,11 @@ function AppInner() {
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                                   <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
+                                  {ex.gender && (
+                                    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: ex.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: ex.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${ex.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
+                                      {ex.gender === "m" ? "masc." : ex.gender === "f" ? "fém." : "n."}
+                                    </span>
+                                  )}
                                   {tl === "ko" && ex.type === "vocab" && ex.formality && t.formality[ex.formality] && (
                                     <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
                                       {t.formalityLabel} · {t.formality[ex.formality]}
@@ -5708,6 +5842,11 @@ function AppInner() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
                     <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt }}>{recapCard.korean}</div>
+                    {recapCard.gender && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: recapCard.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: recapCard.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${recapCard.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
+                        {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>{recapCard.description}</div>
                   <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px" }}>
@@ -6113,6 +6252,7 @@ function AppInner() {
                     {(exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
+                      ...(tl === "fr" ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true, ai: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true, ai: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [
@@ -6216,6 +6356,15 @@ function AppInner() {
               <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("match", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "cross" ? (
               <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("cross", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
+            ) : exMode === "gender" ? (
+              <GenderExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang}
+                onComplete={() => completeExercise("gender", [...exSel])}
+                onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }}
+                onSaveGenders={(genders) => {
+                  const gMap = {};
+                  genders.forEach(g => { gMap[g.id] = g.gender; });
+                  save({ ...data, cards: data.cards.map(c => gMap[c.id] ? { ...c, gender: gMap[c.id] } : c) });
+                }} />
             ) : exMode === "flash" ? (
               <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (

@@ -5522,7 +5522,13 @@ function AppInner() {
               </div>
             </div>
             {filteredCards.length === 0
-              ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13 }}>{t.noCards}</div>
+              ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+                  <div>{t.noCards}</div>
+                  <button onClick={() => navTo("import")}
+                    style={{ padding: "10px 22px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                    📝 {t.import}
+                  </button>
+                </div>
               : libView === "sources"
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} />
                 : libView === "grid"
@@ -6206,7 +6212,14 @@ function AppInner() {
                 </>)}
               </div>
             </div>
-          ) : <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.txtM, fontSize: 13, flexDirection: "column", gap: 8 }}><div style={{ fontSize: 32 }}>📖</div><div>{t.emptyLesson}</div></div>
+          ) : <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.txtM, fontSize: 13, flexDirection: "column", gap: 12 }}>
+                <div style={{ fontSize: 32 }}>📖</div>
+                <div>{t.emptyLesson}</div>
+                <button onClick={() => navTo("import")}
+                  style={{ padding: "10px 22px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+                  📝 {t.import}
+                </button>
+              </div>
         )}
 
         {/* EXERCISE */}

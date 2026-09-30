@@ -690,6 +690,10 @@ const TARGET_LANGS = {
     font: "'Noto Sans KR'",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     promptExtra: "For online resources, suggest Naver Blog, Korean variety shows, webtoons. For level references, use TOPIK scale.",
+    placeholders: {
+      fr: { dream: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coréen...", level: "ex: Débutant, connaît l'alphabet et les bases / TOPIK 3 / CECRL A2...", goals: "ex: Pouvoir lire des articles de blog sans dictionnaire, comprendre les paroles de chansons, passer TOPIK 4..." },
+      en: { dream: "e.g. Chat for hours with my in-laws without a translator. Read Han Kang in the original. Do stand-up in Korean...", level: "e.g. Beginner, knows the alphabet and basics / TOPIK 3 / CEFR A2...", goals: "e.g. Read blog articles without a dictionary, understand song lyrics, pass TOPIK 4..." },
+    },
   },
   fr: {
     flag: "🇫🇷", nativeName: "Français",
@@ -697,6 +701,10 @@ const TARGET_LANGS = {
     font: null,
     placeholder: "Les enfants adorent jouer dans le parc, surtout quand il fait beau. Ma voisine m'a dit qu'elle avait hâte de partir en vacances...",
     promptExtra: "For online resources, suggest TV5Monde, RFI Savoirs, Le Monde, Bescherelle. For level references, use CEFR scale (A1-C2). The student is learning French as a foreign language (FLE).",
+    placeholders: {
+      fr: { dream: "ex: Commander au restaurant sans stresser. Lire Victor Hugo en V.O. Comprendre les films sans sous-titres. Vivre en France...", level: "ex: Débutant A1 / Intermédiaire B1 / DELF B2 / CECRL A2...", goals: "ex: Réussir le DELF B2, tenir une conversation fluide, lire Le Monde sans dictionnaire..." },
+      en: { dream: "e.g. Order at a restaurant without stress. Read Victor Hugo in the original. Watch French movies without subtitles. Live in France...", level: "e.g. Beginner A1 / Intermediate B1 / DELF B2 / CEFR A2...", goals: "e.g. Pass DELF B2, hold a fluent conversation, read Le Monde without a dictionary..." },
+    },
   },
   // de: {
   //   flag: "🇩🇪", nativeName: "Deutsch",
@@ -4703,6 +4711,7 @@ function AppInner() {
       const summary = {
         id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
         cardKorean: lCard.korean,
+        targetLang: lCard.targetLang || tl || "ko",
         grammarRecap: result.grammarRecap || "",
         structuresLearned: result.structuresLearned || "",
         mistakesMade: result.mistakesMade || "",
@@ -5144,6 +5153,7 @@ function AppInner() {
   if (langProfileEdit && langProfileDraft) {
     const lpCode = langProfileEdit;
     const lpConf = TARGET_LANGS[lpCode] || {};
+    const lpPh = lpConf.placeholders?.[lang] || lpConf.placeholders?.en || {};
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
     const saveLangProfile = () => {
       const lps = { ...(data.langProfiles || {}), [lpCode]: { ...langProfileDraft } };
@@ -5165,15 +5175,15 @@ function AppInner() {
           )}
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{"✨ " + t.langDreamLabel}</label>
-            <textarea value={langProfileDraft.dream || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, dream: e.target.value })} placeholder={t.dreamPlaceholder} rows={3} style={box} />
+            <textarea value={langProfileDraft.dream || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, dream: e.target.value })} placeholder={lpPh.dream || t.dreamPlaceholder} rows={3} style={box} />
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langLevelLabel}</label>
-            <input value={langProfileDraft.level || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, level: e.target.value })} placeholder={t.levelPlaceholder} style={box} />
+            <input value={langProfileDraft.level || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, level: e.target.value })} placeholder={lpPh.level || t.levelPlaceholder} style={box} />
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langGoalsLabel}</label>
-            <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={t.goalsPlaceholder} rows={2} style={box} />
+            <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={lpPh.goals || t.goalsPlaceholder} rows={2} style={box} />
           </div>
           <div>
             <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langToolsLabel}</label>
@@ -6855,11 +6865,12 @@ function AppInner() {
               </div>
 
               {/* Per-language profile section */}
-              {langProfDraft && (
-                <>
+              {langProfDraft && (() => {
+                const tlPh = TARGET_LANGS[tl]?.placeholders?.[lang] || TARGET_LANGS[tl]?.placeholders?.en || {};
+                return <>
                   <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, marginTop: 4 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 2 }}>
-                      {(TARGET_LANGS[tl]?.flag || "")} {t.langProfileTitle(TARGET_LANGS[tl]?.flag || "", TARGET_LANGS[tl]?.name?.[lang] || tl)}
+                      {t.langProfileTitle(TARGET_LANGS[tl]?.flag || "", TARGET_LANGS[tl]?.name?.[lang] || tl)}
                     </div>
                     <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginBottom: 12 }}>{t.langProfileSub}</div>
                   </div>
@@ -6878,21 +6889,21 @@ function AppInner() {
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{"✨ " + t.langDreamLabel}</label>
                     <textarea value={langProfDraft.dream || ""} onChange={e => setLangProfDraft({ ...langProfDraft, dream: e.target.value })}
-                      placeholder={t.dreamPlaceholder} rows={2} style={fieldStyle} />
+                      placeholder={tlPh.dream || t.dreamPlaceholder} rows={2} style={fieldStyle} />
                     {savedTag("lp_dream")}
                   </div>
 
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langLevelLabel}</label>
                     <input value={langProfDraft.level || ""} onChange={e => setLangProfDraft({ ...langProfDraft, level: e.target.value })}
-                      placeholder={t.levelPlaceholder} style={fieldStyle} />
+                      placeholder={tlPh.level || t.levelPlaceholder} style={fieldStyle} />
                     {savedTag("lp_level")}
                   </div>
 
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langGoalsLabel}</label>
                     <textarea value={langProfDraft.goals || ""} onChange={e => setLangProfDraft({ ...langProfDraft, goals: e.target.value })}
-                      placeholder={t.goalsPlaceholder} rows={2} style={fieldStyle} />
+                      placeholder={tlPh.goals || t.goalsPlaceholder} rows={2} style={fieldStyle} />
                     {savedTag("lp_goals")}
                   </div>
 
@@ -6916,24 +6927,31 @@ function AppInner() {
                       {langProfDraft.notes || t.teacherNotesEmpty}
                     </div>
                   </div>
-                </>
-              )}
+                </>;
+              })()}
 
               <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
                 💡 {t.profileAutoUpdate}
               </div>
 
-              {/* Lesson history */}
-              {(data.summaries || []).length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: C.txt, marginBottom: 10 }}>{t.summaryHistory}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {[...(data.summaries || [])].reverse().map((s, i) => (
-                      <SummaryCard key={s.id || i} summary={s} t={t} lang={lang} />
-                    ))}
+              {/* Lesson history (filtered by current target language) */}
+              {(() => {
+                const tlSummaries = (data.summaries || []).filter(s => {
+                  if (s.targetLang) return s.targetLang === tl;
+                  const card = data.cards.find(c => c.korean === s.cardKorean);
+                  return (card?.targetLang || "ko") === tl;
+                });
+                return tlSummaries.length > 0 ? (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: C.txt, marginBottom: 10 }}>{t.summaryHistory}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {[...tlSummaries].reverse().map((s, i) => (
+                        <SummaryCard key={s.id || i} summary={s} t={t} lang={lang} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
           </div>
         )}

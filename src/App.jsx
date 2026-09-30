@@ -3327,7 +3327,12 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
                       const raw = e.target.value;
                       const chars = Array.from(raw);
                       if (isKorean && chars.length > 1) {
-                        setVals(s => ({ ...s, [k]: chars[0] })); setChecked(false);
+                        const cur = chars[0], nxt = chars[chars.length - 1];
+                        const dir = activeDirRef.current;
+                        const nr = dir === "v" ? r + 1 : r, nc = dir === "h" ? c + 1 : c;
+                        const nk = key(nr, nc);
+                        setVals(s => { const u = { ...s, [k]: cur }; if (cw.sol[nk] != null) u[nk] = nxt; return u; });
+                        setChecked(false);
                         setTimeout(() => advanceFrom(r, c), 0);
                       } else {
                         const ch = chars[chars.length - 1] || "";

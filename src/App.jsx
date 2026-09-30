@@ -115,7 +115,8 @@ const T = {
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
     crossAcross: "Horizontal", crossDown: "Vertical",
-    crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire",
+    crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
+    genTargetDesc: "Générer la définition", genTargetDescDone: "Définition générée !",
     exRandom: "Au hasard",
     exMusicOn: "Musique", exMusicOff: "Musique",
     progressTitle: "Progression", progressGlobal: "Global",
@@ -409,7 +410,8 @@ const T = {
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
     crossAcross: "Across", crossDown: "Down",
-    crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory",
+    crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
+    genTargetDesc: "Generate definition", genTargetDescDone: "Definition generated!",
     exRandom: "Random",
     exMusicOn: "Music", exMusicOff: "Music",
     progressTitle: "Progress", progressGlobal: "Overall",
@@ -900,6 +902,7 @@ For each structure, provide:
 - "type": "grammar" for a grammatical structure/pattern, or "vocab" for a lexical item (word, set phrase, idiom)
 - "description_fr": one clear sentence in French explaining what it means and when to use it
 - "description_en": same in English
+- "description_target": a clear, natural monolingual definition in ${TL} (as in a ${TL}-${TL} dictionary for learners, NOT a translation)
 - "example_kr": the exact sentence from the text where this structure appears
 - "example_fr": natural French translation of that sentence
 - "example_en": natural English translation of that sentence
@@ -931,6 +934,7 @@ For each item provide:
 - "reading": pronunciation/romanization if helpful (or "")
 - "meaning_fr": short French meaning
 - "meaning_en": short English meaning
+- "description_target": a clear, natural monolingual definition in ${TL} (as in a ${TL}-${TL} dictionary for learners, NOT a translation)
 - "example_kr": the sentence from the text where it appears
 - "example_fr": French translation of that sentence
 - "example_en": English translation of that sentence
@@ -1062,8 +1066,20 @@ async function quickTranslateWord(word, lang, tlCode) {
   const L = lang === "fr" ? "French" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
-Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
+Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
   return parseJSON((await callAI(sys, `Word: ${word}`, 3000)).text);
+}
+
+async function generateTargetDescription(card, tlCode) {
+  const TL = getTargetLangName(tlCode, "en");
+  const desc = card.description_fr || card.description_en || card.description || "";
+  const sys = `You are a ${TL} language expert writing a monolingual definition.
+Write a clear, natural definition of "${card.korean}" IN ${TL} ONLY.
+This is NOT a translation. Write a real definition as you would find in a ${TL}-${TL} dictionary, suitable for a language learner.
+Keep it to one or two sentences. Use simple, natural ${TL}.
+${desc ? `Context (for your understanding only, do NOT translate this): ${desc}` : ""}
+Return ONLY JSON: {"description_target":"<the ${TL} definition>"}`;
+  return parseJSON((await callAI(sys, `Define in ${TL}: ${card.korean}`, 800)).text);
 }
 
 // Register variants of a Korean word: the formal vs casual way to express the same idea.
@@ -3113,7 +3129,7 @@ function buildCrossword(words) {
       grid[key(rr, cc)] = w.syl[i];
       cells.push({ r: rr, c: cc, ch: w.syl[i] });
     }
-    placed.push({ id: w.id, clue: w.clue, answer: w.answer, cells, dir, r, c });
+    placed.push({ id: w.id, clue: w.clue, clueTarget: w.clueTarget, answer: w.answer, cells, dir, r, c });
   };
   const sorted = [...words].sort((a, b) => b.syl.length - a.syl.length);
   if (!sorted.length) return { placed: [], sol: {}, rows: 0, cols: 0 };
@@ -3159,7 +3175,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
         const raw = c.korean.trim();
         const hangul = Array.from(raw).every(ch => isHangulChar(ch));
         const display = hangul ? raw : stripAccents(raw).toUpperCase();
-        return { id: c.id, answer: display, clue: (c.description || "").trim(), syl: Array.from(display), hangul };
+        return { id: c.id, answer: display, clue: (c.description || "").trim(), clueTarget: (c.description_target || "").trim(), syl: Array.from(display), hangul };
       });
     return shuffle(w).slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3169,7 +3185,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const [vals, setVals] = useState({});
   const [checked, setChecked] = useState(false);
   const [awarded, setAwarded] = useState(false);
-  const [showWords, setShowWords] = useState(true);
+  const [clueMode, setClueMode] = useState("words");
   const [activeDir, _setActiveDir] = useState("h");
   const activeDirRef = useRef("h");
   const setActiveDir = (d) => { const v = typeof d === "function" ? d(activeDirRef.current) : d; _setActiveDir(v); activeDirRef.current = v; };
@@ -3374,16 +3390,16 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
         {solved && (
           <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, color: C.ok, fontSize: 13, fontWeight: 600 }}>🎉 {t.crossSolved}</div>
         )}
-        <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, alignSelf: "flex-start" }}>
-          {[[true, t.crossLvl1], [false, t.crossLvl2]].map(([v, label]) => (
-            <button key={String(v)} onClick={() => setShowWords(v)}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: showWords === v ? C.s2 : "transparent", color: showWords === v ? C.acc : C.txtM, fontWeight: showWords === v ? 600 : 400, boxShadow: showWords === v ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
+        <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, alignSelf: "flex-start", flexWrap: "wrap" }}>
+          {[["words", t.crossLvl1], ["memory", t.crossLvl2], ["target", t.crossLvl3]].map(([v, label]) => (
+            <button key={v} onClick={() => setClueMode(v)}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", background: clueMode === v ? C.s2 : "transparent", color: clueMode === v ? C.acc : C.txtM, fontWeight: clueMode === v ? 600 : 400, boxShadow: clueMode === v ? "0 1px 3px rgba(0,0,0,0.06)" : "none" }}>
               {label}
             </button>
           ))}
         </div>
         <div style={{ fontSize: 11, color: C.txtM }}>{t.crossHint}</div>
-        {showWords && (
+        {clueMode === "words" && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {bank.map((w, i) => (
               <span key={i} style={{ padding: "4px 10px", borderRadius: 14, background: C.accBg, color: C.acc, fontFamily: tFont, fontSize: 13, border: `1px solid ${C.border}` }}>{w}</span>
@@ -3430,13 +3446,21 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
           {across.length > 0 && (
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossAcross}</div>
-              {across.map(p => <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer" }}><b>{p.num}.</b> {p.clue}</div>)}
+              {across.map(p => {
+                const clueText = clueMode === "target" && p.clueTarget ? p.clueTarget : p.clue;
+                const isTarget = clueMode === "target" && p.clueTarget;
+                return <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer", fontFamily: isTarget ? tFont : undefined, fontStyle: isTarget ? "italic" : undefined }}><b>{p.num}.</b> {clueText}{clueMode === "target" && !p.clueTarget ? <span style={{ color: C.txtM, fontSize: 10 }}> ({t.genTargetDesc})</span> : null}</div>;
+              })}
             </div>
           )}
           {down.length > 0 && (
             <div style={{ minWidth: 160, flex: 1 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 5 }}>{t.crossDown}</div>
-              {down.map(p => <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer" }}><b>{p.num}.</b> {p.clue}</div>)}
+              {down.map(p => {
+                const clueText = clueMode === "target" && p.clueTarget ? p.clueTarget : p.clue;
+                const isTarget = clueMode === "target" && p.clueTarget;
+                return <div key={p.id} onClick={() => focusWord(p)} style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.5, marginBottom: 3, cursor: "pointer", fontFamily: isTarget ? tFont : undefined, fontStyle: isTarget ? "italic" : undefined }}><b>{p.num}.</b> {clueText}{clueMode === "target" && !p.clueTarget ? <span style={{ color: C.txtM, fontSize: 10 }}> ({t.genTargetDesc})</span> : null}</div>;
+              })}
             </div>
           )}
         </div>
@@ -4106,6 +4130,7 @@ function AppInner() {
     korean: v.word, type: "vocab",
     description: lang === "fr" ? v.meaning_fr : v.meaning_en,
     description_fr: v.meaning_fr, description_en: v.meaning_en,
+    description_target: v.description_target || "",
     example_kr: v.example_kr || "",
     example_tr: lang === "fr" ? v.example_fr : v.example_en,
     reading: v.reading || "",
@@ -4177,6 +4202,7 @@ function AppInner() {
     korean: p.korean, type: normType(p.type),
     description: lang === "fr" ? p.description_fr : p.description_en,
     description_fr: p.description_fr, description_en: p.description_en,
+    description_target: p.description_target || "",
     example_kr: p.example_kr,
     example_tr: lang === "fr" ? p.example_fr : p.example_en,
     tags: p.category ? [p.category.toLowerCase().trim()] : [],
@@ -4330,6 +4356,7 @@ function AppInner() {
         extra = {
           description_fr: info.description_fr || "", description_en: info.description_en || "",
           description: lang === "fr" ? (info.description_fr || "") : (info.description_en || ""),
+          description_target: info.description_target || "",
           example_kr: info.example_kr || "", example_tr: lang === "fr" ? (info.example_fr || "") : (info.example_en || ""),
         };
       } catch (e) { console.error("quick translate error:", e); }
@@ -5407,7 +5434,24 @@ function AppInner() {
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>{ex.description}</div>
+                                <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.description_target ? 4 : (ex.example_kr ? 8 : 10) }}>{ex.description}</div>
+                                {ex.description_target ? (
+                                  <div style={{ fontSize: 12, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.5, marginBottom: ex.example_kr ? 8 : 10, padding: "4px 8px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>{ex.description_target}</div>
+                                ) : (
+                                  <button onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const btn = e.currentTarget; btn.disabled = true; btn.textContent = "...";
+                                    try {
+                                      const res = await generateTargetDescription(ex, ex.targetLang || tl);
+                                      if (res.description_target) {
+                                        save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, description_target: res.description_target } : x) });
+                                        btn.textContent = t.genTargetDescDone;
+                                      }
+                                    } catch (err) { console.error(err); btn.textContent = "Error"; }
+                                  }} style={{ padding: "3px 10px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", marginBottom: ex.example_kr ? 8 : 10 }}>
+                                    + {t.genTargetDesc}
+                                  </button>
+                                )}
                                 {ex.example_kr && (
                                   <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
                                     <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>

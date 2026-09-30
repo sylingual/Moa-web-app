@@ -216,6 +216,10 @@ const T = {
     deleteConfirmMsg: (k) => `« ${k} » sera supprimée définitivement, ainsi que ses récaps.`,
     deleteBtn: "Supprimer", cancelBtn: "Annuler",
     filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
+    filterByTag: "Filtrer par tag", allTags: "Tous les tags",
+    addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum",
+    tagPlaceholder: "Nouveau tag...", tagSuggested: "Suggere",
+    noTags: "Aucun tag",
     restudyText: "Réétudier ce texte",
     sourcesNone: "Sans texte d'origine",
     pointsFromText: "Points associés",
@@ -491,6 +495,10 @@ const T = {
     deleteConfirmMsg: (k) => `"${k}" will be permanently deleted, along with its recaps.`,
     deleteBtn: "Delete", cancelBtn: "Cancel",
     filterAll: "All", filterGrammar: "Grammar", filterVocab: "Vocab",
+    filterByTag: "Filter by tag", allTags: "All tags",
+    addTag: "Add tag", removeTag: "Remove", tagMax: "3 tags max",
+    tagPlaceholder: "New tag...", tagSuggested: "Suggested",
+    noTags: "No tags",
     restudyText: "Study this text again",
     sourcesNone: "No source text",
     pointsFromText: "Associated points",
@@ -858,6 +866,7 @@ For each structure, provide:
 - "example_kr": the exact sentence from the text where this structure appears
 - "example_fr": natural French translation of that sentence
 - "example_en": natural English translation of that sentence
+- "category": a short thematic tag (1-3 words) classifying this item, e.g. "emotions", "travel", "formal speech", "time expressions", "causality", "food", "politeness". Pick the most natural theme.
 
 Return a JSON array of exactly 3 items.`;
   return parseJSON((await callAI(sys, text)).text);
@@ -888,6 +897,7 @@ For each item provide:
 - "example_kr": the sentence from the text where it appears
 - "example_fr": French translation of that sentence
 - "example_en": English translation of that sentence
+- "category": a short thematic tag (1-3 words) classifying this word, e.g. "emotions", "food", "nature", "daily life", "work", "body". Pick the most natural theme.
 
 Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text)).text);
@@ -1380,6 +1390,7 @@ Return JSON:
   "structuresLearned": "Internal: what the student demonstrated understanding of",
   "mistakesMade": "Internal: specific errors or confusions",
   "nextSteps": "Internal: what to work on next",
+  "category": "a short thematic tag (1-3 words) classifying this structure or word, e.g. 'emotions', 'travel', 'formal speech', 'time expressions', 'causality', 'food', 'politeness'. Pick the most natural theme based on the lesson content.",
   "formality": "ONLY for a Korean VOCABULARY WORD (card type 'vocab', target language Korean): the word's usual register, exactly one of 'casual' (everyday/informal speech), 'neutral' (standard, works in most contexts), or 'formal' (formal/polite/honorific or written register). Empty string for grammar structures, non-vocab, or non-Korean.",
   "profileInsights": {
     "interests": "New interests mentioned. Empty string if none.",
@@ -1900,9 +1911,40 @@ function LanguagesTable({ value, onChange, t }) {
   );
 }
 
-function GrammarCard({ card, t, onToggle, onReview, onDelete }) {
+function TagPicker({ cardId, existingTags, allTags, onAdd, onClose, t }) {
+  const [inp, setInp] = useState("");
+  const available = allTags.filter(tag => !existingTags.includes(tag));
+  const filtered = inp.trim() ? available.filter(tag => tag.includes(inp.toLowerCase().trim())) : available;
+  const canAddCustom = inp.trim() && !existingTags.includes(inp.toLowerCase().trim()) && existingTags.length < 3;
+  return (
+    <div onClick={e => e.stopPropagation()} style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px", marginBottom: 8 }}>
+      <input value={inp} onChange={e => setInp(e.target.value)} placeholder={t.tagPlaceholder}
+        onKeyDown={e => { if (e.key === "Enter" && canAddCustom) { onAdd(cardId, inp.trim()); setInp(""); } }}
+        autoFocus
+        style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s2, outline: "none", boxSizing: "border-box", marginBottom: 6 }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+        {canAddCustom && !filtered.includes(inp.toLowerCase().trim()) && (
+          <button onClick={() => { onAdd(cardId, inp.trim()); setInp(""); }}
+            style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 500 }}>
+            + {inp.trim().toLowerCase()}
+          </button>
+        )}
+        {filtered.slice(0, 12).map(tag => (
+          <button key={tag} onClick={() => { onAdd(cardId, tag); setInp(""); }}
+            style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            #{tag}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GrammarCard({ card, t, onToggle, onReview, onDelete, onAddTag, onRemoveTag, allTags, tagEditId, onTagEditToggle }) {
   const si = statusInfo(card.status, t);
   const canToggle = card.status === "studied" || card.status === "acquired";
+  const tags = card.tags || [];
+  const isEditing = tagEditId === card.id;
   return (
     <div onClick={onReview}
       style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, position: "relative", overflow: "hidden", cursor: "pointer", transition: "transform 0.12s, box-shadow 0.12s" }}
@@ -1941,6 +1983,24 @@ function GrammarCard({ card, t, onToggle, onReview, onDelete }) {
         <div style={{ fontSize: 10, color: C.acc, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
           <span style={{ opacity: 0.6 }}>↳</span> {t.derivedFrom} <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 500 }}>{card.parentKorean}</span>
         </div>
+      )}
+      {/* Tags */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8, alignItems: "center" }}>
+        {tags.map(tag => (
+          <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+            #{tag}
+            {isEditing && <span onClick={e => { e.stopPropagation(); onRemoveTag(card.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+          </span>
+        ))}
+        {tags.length < 3 && (
+          <button onClick={e => { e.stopPropagation(); onTagEditToggle(card.id); }}
+            style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            + {t.addTag}
+          </button>
+        )}
+      </div>
+      {isEditing && (
+        <TagPicker cardId={card.id} existingTags={tags} allTags={allTags} onAdd={onAddTag} onClose={() => onTagEditToggle(null)} t={t} />
       )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: 11, color: C.txtM }}>{card.source || ""}</span>
@@ -2839,7 +2899,11 @@ function AppInner() {
   const [view, setView] = useState("library");
   const [libView, setLibView] = useState("grid");
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab" (library)
+  const [libTagFilter, setLibTagFilter] = useState(null); // null = all, string = specific tag
   const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
+  const [exTagFilter, setExTagFilter] = useState(null); // null = all, string = specific tag
+  const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
+  const [tagInput, setTagInput] = useState("");
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
@@ -2952,17 +3016,25 @@ function AppInner() {
 
   // Filter cards by current target language, sorted by status priority
   const allCards = data.cards || [];
+  // Collect all unique tags across cards for the current target language
+  const allTags = useMemo(() => {
+    const tags = new Set();
+    const tlCards = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
+    tlCards.forEach(c => (c.tags || []).forEach(tag => tags.add(tag)));
+    return [...tags].sort();
+  }, [allCards, tl]);
   const filteredCards = useMemo(() => {
     let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
     if (libFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (libFilter === "grammar") base = base.filter(c => c.type !== "vocab");
+    if (libTagFilter) base = base.filter(c => (c.tags || []).includes(libTagFilter));
     const order = { in_progress: 0, new: 1, review: 1, studied: 2, acquired: 3 };
     return [...base].sort((a, b) => {
       const oa = order[migrateStatus(a.status)] ?? 4;
       const ob = order[migrateStatus(b.status)] ?? 4;
       return oa - ob;
     });
-  }, [allCards, tl, libFilter]);
+  }, [allCards, tl, libFilter, libTagFilter]);
   const revCount = filteredCards.filter(c => c.status === "new" || c.status === "review" || c.status === "in_progress").length;
   const studiedCount = filteredCards.filter(c => c.status === "studied").length;
   const acqCount = filteredCards.filter(c => c.status === "acquired").length;
@@ -2973,8 +3045,9 @@ function AppInner() {
     base = base.filter(c => c.status === "studied" || c.status === "acquired");
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
+    if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
     return base;
-  }, [allCards, tl, exFilter]);
+  }, [allCards, tl, exFilter, exTagFilter]);
   const context = useMemo(() => buildContext(data, lang), [data, lang]);
 
   // Load
@@ -3473,6 +3546,7 @@ function AppInner() {
     example_kr: v.example_kr || "",
     example_tr: lang === "fr" ? v.example_fr : v.example_en,
     reading: v.reading || "",
+    tags: v.category ? [v.category.toLowerCase().trim()] : [],
     status, source: "Import", articleText: impText, reviewCount: 0,
     targetLang: tl || "ko",
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
@@ -3542,6 +3616,7 @@ function AppInner() {
     description_fr: p.description_fr, description_en: p.description_en,
     example_kr: p.example_kr,
     example_tr: lang === "fr" ? p.example_fr : p.example_en,
+    tags: p.category ? [p.category.toLowerCase().trim()] : [],
     status, source: "Import", articleText: impText, reviewCount: 0,
     targetLang: tl || "ko",
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
@@ -3558,6 +3633,7 @@ function AppInner() {
       korean: word, type: "vocab",
       description: "", description_fr: "", description_en: "",
       example_kr: "", example_tr: "",
+      tags: [],
       status: "new", source: t.selectionSource, articleText: "", reviewCount: 0,
       targetLang: tl || "ko",
       date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
@@ -3869,6 +3945,7 @@ function AppInner() {
           description_fr: d.description_fr, description_en: d.description_en,
           example_kr: d.example_kr || "",
           example_tr: lang === "fr" ? d.example_fr : d.example_en,
+          tags: [],
           status: "review", source: "Derived",
           parentId: lCard.id, parentKorean: lCard.korean,
           targetLang: tl || "ko",
@@ -3879,12 +3956,15 @@ function AppInner() {
       const wasFirstTime = (data.cards.find(c => c.korean === lCard.korean)?.reviewCount || 0) === 0;
       const fmt = (result.formality || "").toLowerCase();
       const formality = ["casual", "neutral", "formal"].includes(fmt) ? fmt : "";
+      const aiCategory = (result.category || "").toLowerCase().trim();
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
         const f = formality || c.formality || "";
-        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f };
-        return { ...c, status: "studied", reviewCount: rc, formality: f };
+        const existingTags = c.tags || [];
+        const newTags = aiCategory && existingTags.length === 0 ? [aiCategory] : existingTags;
+        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f, tags: newTags };
+        return { ...c, status: "studied", reviewCount: rc, formality: f, tags: newTags };
       });
       const gain = wasFirstTime ? 20 : 10;
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
@@ -3940,6 +4020,26 @@ function AppInner() {
     try { const r = await continueChat(lCard, u, isRight ? "correct" : "incorrect, explain", lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("pickOpt error:", e); setConv([...u, aiError(e, () => pickOpt(i, opt))]); }
     setLLoad(false);
+  };
+
+  // Add or remove a tag on a card (max 3 tags per card).
+  const addTagToCard = (cardId, newTag) => {
+    const tg = (newTag || "").toLowerCase().trim();
+    if (!tg) return;
+    save({ ...data, cards: data.cards.map(c => {
+      if (c.id !== cardId) return c;
+      const tags = c.tags || [];
+      if (tags.length >= 3 || tags.includes(tg)) return c;
+      return { ...c, tags: [...tags, tg] };
+    }) });
+    setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: [...(prev.tags || []), tg].slice(0, 3) } : prev);
+  };
+  const removeTagFromCard = (cardId, tag) => {
+    save({ ...data, cards: data.cards.map(c => {
+      if (c.id !== cardId) return c;
+      return { ...c, tags: (c.tags || []).filter(tt => tt !== tag) };
+    }) });
+    setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: (prev.tags || []).filter(tt => tt !== tag) } : prev);
   };
 
   // Attach/reorder/remove images on a card (max 2; images[0] is the thumbnail shown in menus).
@@ -4681,6 +4781,14 @@ function AppInner() {
                     </button>
                   ))}
                 </div>
+                {/* Tag filter */}
+                {allTags.length > 0 && (
+                  <select value={libTagFilter || ""} onChange={e => setLibTagFilter(e.target.value || null)}
+                    style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: libTagFilter ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
+                    <option value="">{t.allTags}</option>
+                    {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
+                  </select>
+                )}
                 {/* View toggle */}
                 {filteredCards.length > 0 && (
                   <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
@@ -4742,6 +4850,24 @@ function AppInner() {
                                     <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>
                                     <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 2 }}>{ex.example_tr}</div>
                                   </div>
+                                )}
+                                {/* Tags */}
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8, alignItems: "center" }}>
+                                  {(ex.tags || []).map(tag => (
+                                    <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+                                      #{tag}
+                                      {tagEditCard === ex.id && <span onClick={() => removeTagFromCard(ex.id, tag)} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+                                    </span>
+                                  ))}
+                                  {(ex.tags || []).length < 3 && (
+                                    <button onClick={() => setTagEditCard(tagEditCard === ex.id ? null : ex.id)}
+                                      style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                      + {t.addTag}
+                                    </button>
+                                  )}
+                                </div>
+                                {tagEditCard === ex.id && (
+                                  <TagPicker cardId={ex.id} existingTags={ex.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
                                 )}
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                   <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
@@ -4981,6 +5107,26 @@ function AppInner() {
                     <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>
                     <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>
                   </div>
+                  {/* Tags on recap card */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
+                    {(recapCard.tags || []).map(tag => (
+                      <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+                        #{tag}
+                        {tagEditCard === recapCard.id && <span onClick={() => removeTagFromCard(recapCard.id, tag)} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+                      </span>
+                    ))}
+                    {(recapCard.tags || []).length < 3 && (
+                      <button onClick={() => setTagEditCard(tagEditCard === recapCard.id ? null : recapCard.id)}
+                        style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                        + {t.addTag}
+                      </button>
+                    )}
+                  </div>
+                  {tagEditCard === recapCard.id && (
+                    <div style={{ marginTop: 6 }}>
+                      <TagPicker cardId={recapCard.id} existingTags={recapCard.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
+                    </div>
+                  )}
                   {tl === "ko" && recapCard.type === "vocab" && (
                     <div style={{ marginTop: 10, padding: "10px 12px", background: C.s1, borderRadius: 8 }}>
                       {(recapCard.registerFormal || recapCard.registerCasual) ? (
@@ -5428,6 +5574,13 @@ function AppInner() {
                                 </button>
                               ))}
                             </div>
+                          )}
+                          {allTags.length > 0 && (
+                            <select value={exTagFilter || ""} onChange={e => setExTagFilter(e.target.value || null)}
+                              style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: exTagFilter ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
+                              <option value="">{t.allTags}</option>
+                              {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
+                            </select>
                           )}
                         </div>
                       </div>

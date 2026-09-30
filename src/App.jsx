@@ -3163,8 +3163,11 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const bank = useMemo(() => shuffle(cw.placed.map(p => p.answer)), [cw]);
   const key = (r, c) => r + "," + c;
   const gridRef = useRef(null);
-  const inputRefs = useRef({});
+  const hiddenRef = useRef(null);
   const composingRef = useRef(false);
+  const [cursorCell, setCursorCell] = useState(null);
+  const cursorRef = useRef(null);
+  const [composingText, setComposingText] = useState("");
 
   const cellWords = useMemo(() => {
     const m = {};
@@ -3178,56 +3181,96 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     return m;
   }, [cw]);
 
-  const focusCell = (r, c) => {
-    const ref = inputRefs.current[key(r, c)];
-    if (ref) { ref.focus(); ref.select(); }
-  };
-  const advanceFrom = (r, c) => {
+  const setCursor = (r, c) => { setCursorCell({ r, c }); cursorRef.current = { r, c }; };
+  const advanceCursor = () => {
+    const cc = cursorRef.current;
+    if (!cc) return;
     const dir = activeDirRef.current;
-    const nr = dir === "v" ? r + 1 : r;
-    const nc = dir === "h" ? c + 1 : c;
-    if (cw.sol[key(nr, nc)] != null) focusCell(nr, nc);
+    const nr = dir === "v" ? cc.r + 1 : cc.r;
+    const nc = dir === "h" ? cc.c + 1 : cc.c;
+    if (cw.sol[key(nr, nc)] != null) setCursor(nr, nc);
   };
-  const retreatFrom = (r, c) => {
+  const retreatCursor = () => {
+    const cc = cursorRef.current;
+    if (!cc) return;
     const dir = activeDirRef.current;
-    const pr = dir === "v" ? r - 1 : r;
-    const pc = dir === "h" ? c - 1 : c;
-    if (cw.sol[key(pr, pc)] != null) focusCell(pr, pc);
+    const pr = dir === "v" ? cc.r - 1 : cc.r;
+    const pc = dir === "h" ? cc.c - 1 : cc.c;
+    if (cw.sol[key(pr, pc)] != null) setCursor(pr, pc);
   };
-  const [focusedCell, setFocusedCell] = useState(null);
-  const handleFocus = (r, c) => {
-    setFocusedCell({ r, c });
-    const cws = cellWords[key(r, c)] || [];
-    if (cws.length === 1) setActiveDir(cws[0].dir);
-  };
-  const handleBlur = () => { setFocusedCell(null); };
-  const handleCellClick = (r, c) => {
-    const k2 = key(r, c);
-    const cws = cellWords[k2] || [];
-    if (cws.length > 1 && document.activeElement === inputRefs.current[k2]) {
-      setActiveDir(d => d === "h" ? "v" : "h");
+
+  const focusHidden = () => { if (hiddenRef.current) hiddenRef.current.focus(); };
+
+  const handleCellTap = (r, c) => {
+    if (cw.sol[key(r, c)] == null) return;
+    if (cursorCell && cursorCell.r === r && cursorCell.c === c) {
+      const cws = cellWords[key(r, c)] || [];
+      if (cws.length > 1) setActiveDir(d => d === "h" ? "v" : "h");
+    } else {
+      setCursor(r, c);
+      const cws = cellWords[key(r, c)] || [];
+      if (cws.length === 1) setActiveDir(cws[0].dir);
     }
+    focusHidden();
   };
-  const handleKeyDown = (e, r, c) => {
+
+  const handleCompositionStart = () => { composingRef.current = true; };
+  const handleCompositionUpdate = (e) => { setComposingText(e.data || ""); };
+  const handleCompositionEnd = (e) => {
+    composingRef.current = false;
+    setComposingText("");
+    const cc = cursorRef.current;
+    if (e.data && cc) {
+      const syllable = Array.from(e.data).slice(-1)[0] || "";
+      setVals(s => ({ ...s, [key(cc.r, cc.c)]: syllable }));
+      setChecked(false);
+      advanceCursor();
+    }
+    setTimeout(() => {
+      if (!composingRef.current && hiddenRef.current) hiddenRef.current.value = "";
+    }, 50);
+  };
+  const handleHiddenChange = (e) => {
     if (composingRef.current) return;
-    const k2 = key(r, c);
-    if (e.key === "Backspace" && !(vals[k2] || "")) { e.preventDefault(); retreatFrom(r, c); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); if (cw.sol[key(r, c + 1)] != null) focusCell(r, c + 1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); if (cw.sol[key(r, c - 1)] != null) focusCell(r, c - 1); }
-    else if (e.key === "ArrowDown") { e.preventDefault(); if (cw.sol[key(r + 1, c)] != null) focusCell(r + 1, c); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); if (cw.sol[key(r - 1, c)] != null) focusCell(r - 1, c); }
+    const cc = cursorRef.current;
+    if (!cc) return;
+    const raw = e.target.value;
+    const ch = Array.from(raw).slice(-1)[0] || "";
+    const val = isKorean ? ch : stripAccents(ch).toUpperCase();
+    setVals(s => ({ ...s, [key(cc.r, cc.c)]: val }));
+    setChecked(false);
+    if (hiddenRef.current) hiddenRef.current.value = "";
+    if (val) advanceCursor();
   };
+  const handleKeyDown = (e) => {
+    if (composingRef.current) return;
+    const cc = cursorRef.current;
+    if (!cc) return;
+    const { r, c } = cc;
+    const k2 = key(r, c);
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      if (vals[k2]) { setVals(s => ({ ...s, [k2]: "" })); setChecked(false); }
+      else retreatCursor();
+    } else if (e.key === "ArrowRight") { e.preventDefault(); if (cw.sol[key(r, c + 1)] != null) setCursor(r, c + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); if (cw.sol[key(r, c - 1)] != null) setCursor(r, c - 1); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); if (cw.sol[key(r + 1, c)] != null) setCursor(r + 1, c); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (cw.sol[key(r - 1, c)] != null) setCursor(r - 1, c); }
+  };
+  const handleBlur = () => { setCursorCell(null); cursorRef.current = null; setComposingText(""); };
+
   const focusWord = (word) => {
     setActiveDir(word.dir);
     const empty = word.cells.find(ce => !(vals[key(ce.r, ce.c)]));
     const target = empty || word.cells[0];
-    focusCell(target.r, target.c);
+    setCursor(target.r, target.c);
+    focusHidden();
   };
-  // Highlight the active word's cells
+
   const highlightKeys = useMemo(() => {
-    if (!focusedCell) return new Set();
+    if (!cursorCell) return new Set();
     const dir = activeDirRef.current;
-    const fc = key(focusedCell.r, focusedCell.c);
+    const fc = key(cursorCell.r, cursorCell.c);
     for (const p of cw.placed) {
       if (p.dir === dir && p.cells.some(ce => key(ce.r, ce.c) === fc)) {
         return new Set(p.cells.map(ce => key(ce.r, ce.c)));
@@ -3240,7 +3283,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     }
     return new Set();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedCell, activeDir, cw.placed]);
+  }, [cursorCell, activeDir, cw.placed]);
 
   const solved = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
   useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
@@ -3249,7 +3292,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     const scrollToFocused = () => {
       requestAnimationFrame(() => {
         const el = document.activeElement;
-        if (el && el.tagName === "INPUT" && gridRef.current && gridRef.current.contains(el)) {
+        if (el && gridRef.current && gridRef.current.contains(el)) {
           el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       });
@@ -3258,7 +3301,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     if (vv) { vv.addEventListener("resize", scrollToFocused); return () => vv.removeEventListener("resize", scrollToFocused); }
   }, []);
 
-  const restart = () => { setVals({}); setChecked(false); setAwarded(false); setRound(r => r + 1); };
+  const restart = () => { setVals({}); setChecked(false); setAwarded(false); setRound(r => r + 1); setCursorCell(null); cursorRef.current = null; };
 
   if (cw.placed.length < 2) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
@@ -3270,6 +3313,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const across = cw.placed.filter(p => p.dir === "h").sort((a, b) => a.num - b.num);
   const down = cw.placed.filter(p => p.dir === "v").sort((a, b) => a.num - b.num);
   const CELL = 34;
+  const GAP = 2;
 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
@@ -3281,7 +3325,6 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
         {solved && (
           <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 8, color: C.ok, fontSize: 13, fontWeight: 600 }}>🎉 {t.crossSolved}</div>
         )}
-        {/* Level: show the words (writing practice) vs hidden (memory) */}
         <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, alignSelf: "flex-start" }}>
           {[[true, t.crossLvl1], [false, t.crossLvl2]].map(([v, label]) => (
             <button key={String(v)} onClick={() => setShowWords(v)}
@@ -3299,7 +3342,14 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
           </div>
         )}
         <div ref={gridRef} style={{ overflowX: "auto", flexShrink: 0 }}>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${cw.cols}, ${CELL}px)`, gap: 2, width: cw.cols * (CELL + 2) }}>
+          <div style={{ position: "relative", display: "grid", gridTemplateColumns: `repeat(${cw.cols}, ${CELL}px)`, gap: GAP, width: cw.cols * (CELL + GAP) }}>
+            {cursorCell && (
+              <input ref={hiddenRef} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+                onCompositionStart={handleCompositionStart} onCompositionUpdate={handleCompositionUpdate}
+                onCompositionEnd={handleCompositionEnd} onChange={handleHiddenChange}
+                onKeyDown={handleKeyDown} onBlur={handleBlur}
+                style={{ position: "absolute", left: cursorCell.c * (CELL + GAP), top: cursorCell.r * (CELL + GAP), width: CELL, height: CELL, opacity: 0, zIndex: 10, fontSize: 16, padding: 0, border: "none", caretColor: "transparent" }} />
+            )}
             {Array.from({ length: cw.rows }).map((_, r) => Array.from({ length: cw.cols }).map((__, c) => {
               const k = key(r, c);
               const isCell = cw.sol[k] != null;
@@ -3308,36 +3358,16 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
               const right = checked && v && v === cw.sol[k];
               const bad = checked && v && v !== cw.sol[k];
               const hl = highlightKeys.has(k);
-              const isFoc = focusedCell && focusedCell.r === r && focusedCell.c === c;
+              const isFoc = cursorCell && cursorCell.r === r && cursorCell.c === c;
               const bg = bad ? C.warnBg : right ? C.okBg : isFoc ? "#e0edff" : hl ? "#f0f5ff" : "#fff";
               const bdr = bad ? C.warn : right ? C.ok : isFoc ? C.acc : hl ? "#b0c4ff" : C.borderS;
+              const displayVal = (isFoc && composingText) ? Array.from(composingText).slice(-1)[0] || "" : v;
               return (
-                <div key={k} style={{ position: "relative", width: CELL, height: CELL }}>
+                <div key={k} onClick={() => handleCellTap(r, c)} style={{ position: "relative", width: CELL, height: CELL, cursor: "pointer", userSelect: "none" }}>
                   {cw.num[k] && <span style={{ position: "absolute", top: 0, left: 1, fontSize: 8, color: C.txtM, lineHeight: 1, zIndex: 1 }}>{cw.num[k]}</span>}
-                  <input ref={el => { inputRefs.current[k] = el; }} value={v}
-                    onFocus={() => handleFocus(r, c)} onBlur={handleBlur} onClick={() => handleCellClick(r, c)}
-                    onKeyDown={e => handleKeyDown(e, r, c)}
-                    onCompositionStart={() => { composingRef.current = true; }}
-                    onCompositionEnd={e => {
-                      composingRef.current = false;
-                      if (e.data) { const ch = Array.from(e.data)[0] || ""; setVals(s => ({ ...s, [k]: ch })); }
-                      setTimeout(() => advanceFrom(r, c), 20);
-                    }}
-                    onChange={e => {
-                      const raw = e.target.value;
-                      const chars = Array.from(raw);
-                      if (isKorean && chars.length > 1) {
-                        setVals(s => ({ ...s, [k]: chars[0] }));
-                        setChecked(false);
-                        setTimeout(() => advanceFrom(r, c), 0);
-                      } else {
-                        const ch = chars[chars.length - 1] || "";
-                        const val = isKorean ? ch : stripAccents(ch).toUpperCase();
-                        setVals(s => ({ ...s, [k]: val })); setChecked(false);
-                        if (!composingRef.current && val) setTimeout(() => advanceFrom(r, c), 0);
-                      }
-                    }}
-                    style={{ width: CELL, height: CELL, textAlign: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bdr}`, borderRadius: 4, background: bg, color: C.txt, outline: "none", padding: 0 }} />
+                  <div style={{ width: CELL, height: CELL, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: tFont, fontSize: 15, border: `1px solid ${bdr}`, borderRadius: 4, background: bg, color: C.txt, boxSizing: "border-box" }}>
+                    {displayVal}
+                  </div>
                 </div>
               );
             }))}
@@ -3361,7 +3391,6 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
             </div>
           )}
         </div>
-        {/* Extra padding so the grid stays scrollable above the keyboard */}
         <div style={{ minHeight: 200, flexShrink: 0 }} />
       </div>
     </div>

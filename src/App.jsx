@@ -3165,6 +3165,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   const gridRef = useRef(null);
   const hiddenRef = useRef(null);
   const composingRef = useRef(false);
+  const consumedRef = useRef(0);
   const [cursorCell, setCursorCell] = useState(null);
   const cursorRef = useRef(null);
   const [composingText, setComposingText] = useState("");
@@ -3203,6 +3204,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 
   const handleCellTap = (r, c) => {
     if (cw.sol[key(r, c)] == null) return;
+    resetHidden();
     if (cursorCell && cursorCell.r === r && cursorCell.c === c) {
       const cws = cellWords[key(r, c)] || [];
       if (cws.length > 1) setActiveDir(d => d === "h" ? "v" : "h");
@@ -3214,32 +3216,64 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     focusHidden();
   };
 
+  const resetHidden = () => {
+    consumedRef.current = 0;
+    if (hiddenRef.current) hiddenRef.current.value = "";
+  };
   const handleCompositionStart = () => { composingRef.current = true; };
   const handleCompositionUpdate = (e) => { setComposingText(e.data || ""); };
   const handleCompositionEnd = (e) => {
     composingRef.current = false;
     setComposingText("");
-    const cc = cursorRef.current;
-    if (e.data && cc) {
-      const syllable = Array.from(e.data).slice(-1)[0] || "";
-      setVals(s => ({ ...s, [key(cc.r, cc.c)]: syllable }));
-      setChecked(false);
-      advanceCursor();
+    if (e.data) {
+      const chars = Array.from(e.data);
+      const consumed = consumedRef.current;
+      for (let i = consumed; i < chars.length; i++) {
+        const cc = cursorRef.current;
+        if (!cc) break;
+        const val = isKorean ? chars[i] : stripAccents(chars[i]).toUpperCase();
+        setVals(s => ({ ...s, [key(cc.r, cc.c)]: val }));
+        setChecked(false);
+        if (i < chars.length - 1) advanceCursor();
+      }
+      if (chars.length > consumed) advanceCursor();
     }
     setTimeout(() => {
-      if (!composingRef.current && hiddenRef.current) hiddenRef.current.value = "";
+      if (!composingRef.current) resetHidden();
     }, 50);
   };
   const handleHiddenChange = (e) => {
-    if (composingRef.current) return;
     const cc = cursorRef.current;
     if (!cc) return;
-    const raw = e.target.value;
-    const ch = Array.from(raw).slice(-1)[0] || "";
+    const raw = e.target.value || "";
+    const chars = Array.from(raw);
+    if (composingRef.current && isKorean) {
+      const finalized = chars.length - 1;
+      const consumed = consumedRef.current;
+      if (finalized > consumed) {
+        for (let i = consumed; i < finalized; i++) {
+          const cur = cursorRef.current;
+          if (!cur) break;
+          setVals(s => ({ ...s, [key(cur.r, cur.c)]: chars[i] }));
+          setChecked(false);
+          advanceCursor();
+        }
+        consumedRef.current = finalized;
+      }
+      const last = chars[chars.length - 1] || "";
+      const cur = cursorRef.current;
+      if (cur) {
+        setVals(s => ({ ...s, [key(cur.r, cur.c)]: last }));
+        setComposingText(last);
+      }
+      return;
+    }
+    if (composingRef.current) return;
+    const ch = chars[chars.length - 1] || "";
     const val = isKorean ? ch : stripAccents(ch).toUpperCase();
     setVals(s => ({ ...s, [key(cc.r, cc.c)]: val }));
     setChecked(false);
-    if (hiddenRef.current) hiddenRef.current.value = "";
+    resetHidden();
     if (val) advanceCursor();
   };
   const handleKeyDown = (e) => {
@@ -3257,9 +3291,10 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
     else if (e.key === "ArrowDown") { e.preventDefault(); if (cw.sol[key(r + 1, c)] != null) setCursor(r + 1, c); }
     else if (e.key === "ArrowUp") { e.preventDefault(); if (cw.sol[key(r - 1, c)] != null) setCursor(r - 1, c); }
   };
-  const handleBlur = () => { setCursorCell(null); cursorRef.current = null; setComposingText(""); };
+  const handleBlur = () => { setCursorCell(null); cursorRef.current = null; setComposingText(""); resetHidden(); };
 
   const focusWord = (word) => {
+    resetHidden();
     setActiveDir(word.dir);
     const empty = word.cells.find(ce => !(vals[key(ce.r, ce.c)]));
     const target = empty || word.cells[0];

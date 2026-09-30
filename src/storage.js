@@ -41,10 +41,21 @@ const DEFAULT_PROFILE = {
   detailedDone: false,
 };
 
+const DEFAULT_LANG_PROFILE = {
+  dream: '',
+  level: '',
+  goals: '',
+  notes: '',
+  learnerNotes: '',
+  otherTools: '',
+  dailyCount: 5,
+};
+
 const DEFAULT_DATA = {
   cards: [],
   lang: 'fr',
   profile: { ...DEFAULT_PROFILE },
+  langProfiles: {},
   summaries: [],
 };
 
@@ -56,6 +67,7 @@ function mergeWithDefaults(raw) {
     // Card types are now just 'grammar' or 'vocab' — fold the retired 'expression' into vocab.
     cards: (raw.cards || []).map((c) => (c && c.type && c.type !== 'grammar' && c.type !== 'vocab' ? { ...c, type: 'vocab' } : c)),
     profile: { ...DEFAULT_PROFILE, ...(raw.profile || {}) },
+    langProfiles: raw.langProfiles || {},
     summaries: raw.summaries || [],
   };
 }
@@ -186,4 +198,4 @@ export function isSupabaseConfigured() {
   return !!supabase;
 }
 
-export { DEFAULT_DATA, DEFAULT_PROFILE };
+export { DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE };

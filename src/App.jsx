@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE } from "./storage.js";
 
 // =============================================
 // ERROR BOUNDARY
@@ -194,6 +194,18 @@ const T = {
     notesPlaceholder: "Toute info utile : difficultés récurrentes, temps disponible, préférences d'apprentissage...",
     profileSaved: "Enregistré !", autoSaveHint: "Enregistrement automatique",
     saveProfile: "Enregistrer",
+    langProfileTitle: (flag, name) => `Profil pour ${flag} ${name}`,
+    langProfileSub: "Adapte ces informations pour cette langue. Elles aident l'IA a personnaliser tes lecons.",
+    langProfilePrefill: "Pre-rempli depuis ton profil existant. Modifie ce que tu veux !",
+    langProfileSave: "Continuer",
+    langProfileSkip: "Plus tard",
+    langDreamLabel: "Ton reve le plus fou avec cette langue",
+    langLevelLabel: "Ton niveau dans cette langue",
+    langGoalsLabel: "Tes objectifs",
+    langToolsLabel: "Outils utilises en parallele pour cette langue",
+    langDailyLabel: "Cartes par jour",
+    langNotesLabel: "Tes notes personnelles",
+    langTeacherNotesLabel: "Notes du professeur",
     genderLabel: "Genre",
     genderNone: "Non renseigné",
     genderM: "Homme",
@@ -492,6 +504,18 @@ const T = {
     notesPlaceholder: "Any useful info: recurring difficulties, available study time, learning preferences...",
     profileSaved: "Saved!", autoSaveHint: "Saved automatically",
     saveProfile: "Save",
+    langProfileTitle: (flag, name) => `Profile for ${flag} ${name}`,
+    langProfileSub: "Customize these settings for this language. They help the AI personalize your lessons.",
+    langProfilePrefill: "Pre-filled from your existing profile. Edit what you like!",
+    langProfileSave: "Continue",
+    langProfileSkip: "Later",
+    langDreamLabel: "Your biggest dream with this language",
+    langLevelLabel: "Your level in this language",
+    langGoalsLabel: "Your goals",
+    langToolsLabel: "Other tools you use for this language",
+    langDailyLabel: "Cards per day",
+    langNotesLabel: "Your personal notes",
+    langTeacherNotesLabel: "Teacher's notes",
     genderLabel: "Gender",
     genderNone: "Not specified",
     genderM: "Male",
@@ -800,9 +824,16 @@ function parseJSON(raw) {
 // =============================================
 // CONTEXT BUILDER
 // =============================================
-function buildContext(data, lang) {
+function getEffectiveProfile(data, tlCode) {
+  const base = data.profile || {};
+  const lp = (data.langProfiles || {})[tlCode];
+  if (!lp) return base;
+  return { ...base, ...Object.fromEntries(Object.entries(lp).filter(([, v]) => v !== '' && v !== undefined)) };
+}
+
+function buildContext(data, lang, tlCode) {
   const L = lang === "fr" ? "French" : "English";
-  const p = data.profile || {};
+  const p = tlCode ? getEffectiveProfile(data, tlCode) : (data.profile || {});
   const summaries = data.summaries || [];
 
   let ctx = "";
@@ -3684,6 +3715,9 @@ function AppInner() {
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "" });
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
+  const [langProfileEdit, setLangProfileEdit] = useState(null);
+  const [langProfileDraft, setLangProfileDraft] = useState(null);
+  const [langProfDraft, setLangProfDraft] = useState(null);
   // Select any target-language word anywhere → offer to add it to the vocab library.
   const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
@@ -3756,7 +3790,7 @@ function AppInner() {
     if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
     return base;
   }, [allCards, tl, exFilter, exTagFilter]);
-  const context = useMemo(() => buildContext(data, lang), [data, lang]);
+  const context = useMemo(() => buildContext(data, lang, tl), [data, lang, tl]);
 
   // Load
   useEffect(() => {
@@ -3841,10 +3875,11 @@ function AppInner() {
   useEffect(() => {
     if (view === "profile") {
       setProfileDraft({ ...(data.profile || DEFAULT_PROFILE) });
+      setLangProfDraft({ ...DEFAULT_LANG_PROFILE, ...((data.langProfiles || {})[tl] || {}) });
       setProfileSavedMsg(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+  }, [view, tl]);
 
   // Auto-save the profile shortly after any edit; the green "Saved" shows under the field
   // that changed. No button.
@@ -3862,6 +3897,21 @@ function AppInner() {
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileDraft]);
+
+  useEffect(() => {
+    if (view !== "profile" || !langProfDraft) return;
+    const current = (data.langProfiles || {})[tl] || {};
+    if (JSON.stringify(langProfDraft) === JSON.stringify({ ...DEFAULT_LANG_PROFILE, ...current })) return;
+    const changedKey = Object.keys(langProfDraft).find(k => JSON.stringify(langProfDraft[k]) !== JSON.stringify(current[k])) || null;
+    const id = setTimeout(() => {
+      save({ ...data, langProfiles: { ...(data.langProfiles || {}), [tl]: { ...langProfDraft } } });
+      setSavedFieldKey(changedKey ? `lp_${changedKey}` : null);
+      setProfileSavedMsg(true);
+      setTimeout(() => setProfileSavedMsg(false), 2000);
+    }, 700);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [langProfDraft]);
 
   // Inline "Saved ✓" shown right under the field that was just auto-saved.
   const savedTag = (k) => (profileSavedMsg && savedFieldKey === k)
@@ -3973,7 +4023,8 @@ function AppInner() {
     const today = dayKey();
     if (data.today && data.today.date === today && data.today.tl === tl) return;
     if (!data.cards.length) return; // wait for real data to load before freezing a set
-    const dc = Number(data.profile?.dailyCount) > 0 ? Number(data.profile.dailyCount) : 5;
+    const ep = getEffectiveProfile(data, tl);
+    const dc = Number(ep.dailyCount) > 0 ? Number(ep.dailyCount) : 5;
     const langCards = data.cards.filter(c => (c.targetLang || "ko") === tl);
     const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
     const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
@@ -4072,8 +4123,23 @@ function AppInner() {
   const addTargetLang = (code) => {
     const newTLs = [...new Set([...(data.targetLangs || []), code])];
     setTargetLang(code);
-    save({ ...data, targetLangs: newTLs, lastTargetLang: code });
+    const nd = { ...data, targetLangs: newTLs, lastTargetLang: code };
+    save(nd);
     setTlOpen(false);
+    const existing = (nd.langProfiles || {})[code];
+    if (!existing) {
+      const base = nd.profile || {};
+      setLangProfileDraft({
+        dream: base.dream || '',
+        level: base.level || '',
+        goals: base.goals || '',
+        notes: base.notes || '',
+        learnerNotes: base.learnerNotes || '',
+        otherTools: base.otherTools || '',
+        dailyCount: base.dailyCount ?? 5,
+      });
+      setLangProfileEdit(code);
+    }
   };
 
   // ---- FEED ----
@@ -4099,7 +4165,7 @@ function AppInner() {
   // Daily news recap (#57): general + dream-based sections, translated into the interface
   // language and cached once per day (so the AI pass runs at most once a day).
   const loadNewsRecap = useCallback(async (force) => {
-    const interest = (data.profile?.dream || "").trim().slice(0, 80);
+    const interest = (getEffectiveProfile(data, tl).dream || "").trim().slice(0, 80);
     const key = "moa-news-recap";
     if (!force) {
       try {
@@ -4141,7 +4207,7 @@ function AppInner() {
       setNewsRecapErr(e.message);
     }
     setNewsRecapLoad(false);
-  }, [tl, lang, data.profile?.dream]);
+  }, [tl, lang, data.profile?.dream, data.langProfiles]);
 
   // Open a social post (Bluesky/Mastodon) in the in-app thread viewer.
   const openThread = async (item) => {
@@ -4438,8 +4504,18 @@ function AppInner() {
 
   const navTo = (target) => {
     // Flush any unsaved profile edits before leaving the profile.
-    if (view === "profile" && profileDraft && JSON.stringify(profileDraft) !== JSON.stringify(data.profile || {})) {
-      save({ ...data, profile: { ...profileDraft } });
+    if (view === "profile") {
+      let nd = data;
+      if (profileDraft && JSON.stringify(profileDraft) !== JSON.stringify(data.profile || {})) {
+        nd = { ...nd, profile: { ...profileDraft } };
+      }
+      if (langProfDraft) {
+        const current = (nd.langProfiles || {})[tl] || {};
+        if (JSON.stringify(langProfDraft) !== JSON.stringify({ ...DEFAULT_LANG_PROFILE, ...current })) {
+          nd = { ...nd, langProfiles: { ...(nd.langProfiles || {}), [tl]: { ...langProfDraft } } };
+        }
+      }
+      if (nd !== data) save(nd);
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
@@ -4635,24 +4711,27 @@ function AppInner() {
         conversationLength: conv.length,
       };
       setLessonSummary(summary);
-      // Merge profile insights from lesson into existing profile
+      // Merge profile insights from lesson into per-language profile (level, notes) and global (interests)
       const insights = result.profileInsights || {};
       const currentProfile = { ...(data.profile || DEFAULT_PROFILE) };
+      const currentLangProfiles = { ...(data.langProfiles || {}) };
+      const currentLp = { ...(currentLangProfiles[tl] || DEFAULT_LANG_PROFILE) };
       if (insights.interests) {
         currentProfile.interests = currentProfile.interests
           ? currentProfile.interests + "\n" + insights.interests
           : insights.interests;
       }
       if (insights.level) {
-        currentProfile.level = currentProfile.level
-          ? currentProfile.level + " | " + summary.date + ": " + insights.level
+        currentLp.level = currentLp.level
+          ? currentLp.level + " | " + summary.date + ": " + insights.level
           : insights.level;
       }
       if (insights.notes) {
-        currentProfile.notes = currentProfile.notes
-          ? currentProfile.notes + "\n" + insights.notes
+        currentLp.notes = currentLp.notes
+          ? currentLp.notes + "\n" + insights.notes
           : insights.notes;
       }
+      currentLangProfiles[tl] = currentLp;
       // Create derived cards with parent link
       const derived = (result.derivedStructures || []);
       const newDerivedCards = derived
@@ -4690,7 +4769,7 @@ function AppInner() {
       setPointsToast(gain);
       setTimeout(() => setPointsToast(null), 2500);
       // Don't auto-add derived cards — propose them for the learner to opt in.
-      save({ ...data, cards: updatedCards, summaries: [...(data.summaries || []), summary], profile: withPoints });
+      save({ ...data, cards: updatedCards, summaries: [...(data.summaries || []), summary], profile: withPoints, langProfiles: currentLangProfiles });
       setPendingDerived(newDerivedCards);
       setDerivedSel(new Set());
     } catch (e) {
@@ -5055,6 +5134,73 @@ function AppInner() {
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Per-language profile editor: shown when adding a new language
+  if (langProfileEdit && langProfileDraft) {
+    const lpCode = langProfileEdit;
+    const lpConf = TARGET_LANGS[lpCode] || {};
+    const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
+    const saveLangProfile = () => {
+      const lps = { ...(data.langProfiles || {}), [lpCode]: { ...langProfileDraft } };
+      save({ ...data, langProfiles: lps });
+      setLangProfileEdit(null);
+      setLangProfileDraft(null);
+    };
+    const skipLangProfile = () => {
+      setLangProfileEdit(null);
+      setLangProfileDraft(null);
+    };
+    return (
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 16, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "22px 20px" }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: C.txt }}>{t.langProfileTitle(lpConf.flag || "", lpConf.name?.[lang] || lpCode)}</div>
+          <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6 }}>{t.langProfileSub}</div>
+          {(data.profile?.dream || data.profile?.level || data.profile?.goals) && (
+            <div style={{ fontSize: 11.5, color: C.acc, fontStyle: "italic" }}>{t.langProfilePrefill}</div>
+          )}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{"✨ " + t.langDreamLabel}</label>
+            <textarea value={langProfileDraft.dream || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, dream: e.target.value })} placeholder={t.dreamPlaceholder} rows={3} style={box} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langLevelLabel}</label>
+            <input value={langProfileDraft.level || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, level: e.target.value })} placeholder={t.levelPlaceholder} style={box} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langGoalsLabel}</label>
+            <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={t.goalsPlaceholder} rows={2} style={box} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langToolsLabel}</label>
+            <textarea value={langProfileDraft.otherTools || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, otherTools: e.target.value })} placeholder={t.otherToolsPh} rows={2} style={box} />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langDailyLabel}</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input type="number" min="1" max="20" value={langProfileDraft.dailyCount ?? 5}
+                onChange={e => setLangProfileDraft({ ...langProfileDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                style={{ ...box, width: 90 }} />
+              <span style={{ fontSize: 12, color: C.txtM }}>{t.today.toLowerCase()}</span>
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langNotesLabel}</label>
+            <textarea value={langProfileDraft.learnerNotes || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, learnerNotes: e.target.value })} rows={2} style={box} />
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4 }}>
+            <button onClick={saveLangProfile}
+              style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+              {t.langProfileSave}
+            </button>
+            <button onClick={skipLangProfile}
+              style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+              {t.langProfileSkip}
+            </button>
           </div>
         </div>
       </div>
@@ -6645,7 +6791,6 @@ function AppInner() {
                   ))}
                   <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
                     {[
-                      ["otherTools", t.otherTools, t.otherToolsPh],
                       ["bestMemory", t.bestMemory, t.bestMemoryPh],
                       ["worstMemory", t.worstMemory, t.worstMemoryPh],
                     ].map(([key, label, ph]) => (
@@ -6703,58 +6848,76 @@ function AppInner() {
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.dailyCountLabel}</label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="number" min="1" max="20" value={profileDraft.dailyCount ?? 5}
-                    onChange={e => setProfileDraft({ ...profileDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
-                    style={{ ...fieldStyle, width: 90 }} />
-                  <span style={{ fontSize: 12, color: C.txtM }}>{t.today.toLowerCase()}</span>
-                </div>
-                {savedTag("dailyCount")}
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>✨ {t.onbTitle2}</label>
-                <textarea value={profileDraft.dream || ""} onChange={e => setProfileDraft({ ...profileDraft, dream: e.target.value })}
-                  placeholder={t.dreamPlaceholder} rows={2} style={fieldStyle} />
-                {savedTag("dream")}
-              </div>
-
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.levelLabel}</label>
-                <input value={profileDraft.level} onChange={e => setProfileDraft({ ...profileDraft, level: e.target.value })}
-                  placeholder={t.levelPlaceholder} style={fieldStyle} />
-                {savedTag("level")}
-              </div>
-
-              <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.interestsLabel}</label>
                 <textarea value={profileDraft.interests} onChange={e => setProfileDraft({ ...profileDraft, interests: e.target.value })}
                   placeholder={t.interestsPlaceholder} rows={3} style={fieldStyle} />
                 {savedTag("interests")}
               </div>
 
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.goalsLabel}</label>
-                <textarea value={profileDraft.goals} onChange={e => setProfileDraft({ ...profileDraft, goals: e.target.value })}
-                  placeholder={t.goalsPlaceholder} rows={2} style={fieldStyle} />
-                {savedTag("goals")}
-              </div>
+              {/* Per-language profile section */}
+              {langProfDraft && (
+                <>
+                  <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16, marginTop: 4 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 2 }}>
+                      {(TARGET_LANGS[tl]?.flag || "")} {t.langProfileTitle(TARGET_LANGS[tl]?.flag || "", TARGET_LANGS[tl]?.name?.[lang] || tl)}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginBottom: 12 }}>{t.langProfileSub}</div>
+                  </div>
 
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.myNotesLabel}</label>
-                <textarea value={profileDraft.learnerNotes || ""} onChange={e => setProfileDraft({ ...profileDraft, learnerNotes: e.target.value })}
-                  placeholder={t.myNotesPlaceholder} rows={2} style={fieldStyle} />
-                {savedTag("learnerNotes")}
-              </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langDailyLabel}</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="number" min="1" max="20" value={langProfDraft.dailyCount ?? 5}
+                        onChange={e => setLangProfDraft({ ...langProfDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
+                        style={{ ...fieldStyle, width: 90 }} />
+                      <span style={{ fontSize: 12, color: C.txtM }}>{t.today.toLowerCase()}</span>
+                    </div>
+                    {savedTag("lp_dailyCount")}
+                  </div>
 
-              {/* Teacher notes (AI-written) — read-only for the learner */}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>👩‍🏫 {t.teacherNotesLabel}</label>
-                <div style={{ fontSize: 12.5, color: profileDraft.notes ? C.txtS : C.txtM, lineHeight: 1.6, whiteSpace: "pre-wrap", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", minHeight: 40 }}>
-                  {profileDraft.notes || t.teacherNotesEmpty}
-                </div>
-              </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{"✨ " + t.langDreamLabel}</label>
+                    <textarea value={langProfDraft.dream || ""} onChange={e => setLangProfDraft({ ...langProfDraft, dream: e.target.value })}
+                      placeholder={t.dreamPlaceholder} rows={2} style={fieldStyle} />
+                    {savedTag("lp_dream")}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langLevelLabel}</label>
+                    <input value={langProfDraft.level || ""} onChange={e => setLangProfDraft({ ...langProfDraft, level: e.target.value })}
+                      placeholder={t.levelPlaceholder} style={fieldStyle} />
+                    {savedTag("lp_level")}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langGoalsLabel}</label>
+                    <textarea value={langProfDraft.goals || ""} onChange={e => setLangProfDraft({ ...langProfDraft, goals: e.target.value })}
+                      placeholder={t.goalsPlaceholder} rows={2} style={fieldStyle} />
+                    {savedTag("lp_goals")}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langToolsLabel}</label>
+                    <textarea value={langProfDraft.otherTools || ""} onChange={e => setLangProfDraft({ ...langProfDraft, otherTools: e.target.value })}
+                      placeholder={t.otherToolsPh} rows={2} style={fieldStyle} />
+                    {savedTag("lp_otherTools")}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langNotesLabel}</label>
+                    <textarea value={langProfDraft.learnerNotes || ""} onChange={e => setLangProfDraft({ ...langProfDraft, learnerNotes: e.target.value })}
+                      placeholder={t.myNotesPlaceholder} rows={2} style={fieldStyle} />
+                    {savedTag("lp_learnerNotes")}
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{"👩‍🏫 " + t.langTeacherNotesLabel}</label>
+                    <div style={{ fontSize: 12.5, color: langProfDraft.notes ? C.txtS : C.txtM, lineHeight: 1.6, whiteSpace: "pre-wrap", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", minHeight: 40 }}>
+                      {langProfDraft.notes || t.teacherNotesEmpty}
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
                 💡 {t.profileAutoUpdate}

@@ -63,8 +63,23 @@ const T = {
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
     vocab: "Vocabulaire",
-    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Comprehension",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
+    compTitle: "Comprehension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
+    compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
+    compQuestion: "Question", compCheck: "Verifier", compNext: "Suivant",
+    compCorrect: "Bonne reponse !", compWrong: "Pas tout a fait.",
+    compLevel1Done: "Niveau 1 termine ! Tu veux tenter le niveau 2 ?",
+    compStartLevel2: "Passer au niveau 2", compFinish: "Terminer",
+    compReformulate: "Reformule en 1-2 phrases ce qui a ete dit :",
+    compYourReformulation: "Ta reformulation...",
+    compIllustration: "Illustration",
+    compIllustrationLoading: "Recherche d'illustration...",
+    compEncourage: "Pas besoin de connaitre tout le vocabulaire, l'important c'est de saisir le sens general !",
+    compSaved: "Comprehension sauvegardee !",
+    compResume: "Reprendre", compLevel: (n) => `Niveau ${n}`,
+    compDone: "Termine",
+    compInTargetLang: "Questions en langue cible", compInInterfaceLang: "Questions en francais",
     vocabPickTitle: "Mots à étudier", vocabPickSub: "Désélectionne ceux que tu connais déjà.",
     studyTheseWords: "Étudier ces mots", vocabNoneSelected: "Sélectionne au moins un mot.",
     vocabStepGuess: "Devine le sens", vocabStepEtym: "Étymologie", vocabStepSyn: "Synonymes & mots liés",
@@ -342,8 +357,23 @@ const T = {
     iKnow: "I know this", addedAcq: "Added (acquired)",
     startLesson: "Start lesson", morePoints: "Find more points",
     vocab: "Vocabulary",
-    importModeGrammar: "Grammar", importModeVocab: "Vocabulary",
+    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension",
     importModeSub: "What do you want to study in this text?",
+    compTitle: "Text Comprehension", compLevel1: "Level 1: QCM", compLevel2: "Level 2: Reformulation",
+    compParagraph: (i, n) => `Paragraph ${i}/${n}`,
+    compQuestion: "Question", compCheck: "Check", compNext: "Next",
+    compCorrect: "Correct!", compWrong: "Not quite.",
+    compLevel1Done: "Level 1 complete! Want to try Level 2?",
+    compStartLevel2: "Go to Level 2", compFinish: "Finish",
+    compReformulate: "Reformulate in 1-2 sentences what was said:",
+    compYourReformulation: "Your reformulation...",
+    compIllustration: "Illustration",
+    compIllustrationLoading: "Searching for illustration...",
+    compEncourage: "You don't need to know every word, what matters is grasping the overall meaning!",
+    compSaved: "Comprehension saved!",
+    compResume: "Resume", compLevel: (n) => `Level ${n}`,
+    compDone: "Done",
+    compInTargetLang: "Questions in target language", compInInterfaceLang: "Questions in English",
     vocabPickTitle: "Words to study", vocabPickSub: "Deselect the ones you already know.",
     studyTheseWords: "Study these words", vocabNoneSelected: "Select at least one word.",
     vocabStepGuess: "Guess the meaning", vocabStepEtym: "Etymology", vocabStepSyn: "Synonyms & related",
@@ -922,6 +952,63 @@ Produce a complete study as a JSON object with these fields:
 
 Return only the JSON object.`;
   return parseJSON((await callAI(sys, `Study the word: ${word}`, 1600)).text);
+}
+
+// Generate a comprehension QCM for one paragraph of a text.
+async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode, inTargetLang) {
+  const L = lang === "fr" ? "French" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const qLang = inTargetLang ? TL : L;
+  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
+
+${context}
+The student is reading a ${TL} text. They do NOT need to understand every word. Focus on the GLOBAL MEANING.
+
+Always encourage and reassure: "You don't need to know every word to understand the meaning!"
+
+TASK: Generate ONE multiple-choice question about this specific paragraph's meaning.
+Write the question and all options in ${qLang}.
+The question should test whether the student grasped WHAT the paragraph is about (its main idea, who does what, what happens), NOT grammar or vocabulary details.
+
+Return JSON:
+{
+  "question": "the question in ${qLang}",
+  "options": ["option A", "option B", "option C", "option D"],
+  "answer": 0,
+  "explanation_fr": "brief explanation in French of the correct answer and what the paragraph means",
+  "explanation_en": "same in English",
+  "encouragement_fr": "a short encouraging message in French",
+  "encouragement_en": "same in English"
+}
+
+"answer" is the 0-based index of the correct option.`;
+  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1200)).text);
+}
+
+// Evaluate a student's reformulation of a text excerpt.
+async function evaluateReformulation(excerpt, userText, lang, context, tlCode) {
+  const L = lang === "fr" ? "French" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor evaluating a student's reformulation.
+
+${context}
+The student read a ${TL} text excerpt and tried to reformulate/summarize it in ${TL} in their own words (1-2 sentences).
+
+EVALUATION CRITERIA:
+- Did they capture the main idea? (most important)
+- Is their ${TL} reasonably understandable? (minor errors are fine)
+- Always be encouraging and positive. Highlight what they got right first.
+
+Return JSON:
+{
+  "correct": true or false (true if they captured the main idea, even imperfectly),
+  "feedback_fr": "encouraging feedback in French, noting what they got right and gently correcting if needed",
+  "feedback_en": "same in English",
+  "suggestion_fr": "a model reformulation in French for reference",
+  "suggestion_en": "same in English",
+  "model_tl": "a model reformulation in ${TL} for reference"
+}`;
+  return parseJSON((await callAI(sys, `Original excerpt:\n${excerpt}\n\nStudent's reformulation:\n${userText}`, 1000)).text);
 }
 
 async function startSocratic(card, article, lang, context, tlCode) {
@@ -2136,7 +2223,7 @@ function TreeView({ cards, t, onToggle, onReview }) {
 // =============================================
 // SOURCES VIEW (original texts + their points)
 // =============================================
-function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) {
+function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension }) {
   const byKorean = {};
   cards.forEach(c => { byKorean[c.korean] = c; });
   // Derived cards resolve to their parent's source text.
@@ -2217,6 +2304,36 @@ function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) 
           </div>
         </div>
       )}
+      {/* Text comprehension studies */}
+      {(textStudies || []).length > 0 && (
+        <div>
+          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {textStudies.map(s => (
+              <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+                <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
+                  {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: s.level1Complete ? "#e8f5e9" : C.s1, color: s.level1Complete ? C.ok : C.txtM, fontWeight: 500 }}>
+                    {t.compLevel(1)} {s.level1Complete ? "✓" : ""}
+                  </span>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: s.level2Complete ? "#e8f5e9" : C.s1, color: s.level2Complete ? C.ok : C.txtM, fontWeight: 500 }}>
+                    {t.compLevel(2)} {s.level2Complete ? "✓" : ""}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.txtM }}>{s.date}</span>
+                  {(!s.level1Complete || !s.level2Complete) && onResumeComprehension && (
+                    <button onClick={() => onResumeComprehension(s)}
+                      style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                      {t.compResume}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2224,6 +2341,247 @@ function SourcesView({ cards, summaries, t, lang, tFont, onReview, onRestudy }) 
 // =============================================
 // VOCAB LESSON (one word at a time, 5-step study)
 // =============================================
+// =============================================
+// TEXT COMPREHENSION (Issue #45)
+// =============================================
+function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit, existingStudy }) {
+  const [paragraphs] = useState(() => {
+    const ps = text.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 10);
+    if (ps.length <= 1) return text.split(/[.!?。]+/).map(s => s.trim()).filter(s => s.length > 10);
+    return ps;
+  });
+  const [level, setLevel] = useState(existingStudy?.level1Complete ? 2 : 1);
+  const [paraIdx, setParaIdx] = useState(0);
+  const [qcm, setQcm] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [checked, setChecked] = useState(false);
+  const [inTargetLang, setInTargetLang] = useState(true);
+  const [reformInput, setReformInput] = useState("");
+  const [reformResult, setReformResult] = useState(null);
+  const [illustration, setIllustration] = useState(null);
+  const [illustrationLoading, setIllustrationLoading] = useState(false);
+  const [level1Done, setLevel1Done] = useState(existingStudy?.level1Complete || false);
+  const [level2Done, setLevel2Done] = useState(existingStudy?.level2Complete || false);
+  const [showLevel1Complete, setShowLevel1Complete] = useState(false);
+
+  const loadQCM = async (idx) => {
+    setLoading(true); setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+    try {
+      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, inTargetLang);
+      setQcm(result);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const loadReformExcerpt = () => {
+    setReformInput(""); setReformResult(null); setIllustration(null);
+  };
+
+  useEffect(() => { if (level === 1 && !qcm && !loading) loadQCM(paraIdx); }, [paraIdx, level]);
+  useEffect(() => { if (level === 2) loadReformExcerpt(); }, [paraIdx, level]);
+
+  const handleCheck = () => {
+    if (selected === null) return;
+    setChecked(true);
+  };
+
+  const handleNext = () => {
+    if (paraIdx < paragraphs.length - 1) {
+      setParaIdx(paraIdx + 1);
+      setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+      setReformInput(""); setReformResult(null);
+    } else {
+      if (level === 1) { setLevel1Done(true); setShowLevel1Complete(true); }
+      else { setLevel2Done(true); onFinish({ level1Complete: true, level2Complete: true }); }
+    }
+  };
+
+  const handleReformCheck = async () => {
+    if (!reformInput.trim()) return;
+    setLoading(true);
+    try {
+      const result = await evaluateReformulation(paragraphs[paraIdx], reformInput, lang, context, tl);
+      setReformResult(result);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const handleIllustration = async () => {
+    setIllustrationLoading(true);
+    try {
+      const TL = getTargetLangName(tl, "en");
+      const prompt = await callAI(
+        `You generate a short image search query (2-4 English words) to find an illustration that helps visualize the meaning of a ${TL} paragraph. Return ONLY the search query, nothing else.`,
+        paragraphs[paraIdx], 50, false, true
+      );
+      const images = await fetchImages(prompt.text.trim(), 4);
+      if (images.length > 0) setIllustration(images[0]);
+    } catch (e) { console.error(e); }
+    setIllustrationLoading(false);
+  };
+
+  const startLevel2 = () => {
+    setLevel(2); setParaIdx(0); setShowLevel1Complete(false);
+    loadReformExcerpt();
+  };
+
+  const finishLevel1 = () => {
+    onFinish({ level1Complete: true, level2Complete: level2Done });
+  };
+
+  const isCorrect = qcm && selected === qcm.answer;
+  const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : qcm.explanation_en) : "";
+  const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : qcm.encouragement_en) : "";
+
+  if (showLevel1Complete) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 16 }}>
+        <div style={{ fontSize: 48 }}>🎉</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, textAlign: "center" }}>{t.compLevel1Done}</div>
+        <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", maxWidth: 360 }}>{t.compEncourage}</div>
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <button onClick={startLevel2}
+            style={{ padding: "8px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+            {t.compStartLevel2}
+          </button>
+          <button onClick={finishLevel1}
+            style={{ padding: "8px 18px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+            {t.compFinish}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+      {/* Header */}
+      <div style={{ padding: "10px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{t.compTitle}</span>
+          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontWeight: 500 }}>
+            {level === 1 ? t.compLevel1 : t.compLevel2}
+          </span>
+          <span style={{ fontSize: 11, color: C.txtM }}>{t.compParagraph(paraIdx + 1, paragraphs.length)}</span>
+        </div>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+          {t.back}
+        </button>
+      </div>
+
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 520, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* Current paragraph */}
+          <div style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+            <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
+              {paragraphs[paraIdx]}
+            </div>
+          </div>
+
+          {/* Illustration */}
+          {illustration && (
+            <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}` }}>
+              <img src={illustration.thumb || illustration.url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={handleIllustration} disabled={illustrationLoading}
+              style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: illustrationLoading ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: illustrationLoading ? "default" : "pointer" }}
+              className={illustrationLoading ? "pulse" : ""}>
+              🖼 {illustrationLoading ? t.compIllustrationLoading : t.compIllustration}
+            </button>
+            {level === 1 && (
+              <button onClick={() => { setInTargetLang(!inTargetLang); setQcm(null); loadQCM(paraIdx); }}
+                style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer" }}>
+                {inTargetLang ? t.compInInterfaceLang : t.compInTargetLang}
+              </button>
+            )}
+          </div>
+
+          {/* Level 1: QCM */}
+          {level === 1 && (
+            loading ? (
+              <div className="pulse" style={{ fontSize: 13, color: C.txtS, textAlign: "center", padding: 20 }}>{t.analyzing}</div>
+            ) : qcm ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{qcm.question}</div>
+                {qcm.options.map((opt, i) => (
+                  <button key={i} onClick={() => { if (!checked) setSelected(i); }}
+                    style={{
+                      padding: "10px 14px", borderRadius: 8, textAlign: "left",
+                      border: `1px solid ${checked ? (i === qcm.answer ? C.ok : i === selected ? C.warn : C.border) : (i === selected ? C.acc : C.border)}`,
+                      background: checked ? (i === qcm.answer ? "#e8f5e9" : i === selected ? "#fce4ec" : C.s2) : (i === selected ? C.accBg : C.s2),
+                      color: C.txt, fontSize: 12.5, cursor: checked ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", lineHeight: 1.5
+                    }}>
+                    {opt}
+                  </button>
+                ))}
+                {!checked ? (
+                  <button onClick={handleCheck} disabled={selected === null}
+                    style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: selected !== null ? C.acc : C.s1, color: selected !== null ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: selected !== null ? "pointer" : "default" }}>
+                    {t.compCheck}
+                  </button>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ padding: "10px 14px", borderRadius: 8, background: isCorrect ? "#e8f5e9" : "#fff3e0", border: `1px solid ${isCorrect ? C.ok : "#ffb74d"}` }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, color: isCorrect ? C.ok : "#e65100", marginBottom: 4 }}>{isCorrect ? t.compCorrect : t.compWrong}</div>
+                      <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{explanation}</div>
+                      {encouragement && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 4 }}>{encouragement}</div>}
+                    </div>
+                    <button onClick={handleNext}
+                      style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                      {paraIdx < paragraphs.length - 1 ? t.compNext : t.compFinish} →
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : null
+          )}
+
+          {/* Level 2: Reformulation */}
+          {level === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.compReformulate}</div>
+              <textarea value={reformInput} onChange={e => setReformInput(e.target.value)} placeholder={t.compYourReformulation}
+                style={{ width: "100%", minHeight: 80, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", fontFamily: tFont, fontSize: 13, color: C.txt, background: C.s2, outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.8 }} />
+              {!reformResult ? (
+                <button onClick={handleReformCheck} disabled={!reformInput.trim() || loading}
+                  style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: reformInput.trim() ? C.acc : C.s1, color: reformInput.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: reformInput.trim() && !loading ? "pointer" : "default" }}
+                  className={loading ? "pulse" : ""}>
+                  {loading ? t.analyzing : t.compCheck}
+                </button>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ padding: "10px 14px", borderRadius: 8, background: reformResult.correct ? "#e8f5e9" : "#fff3e0", border: `1px solid ${reformResult.correct ? C.ok : "#ffb74d"}` }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: reformResult.correct ? C.ok : "#e65100", marginBottom: 4 }}>{reformResult.correct ? t.compCorrect : t.compWrong}</div>
+                    <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{lang === "fr" ? reformResult.feedback_fr : reformResult.feedback_en}</div>
+                    {reformResult.model_tl && (
+                      <div style={{ marginTop: 6, padding: "6px 10px", background: C.s1, borderRadius: 6 }}>
+                        <div style={{ fontSize: 10, color: C.txtM, marginBottom: 2 }}>Modele :</div>
+                        <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.7 }}>{reformResult.model_tl}</div>
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={handleNext}
+                    style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                    {paraIdx < paragraphs.length - 1 ? t.compNext : t.compFinish} →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Encouragement */}
+          <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", textAlign: "center", padding: "8px 0" }}>
+            {t.compEncourage}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFinish, onExit }) {
   const [idx, setIdx] = useState(startIdx || 0);
   const [study, setStudy] = useState(null);
@@ -2924,7 +3282,8 @@ function AppInner() {
   const [found, setFound] = useState([]);
   const [selPick, setSelPick] = useState(0);
   const [known, setKnown] = useState(new Set());
-  const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab"
+  const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab" | "comprehension"
+  const [compSession, setCompSession] = useState(null); // { text, existing } or null
   const [vocabFound, setVocabFound] = useState([]); // AI-picked vocab items
   const [vocabSel, setVocabSel] = useState(new Set()); // indices selected to study
   const [vocabSession, setVocabSession] = useState(null); // { words: [...] } or null
@@ -3524,6 +3883,12 @@ function AppInner() {
   // ---- IMPORT ----
   const doAnalyze = async () => {
     if (!impText.trim()) return;
+    if (impMode === "comprehension") {
+      const existing = (data.textStudies || []).find(s => s.text === impText.trim());
+      setCompSession({ text: impText.trim(), existing: existing || null });
+      setView("comprehension");
+      return;
+    }
     setImpStep("scanning");
     try {
       if (impMode === "vocab") {
@@ -4805,7 +5170,7 @@ function AppInner() {
             {filteredCards.length === 0
               ? <div style={{ padding: 40, textAlign: "center", color: C.txtM, fontSize: 13 }}>{t.noCards}</div>
               : libView === "sources"
-                ? <SourcesView cards={filteredCards} summaries={data.summaries} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} />
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} />
                 : libView === "grid"
                   ? (() => {
                       const groups = { new: [], in_progress: [], studied: [], acquired: [] };
@@ -4962,7 +5327,7 @@ function AppInner() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
                 <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}` }}>
-                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab]].map(([k, l]) => (
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["comprehension", t.importModeComprehension]].map(([k, l]) => (
                     <button key={k} onClick={() => setImpMode(k)}
                       style={{ padding: "6px 16px", borderRadius: 6, border: "none", fontSize: 12.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
                       {l}
@@ -5795,6 +6160,33 @@ function AppInner() {
               </>)}
             </div>
           </div>
+        )}
+
+        {/* COMPREHENSION */}
+        {view === "comprehension" && compSession && (
+          <TextComprehension
+            text={compSession.text}
+            lang={lang} tl={tl} context={context} tFont={tFont} t={t}
+            existingStudy={compSession.existing}
+            onFinish={(result) => {
+              const study = {
+                id: compSession.existing?.id || (Date.now().toString() + Math.random().toString(36).slice(2, 5)),
+                text: compSession.text,
+                targetLang: tl || "ko",
+                date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
+                level1Complete: result.level1Complete,
+                level2Complete: result.level2Complete,
+              };
+              const existing = data.textStudies || [];
+              const idx = existing.findIndex(s => s.id === study.id);
+              const updated = idx >= 0 ? existing.map((s, i) => i === idx ? study : s) : [...existing, study];
+              save({ ...data, textStudies: updated });
+              setCompSession(null);
+              setFlash(t.compSaved); setTimeout(() => setFlash(null), 2000);
+              setView("library"); setLibView("sources");
+            }}
+            onExit={() => { setCompSession(null); setView("import"); }}
+          />
         )}
 
         {/* PROFILE */}

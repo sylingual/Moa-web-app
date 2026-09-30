@@ -102,6 +102,7 @@ const T = {
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire",
     exRandom: "Au hasard",
+    exMusicOn: "Musique", exMusicOff: "Musique",
     progressTitle: "Progression", progressGlobal: "Global",
     progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
     progressDays: (n, max) => `${n}/${max} jour${n > 1 ? "s" : ""}`,
@@ -376,6 +377,7 @@ const T = {
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory",
     exRandom: "Random",
+    exMusicOn: "Music", exMusicOff: "Music",
     progressTitle: "Progress", progressGlobal: "Overall",
     progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
     progressDays: (n, max) => `${n}/${max} day${n > 1 ? "s" : ""}`,
@@ -1485,6 +1487,82 @@ function recordExerciseProgress(dataObj, cardIds, exMode) {
     return { ...c, progress: prog, status: newStatus };
   });
   return { data: { ...dataObj, cards }, autoAcquiredIds };
+}
+
+// =============================================
+// CELEBRATION MEMES (Issue #76)
+// =============================================
+const CELEBRATION_SOUNDS = [
+  "/sounds/validation-1.mp3",
+  "/sounds/validation-2.mp3",
+  "/sounds/validation-3.mp3",
+  "/sounds/validation-4.mp3",
+  "/sounds/validation-5.mp3",
+  "/sounds/validation-6.mp3",
+  "/sounds/validation-7.mp3",
+];
+
+const CELEBRATION_GIFS = [
+  { type: "tenor", id: "15007715" },
+  { type: "tenor", id: "13717594879666614680" },
+  { type: "tenor", id: "27610253" },
+  { type: "tenor", id: "14309526032666019213" },
+  { type: "tenor", id: "26668829" },
+  { type: "tenor", id: "16817567465909252322" },
+  { type: "tenor", id: "8780339755399479600" },
+  { type: "tenor", id: "3268558299978945200" },
+  { type: "tenor", id: "17425764863703054288" },
+  { type: "tenor", id: "1598914448700171832" },
+  { type: "tenor", id: "18218929844289842271" },
+  { type: "tenor", id: "18317846230783265167" },
+  { type: "tenor", id: "14160543473475444161" },
+];
+
+const CELEBRATION_MESSAGES_FR = [
+  "Bien joue !", "Bravo !", "Genial !", "Tu geres !", "Excellent !",
+  "Continue comme ca !", "Super travail !", "Trop fort !", "Yeah !",
+];
+const CELEBRATION_MESSAGES_EN = [
+  "Well done!", "Bravo!", "Awesome!", "You nailed it!", "Excellent!",
+  "Keep it up!", "Great work!", "Amazing!", "Yeah!",
+];
+
+function CelebrationOverlay({ visible, onClose, lang }) {
+  const [entry] = useState(() => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)]);
+  const msgs = lang === "fr" ? CELEBRATION_MESSAGES_FR : CELEBRATION_MESSAGES_EN;
+  const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const src = CELEBRATION_SOUNDS[Math.floor(Math.random() * CELEBRATION_SOUNDS.length)];
+    const a = new Audio(src);
+    a.volume = 0.5;
+    a.play().catch(() => {});
+  }, [visible]);
+
+  if (!visible) return null;
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 2000, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)",
+      cursor: "pointer", animation: "fadeIn 0.2s ease-out",
+    }}>
+      <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
+        🎉 {msg}
+      </div>
+      <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative" }}>
+        <iframe
+          src={`https://tenor.com/embed/${entry.id}`}
+          style={{ position: "absolute", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)", border: "none", pointerEvents: "none" }}
+          allowFullScreen
+          title="celebration"
+        />
+      </div>
+      <div style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+        {lang === "fr" ? "Touche pour continuer" : "Tap to continue"}
+      </div>
+    </div>
+  );
 }
 
 // =============================================
@@ -2823,6 +2901,8 @@ function AppInner() {
   const [exInp, setExInp] = useState("");
   const [exOn, setExOn] = useState(false);
   const [exDone, setExDone] = useState(false);
+  const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
+  const exMusicRef = useRef(null);
 
   // Profile
   const [profileDraft, setProfileDraft] = useState(null);
@@ -3951,8 +4031,30 @@ function AppInner() {
     setCardToDelete(null);
   };
 
+  // ---- EXERCISE MUSIC (Issue #77) ----
+  const EX_MUSIC_URL = "/sounds/study-bgm.mp3";
+  useEffect(() => {
+    const audio = exMusicRef.current;
+    if (!audio) return;
+    if (exMusic && view === "exercise") {
+      audio.volume = 0.25;
+      audio.loop = true;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [exMusic, view]);
+
+  const toggleExMusic = () => {
+    const next = !exMusic;
+    setExMusic(next);
+    try { localStorage.setItem("moa-ex-music", next ? "1" : "0"); } catch {}
+  };
+
   // ---- EXERCISE PROGRESSION ----
   const [progressToast, setProgressToast] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const completeExercise = (mode, cardIds) => {
     const result = recordExerciseProgress(data, cardIds, mode);
@@ -3978,6 +4080,7 @@ function AppInner() {
       }
     }
     save(nd);
+    setShowCelebration(true);
   };
 
   // ---- EXERCISE ----
@@ -4206,7 +4309,7 @@ function AppInner() {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
 
       {/* POINTS TOAST */}
       {pointsToast && (
@@ -4220,6 +4323,9 @@ function AppInner() {
           🎉 {progressToast}
         </div>
       )}
+
+      <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
+      {showCelebration && <CelebrationOverlay visible onClose={() => setShowCelebration(false)} lang={lang} />}
 
       {/* Add-selected-word-to-vocab floating button */}
       {selAdd && (
@@ -5216,7 +5322,13 @@ function AppInner() {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
             {!exOn ? (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "28px 24px", gap: 18 }}>
-                <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", maxWidth: 460, justifyContent: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.exerciseTitle}</div>
+                  <button onClick={toggleExMusic} title={exMusic ? t.exMusicOn : t.exMusicOff}
+                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 16, border: `1px solid ${exMusic ? C.acc : C.border}`, background: exMusic ? C.accBg : C.s1, color: exMusic ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer" }}>
+                    {exMusic ? "🎵" : "🔇"} {t.exMusicOn}
+                  </button>
+                </div>
                 {exStep === "category" && (<>
                   <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
                   <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>

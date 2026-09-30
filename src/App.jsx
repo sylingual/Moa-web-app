@@ -659,13 +659,20 @@ const TARGET_LANGS = {
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
     promptExtra: "For online resources, suggest Naver Blog, Korean variety shows, webtoons. For level references, use TOPIK scale.",
   },
-  de: {
-    flag: "🇩🇪", nativeName: "Deutsch",
-    name: { fr: "Allemand", en: "German" },
+  fr: {
+    flag: "🇫🇷", nativeName: "Français",
+    name: { fr: "Français (FLE)", en: "French" },
     font: null,
-    placeholder: "Die Kinder spielen gern im Garten, besonders wenn die Sonne scheint. Meine Nachbarin hat gesagt, dass sie sich darauf freut...",
-    promptExtra: "For online resources, suggest Deutsche Welle, Spiegel Online, ARD Mediathek. For level references, use CEFR scale (A1-C2).",
+    placeholder: "Les enfants adorent jouer dans le parc, surtout quand il fait beau. Ma voisine m'a dit qu'elle avait hâte de partir en vacances...",
+    promptExtra: "For online resources, suggest TV5Monde, RFI Savoirs, Le Monde, Bescherelle. For level references, use CEFR scale (A1-C2). The student is learning French as a foreign language (FLE).",
   },
+  // de: {
+  //   flag: "🇩🇪", nativeName: "Deutsch",
+  //   name: { fr: "Allemand", en: "German" },
+  //   font: null,
+  //   placeholder: "Die Kinder spielen gern im Garten, besonders wenn die Sonne scheint. Meine Nachbarin hat gesagt, dass sie sich darauf freut...",
+  //   promptExtra: "For online resources, suggest Deutsche Welle, Spiegel Online, ARD Mediathek. For level references, use CEFR scale (A1-C2).",
+  // },
 };
 
 function getTargetLangName(tlCode, uiLang) {
@@ -1149,11 +1156,16 @@ function resourceSearchLinks(card, tlCode) {
       { title: "Naver 국어사전", uri: `https://ko.dict.naver.com/#/search?query=${q}` },
       { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
     ],
-    de: [
-      { title: "Lingolia Deutsch", uri: `https://deutsch.lingolia.com/?s=${q}` },
-      { title: "DW Deutsch lernen", uri: `https://www.dw.com/search/?languageCode=de&item=${q}` },
+    fr: [
+      { title: "Le Conjugueur", uri: `https://leconjugueur.lefigaro.fr/conjugaison/verbe/${q}.html` },
+      { title: "TV5Monde Langue française", uri: `https://langue-francaise.tv5monde.com/decouvrir?search=${q}` },
       { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
     ],
+    // de: [
+    //   { title: "Lingolia Deutsch", uri: `https://deutsch.lingolia.com/?s=${q}` },
+    //   { title: "DW Deutsch lernen", uri: `https://www.dw.com/search/?languageCode=de&item=${q}` },
+    //   { title: "HiNative", uri: `https://hinative.com/search?query=${q}` },
+    // ],
   };
 
   // Cap at 3, language-specific sites first (How To Study Korean already leads the ko list).

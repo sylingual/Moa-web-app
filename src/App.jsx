@@ -4800,12 +4800,16 @@ function AppInner() {
   const addTagToCard = (cardId, newTag) => {
     const tg = (newTag || "").toLowerCase().trim();
     if (!tg) return;
-    save({ ...data, cards: data.cards.map(c => {
+    const card = data.cards.find(c => c.id === cardId);
+    const hadNoTags = !card?.tags?.length;
+    let nd = { ...data, cards: data.cards.map(c => {
       if (c.id !== cardId) return c;
       const tags = c.tags || [];
       if (tags.length >= 3 || tags.includes(tg)) return c;
       return { ...c, tags: [...tags, tg] };
-    }) });
+    }) };
+    if (hadNoTags && card) nd = awardPoints(1, nd);
+    save(nd);
     setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: [...(prev.tags || []), tg].slice(0, 3) } : prev);
   };
   const removeTagFromCard = (cardId, tag) => {

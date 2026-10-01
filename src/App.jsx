@@ -117,7 +117,7 @@ const T = {
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
     fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
-    fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio",
+    fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio", fillListen: "Ecouter", fillListenStop: "Arreter",
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -431,7 +431,7 @@ const T = {
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
     fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
     fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
-    fillTranslateStory: "Translate story", fillAddVocab: "Add to library",
+    fillTranslateStory: "Translate story", fillAddVocab: "Add to library", fillListen: "Listen", fillListenStop: "Stop",
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -745,7 +745,7 @@ const T = {
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
     fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
     fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
-    fillTranslateStory: "이야기 번역", fillAddVocab: "라이브러리에 추가",
+    fillTranslateStory: "이야기 번역", fillAddVocab: "라이브러리에 추가", fillListen: "듣기", fillListenStop: "멈추기",
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
@@ -1688,6 +1688,7 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
 IMPORTANT RULES:
 - If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about
 - Give the characters names and a realistic situation
+- Each dialogue line MUST start with "CharacterName: " (name followed by colon and space)
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
 - Replace each used word with a numbered blank: (1)______, (2)______, etc.
@@ -1697,12 +1698,16 @@ Return ONLY this JSON structure:
 {
   "message": "One-line intro describing the situation (in the student's UI language)",
   "story": "The dialogue text with character names and (1)______, (2)______, etc.",
+  "characters": [
+    {"name": "CharName1", "gender": "F"},
+    {"name": "CharName2", "gender": "M"}
+  ],
   "blanks": [
     {"num": 1, "answer": "exact dictionary form from vocabulary list", "display": "conjugated/inflected form as it fits in the dialogue"},
     {"num": 2, "answer": "exact dictionary form", "display": "form in context"}
   ]
 }
-CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value.`
+CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value. "characters" lists each speaker with their gender ("F" or "M").`
   };
 
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
@@ -3937,7 +3942,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 }
 
 // #64 — Fill-in-the-blank story exercise with interactive word bank
-function FillStoryExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit, onRestart, onAddVocab }) {
+function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, onExit, onRestart, onAddVocab }) {
   const [placed, setPlaced] = useState({});
   const [selectedBlank, setSelectedBlank] = useState(null);
   const [submitted, setSubmitted] = useState(false);
@@ -3947,6 +3952,9 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit
   const [storyTr, setStoryTr] = useState(null);
   const [storyTrLoad, setStoryTrLoad] = useState(false);
   const [addedWords, setAddedWords] = useState(new Set());
+  const [audioState, setAudioState] = useState("idle");
+  const audioRef = useRef(null);
+  const stoppedRef = useRef(false);
   const scrollRef = useRef(null);
 
   const blanks = data.blanks || [];
@@ -4003,6 +4011,93 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit
     } catch { setStoryTr("?"); }
     setStoryTrLoad(false);
   };
+
+  const getFilledStory = () => {
+    return (data.story || "").replace(/\(\d+\)_+/g, (m) => {
+      const num = parseInt(m.match(/\d+/)[0]);
+      const blank = blanks.find(b => b.num === num);
+      return blank ? (blank.display || blank.answer) : "___";
+    });
+  };
+
+  const fetchTtsAudio = async (text, voiceId) => {
+    const r = await fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice_id: voiceId || undefined }),
+    });
+    if (!r.ok) throw new Error("TTS " + r.status);
+    const blob = await r.blob();
+    return URL.createObjectURL(blob);
+  };
+
+  const playAudio = async () => {
+    if (audioState === "playing") {
+      stoppedRef.current = true;
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setAudioState("idle");
+      return;
+    }
+    stoppedRef.current = false;
+    setAudioState("loading");
+    try {
+      const fullText = getFilledStory();
+      if (mode === "dialoguefill" && data.characters && data.characters.length >= 2) {
+        const chars = data.characters;
+        const voiceF = "jBpfAFnaylXS5xwziYMM";
+        const voiceM = "onwK4e9ZLuTAKqWW03F9";
+        const voiceMap = {};
+        chars.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });
+        const lines = fullText.split("\n").filter(l => l.trim());
+        const chunks = [];
+        for (const line of lines) {
+          const match = line.match(/^([^:]+):\s*(.*)/);
+          if (match) {
+            const name = match[1].trim();
+            const voice = voiceMap[name] || voiceF;
+            chunks.push({ text: match[2].trim(), voice });
+          } else {
+            chunks.push({ text: line.trim(), voice: voiceF });
+          }
+        }
+        setAudioState("playing");
+        for (const chunk of chunks) {
+          if (stoppedRef.current) break;
+          const url = await fetchTtsAudio(chunk.text, chunk.voice);
+          if (stoppedRef.current) { URL.revokeObjectURL(url); break; }
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          await new Promise((resolve) => {
+            audio.onended = resolve;
+            audio.onerror = resolve;
+            audio.onpause = resolve;
+            audio.play().catch(resolve);
+          });
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        const url = await fetchTtsAudio(fullText);
+        if (stoppedRef.current) { URL.revokeObjectURL(url); throw new Error("stopped"); }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setAudioState("playing");
+        await new Promise((resolve) => {
+          audio.onended = resolve;
+          audio.onerror = resolve;
+          audio.play().catch(resolve);
+        });
+        URL.revokeObjectURL(url);
+      }
+      audioRef.current = null;
+      if (!stoppedRef.current) setAudioState("idle");
+    } catch (e) {
+      audioRef.current = null;
+      setAudioState("idle");
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } };
+  }, []);
 
   useEffect(() => {
     const close = () => setWordPopup(null);
@@ -4144,13 +4239,17 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit
                 {t.backToLibrary}
               </button>
             </div>
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 14, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
               <button onClick={translateStory} disabled={storyTrLoad}
                 style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: storyTrLoad ? "default" : "pointer", opacity: storyTrLoad ? 0.6 : 1 }}>
                 {storyTrLoad ? t.thinking : t.fillTranslateStory}
               </button>
-              {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}` }}>{storyTr}</div>}
+              <button onClick={playAudio} disabled={audioState === "loading"}
+                style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${audioState === "playing" ? C.acc : C.border}`, background: audioState === "playing" ? C.accBg : C.s1, color: audioState === "playing" ? C.acc : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: audioState === "loading" ? "default" : "pointer", opacity: audioState === "loading" ? 0.6 : 1 }}>
+                {audioState === "loading" ? t.thinking : audioState === "playing" ? t.fillListenStop : t.fillListen}
+              </button>
             </div>
+            {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}` }}>{storyTr}</div>}
           </div>
         )}
       </div>
@@ -7215,7 +7314,7 @@ function AppInner() {
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && fillData ? (
-              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
+              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl} mode={exMode}
                 onComplete={(usedIds) => completeExercise(exMode, usedIds)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }}
                 onRestart={() => { setFillData(null); launchEx(); }}

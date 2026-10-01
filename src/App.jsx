@@ -1686,7 +1686,7 @@ Return ONLY this JSON structure:
 }
 CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the story. If they are the same, set both to the same value.`,
 
-    dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
+    dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
 - THEME: ${theme ? `The student chose this theme: "${theme}". Set the dialogue in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
@@ -1724,7 +1724,7 @@ ${structs}
 
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
-  const tok = (mode === "fill" || mode === "dialoguefill") ? 2500 : undefined;
+  const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : undefined;
   return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 

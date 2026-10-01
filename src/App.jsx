@@ -4149,8 +4149,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
       const lines = fullText.split("\n").filter(l => l.trim());
       const isDialogue = mode === "dialoguefill" && lines.length > 1;
       if (isDialogue) {
-        const voiceF = "jBpfAFnaylXS5xwziYMM";
-        const voiceM = "onwK4e9ZLuTAKqWW03F9";
+        const voiceF = "21m00Tcm4TlvDq8ikWAM";
+        const voiceM = "pNInz6obpgDQGcFmaJgB";
         const voiceMap = {};
         if (data.characters && data.characters.length >= 2) {
           data.characters.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });

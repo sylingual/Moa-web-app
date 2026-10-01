@@ -116,7 +116,8 @@ const T = {
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
-    fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.",
+    fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
+    fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter au vocab",
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -429,7 +430,8 @@ const T = {
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
     fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
-    fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.",
+    fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
+    fillTranslateStory: "Translate story", fillAddVocab: "Add to vocab",
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -742,7 +744,8 @@ const T = {
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
     fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
-    fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.",
+    fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
+    fillTranslateStory: "이야기 번역", fillAddVocab: "단어장에 추가",
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
@@ -3933,11 +3936,17 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 }
 
 // #64 — Fill-in-the-blank story exercise with interactive word bank
-function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestart }) {
+function FillStoryExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit, onRestart, onAddVocab }) {
   const [placed, setPlaced] = useState({});
   const [selectedBlank, setSelectedBlank] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
+  const [wordPopup, setWordPopup] = useState(null);
+  const [trCache, setTrCache] = useState({});
+  const [storyTr, setStoryTr] = useState(null);
+  const [storyTrLoad, setStoryTrLoad] = useState(false);
+  const [addedWords, setAddedWords] = useState(new Set());
+  const scrollRef = useRef(null);
 
   const blanks = data.blanks || [];
   const words = useMemo(() => {
@@ -3950,6 +3959,54 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
     const parts = (data.story || "").split(/\((\d+)\)_+/);
     return parts.map((part, i) => i % 2 === 0 ? { type: "text", value: part } : { type: "blank", num: parseInt(part) });
   }, [data]);
+
+  const trLang = lang === "ko" ? "en" : lang;
+
+  const translateWord = async (word, rect) => {
+    const key = word.replace(/[.,!?;:()]/g, "").trim();
+    if (!key) return;
+    const popupX = Math.min(rect.left, window.innerWidth - 200);
+    const popupY = rect.bottom + 4;
+    if (trCache[key]) {
+      setWordPopup({ word: key, translation: trCache[key], x: popupX, y: popupY });
+      return;
+    }
+    setWordPopup({ word: key, translation: null, x: popupX, y: popupY });
+    try {
+      const r = await fetch("/api/translate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: key, from: tl, to: trLang }),
+      });
+      const d = await r.json();
+      const tr = d.translation || "?";
+      setTrCache(prev => ({ ...prev, [key]: tr }));
+      setWordPopup(prev => prev && prev.word === key ? { ...prev, translation: tr } : prev);
+    } catch { setWordPopup(prev => prev && prev.word === key ? { ...prev, translation: "?" } : prev); }
+  };
+
+  const translateStory = async () => {
+    if (storyTr) return;
+    setStoryTrLoad(true);
+    try {
+      const fullText = (data.story || "").replace(/\(\d+\)_+/g, (m) => {
+        const num = parseInt(m.match(/\d+/)[0]);
+        const blank = blanks.find(b => b.num === num);
+        return blank ? (blank.display || blank.answer) : "___";
+      });
+      const r = await fetch("/api/translate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: fullText, from: tl, to: trLang }),
+      });
+      const d = await r.json();
+      setStoryTr(d.translation || "?");
+    } catch { setStoryTr("?"); }
+    setStoryTrLoad(false);
+  };
+
+  useEffect(() => {
+    const close = () => setWordPopup(null);
+    if (wordPopup) { document.addEventListener("click", close); return () => document.removeEventListener("click", close); }
+  }, [wordPopup]);
 
   const placedWords = new Set(Object.values(placed));
   const allFilled = blanks.length > 0 && blanks.every(b => placed[b.num]);
@@ -3991,17 +4048,32 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
   const correct = results ? Object.values(results).filter(Boolean).length : 0;
   const total = blanks.length;
 
+  const renderTextWithTap = (text, segKey) => {
+    const tokens = text.split(/(\s+)/);
+    return tokens.map((tok, j) => {
+      if (/^\s+$/.test(tok)) return <span key={segKey + "-" + j}>{tok}</span>;
+      return (
+        <span key={segKey + "-" + j} onClick={(e) => { e.stopPropagation(); translateWord(tok, e.currentTarget.getBoundingClientRect()); }}
+          style={{ cursor: "pointer", borderRadius: 3, transition: "background 0.1s" }}
+          onMouseEnter={e => e.currentTarget.style.background = C.accBg}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          {tok}
+        </span>
+      );
+    });
+  };
+
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"<-"} {t.back}</button>
         {submitted && <div style={{ fontSize: 12, fontWeight: 600, color: correct === total ? C.ok : C.warn }}>{t.fillScore(correct, total)}</div>}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px 24px" }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px 24px" }}>
         {data.message && <div style={{ fontSize: 13, color: C.txtS, marginBottom: 14, lineHeight: 1.6 }}>{data.message}</div>}
         <div style={{ fontSize: 14.5, lineHeight: 2.4, fontFamily: tFont, color: C.txt, whiteSpace: "pre-wrap" }}>
           {segments.map((seg, i) => {
-            if (seg.type === "text") return <span key={i}>{seg.value}</span>;
+            if (seg.type === "text") return <span key={i}>{renderTextWithTap(seg.value, i)}</span>;
             const num = seg.num;
             const word = placed[num];
             const blank = blanks.find(b => b.num === num);
@@ -4029,7 +4101,7 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
           })}
         </div>
 
-        {!submitted && <div style={{ fontSize: 11.5, color: C.txtM, marginTop: 12, marginBottom: 4 }}>{t.fillTapBlank}</div>}
+        {!submitted && <div style={{ fontSize: 11.5, color: C.txtM, marginTop: 12, marginBottom: 4 }}>{t.fillTapBlank} {t.fillTapWord}</div>}
 
         <div style={{ marginTop: 12, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.fillWordBank}</div>
@@ -4062,7 +4134,7 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
           <div style={{ marginTop: 20, background: C.s2, border: `1px solid ${correct === total ? C.okB : C.warnB}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : "💪"}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.fillScore(correct, total)}</div>
-            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 14 }}>{correct === total ? t.fillDone : t.fillDone}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 14 }}>{t.fillDone}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                 {">"} {t.fillNewStory}
@@ -4071,9 +4143,43 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
                 {t.backToLibrary}
               </button>
             </div>
+            <div style={{ marginTop: 14 }}>
+              <button onClick={translateStory} disabled={storyTrLoad}
+                style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: storyTrLoad ? "default" : "pointer", opacity: storyTrLoad ? 0.6 : 1 }}>
+                {storyTrLoad ? t.thinking : t.fillTranslateStory}
+              </button>
+              {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}` }}>{storyTr}</div>}
+            </div>
           </div>
         )}
       </div>
+
+      {wordPopup && (
+        <div onClick={e => e.stopPropagation()} style={{
+          position: "fixed", left: Math.max(8, Math.min(wordPopup.x, window.innerWidth - 220)), top: wordPopup.y,
+          background: "#1d1d1f", color: "#fff", padding: "8px 12px", borderRadius: 8,
+          fontSize: 12.5, fontFamily: "'Plus Jakarta Sans'", maxWidth: 220, zIndex: 9999,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.25)", lineHeight: 1.5,
+        }}>
+          <div style={{ fontWeight: 600, fontSize: 11, opacity: 0.7, marginBottom: 2, fontFamily: tFont }}>{wordPopup.word}</div>
+          {wordPopup.translation ? <div>{wordPopup.translation}</div> : <div className="pulse" style={{ opacity: 0.6 }}>...</div>}
+          {wordPopup.translation && onAddVocab && (
+            <button onClick={(e) => {
+              e.stopPropagation();
+              const w = wordPopup.word;
+              if (!addedWords.has(w)) { onAddVocab(w); setAddedWords(prev => new Set([...prev, w])); }
+            }}
+              style={{
+                marginTop: 6, display: "block", width: "100%", padding: "4px 8px", borderRadius: 5,
+                border: "1px solid rgba(255,255,255,0.2)", background: addedWords.has(wordPopup.word) ? "rgba(61,170,92,0.3)" : "rgba(255,255,255,0.1)",
+                color: "#fff", fontSize: 11, fontFamily: "'Plus Jakarta Sans'", cursor: addedWords.has(wordPopup.word) ? "default" : "pointer",
+                textAlign: "center",
+              }}>
+              {addedWords.has(wordPopup.word) ? t.addedToVocab : `+ ${t.fillAddVocab}`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -7108,10 +7214,11 @@ function AppInner() {
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && fillData ? (
-              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
                 onComplete={(usedIds) => completeExercise(exMode, usedIds)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }}
-                onRestart={() => { setFillData(null); launchEx(); }} />
+                onRestart={() => { setFillData(null); launchEx(); }}
+                onAddVocab={addWordToVocab} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && exLoad ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
                 <div className="pulse" style={{ fontSize: 13, color: C.txtM }}>{t.thinking}</div>

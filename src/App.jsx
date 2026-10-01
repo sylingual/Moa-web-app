@@ -3744,7 +3744,8 @@ function AppInner() {
     let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
     if (libFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (libFilter === "grammar") base = base.filter(c => c.type !== "vocab");
-    if (libTagFilter) base = base.filter(c => (c.tags || []).includes(libTagFilter));
+    if (libTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
+    else if (libTagFilter) base = base.filter(c => (c.tags || []).includes(libTagFilter));
     const order = { in_progress: 0, new: 1, review: 1, studied: 2, acquired: 3 };
     return [...base].sort((a, b) => {
       const oa = order[migrateStatus(a.status)] ?? 4;
@@ -3762,7 +3763,8 @@ function AppInner() {
     base = base.filter(c => c.status === "studied" || c.status === "acquired");
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
-    if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
+    if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
+    else if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
     return base;
   }, [allCards, tl, exFilter, exTagFilter]);
   const context = useMemo(() => buildContext(data, lang, tl), [data, lang, tl]);
@@ -5641,6 +5643,7 @@ function AppInner() {
                   <select value={libTagFilter || ""} onChange={e => setLibTagFilter(e.target.value || null)}
                     style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: libTagFilter ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
                     <option value="">{t.allTags}</option>
+                    <option value="__none__">{t.noTags}</option>
                     {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
                   </select>
                 )}
@@ -6505,6 +6508,7 @@ function AppInner() {
                             <select value={exTagFilter || ""} onChange={e => setExTagFilter(e.target.value || null)}
                               style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: exTagFilter ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
                               <option value="">{t.allTags}</option>
+                              <option value="__none__">{t.noTags}</option>
                               {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
                             </select>
                           )}

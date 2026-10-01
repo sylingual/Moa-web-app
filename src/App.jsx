@@ -4029,13 +4029,14 @@ function AppInner() {
   // Rebuilds when the day or target language changes.
   useEffect(() => {
     const today = dayKey();
-    if (data.today && data.today.date === today && data.today.tl === tl) return;
-    if (!data.cards.length) return; // wait for real data to load before freezing a set
+    if (data.today && data.today.date === today && data.today.tl === tl && (data.today.ids || []).length > 0) return;
+    const langCards = data.cards.filter(c => (c.targetLang || "ko") === tl);
+    if (!langCards.length) return;
     const ep = getEffectiveProfile(data, tl);
     const dc = Number(ep.dailyCount) > 0 ? Number(ep.dailyCount) : 5;
-    const langCards = data.cards.filter(c => (c.targetLang || "ko") === tl);
     const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
     const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
+    if (!newCards.length && !reviewCards.length) return;
     const picked = [...newCards.slice(0, dc), ...reviewCards.sort(() => Math.random() - 0.5).slice(0, Math.max(0, dc - newCards.length))].slice(0, dc);
     const ids = picked.map(c => c.id);
     const originalStatus = {};

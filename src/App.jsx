@@ -63,23 +63,23 @@ const T = {
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
     vocab: "Vocabulaire",
-    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Comprehension",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
-    compTitle: "Comprehension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
+    compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
     compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
-    compQuestion: "Question", compCheck: "Verifier", compNext: "Suivant",
-    compCorrect: "Bonne reponse !", compWrong: "Pas tout a fait.",
-    compLevel1Done: "Niveau 1 termine ! Tu veux tenter le niveau 2 ?",
+    compQuestion: "Question", compCheck: "Vérifier", compNext: "Suivant",
+    compCorrect: "Bonne réponse !", compWrong: "Pas tout à fait.",
+    compLevel1Done: "Niveau 1 terminé ! Tu veux tenter le niveau 2 ?",
     compStartLevel2: "Passer au niveau 2", compFinish: "Terminer",
-    compReformulate: "Reformule en 1-2 phrases ce qui a ete dit :",
+    compReformulate: "Reformule en 1-2 phrases ce qui a été dit :",
     compYourReformulation: "Ta reformulation...",
     compIllustration: "Illustration",
     compIllustrationLoading: "Recherche d'illustration...",
-    compEncourage: "Pas besoin de connaitre tout le vocabulaire, l'important c'est de saisir le sens general !",
-    compSaved: "Comprehension sauvegardee !",
+    compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
+    compSaved: "Compréhension sauvegardée !",
     compResume: "Reprendre", compLevel: (n) => `Niveau ${n}`,
-    compDone: "Termine",
-    compInTargetLang: "Questions en langue cible", compInInterfaceLang: "Questions en francais",
+    compDone: "Terminé",
+    compInTargetLang: "Questions en langue cible", compInInterfaceLang: "Questions en français",
     vocabPickTitle: "Mots à étudier", vocabPickSub: "Désélectionne ceux que tu connais déjà.",
     studyTheseWords: "Étudier ces mots", vocabNoneSelected: "Sélectionne au moins un mot.",
     vocabStepGuess: "Devine le sens", vocabStepEtym: "Étymologie", vocabStepSyn: "Synonymes & mots liés",
@@ -89,9 +89,9 @@ const T = {
     vocabDone: "Vocab étudié ✓", vocabExitConfirm: "Quitter l'étude du vocabulaire ?",
     exerciseTitle: "Exercices",
     exerciseSub: "Choisis une catégorie, puis un exercice.",
-    exCatCE: "Compréhension Ecrite", exCatCEDesc: "Lire et comprendre",
-    exCatCO: "Compréhension Orale", exCatCODesc: "Ecouter et comprendre",
-    exCatPE: "Production Ecrite", exCatPEDesc: "Ecrire et produire",
+    exCatCE: "Compréhension Écrite", exCatCEDesc: "Lire et comprendre",
+    exCatCO: "Compréhension Orale", exCatCODesc: "Écouter et comprendre",
+    exCatPE: "Production Écrite", exCatPEDesc: "Écrire et produire",
     exCatPO: "Production Orale", exCatPODesc: "Parler et s'exprimer",
     exPickExercise: "Choisis un exercice",
     exPickCards: "Choisis les cartes à travailler",
@@ -103,7 +103,7 @@ const T = {
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
     exFlash: "Flashcards", exFlashDesc: "Retourne les cartes pour réviser le vocabulaire.",
-    exDictation: "Dictée", exDictationDesc: "Ecoute le mot ou la phrase et écris-le.",
+    exDictation: "Dictée", exDictationDesc: "Écoute le mot ou la phrase et écris-le.",
     exYouglish: "Vidéo en contexte", exYouglishDesc: "Voir le mot utilisé dans une vraie vidéo.",
     exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
@@ -115,8 +115,10 @@ const T = {
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
-    fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
-    fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.",
+    fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !", fillTryAgain: "Bien essayé ! Tu veux retenter ?", fillRetry: "Réessayer",
+    fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
+    fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio", fillListen: "Écouter", fillListenStop: "Arrêter",
+    fillThemeLabel: "Thème du scénario", fillThemeRandom: "Surprise !", fillThemes: ["Vie quotidienne", "Amis / sorties", "K-drama", "K-pop / fandom", "Réseaux sociaux", "Travail / business", "Café / restaurant", "Voyage en Corée"],
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -128,9 +130,9 @@ const T = {
     progressTitle: "Progression", progressGlobal: "Global",
     progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
     progressDays: (n, max) => `${n}/${max} jour${n > 1 ? "s" : ""}`,
-    progressComplete: "Completee !",
-    progressAutoAcquired: "Carte acquise automatiquement ! Toutes les categories sont completees.",
-    progressCatDone: (cat) => `Categorie ${cat} completee !`,
+    progressComplete: "Complétée !",
+    progressAutoAcquired: "Carte acquise automatiquement ! Toutes les catégories sont complétées.",
+    progressCatDone: (cat) => `Catégorie ${cat} complétée !`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -198,19 +200,19 @@ const T = {
     profileSaved: "Enregistré !", autoSaveHint: "Enregistrement automatique",
     saveProfile: "Enregistrer",
     langProfileTitle: (flag, name) => `Profil pour ${flag} ${name}`,
-    langProfileSub: "Adapte ces informations pour cette langue. Elles aident l'IA a personnaliser tes lecons.",
-    langProfilePrefill: "Pre-rempli depuis ton profil existant. Modifie ce que tu veux !",
+    langProfileSub: "Adapte ces informations pour cette langue. Elles aident l'IA à personnaliser tes leçons.",
+    langProfilePrefill: "Pré-rempli depuis ton profil existant. Modifie ce que tu veux !",
     langProfileSave: "Continuer",
     langProfileSkip: "Plus tard",
-    langDreamLabel: "Ton reve le plus fou avec cette langue",
+    langDreamLabel: "Ton rêve le plus fou avec cette langue",
     langLevelLabel: "Ton niveau dans cette langue",
     langGoalsLabel: "Tes objectifs",
-    langToolsLabel: "Outils utilises en parallele pour cette langue",
+    langToolsLabel: "Outils utilisés en parallèle pour cette langue",
     langDailyLabel: "Cartes par jour",
     langNotesLabel: "Tes notes personnelles",
     langTeacherNotesLabel: "Notes du professeur",
     genderLabel: "Genre",
-    genderNone: "Non renseigné",
+    genderNone: "Non renseigné(e)",
     genderM: "Homme",
     genderF: "Femme",
     ageLabel: "Âge",
@@ -252,7 +254,7 @@ const T = {
     filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
     filterByTag: "Filtrer par tag", allTags: "Tous les tags",
     addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum", tagRelated: "Cartes avec ce tag", tagNoOther: "Aucune autre carte avec ce tag",
-    tagPlaceholder: "Nouveau tag...", tagSuggested: "Suggere",
+    tagPlaceholder: "Nouveau tag...", tagSuggested: "Suggéré",
     noTags: "Aucun tag",
     restudyText: "Réétudier ce texte",
     sourcesNone: "Sans texte d'origine",
@@ -428,8 +430,10 @@ const T = {
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
-    fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
-    fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.",
+    fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!", fillTryAgain: "Nice try! Want to try again?", fillRetry: "Try again",
+    fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
+    fillTranslateStory: "Translate story", fillAddVocab: "Add to library", fillListen: "Listen", fillListenStop: "Stop",
+    fillThemeLabel: "Scenario theme", fillThemeRandom: "Surprise me!", fillThemes: ["Daily life", "Friends / hangouts", "K-drama", "K-pop / fandom", "Social media", "Work / business", "Cafe / restaurant", "Travel in Korea"],
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -741,8 +745,10 @@ const T = {
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
-    fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
-    fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.",
+    fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!", fillTryAgain: "잘 했어! 다시 해볼래?", fillRetry: "다시 하기",
+    fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
+    fillTranslateStory: "이야기 번역", fillAddVocab: "라이브러리에 추가", fillListen: "듣기", fillListenStop: "멈추기",
+    fillThemeLabel: "시나리오 테마", fillThemeRandom: "랜덤!", fillThemes: ["일상생활", "친구 / 놀기", "한국 드라마", "K-pop / 팬덤", "SNS", "직장 / 비즈니스", "카페 / 식당", "한국 여행"],
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
@@ -1634,7 +1640,7 @@ async function findRealExamples(card, lang, tlCode) {
   }
 }
 
-async function genExercise(cards, mode, lang, context, tlCode) {
+async function genExercise(cards, mode, lang, context, tlCode, theme) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
@@ -1662,7 +1668,7 @@ Keep the whole message SHORT and focused on this single question. Do NOT preview
     fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- If you know the student's interests (see LEARNER PROFILE), set the story in a context they care about
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - The story should feel natural and immersive, not like a textbook exercise
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
@@ -1683,8 +1689,9 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the dialogue in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - Give the characters names and a realistic situation
+- Each dialogue line MUST start with "CharacterName: " (name followed by colon and space)
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
 - Replace each used word with a numbered blank: (1)______, (2)______, etc.
@@ -1694,12 +1701,16 @@ Return ONLY this JSON structure:
 {
   "message": "One-line intro describing the situation (in the student's UI language)",
   "story": "The dialogue text with character names and (1)______, (2)______, etc.",
+  "characters": [
+    {"name": "CharName1", "gender": "F"},
+    {"name": "CharName2", "gender": "M"}
+  ],
   "blanks": [
     {"num": 1, "answer": "exact dictionary form from vocabulary list", "display": "conjugated/inflected form as it fits in the dialogue"},
     {"num": 2, "answer": "exact dictionary form", "display": "form in context"}
   ]
 }
-CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value.`
+CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value. "characters" lists each speaker with their gender ("F" or "M").`
   };
 
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
@@ -1713,7 +1724,8 @@ ${structs}
 
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
-  return parseJSON((await callAI(sys, `Generate the exercise now.`)).text);
+  const tok = (mode === "fill" || mode === "dialoguefill") ? 2500 : undefined;
+  return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 
 async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {
@@ -3933,11 +3945,34 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 }
 
 // #64 — Fill-in-the-blank story exercise with interactive word bank
-function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestart }) {
+function stripKoreanParticle(word) {
+  if (!word || !/[가-힣]/.test(word)) return word;
+  const particles = [
+    "에게서", "으로서", "으로써", "한테서",
+    "에서", "에게", "한테", "으로", "부터", "까지", "처럼", "같이", "보다", "밖에", "대로", "이랑", "이나", "이며", "께서", "마저", "조차",
+    "로서", "로써",
+    "은", "는", "이", "가", "을", "를", "과", "와", "로", "의", "에", "도", "만", "뿐", "나", "랑", "며",
+  ];
+  for (const p of particles) {
+    if (word.length > p.length && word.endsWith(p)) return word.slice(0, -p.length);
+  }
+  return word;
+}
+
+function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, onExit, onRestart, onAddVocab }) {
   const [placed, setPlaced] = useState({});
   const [selectedBlank, setSelectedBlank] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState(null);
+  const [wordPopup, setWordPopup] = useState(null);
+  const [trCache, setTrCache] = useState({});
+  const [storyTr, setStoryTr] = useState(null);
+  const [storyTrLoad, setStoryTrLoad] = useState(false);
+  const [addedWords, setAddedWords] = useState(new Set());
+  const [audioState, setAudioState] = useState("idle");
+  const audioRef = useRef(null);
+  const stoppedRef = useRef(false);
+  const scrollRef = useRef(null);
 
   const blanks = data.blanks || [];
   const words = useMemo(() => {
@@ -4158,20 +4193,43 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
     }
   };
 
+  const handleRetry = () => {
+    setPlaced({}); setSelectedBlank(null); setSubmitted(false); setResults(null);
+    setStoryTr(null); setStoryTrLoad(false);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setAudioState("idle"); stoppedRef.current = true;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  };
+
   const correct = results ? Object.values(results).filter(Boolean).length : 0;
   const total = blanks.length;
 
+  const renderTextWithTap = (text, segKey) => {
+    const tokens = text.split(/(\s+)/);
+    return tokens.map((tok, j) => {
+      if (/^\s+$/.test(tok)) return <span key={segKey + "-" + j}>{tok}</span>;
+      return (
+        <span key={segKey + "-" + j} onClick={(e) => { e.stopPropagation(); translateWord(tok, e.currentTarget.getBoundingClientRect()); }}
+          style={{ cursor: "pointer", borderRadius: 3, transition: "background 0.1s" }}
+          onMouseEnter={e => e.currentTarget.style.background = C.accBg}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          {tok}
+        </span>
+      );
+    });
+  };
+
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"<-"} {t.back}</button>
         {submitted && <div style={{ fontSize: 12, fontWeight: 600, color: correct === total ? C.ok : C.warn }}>{t.fillScore(correct, total)}</div>}
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px 24px" }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px 24px" }}>
         {data.message && <div style={{ fontSize: 13, color: C.txtS, marginBottom: 14, lineHeight: 1.6 }}>{data.message}</div>}
         <div style={{ fontSize: 14.5, lineHeight: 2.4, fontFamily: tFont, color: C.txt, whiteSpace: "pre-wrap" }}>
           {segments.map((seg, i) => {
-            if (seg.type === "text") return <span key={i}>{seg.value}</span>;
+            if (seg.type === "text") return <span key={i}>{renderTextWithTap(seg.value, i)}</span>;
             const num = seg.num;
             const word = placed[num];
             const blank = blanks.find(b => b.num === num);
@@ -4199,7 +4257,7 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
           })}
         </div>
 
-        {!submitted && <div style={{ fontSize: 11.5, color: C.txtM, marginTop: 12, marginBottom: 4 }}>{t.fillTapBlank}</div>}
+        {!submitted && <div style={{ fontSize: 11.5, color: C.txtM, marginTop: 12, marginBottom: 4 }}>{t.fillTapBlank} {t.fillTapWord}</div>}
 
         <div style={{ marginTop: 12, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.fillWordBank}</div>
@@ -4230,20 +4288,63 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
 
         {submitted && (
           <div style={{ marginTop: 20, background: C.s2, border: `1px solid ${correct === total ? C.okB : C.warnB}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : "💪"}</div>
+            {correct === total && <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>}
             <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.fillScore(correct, total)}</div>
-            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 14 }}>{correct === total ? t.fillDone : t.fillDone}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 10 }}>{correct === total ? t.fillDone : t.fillTryAgain}</div>
+            <button onClick={playAudio} disabled={audioState === "loading"}
+              style={{ padding: "10px 24px", borderRadius: 10, border: `2px solid ${audioState === "playing" ? C.acc : C.border}`, background: audioState === "playing" ? C.accBg : C.s1, color: audioState === "playing" ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: audioState === "loading" ? "default" : "pointer", opacity: audioState === "loading" ? 0.6 : 1, marginBottom: 14 }}>
+              {audioState === "loading" ? "..." : audioState === "playing" ? `⏹ ${t.fillListenStop}` : `🔊 ${t.fillListen}`}
+            </button>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-              <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {correct < total && (
+                <button onClick={handleRetry} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                  {t.fillRetry}
+                </button>
+              )}
+              <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: correct === total ? C.acc : "none", color: correct === total ? C.onAcc : C.txtS, border: correct === total ? "none" : `1px solid ${C.borderS}`, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                 {">"} {t.fillNewStory}
               </button>
               <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
                 {t.backToLibrary}
               </button>
             </div>
+            <div style={{ marginTop: 14 }}>
+              <button onClick={translateStory} disabled={storyTrLoad}
+                style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: storyTrLoad ? "default" : "pointer", opacity: storyTrLoad ? 0.6 : 1 }}>
+                {storyTrLoad ? t.thinking : t.fillTranslateStory}
+              </button>
+            </div>
+            {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>{storyTr}</div>}
           </div>
         )}
       </div>
+
+      {wordPopup && (
+        <div onClick={e => e.stopPropagation()} style={{
+          position: "fixed", left: Math.max(8, Math.min(wordPopup.x, window.innerWidth - 220)), top: wordPopup.y,
+          background: "#1d1d1f", color: "#fff", padding: "8px 12px", borderRadius: 8,
+          fontSize: 12.5, fontFamily: "'Plus Jakarta Sans'", maxWidth: 220, zIndex: 9999,
+          boxShadow: "0 4px 16px rgba(0,0,0,0.25)", lineHeight: 1.5,
+        }}>
+          <div style={{ fontWeight: 600, fontSize: 11, opacity: 0.7, marginBottom: 2, fontFamily: tFont }}>{wordPopup.word}{wordPopup.original ? <span style={{ fontWeight: 400, opacity: 0.5 }}> ({wordPopup.original})</span> : null}</div>
+          {wordPopup.translation ? <div>{wordPopup.translation}</div> : <div className="pulse" style={{ opacity: 0.6 }}>...</div>}
+          {wordPopup.translation && onAddVocab && (
+            <button onClick={(e) => {
+              e.stopPropagation();
+              const w = wordPopup.word;
+              if (!addedWords.has(w)) { onAddVocab(w); setAddedWords(prev => new Set([...prev, w])); }
+            }}
+              style={{
+                marginTop: 6, display: "block", width: "100%", padding: "4px 8px", borderRadius: 5,
+                border: "1px solid rgba(255,255,255,0.2)", background: addedWords.has(wordPopup.word) ? "rgba(61,170,92,0.3)" : "rgba(255,255,255,0.1)",
+                color: "#fff", fontSize: 11, fontFamily: "'Plus Jakarta Sans'", cursor: addedWords.has(wordPopup.word) ? "default" : "pointer",
+                textAlign: "center",
+              }}>
+              {addedWords.has(wordPopup.word) ? t.addedToVocab : `+ ${t.fillAddVocab}`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4328,6 +4429,7 @@ function AppInner() {
   const [exOn, setExOn] = useState(false);
   const [exDone, setExDone] = useState(false);
   const [fillData, setFillData] = useState(null);
+  const [exTheme, setExTheme] = useState(null);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
 
@@ -5656,16 +5758,16 @@ function AppInner() {
   };
 
   // ---- EXERCISE ----
-  const launchEx = async () => {
+  const launchEx = async (theme) => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
     // Fill modes use interactive word-bank UI
     if (exMode === "fill" || exMode === "dialoguefill") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-      try { const r = await genExercise(sel, exMode, lang, context, tl); setFillData(r); }
-      catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx())]); }
-      setExLoad(false);
+      try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
+      catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
+      setExLoad(false); setExTheme(null);
       return;
     }
     setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
@@ -7257,13 +7359,43 @@ function AppInner() {
                       }
                     </div>
                     {visibleCards.length > 0 && (
-                      <button onClick={launchEx} disabled={exSel.size === 0}
+                      <button onClick={() => {
+                        if (exSel.size === 0) return;
+                        if (exMode === "fill" || exMode === "dialoguefill") { setExTheme(null); setExStep("theme"); }
+                        else launchEx();
+                      }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
                         ▶ {t.launchEx}
                       </button>
                     )}
                   </>); })()}
                 </>)}
+                {exStep === "theme" && (() => {
+                  const allThemes = t.fillThemes || [];
+                  const shuffled = [...allThemes].sort(() => Math.random() - 0.5);
+                  const picks = shuffled.slice(0, 3);
+                  return (<>
+                    <button onClick={() => setExStep("cards")}
+                      style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                      ← {t.back}
+                    </button>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginTop: 4 }}>{t.fillThemeLabel}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 340, marginTop: 8 }}>
+                      <button onClick={() => launchEx(null)}
+                        style={{ padding: "16px 20px", borderRadius: 12, border: `2px solid ${C.acc}`, background: C.accBg, color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "center" }}>
+                        🎲 {t.fillThemeRandom}
+                      </button>
+                      {picks.map(th => (
+                        <button key={th} onClick={() => launchEx(th)}
+                          style={{ padding: "16px 20px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s2, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; e.currentTarget.style.background = C.accBg; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.s2; }}>
+                          {th}
+                        </button>
+                      ))}
+                    </div>
+                  </>);
+                })()}
               </div>
             ) : exMode === "match" ? (
               <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("match", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
@@ -7278,10 +7410,11 @@ function AppInner() {
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && fillData ? (
-              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl} mode={exMode}
                 onComplete={(usedIds) => completeExercise(exMode, usedIds)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }}
-                onRestart={() => { setFillData(null); launchEx(); }} />
+                onRestart={() => { setFillData(null); setExOn(false); setExStep("theme"); }}
+                onAddVocab={addWordToVocab} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && exLoad ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
                 <div className="pulse" style={{ fontSize: 13, color: C.txtM }}>{t.thinking}</div>

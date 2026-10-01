@@ -6848,7 +6848,7 @@ function AppInner() {
           ) : showRecap && recapCard ? (
             // RECAP SCREEN
             <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-              <div style={{ width: "100%", maxWidth: 540, padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ width: "100%", maxWidth: 540, padding: "24px 20px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>

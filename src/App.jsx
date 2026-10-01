@@ -2081,6 +2081,70 @@ function CelebrationOverlay({ visible, onClose, lang }) {
 }
 
 // =============================================
+// TRY AGAIN MEMES (Issue #85)
+// =============================================
+const TRYAGAIN_GIFS = [
+  { type: "tenor", id: "4594291201445099477" },
+  { type: "tenor", id: "7859548" },
+  { type: "tenor", id: "23923161" },
+  { type: "tenor", id: "6007654011400576648" },
+  { type: "tenor", id: "22763241" },
+  { type: "tenor", id: "18154031" },
+  { type: "tenor", id: "2957807524932750242" },
+  { type: "tenor", id: "17896755514491849937" },
+  { type: "tenor", id: "20066437" },
+  { type: "tenor", id: "16810389090500041515" },
+  { type: "tenor", id: "13022311" },
+  { type: "tenor", id: "9007567504723413811" },
+  { type: "tenor", id: "5802860041520475247" },
+  { type: "tenor", id: "10499461630894773748" },
+];
+
+const TRYAGAIN_MESSAGES_FR = [
+  "Pas grave, on recommence !", "Presque ! Encore un essai ?", "T'abandonnes pas, hein ?",
+  "Allez, une autre chance !", "C'est en forgeant qu'on forge !", "Tu vas y arriver !",
+];
+const TRYAGAIN_MESSAGES_EN = [
+  "Nice try! Again?", "Almost! One more shot?", "Don't give up!",
+  "Let's try again!", "Practice makes perfect!", "You got this!",
+];
+const TRYAGAIN_MESSAGES_KO = [
+  "괜찮아, 다시 해보자!", "거의 다 맞았어!", "포기하지 마!",
+  "한 번 더!", "연습하면 잘할 수 있어!", "할 수 있어!",
+];
+
+function TryAgainOverlay({ visible, onClose, lang }) {
+  const [entry] = useState(() => TRYAGAIN_GIFS[Math.floor(Math.random() * TRYAGAIN_GIFS.length)]);
+  const msgs = lang === "fr" ? TRYAGAIN_MESSAGES_FR : lang === "ko" ? TRYAGAIN_MESSAGES_KO : TRYAGAIN_MESSAGES_EN;
+  const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
+
+  if (!visible) return null;
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, zIndex: 2000, display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)",
+      cursor: "pointer", animation: "fadeIn 0.2s ease-out",
+    }}>
+      <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
+        💪 {msg}
+      </div>
+      <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontSize: 100, position: "absolute", zIndex: 0 }}>😅</span>
+        <iframe
+          src={`https://tenor.com/embed/${entry.id}`}
+          style={{ position: "absolute", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)", border: "none", pointerEvents: "none", zIndex: 1 }}
+          allowFullScreen
+          title="try again"
+        />
+      </div>
+      <div style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+        {lang === "fr" ? "Touche pour continuer" : lang === "ko" ? "터치해서 계속" : "Tap to continue"}
+      </div>
+    </div>
+  );
+}
+
+// =============================================
 // COMPONENTS
 // =============================================
 
@@ -3970,6 +4034,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
   const [storyTrLoad, setStoryTrLoad] = useState(false);
   const [addedWords, setAddedWords] = useState(new Set());
   const [audioState, setAudioState] = useState("idle");
+  const [showTryAgain, setShowTryAgain] = useState(false);
   const audioRef = useRef(null);
   const stoppedRef = useRef(false);
   const scrollRef = useRef(null);
@@ -4190,12 +4255,14 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
         if (card) usedCardIds.push(card.id);
       });
       if (usedCardIds.length > 0 && onComplete) onComplete(usedCardIds);
+    } else {
+      setShowTryAgain(true);
     }
   };
 
   const handleRetry = () => {
     setPlaced({}); setSelectedBlank(null); setSubmitted(false); setResults(null);
-    setStoryTr(null); setStoryTrLoad(false);
+    setStoryTr(null); setStoryTrLoad(false); setShowTryAgain(false);
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setAudioState("idle"); stoppedRef.current = true;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -4318,6 +4385,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
           </div>
         )}
       </div>
+
+      <TryAgainOverlay visible={showTryAgain} onClose={() => setShowTryAgain(false)} lang={lang} />
 
       {wordPopup && (
         <div onClick={e => e.stopPropagation()} style={{

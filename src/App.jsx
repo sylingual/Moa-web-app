@@ -2010,13 +2010,11 @@ function recordExerciseProgress(dataObj, cardIds, exMode) {
 // CELEBRATION MEMES (Issue #76)
 // =============================================
 const CELEBRATION_SOUNDS = [
-  "/sounds/validation-1.mp3",
-  "/sounds/validation-2.mp3",
-  "/sounds/validation-3.mp3",
-  "/sounds/validation-4.mp3",
-  "/sounds/validation-5.mp3",
-  "/sounds/validation-6.mp3",
-  "/sounds/validation-7.mp3",
+  "/sounds/validation/242501__gabrielaraujo__powerupsuccess.wav",
+  "/sounds/validation/456965__funwithsound__short-success-sound-glockenspiel-treasure-video-game.mp3",
+  "/sounds/validation/456966__funwithsound__success-fanfare-trumpets.mp3",
+  "/sounds/validation/511484__mlaudio__success_bell.wav",
+  "/sounds/validation/615099__mlaudio__magic_game_win_success.wav",
 ];
 
 const CELEBRATION_GIFS = [
@@ -5771,7 +5769,7 @@ function AppInner() {
   };
 
   // ---- EXERCISE MUSIC (Issue #77) ----
-  const EX_MUSIC_URL = "/sounds/study-bgm.mp3";
+  const EX_MUSIC_URL = "/sounds/background/220060__portwain__quiz-game-music-loop-bpm-90.wav";
   useEffect(() => {
     const audio = exMusicRef.current;
     if (!audio) return;

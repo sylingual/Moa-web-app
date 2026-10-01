@@ -6847,8 +6847,8 @@ function AppInner() {
             </div>
           ) : showRecap && recapCard ? (
             // RECAP SCREEN
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-              <div style={{ width: "100%", maxWidth: 540, padding: "24px 20px 80px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+              <div style={{ width: "100%", maxWidth: 540, margin: "0 auto", padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
@@ -7131,7 +7131,7 @@ function AppInner() {
 
                 {/* Full lesson */}
                 <button onClick={() => startLessonFromCard(recapCard)}
-                  style={{ padding: "12px 16px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "center" }}>
+                  style={{ padding: "12px 16px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "center", flexShrink: 0 }}>
                   🔄 {t.redoLesson}
                 </button>
               </div>

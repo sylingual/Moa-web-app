@@ -4322,9 +4322,12 @@ function AppInner() {
 
   const finishVocab = () => {
     const studiedWords = (vocabSession?.words || []).map(w => w.word);
+    const todayKey = new Date().toISOString().slice(0, 10);
     const updated = data.cards.map(c => {
       if (c.type === "vocab" && studiedWords.includes(c.korean)) {
-        return { ...c, status: c.status === "acquired" ? "acquired" : "studied", reviewCount: (c.reviewCount || 0) + 1 };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
+        return { ...c, status: c.status === "acquired" ? "acquired" : "studied", reviewCount: (c.reviewCount || 0) + 1, progress: prog };
       }
       return c;
     });
@@ -4732,14 +4735,17 @@ function AppInner() {
       const fmt = (result.formality || "").toLowerCase();
       const formality = ["casual", "neutral", "formal"].includes(fmt) ? fmt : "";
       const aiCategory = (result.category || "").toLowerCase().trim();
+      const todayKey = new Date().toISOString().slice(0, 10);
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
         const f = formality || c.formality || "";
         const existingTags = c.tags || [];
         const newTags = aiCategory && existingTags.length === 0 ? [aiCategory] : existingTags;
-        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f, tags: newTags };
-        return { ...c, status: "studied", reviewCount: rc, formality: f, tags: newTags };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
+        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f, tags: newTags, progress: prog };
+        return { ...c, status: "studied", reviewCount: rc, formality: f, tags: newTags, progress: prog };
       });
       const gain = wasFirstTime ? 20 : 10;
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
@@ -4751,12 +4757,14 @@ function AppInner() {
       setDerivedSel(new Set());
     } catch (e) {
       console.error("Summary generation error:", e);
-      // Still mark the card as studied even if summary generation failed
+      const todayKey2 = new Date().toISOString().slice(0, 10);
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
-        if (c.status === "acquired") return { ...c, reviewCount: rc };
-        return { ...c, status: "studied", reviewCount: rc };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        if (!(prog.ce || []).includes(todayKey2)) prog.ce = [...(prog.ce || []), todayKey2];
+        if (c.status === "acquired") return { ...c, reviewCount: rc, progress: prog };
+        return { ...c, status: "studied", reviewCount: rc, progress: prog };
       });
       save({ ...data, cards: updatedCards });
       setLessonSummary({

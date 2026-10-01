@@ -660,6 +660,311 @@ const T = {
     newExercise: "New exercise",
     backToLibrary: "Library",
   },
+  ko: {
+    library: "라이브러리", lesson: "레슨", import: "가져오기", exercise: "연습",
+    profile: "프로필",
+    review: "복습할 것", acquired: "습득 완료", reviewBtn: "복습하기",
+    toAcqTitle: "습득 완료로 표시할까요?", toAcqMsg: (k) => `"${k}"이(가) "습득 완료" 선반으로 이동해요 (제목만 표시돼요).`,
+    toStudiedTitle: "학습 중으로 되돌릴까요?", toStudiedMsg: (k) => `"${k}"이(가) 다시 학습 중인 카드로 돌아가요.`,
+    confirmBtn: "확인", learningShelf: "학습 중",
+    statusNew: "새 카드", statusInProgress: "진행 중", statusStudied: "학습함", statusAcquired: "습득 완료",
+    today: "오늘", todayCards: (n) => `${n}장`, todayEmpty: "모든 카드를 습득했어, 대단해! 🎉", todayDone: "완료!",
+    shelfMaskedHint: "뜻이 숨겨져 있어요, 맞춰보세요", shelfExpandHint: "클릭해서 펼치기", toStudied: "학습 중으로 되돌리기",
+    dailyCountLabel: "매일 추천 카드 수", markAcquired: "습득 완료 표시",
+    reviewCount: (n) => `복습 ${n}회`,
+    importTitle: "텍스트 가져오기",
+    importSub: "블로그 글이나 아무 학습 언어 텍스트를 붙여넣어 봐. AI가 네 수준에 맞는 포인트를 찾아줄 거야.",
+    analyze: "이 텍스트 분석하기", analyzing: "분석 중...",
+    importImage: "이미지 가져오기", ocrLoading: "텍스트 추출 중...", ocrEmpty: "이미지에서 텍스트를 찾지 못했어요.",
+    ocrNoTarget: (l) => `이 이미지에서 ${l} 텍스트를 찾지 못했어요. 혹시 다른 이미지 아닌가요?`,
+    pointsFound: (n) => `텍스트에서 포인트 ${n}개를 찾았어요`,
+    importAllKnown: "이 텍스트의 모든 포인트가 이미 라이브러리에 있어요, 새로 추가할 게 없어요.",
+    pickSub: "공부할 걸 골라봐, 아니면 이미 아는 건 체크해 둬.",
+    iKnow: "이거 알아", addedAcq: "추가됨 (습득 완료)",
+    startLesson: "레슨 시작", morePoints: "다른 포인트 찾기",
+    vocab: "어휘",
+    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해",
+    importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
+    compTitle: "텍스트 독해", compLevel1: "레벨 1: 객관식", compLevel2: "레벨 2: 바꿔 말하기",
+    compParagraph: (i, n) => `단락 ${i}/${n}`,
+    compQuestion: "문제", compCheck: "확인", compNext: "다음",
+    compCorrect: "정답이에요!", compWrong: "아쉽지만 틀렸어요.",
+    compLevel1Done: "레벨 1 완료! 레벨 2에 도전해 볼래?",
+    compStartLevel2: "레벨 2로 가기", compFinish: "끝내기",
+    compReformulate: "내용을 1~2문장으로 다시 정리해 봐:",
+    compYourReformulation: "네가 정리한 내용...",
+    compIllustration: "삽화",
+    compIllustrationLoading: "삽화 검색 중...",
+    compEncourage: "모든 단어를 다 알 필요 없어, 전체적인 뜻을 파악하는 게 중요해!",
+    compSaved: "독해 저장 완료!",
+    compResume: "이어하기", compLevel: (n) => `레벨 ${n}`,
+    compDone: "완료",
+    compInTargetLang: "학습 언어로 된 문제", compInInterfaceLang: "한국어로 된 문제",
+    vocabPickTitle: "공부할 단어", vocabPickSub: "이미 아는 단어는 선택 해제해.",
+    studyTheseWords: "이 단어들 공부하기", vocabNoneSelected: "최소 한 단어는 선택해 줘.",
+    vocabStepGuess: "뜻 맞춰보기", vocabStepEtym: "어원", vocabStepSyn: "동의어 & 관련어",
+    vocabStepFun: "알고 있었어?", vocabStepEx: "다른 예문",
+    vocabNext: "다음", vocabNextWord: "다음 단어 →", vocabFinishBtn: "끝내기",
+    vocabCorrect: "정답 ✓", vocabWrong: "아쉽지만 틀렸어", vocabWordOf: (i, n) => `단어 ${i}/${n}`,
+    vocabDone: "어휘 학습 완료 ✓", vocabExitConfirm: "어휘 학습을 그만둘까요?",
+    exerciseTitle: "연습 문제",
+    exerciseSub: "카테고리를 고른 다음, 연습을 골라봐.",
+    exCatCE: "읽기", exCatCEDesc: "읽고 이해하기",
+    exCatCO: "듣기", exCatCODesc: "듣고 이해하기",
+    exCatPE: "쓰기", exCatPEDesc: "쓰고 표현하기",
+    exCatPO: "말하기", exCatPODesc: "말하고 표현하기",
+    exPickExercise: "연습을 골라봐",
+    exPickCards: "연습할 카드를 골라봐",
+    exBackToCat: "카테고리",
+    exBackToEx: "연습 문제",
+    story: "이야기 만들기", storyDesc: "선택한 구조를 사용해서 글을 써 봐.",
+    qcm: "랜덤 퀴즈", qcmDesc: "새로운 예문으로 된 문제들.",
+    fillBlanks: "빈칸 채우기", fillDesc: "생성된 이야기의 빈칸을 선택한 단어로 채워 봐.",
+    exMatch: "연결하기", exMatchDesc: "각 단어를 뜻과 연결해 봐.",
+    exCross: "십자말풀이", exCrossDesc: "뜻을 보고 단어를 찾아봐.",
+    exFlash: "플래시카드", exFlashDesc: "카드를 뒤집어서 어휘를 복습해.",
+    exDictation: "받아쓰기", exDictationDesc: "단어나 문장을 듣고 써 봐.",
+    exYouglish: "영상 속 단어", exYouglishDesc: "실제 영상에서 단어가 쓰이는 걸 봐.",
+    exDialogueFill: "대화 빈칸 채우기", exDialogueFillDesc: "생성된 대화의 빈칸을 선택한 단어로 채워 봐.",
+    flashKnow: "알아", flashReview: "복습", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k}개 알고 있고, ${r}개 복습 필요`,
+    flashDone: "복습 수고했어!", flashRemaining: (n) => `${n}개 남았어`,
+    exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
+    imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
+    exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
+    matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
+    exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
+    crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
+    crossAcross: "가로", crossDown: "세로",
+    crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
+    genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
+    exGender: "Le ou La?", exGenderDesc: "각 명사에 맞는 관사를 골라봐.",
+    genderQuestion: "남성형? 여성형?", genderDone: "잘했어!",
+    genderScore: (c, t) => `${c}/${t} 정답`,
+    exRandom: "랜덤",
+    exMusicOn: "음악", exMusicOff: "음악",
+    progressTitle: "진행 상황", progressGlobal: "전체",
+    progressCE: "읽기", progressCO: "듣기", progressPE: "쓰기", progressPO: "말하기",
+    progressDays: (n, max) => `${n}/${max}일`,
+    progressComplete: "완료!",
+    progressAutoAcquired: "카드 자동 습득! 모든 카테고리 완료.",
+    progressCatDone: (cat) => `${cat} 카테고리 완료!`,
+    availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
+    moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
+    resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
+    askExamples: "예문 좀 더 보여줄래? 💡",
+    askExercise: "연습 문제 하나만 내줄래? ✏️",
+    askExplain: "다른 방식으로 설명해 줄 수 있어? 🔄",
+    anExercise: "연습 문제", explainOther: "다르게 설명", anImage: "이미지", youglishBtn: "영상",
+    askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
+    otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
+    imgChoose: "선택", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
+    cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
+    studyChooseTitle: "이 단어를 어떻게 공부할래?",
+    studyLesson: "전체 레슨", studyLessonDesc: "가이드 학습, 질문, 예문",
+    studyDirect: "번역만 보기", studyDirectDesc: "바로 뜻 확인 (쉬운 단어)",
+    directLoading: "뜻을 가져오는 중...",
+    addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
+    yourAnswer: "답을 입력해 봐...", grammar: "문법", expression: "표현",
+    points: "포인트", toReview: "복습 필요", acq: "습득 완료",
+    noCards: "아직 카드가 없어요. 텍스트를 가져와서 시작해 봐!",
+    placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
+    back: "뒤로", thinking: "생각 중...",
+    leaveTitle: "레슨을 나갈까요?", leaveBody: "진행 중인 레슨이 있어. 어떻게 할래?",
+    leaveKeep: "저장하고 나중에 이어하기", leaveDiscard: "저장 안 하고 나가기", leaveCancel: "취소",
+    resumeTitle: "레슨을 이어할까요?", resumeBody: "이 카드에 대해 진행 중인 세션이 있어.",
+    resumeBtn: "이어하기", restartBtn: "처음부터",
+    noAcquired: "아직 학습하거나 습득한 카드가 없어요.",
+    emptyLesson: "텍스트를 가져오고 포인트를 골라서 시작해 봐.",
+    syncLabel: "동기화 코드",
+    syncPlaceholder: "간단한 비밀번호...",
+    syncInfo: "이 코드로 기기 간 데이터를 동기화해요. 어디서든 같은 코드를 사용해 줘.",
+    syncOn: "동기화 활성화됨",
+    syncOff: "로컬만 사용",
+    connect: "연결",
+    disconnect: "연결 해제",
+    syncConnected: "연결된 코드:",
+    syncLoading: "동기화 중...",
+    syncError: "연결 오류. Supabase 설정을 확인해 봐.",
+    syncSuccess: "데이터 동기화 완료!",
+    welcomeTitle: "모아에 온 걸 환영해",
+    welcomeSub: "계정에 로그인하거나 새 계정을 만들어서 시작해 봐.",
+    welcomeLoginTitle: "계정 찾기",
+    welcomeLoginSub: "개인 코드를 입력해서 데이터를 불러와.",
+    welcomeCreateTitle: "계정 만들기",
+    welcomeCreateSub: "개인 코드를 정해서 계정을 만들어 봐.",
+    welcomeLogin: "로그인",
+    welcomeCreate: "계정 만들기",
+    welcomeCode: "개인 코드",
+    welcomeCodePlaceholder: "개인 코드를 입력해...",
+    welcomeNoAccount: "이 코드로 된 계정을 찾지 못했어요.",
+    welcomeCreateHint: "아무 단어나 문장이면 돼, 코드로 쓸 거야.",
+    welcomeLoginHint: "기존 계정 코드를 입력하면 데이터를 불러올 수 있어.",
+    welcomeSwitchToLogin: "로그인할래",
+    welcomeSwitchToCreate: "계정 만들래",
+    profileTitle: "내 프로필",
+    profileSub: "이 정보를 바탕으로 AI가 네 관심사와 수준에 맞게 레슨, 예문, 연습을 맞춤 제작해 줘.",
+    levelLabel: "수준",
+    levelPlaceholder: "예: 초급, 알파벳과 기초 알아요 / TOPIK 3 / CEFR A2...",
+    interestsLabel: "관심사",
+    interestsPlaceholder: "구체적으로! 예: K-Pop (BTS, 특히 정국, 최애곡: Spring Day), 드라마 (사랑의 불시착, 응답하라 1988), 한국 음식 (떡볶이)...",
+    goalsLabel: "목표",
+    goalsPlaceholder: "예: 사전 없이 블로그 읽기, 노래 가사 이해하기, TOPIK 4급 합격...",
+    notesLabel: "메모",
+    notesPlaceholder: "어떤 정보든 도움이 돼: 반복적인 어려움, 공부 가능 시간, 학습 스타일 선호...",
+    profileSaved: "저장됨!", autoSaveHint: "자동 저장",
+    saveProfile: "저장",
+    langProfileTitle: (flag, name) => `${flag} ${name} 프로필`,
+    langProfileSub: "이 언어에 맞게 정보를 수정해 봐. AI가 레슨을 맞춤화하는 데 도움이 돼.",
+    langProfilePrefill: "기존 프로필에서 미리 채워졌어. 원하는 대로 수정해!",
+    langProfileSave: "계속",
+    langProfileSkip: "나중에",
+    langDreamLabel: "이 언어로 이루고 싶은 가장 큰 꿈",
+    langLevelLabel: "이 언어의 수준",
+    langGoalsLabel: "목표",
+    langToolsLabel: "이 언어 공부에 같이 쓰는 도구",
+    langDailyLabel: "하루 카드 수",
+    langNotesLabel: "개인 메모",
+    langTeacherNotesLabel: "선생님 메모",
+    genderLabel: "성별",
+    genderNone: "미지정",
+    genderM: "남성",
+    genderF: "여성",
+    ageLabel: "나이",
+    agePlaceholder: "예: 28",
+    nationalityLabel: "국적 / 모국어",
+    nationalityPlaceholder: "예: 한국인, 프랑스어권 세네갈인, 일본인...",
+    profileAutoUpdate: "레슨할 때마다 네가 공유하는 내용을 바탕으로 프로필이 자동으로 업데이트돼.",
+    endLesson: "레슨 끝내기",
+    endLessonConfirm: "레슨을 끝내고 요약을 볼까요?",
+    wrapUpTitle: "레슨을 마무리하거나, 좀 더 해볼 수 있어:",
+    summaryTitle: "레슨 요약",
+    generating: "요약 생성 중...",
+    summaryHistory: "레슨 기록",
+    noSummaries: "아직 완료한 레슨이 없어요.",
+    summaryLearned: "이해한 내용",
+    summaryMistakes: "다시 볼 부분",
+    summaryNext: "다음 단계",
+    newLesson: "새 레슨",
+    derivedTitle: "만난 구조들",
+    derivedSub: "라이브러리에 추가하고 싶은 걸 체크해 (체크 안 하면 추가 안 돼).",
+    derivedAdd: (n) => n > 0 ? `추가 (${n})` : "추가",
+    derivedAll: "전체 선택",
+    derivedNone: "전체 해제",
+    derivedSkip: "건너뛰기",
+    formalityLabel: "어투",
+    formality: { casual: "반말", neutral: "중립", formal: "존댓말" },
+    registerShow: "어투 보기 (존댓말 / 반말)", registerExamples: "사용 예시",
+    registerExamplesAsk: "이 단어의 존댓말과 반말 사용을 비교하는 예문을 보여줘",
+    registerLoading: "어투 분석 중...",
+    moreExercises: "연습 더 하기",
+    derivedFrom: "유래", derivedChildren: "파생",
+    viewGrid: "그리드",
+    viewTree: "트리",
+    viewSources: "텍스트",
+    deleteCard: "카드 삭제", deleteConfirmTitle: "이 카드를 삭제할까요?",
+    deleteConfirmMsg: (k) => `"${k}"이(가) 요약과 함께 영구 삭제돼요.`,
+    deleteBtn: "삭제", cancelBtn: "취소",
+    filterAll: "전체", filterGrammar: "문법", filterVocab: "어휘",
+    filterByTag: "태그로 필터", allTags: "모든 태그",
+    addTag: "태그 추가", removeTag: "제거", tagMax: "태그 최대 3개", tagRelated: "이 태그가 있는 카드", tagNoOther: "이 태그가 있는 다른 카드가 없어",
+    tagPlaceholder: "새 태그...", tagSuggested: "추천",
+    noTags: "태그 없음",
+    restudyText: "이 텍스트 다시 공부하기",
+    sourcesNone: "원본 텍스트 없음",
+    pointsFromText: "관련 포인트",
+    recapExcerpt: "요약 발췌",
+    noParent: "최상위 구조",
+    childCount: (n) => `파생 ${n}개`,
+    recapTitle: "레슨 요약",
+    recapSub: "이 구조에 대한 이전 세션에서 다룬 내용이야.",
+    redoLesson: "레슨 다시 하기",
+    redoLessonSub: "소크라테스식 레슨 다시 시작",
+    doExercises: "연습하기",
+    noRecapYet: "이 구조에 대한 레슨 요약이 아직 없어요.",
+    structureInfo: "정보",
+    addLang: "언어 추가",
+    studyLang: "학습 언어",
+    chooseLang: "어떤 언어를 공부하고 싶어?",
+    onbTitle1: "너에 대해 알려줘",
+    onbSub1: "AI가 적절한 톤을 고르고, 모국어 때문에 생기는 함정을 찾는 데 도움이 돼.",
+    onbTitle2: "네 가장 큰 꿈",
+    onbSub2: "이 언어로 뭘 할 수 있으면 좋겠어? 한계 없이 마음껏 상상해 봐!",
+    dreamPlaceholder: "예: 시부모님과 통역 없이 몇 시간이고 수다 떨기. 한강 소설 원서로 읽기. 한국어로 스탠드업 코미디 하기...",
+    spokenLangsLabel: "할 수 있는 언어",
+    spokenLangsPlaceholder: "예: 한국어 (모국어), 영어 (유창), 스페인어 (기초)",
+    langColLang: "언어", langColLevel: "수준", langAddRow: "+ 언어 추가",
+    langPh: "예: 한국어", langLevelPick: "수준...",
+    langLevelNative: "모국어", langLevelBilingual: "이중 언어", langLevelAdvanced: "고급", langLevelIntermediate: "중급",
+    myNotesLabel: "내 메모", teacherNotesLabel: "선생님 메모", teacherNotesEmpty: "아직 선생님 메모가 없어요.",
+    myNotesPlaceholder: "내 메모: 개인 목표, 리마인더, 선호 사항...",
+    contact: "문의", contactSub: "도움이 필요해? 연락해 줘.",
+    onbNext: "다음",
+    onbSkip: "건너뛰기",
+    onbFinish: "시작해 볼까!",
+    onbStep: (a, b) => `${a} / ${b}`,
+    points_: "포인트",
+    pointsEarned: (n) => `+${n} 포인트!`,
+    dailyGoalReached: (n) => `오늘 목표 달성! +${n} 포인트 🎉`,
+    detailedTitle: "상세 설문",
+    detailedSub: "AI가 너를 잘 알수록 레슨이 더 딱 맞아. 답변 하나하나가 예문을 더 생생하게 만들어 줘.",
+    detailedCta: "프로필 완성하기",
+    detailedReward: "+100 포인트",
+    detailedDone_: "설문 완료 ✓",
+    editAnswers: "답변 수정하기",
+    favFilms: "좋아하는 영화나 드라마 3개",
+    favFilmsPh: "예: 사랑의 불시착, 응답하라 1988, 기생충",
+    favMusic: "좋아하는 가수나 노래 3개",
+    favMusicPh: "예: BTS (특히 정국), Spring Day, 아이유",
+    favSports: "좋아하는 운동 3가지",
+    favSportsPh: "예: 클라이밍, 수영, 배드민턴",
+    favFood: "좋아하는 음식 3가지",
+    favFoodPh: "예: 떡볶이, 비빔밥, 김치찌개",
+    favBooks: "좋아하는 책, 만화 3개",
+    favBooksPh: "예: 파친코, 나 혼자만 레벨업, 어린 왕자",
+    favHobbies: "좋아하는 취미 3가지",
+    favHobbiesPh: "예: 필름 카메라, 원예, 보드게임",
+    dreamJobs: "꿈의 직업 3가지",
+    dreamJobsPh: "예: 문학 번역가, 파티시에, 파일럿",
+    otherTools: "다른 공부 도구도 쓰고 있어?",
+    otherToolsPh: "듀오링고, Anki, 유튜브, 인스타 계정... 어떻게 생각해?",
+    bestMemory: "언어 공부 중 최고의 순간",
+    bestMemoryPh: "그 순간이 특별했던 이유가 뭐야?",
+    worstMemory: "선생님이나 학습법에 대한 답답했던 경험",
+    worstMemoryPh: "뭐가 안 맞았어?",
+    saveAndEarn: "저장하고 100 포인트 받기",
+    quickPractice: "빠른 연습",
+    quickPracticeSub: "전체 레슨 없이 이 구조를 연습해 봐.",
+    backToRecap: "요약으로 돌아가기",
+    feed: "피드",
+    feedTitle: "내 피드",
+    feedSub: "네 관심사에 맞춰 고른 진짜 텍스트들이야. 읽으면서 끌리는 걸 찾아봐.",
+    feedSearch: "주제 검색...",
+    feedLoading: "피드 불러오는 중...",
+    feedEmpty: "결과가 없어. 다른 키워드로 해봐.",
+    feedNoKeywords: "맞춤 피드를 보려면 프로필을 채우거나, 검색을 해봐.",
+    feedRefresh: "새로고침",
+    feedRead: "기사 읽기",
+    feedThreadTitle: "스레드",
+    feedThreadEmpty: "이 게시물을 불러올 수 없었어요.",
+    feedCatNews: "뉴스",
+    feedCatPress: "헤드라인",
+    feedCatSns: "Bluesky",
+    feedCatMasto: "Mastodon",
+    feedCatRecap: "📰 일간",
+    recapMasthead: "모아 데일리",
+    recapGeneralTitle: "오늘의 헤드라인",
+    recapInterestTitle: "네 꿈과 관련된 소식",
+    recapRefresh: "새로고침",
+    recapLoading: "오늘의 에디션 준비 중...",
+    recapEmpty: "오늘 뉴스를 찾지 못했어요.",
+    recapInterestHint: "프로필에서 꿈을 설정하면 맞춤 섹션이 나와.",
+    recapRawNote: "번역 불가 (AI 할당량 초과), 원문 제목이 표시돼요.",
+    recapEdition: (d) => `${d} 에디션`,
+    feedGenKeywords: "주제 생성 중...",
+    exFinished: "연습 완료!",
+    newExercise: "새 연습",
+    backToLibrary: "라이브러리",
+  },
 };
 
 // =============================================
@@ -840,7 +1145,7 @@ function getEffectiveProfile(data, tlCode) {
 }
 
 function buildContext(data, lang, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const p = tlCode ? getEffectiveProfile(data, tlCode) : (data.profile || {});
   const summaries = data.summaries || [];
 
@@ -923,7 +1228,7 @@ function buildContext(data, lang, tlCode) {
 // =============================================
 async function analyzeText(text, existing, lang, context, tlCode) {
   const known = existing.map((c) => c.korean).join(", ");
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const tlExtra = TARGET_LANGS[tlCode]?.promptExtra || "";
   const sys = `You are an expert ${TL} language analyst. Your job is to find the most interesting and teachable grammar structures or expressions in a ${TL} text, personalized for this specific learner.
@@ -992,7 +1297,7 @@ Return a JSON array of 6-10 items.`;
 
 // Full 5-part study of ONE vocabulary word: guess (QCM), etymology, synonyms, fun facts, examples.
 async function studyVocabWord(word, exampleSentence, lang, context, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const sys = `You are an expert ${TL} vocabulary teacher creating a rich, memorable study of ONE word. Write all explanatory text in ${L}. Be concise but insightful.
 
@@ -1013,7 +1318,7 @@ Return only the JSON object.`;
 
 // Generate a comprehension QCM for one paragraph of a text.
 async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode, inTargetLang) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const qLang = inTargetLang ? TL : L;
   const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
@@ -1044,7 +1349,7 @@ Return JSON:
 
 // Evaluate a student's reformulation of a text excerpt.
 async function evaluateReformulation(excerpt, userText, lang, context, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const sys = `You are a warm, encouraging ${TL} reading comprehension tutor evaluating a student's reformulation.
 
@@ -1069,9 +1374,9 @@ Return JSON:
 }
 
 async function startSocratic(card, article, lang, context, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const d = lang === "fr" ? card.description_fr : card.description_en;
+  const d = lang === "fr" ? card.description_fr : (card.description_en || card.description_fr);
   const sys = `You are a warm, encouraging ${TL} language teacher who uses the Socratic method. You NEVER explain a rule directly. Instead, you guide the student to discover it themselves through observation and pattern recognition.
 
 ${context}
@@ -1109,7 +1414,7 @@ Article context:\n${(article || "").substring(0, 800)}`, 4000)).text);
 // Quick dictionary-style entry for a word (used when the learner picks "just the translation"
 // for an easy vocab word, and for bare cards added by selection that have no meaning yet).
 async function quickTranslateWord(word, lang, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
 Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","gender":"<for nouns in gendered languages: m/f/n; empty string for non-nouns>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
@@ -1130,8 +1435,8 @@ Return ONLY JSON: {"description_target":"<the ${TL} definition>"}`;
 
 // Register variants of a Korean word: the formal vs casual way to express the same idea.
 async function analyzeRegister(card, lang) {
-  const L = lang === "fr" ? "French" : "English";
-  const d = lang === "fr" ? card.description_fr : card.description_en;
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+  const d = lang === "fr" ? card.description_fr : (card.description_en || card.description_fr);
   const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}, express the SAME idea in two registers:
 - "formal": the more formal / polite / honorific Korean word or short expression for this idea.
 - "casual": the everyday / casual Korean word or short expression for this idea.
@@ -1142,7 +1447,7 @@ Return ONLY JSON: {"formal":"...","casual":"...","note":"..."}`;
 }
 
 async function continueChat(card, conv, action, lang) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
   const aiTurns = conv.filter(m => m.role === "ai").length;
   const phase = aiTurns <= 2 ? "DISCOVERY" : aiTurns <= 5 ? "DEEPENING" : "CONSOLIDATION";
@@ -1321,9 +1626,9 @@ async function findRealExamples(card, lang, tlCode) {
 }
 
 async function genExercise(cards, mode, lang, context, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : c.description_en} (example: ${c.example_kr})`).join("\n");
+  const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
   
   const modes = {
     story: `STORY MODE: Create a creative writing prompt in ${L} that requires using ALL the listed structures naturally in a short paragraph (3-5 sentences). 
@@ -1391,9 +1696,9 @@ Return JSON: {"message": "your exercise content"} or {"message": "your exercise"
 }
 
 async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : c.description_en}`).join("\n");
+  const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)}`).join("\n");
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
   // Count how many questions have been asked so far
   const asked = conv.filter(m => m.role === "ai").length;
@@ -1487,7 +1792,7 @@ Return ONLY JSON: {"query":"<2-6 ${tlName} words targeting that industry's news>
 // Drops site homepages/boilerplate; never invents facts. Returns { general, interest }
 // arrays of { i, title, description }, i = index into the original list (to keep sources).
 async function summarizeRecap(general, interestItems, lang) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const pack = (arr) => arr.map((it, i) => `[${i}] ${it.title}\n${(it.snippet || "").slice(0, 300)}`).join("\n\n") || "(none)";
   const sys = `You are the editor of a daily news digest inside a language-learning app. Below are web/news search results (headline + snippet) in two sections, GENERAL (Korea news) and INTEREST (the learner's passion). Rewrite them as short news briefs IN ${L}, for a reader who cannot yet read Korean.
 Rules:
@@ -1529,7 +1834,7 @@ async function fetchThread(item) {
 }
 
 async function generateSummary(card, conv, lang) {
-  const L = lang === "fr" ? "French" : "English";
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
 
   const sys = `You are an expert at analyzing language learning conversations. Read the full conversation, then produce TWO things:
@@ -1698,10 +2003,14 @@ const CELEBRATION_MESSAGES_EN = [
   "Well done!", "Bravo!", "Awesome!", "You nailed it!", "Excellent!",
   "Keep it up!", "Great work!", "Amazing!", "Yeah!",
 ];
+const CELEBRATION_MESSAGES_KO = [
+  "잘했어!", "대단해!", "멋져!", "완벽해!", "최고!",
+  "이 조자로!", "굿!", "화이팅!", "짱!",
+];
 
 function CelebrationOverlay({ visible, onClose, lang }) {
   const [entry] = useState(() => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)]);
-  const msgs = lang === "fr" ? CELEBRATION_MESSAGES_FR : CELEBRATION_MESSAGES_EN;
+  const msgs = lang === "fr" ? CELEBRATION_MESSAGES_FR : lang === "ko" ? CELEBRATION_MESSAGES_KO : CELEBRATION_MESSAGES_EN;
   const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
 
   useEffect(() => {
@@ -1732,7 +2041,7 @@ function CelebrationOverlay({ visible, onClose, lang }) {
         />
       </div>
       <div style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
-        {lang === "fr" ? "Touche pour continuer" : "Tap to continue"}
+        {lang === "fr" ? "Touche pour continuer" : lang === "ko" ? "터치해서 계속" : "Tap to continue"}
       </div>
     </div>
   );
@@ -2216,7 +2525,7 @@ function SummaryCard({ summary, t, lang }) {
             <div style={{ marginTop: 10 }}>
               <button onClick={() => setShowNotes(!showNotes)}
                 style={{ fontSize: 10, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", padding: 0, textDecoration: "underline" }}>
-                {showNotes ? (lang === "fr" ? "Masquer les notes du tuteur" : "Hide tutor notes") : (lang === "fr" ? "Notes du tuteur" : "Tutor notes")}
+                {showNotes ? (lang === "fr" ? "Masquer les notes du tuteur" : lang === "ko" ? "선생님 메모 숨기기" : "Hide tutor notes") : (lang === "fr" ? "Notes du tuteur" : lang === "ko" ? "선생님 메모" : "Tutor notes")}
               </button>
               {showNotes && (
                 <div style={{ marginTop: 8, padding: "8px 10px", background: C.s1, borderRadius: 6, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -2506,8 +2815,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   };
 
   const isCorrect = qcm && selected === qcm.answer;
-  const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : qcm.explanation_en) : "";
-  const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : qcm.encouragement_en) : "";
+  const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : (qcm.explanation_en || qcm.explanation_fr)) : "";
+  const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : (qcm.encouragement_en || qcm.encouragement_fr)) : "";
 
   if (showLevel1Complete) {
     return (
@@ -2630,7 +2939,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div style={{ padding: "10px 14px", borderRadius: 8, background: reformResult.correct ? "#e8f5e9" : "#fff3e0", border: `1px solid ${reformResult.correct ? C.ok : "#ffb74d"}` }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, color: reformResult.correct ? C.ok : "#e65100", marginBottom: 4 }}>{reformResult.correct ? t.compCorrect : t.compWrong}</div>
-                    <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{lang === "fr" ? reformResult.feedback_fr : reformResult.feedback_en}</div>
+                    <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{lang === "fr" ? reformResult.feedback_fr : (reformResult.feedback_en || reformResult.feedback_fr)}</div>
                     {reformResult.model_tl && (
                       <div style={{ marginTop: 6, padding: "6px 10px", background: C.s1, borderRadius: 6 }}>
                         <div style={{ fontSize: 10, color: C.txtM, marginBottom: 2 }}>Modele :</div>
@@ -4158,7 +4467,7 @@ function AppInner() {
       // Translate the dream into an industry-news query in the target language (Korean sources
       // cover niche topics); also get a short label for the section header.
       let interestQuery = interest, interestLabel = interest;
-      if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
+      if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
       const res = await fetch("/api/feed", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
@@ -4299,17 +4608,17 @@ function AppInner() {
   const makeVocabCard = (v, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
     korean: v.word, type: "vocab",
-    description: lang === "fr" ? v.meaning_fr : v.meaning_en,
+    description: lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr),
     description_fr: v.meaning_fr, description_en: v.meaning_en,
     description_target: v.description_target || "",
     gender: v.gender || "",
     example_kr: v.example_kr || "",
-    example_tr: lang === "fr" ? v.example_fr : v.example_en,
+    example_tr: lang === "fr" ? v.example_fr : (v.example_en || v.example_fr),
     reading: v.reading || "",
     tags: v.category ? [v.category.toLowerCase().trim()] : [],
     status, source: "Import", articleText: impText, reviewCount: 0,
     targetLang: tl || "ko",
-    date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+    date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
 
   const startVocabLesson = () => {
@@ -4375,15 +4684,15 @@ function AppInner() {
   const makeCard = (p, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
     korean: p.korean, type: normType(p.type),
-    description: lang === "fr" ? p.description_fr : p.description_en,
+    description: lang === "fr" ? p.description_fr : (p.description_en || p.description_fr),
     description_fr: p.description_fr, description_en: p.description_en,
     description_target: p.description_target || "",
     example_kr: p.example_kr,
-    example_tr: lang === "fr" ? p.example_fr : p.example_en,
+    example_tr: lang === "fr" ? p.example_fr : (p.example_en || p.example_fr),
     tags: p.category ? [p.category.toLowerCase().trim()] : [],
     status, source: "Import", articleText: impText, reviewCount: 0,
     targetLang: tl || "ko",
-    date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+    date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
 
   // Add a selected word straight to the vocab library as a bare "new" card (details get
@@ -4400,7 +4709,7 @@ function AppInner() {
       tags: [],
       status: "new", source: t.selectionSource, articleText: "", reviewCount: 0,
       targetLang: tl || "ko",
-      date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+      date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
     };
     save({ ...data, cards: [...data.cards, card] });
     setSelAdd(null);
@@ -4449,7 +4758,7 @@ function AppInner() {
       console.error("startSocratic error:", e);
       setConv([{
         role: "ai",
-        content: `⚠️ ${lang === "fr" ? "L'IA n'a pas pu démarrer la leçon" : "AI couldn't start the lesson"}${e?.message ? `\n\n${e.message.substring(0, 150)}` : ""}`,
+        content: `⚠️ ${lang === "fr" ? "L'IA n'a pas pu démarrer la leçon" : lang === "ko" ? "AI가 레슨을 시작하지 못했어요" : "AI couldn't start the lesson"}${e?.message ? `\n\n${e.message.substring(0, 150)}` : ""}`,
         retry: () => beginLesson(point, art),
       }]);
     }
@@ -4690,7 +4999,7 @@ function AppInner() {
         structuresLearned: result.structuresLearned || "",
         mistakesMade: result.mistakesMade || "",
         nextSteps: result.nextSteps || "",
-        date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
+        date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
         conversationLength: conv.length,
       };
       setLessonSummary(summary);
@@ -4722,16 +5031,16 @@ function AppInner() {
         .map(d => ({
           id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
           korean: d.korean, type: normType(d.type),
-          description: lang === "fr" ? d.description_fr : d.description_en,
+          description: lang === "fr" ? d.description_fr : (d.description_en || d.description_fr),
           description_fr: d.description_fr, description_en: d.description_en,
           example_kr: d.example_kr || "",
-          example_tr: lang === "fr" ? d.example_fr : d.example_en,
+          example_tr: lang === "fr" ? d.example_fr : (d.example_en || d.example_fr),
           tags: [],
           status: "review", source: "Derived",
           parentId: lCard.id, parentKorean: lCard.korean,
           targetLang: tl || "ko",
           articleText: "",
-          date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short" }),
+          date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
         }));
       // Update card status: new/in_progress -> studied, studied -> studied (increment reviewCount), acquired stays acquired
       const wasFirstTime = (data.cards.find(c => c.korean === lCard.korean)?.reviewCount || 0) === 0;
@@ -4785,7 +5094,7 @@ function AppInner() {
 
   const aiError = (e, retryFn) => ({
     role: "ai",
-    content: `⚠️ ${lang === "fr" ? "L'IA n'a pas répondu" : "AI didn't respond"}${e?.message ? ` (${e.message.substring(0, 100)})` : ""}`,
+    content: `⚠️ ${lang === "fr" ? "L'IA n'a pas répondu" : lang === "ko" ? "AI가 응답하지 않았어요" : "AI didn't respond"}${e?.message ? ` (${e.message.substring(0, 100)})` : ""}`,
     retry: retryFn || null,
   });
 
@@ -5014,7 +5323,9 @@ function AppInner() {
   };
 
   const changeLang = (nl) => {
-    save({ ...data, lang: nl, cards: data.cards.map(c => ({ ...c, description: nl === "fr" ? (c.description_fr || c.description) : (c.description_en || c.description), example_tr: nl === "fr" ? (c.example_fr || c.example_tr) : (c.example_en || c.example_tr) })) });
+    const pickDesc = (c) => nl === "fr" ? (c.description_fr || c.description) : (c.description_en || c.description);
+    const pickEx = (c) => nl === "fr" ? (c.example_fr || c.example_tr) : (c.example_en || c.example_tr);
+    save({ ...data, lang: nl, cards: data.cards.map(c => ({ ...c, description: pickDesc(c), example_tr: pickEx(c) })) });
     setLangOpen(false);
   };
 
@@ -5531,11 +5842,11 @@ function AppInner() {
           {/* Lang (moves into the hamburger menu on mobile) */}
           <div className="nav-hide-mobile" style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(!langOpen)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 6px", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14 }}>
-              {lang === "fr" ? "🇫🇷" : "🇬🇧"} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
+              {lang === "fr" ? "🇫🇷" : lang === "ko" ? "🇰🇷" : "🇬🇧"} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
             </button>
             {langOpen && (
               <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 6, overflow: "hidden", zIndex: 50, minWidth: 110, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"]].map(([k, l]) => (
+                {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"], ["ko", "🇰🇷 한국어"]].map(([k, l]) => (
                   <button key={k} onClick={() => changeLang(k)}
                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", fontSize: 12.5, color: lang === k ? C.acc : C.txtS, fontWeight: lang === k ? 500 : 400, cursor: "pointer", border: "none", background: "none", width: "100%", fontFamily: "'Plus Jakarta Sans'" }}>
                     {l}
@@ -5557,7 +5868,7 @@ function AppInner() {
             </button>
           ))}
           {/* Language to study */}
-          <div style={{ padding: "12px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM }}>{lang === "fr" ? "Langue à étudier" : "Language to study"}</div>
+          <div style={{ padding: "12px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM }}>{lang === "fr" ? "Langue à étudier" : lang === "ko" ? "학습 언어" : "Language to study"}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "0 18px 12px" }}>
             {enabledTLs.map(code => (
               <button key={code} onClick={() => { switchTargetLang(code); setNavMenuOpen(false); }}
@@ -5573,9 +5884,9 @@ function AppInner() {
             ))}
           </div>
           {/* Interface language */}
-          <div style={{ padding: "4px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM, borderTop: `1px solid ${C.border}` }}>{lang === "fr" ? "Langue de l'appli" : "App language"}</div>
+          <div style={{ padding: "4px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM, borderTop: `1px solid ${C.border}` }}>{lang === "fr" ? "Langue de l'appli" : lang === "ko" ? "앱 언어" : "App language"}</div>
           <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
-            {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"]].map(([k, l]) => (
+            {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"], ["ko", "🇰🇷 한국어"]].map(([k, l]) => (
               <button key={k} onClick={() => { changeLang(k); setNavMenuOpen(false); }}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: lang === k ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: lang === k ? C.accBg : C.s1, color: lang === k ? C.acc : C.txt, fontWeight: lang === k ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
                 {l}
@@ -5882,7 +6193,7 @@ function AppInner() {
                     style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, cursor: "pointer", border: `1px solid ${selPick === i ? C.acc : C.border}`, background: selPick === i ? C.accBg : C.s2 }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{p.korean}</div>
-                      <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : p.description_en}</div>
+                      <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : (p.description_en || p.description_fr)}</div>
                     </div>
                     <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
                     <button onClick={e => { e.stopPropagation(); markKnown(i); }}
@@ -5912,7 +6223,7 @@ function AppInner() {
                       <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{v.word}{v.reading ? <span style={{ fontSize: 11, color: C.txtM, marginLeft: 6 }}>[{v.reading}]</span> : null}</div>
-                        <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : v.meaning_en}</div>
+                        <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                       </div>
                     </div>
                   );
@@ -6267,7 +6578,7 @@ function AppInner() {
                       {(lessonSummary.error || lessonSummary.structuresLearned === "Error generating summary") ? (
                         <div>
                           <div style={{ fontSize: 12, color: C.warn, lineHeight: 1.6, marginBottom: 8 }}>
-                            ⚠️ {lang === "fr" ? "Erreur lors de la génération du résumé" : "Error generating summary"}
+                            ⚠️ {lang === "fr" ? "Erreur lors de la génération du résumé" : lang === "ko" ? "요약 생성 중 오류" : "Error generating summary"}
                           </div>
                           {lessonSummary.error && (
                             <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, marginBottom: 12, background: C.s1, padding: "6px 10px", borderRadius: 6, fontFamily: "monospace", wordBreak: "break-all" }}>
@@ -6277,11 +6588,11 @@ function AppInner() {
                           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button onClick={() => { setLessonSummary(null); setLessonDone(false); endLesson(); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                              🔄 {lang === "fr" ? "Réessayer" : "Retry"}
+                              🔄 {lang === "fr" ? "Réessayer" : lang === "ko" ? "다시 시도" : "Retry"}
                             </button>
                             <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setView("library"); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                              ← {lang === "fr" ? "Quitter" : "Close"}
+                              ← {lang === "fr" ? "Quitter" : lang === "ko" ? "닫기" : "Close"}
                             </button>
                           </div>
                         </div>
@@ -6645,7 +6956,7 @@ function AppInner() {
                     <div style={{ padding: 14, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, fontSize: 12, color: C.warn, lineHeight: 1.6 }}>⚠️ {newsRecapErr}</div>
                   )}
                   {!newsRecapLoad && newsRecap && (() => {
-                    const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
+                    const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { weekday: "long", day: "numeric", month: "long" });
                     const serif = "Georgia, 'Times New Roman', 'Nanum Myeongjo', serif";
                     const story = (it, i, lead) => (
                       <div key={i} onClick={() => it.link && window.open(it.link, "_blank", "noopener,noreferrer")}
@@ -6743,7 +7054,7 @@ function AppInner() {
                 id: compSession.existing?.id || (Date.now().toString() + Math.random().toString(36).slice(2, 5)),
                 text: compSession.text,
                 targetLang: tl || "ko",
-                date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
+                date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
                 level1Complete: result.level1Complete,
                 level2Complete: result.level2Complete,
               };

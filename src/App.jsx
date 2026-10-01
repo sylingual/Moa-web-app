@@ -1716,7 +1716,8 @@ ${structs}
 
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
-  return parseJSON((await callAI(sys, `Generate the exercise now.`)).text);
+  const tok = (mode === "fill" || mode === "dialoguefill") ? 2500 : undefined;
+  return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 
 async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {

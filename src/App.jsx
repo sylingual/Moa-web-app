@@ -5728,15 +5728,15 @@ function AppInner() {
   };
 
   // ---- EXERCISE ----
-  const launchEx = async () => {
+  const launchEx = async (theme) => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
     // Fill modes use interactive word-bank UI
     if (exMode === "fill" || exMode === "dialoguefill") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-      try { const r = await genExercise(sel, exMode, lang, context, tl, exTheme); setFillData(r); }
-      catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx())]); }
+      try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
+      catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
       setExLoad(false); setExTheme(null);
       return;
     }
@@ -7328,31 +7328,44 @@ function AppInner() {
                           </div>
                       }
                     </div>
-                    {visibleCards.length > 0 && (exMode === "fill" || exMode === "dialoguefill") && exSel.size > 0 && (
-                      <div style={{ marginTop: 10 }}>
-                        <div style={{ fontSize: 11.5, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.fillThemeLabel}</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          <button onClick={() => setExTheme(null)}
-                            style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", border: `1px solid ${!exTheme ? C.acc : C.border}`, background: !exTheme ? C.accBg : C.s2, color: !exTheme ? C.acc : C.txtS, cursor: "pointer", fontWeight: !exTheme ? 600 : 400 }}>
-                            {t.fillThemeRandom}
-                          </button>
-                          {t.fillThemes.map(th => (
-                            <button key={th} onClick={() => setExTheme(th)}
-                              style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", border: `1px solid ${exTheme === th ? C.acc : C.border}`, background: exTheme === th ? C.accBg : C.s2, color: exTheme === th ? C.acc : C.txtS, cursor: "pointer", fontWeight: exTheme === th ? 600 : 400 }}>
-                              {th}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     {visibleCards.length > 0 && (
-                      <button onClick={launchEx} disabled={exSel.size === 0}
+                      <button onClick={() => {
+                        if (exSel.size === 0) return;
+                        if (exMode === "fill" || exMode === "dialoguefill") { setExTheme(null); setExStep("theme"); }
+                        else launchEx();
+                      }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
                         ▶ {t.launchEx}
                       </button>
                     )}
                   </>); })()}
                 </>)}
+                {exStep === "theme" && (() => {
+                  const allThemes = t.fillThemes || [];
+                  const shuffled = [...allThemes].sort(() => Math.random() - 0.5);
+                  const picks = shuffled.slice(0, 3);
+                  return (<>
+                    <button onClick={() => setExStep("cards")}
+                      style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                      ← {t.back}
+                    </button>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginTop: 4 }}>{t.fillThemeLabel}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 340, marginTop: 8 }}>
+                      <button onClick={() => launchEx(null)}
+                        style={{ padding: "16px 20px", borderRadius: 12, border: `2px solid ${C.acc}`, background: C.accBg, color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", textAlign: "center" }}>
+                        🎲 {t.fillThemeRandom}
+                      </button>
+                      {picks.map(th => (
+                        <button key={th} onClick={() => launchEx(th)}
+                          style={{ padding: "16px 20px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.s2, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; e.currentTarget.style.background = C.accBg; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.s2; }}>
+                          {th}
+                        </button>
+                      ))}
+                    </div>
+                  </>);
+                })()}
               </div>
             ) : exMode === "match" ? (
               <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("match", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
@@ -7370,7 +7383,7 @@ function AppInner() {
               <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl} mode={exMode}
                 onComplete={(usedIds) => completeExercise(exMode, usedIds)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }}
-                onRestart={() => { setFillData(null); launchEx(); }}
+                onRestart={() => { setFillData(null); setExOn(false); setExStep("theme"); }}
                 onAddVocab={addWordToVocab} />
             ) : (exMode === "fill" || exMode === "dialoguefill") && exLoad ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>

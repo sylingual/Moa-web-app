@@ -118,6 +118,7 @@ const T = {
     fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
     fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
     fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio", fillListen: "Ecouter", fillListenStop: "Arreter",
+    fillThemeLabel: "Theme du scenario", fillThemeRandom: "Surprise !", fillThemes: ["Vie quotidienne", "Amis / sorties", "K-drama", "K-pop / fandom", "Reseaux sociaux", "Travail / business", "Cafe / restaurant", "Voyage en Coree"],
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -432,6 +433,7 @@ const T = {
     fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
     fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
     fillTranslateStory: "Translate story", fillAddVocab: "Add to library", fillListen: "Listen", fillListenStop: "Stop",
+    fillThemeLabel: "Scenario theme", fillThemeRandom: "Surprise me!", fillThemes: ["Daily life", "Friends / hangouts", "K-drama", "K-pop / fandom", "Social media", "Work / business", "Cafe / restaurant", "Travel in Korea"],
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -746,6 +748,7 @@ const T = {
     fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
     fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
     fillTranslateStory: "이야기 번역", fillAddVocab: "라이브러리에 추가", fillListen: "듣기", fillListenStop: "멈추기",
+    fillThemeLabel: "시나리오 테마", fillThemeRandom: "랜덤!", fillThemes: ["일상생활", "친구 / 놀기", "한국 드라마", "K-pop / 팬덤", "SNS", "직장 / 비즈니스", "카페 / 식당", "한국 여행"],
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
@@ -1637,7 +1640,7 @@ async function findRealExamples(card, lang, tlCode) {
   }
 }
 
-async function genExercise(cards, mode, lang, context, tlCode) {
+async function genExercise(cards, mode, lang, context, tlCode, theme) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
@@ -1665,7 +1668,7 @@ Keep the whole message SHORT and focused on this single question. Do NOT preview
     fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- If you know the student's interests (see LEARNER PROFILE), set the story in a context they care about
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - The story should feel natural and immersive, not like a textbook exercise
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
@@ -1686,7 +1689,7 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the dialogue in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - Give the characters names and a realistic situation
 - Each dialogue line MUST start with "CharacterName: " (name followed by colon and space)
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
@@ -4364,6 +4367,7 @@ function AppInner() {
   const [exOn, setExOn] = useState(false);
   const [exDone, setExDone] = useState(false);
   const [fillData, setFillData] = useState(null);
+  const [exTheme, setExTheme] = useState(null);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
 
@@ -5699,9 +5703,9 @@ function AppInner() {
     // Fill modes use interactive word-bank UI
     if (exMode === "fill" || exMode === "dialoguefill") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-      try { const r = await genExercise(sel, exMode, lang, context, tl); setFillData(r); }
+      try { const r = await genExercise(sel, exMode, lang, context, tl, exTheme); setFillData(r); }
       catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx())]); }
-      setExLoad(false);
+      setExLoad(false); setExTheme(null);
       return;
     }
     setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
@@ -7292,6 +7296,23 @@ function AppInner() {
                           </div>
                       }
                     </div>
+                    {visibleCards.length > 0 && (exMode === "fill" || exMode === "dialoguefill") && exSel.size > 0 && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: 11.5, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.fillThemeLabel}</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          <button onClick={() => setExTheme(null)}
+                            style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", border: `1px solid ${!exTheme ? C.acc : C.border}`, background: !exTheme ? C.accBg : C.s2, color: !exTheme ? C.acc : C.txtS, cursor: "pointer", fontWeight: !exTheme ? 600 : 400 }}>
+                            {t.fillThemeRandom}
+                          </button>
+                          {t.fillThemes.map(th => (
+                            <button key={th} onClick={() => setExTheme(th)}
+                              style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", border: `1px solid ${exTheme === th ? C.acc : C.border}`, background: exTheme === th ? C.accBg : C.s2, color: exTheme === th ? C.acc : C.txtS, cursor: "pointer", fontWeight: exTheme === th ? 600 : 400 }}>
+                              {th}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {visibleCards.length > 0 && (
                       <button onClick={launchEx} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>

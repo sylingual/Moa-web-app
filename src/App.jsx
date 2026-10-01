@@ -240,6 +240,7 @@ const T = {
     derivedSkip: "Ignorer",
     formalityLabel: "Registre",
     formality: { casual: "courant", neutral: "neutre", formal: "formel" },
+    registerNoFormal: "Pas de forme formelle", registerNoCasual: "Pas de forme courante",
     registerShow: "Voir le registre (formel / courant)", registerExamples: "Exemples d'usage",
     registerExamplesAsk: "Montre-moi des exemples qui contrastent l'usage formel et courant de ce mot, s'il te plaît",
     registerLoading: "Analyse du registre…",
@@ -555,6 +556,7 @@ const T = {
     derivedSkip: "Skip",
     formalityLabel: "Register",
     formality: { casual: "casual", neutral: "neutral", formal: "formal" },
+    registerNoFormal: "No formal form", registerNoCasual: "No casual form",
     registerShow: "Show register (formal / casual)", registerExamples: "Usage examples",
     registerExamplesAsk: "Please show me examples contrasting the formal vs casual usage of this word",
     registerLoading: "Analyzing register…",
@@ -868,6 +870,7 @@ const T = {
     derivedSkip: "건너뛰기",
     formalityLabel: "어투",
     formality: { casual: "반말", neutral: "중립", formal: "존댓말" },
+    registerNoFormal: "존댓말 형태 없음", registerNoCasual: "반말 형태 없음",
     registerShow: "어투 보기 (존댓말 / 반말)", registerExamples: "사용 예시",
     registerExamplesAsk: "이 단어의 존댓말과 반말 사용을 비교하는 예문을 보여줘",
     registerLoading: "어투 분석 중...",
@@ -1305,6 +1308,9 @@ For each item provide:
 - "example_fr": French translation of that sentence
 - "example_en": English translation of that sentence
 - "category": a short thematic tag (1-3 words) classifying this word, e.g. "emotions", "food", "nature", "daily life", "work", "body". Pick the most natural theme.
+- "register": "neutral", "formal", or "casual". Neutral = standard dictionary form. Formal = polite/honorific (존댓말). Casual = everyday/반말. Most dictionary words are "neutral".
+- "register_formal": the formal/honorific equivalent if one exists (e.g. 드시다 for 먹다), or "" if none
+- "register_casual": the casual/반말 equivalent if one exists, or "" if none
 
 Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text)).text);
@@ -1452,12 +1458,13 @@ Return ONLY JSON: {"description_target":"<the ${TL} definition>"}`;
 async function analyzeRegister(card, lang) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const d = lang === "fr" ? card.description_fr : (card.description_en || card.description_fr);
-  const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}, give the formal and casual forms or equivalents:
-- "formal": the formal / polite / honorific form of "${card.korean}" itself (conjugation, honorific variant, or the formal way to say THIS word). If the word is already formal or has no distinct formal form, return "${card.korean}" itself.
-- "casual": the casual / everyday / 반말 form of "${card.korean}" itself. If the word is already casual or has no distinct casual form, return "${card.korean}" itself.
-IMPORTANT: Do NOT return completely different words or synonyms. Stay as close to "${card.korean}" as possible. Only return a different word if it is the standard register variant that native speakers recognize as the formal/casual counterpart (e.g. 먹다/드시다, 있다/계시다).
-- "note": ONE short sentence in ${L} explaining the register difference, mentioning "${card.korean}" explicitly.
-Return ONLY JSON: {"formal":"...","casual":"...","note":"..."}`;
+  const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}:
+- "register": classify the word itself as "neutral", "formal", or "casual". Neutral = standard/dictionary form used in both contexts. Formal = polite/honorific register (존댓말). Casual = everyday/반말 register.
+- "formal": the formal / polite / honorific equivalent of "${card.korean}". If the word IS already formal or has NO distinct formal form, return "" (empty string).
+- "casual": the casual / everyday / 반말 equivalent of "${card.korean}". If the word IS already casual or has NO distinct casual form, return "" (empty string).
+IMPORTANT: Do NOT return completely different words or synonyms. Stay as close to "${card.korean}" as possible. Only return a different word if it is the standard register variant that native speakers recognize as the formal/casual counterpart (e.g. 먹다/드시다, 있다/계시다). Do NOT return "${card.korean}" itself as formal or casual.
+- "note": ONE short sentence in ${L} explaining the register, mentioning "${card.korean}" explicitly.
+Return ONLY JSON: {"register":"...","formal":"...","casual":"...","note":"..."}`;
   return parseJSON((await callAI(sys, `Word: ${card.korean}`, 3000)).text);
 }
 
@@ -5113,6 +5120,9 @@ function AppInner() {
     example_tr: lang === "fr" ? v.example_fr : (v.example_en || v.example_fr),
     reading: v.reading || "",
     tags: v.category ? [v.category.toLowerCase().trim()] : [],
+    formality: v.register || "",
+    registerFormal: v.register_formal || "",
+    registerCasual: v.register_casual || "",
     status, source: "Import", articleText: impText, reviewCount: 0,
     targetLang: tl || "ko",
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
@@ -5432,7 +5442,7 @@ function AppInner() {
     setRegisterLoad(true);
     try {
       const r = await analyzeRegister(recapCard, lang);
-      const upd = { registerFormal: r.formal || "", registerCasual: r.casual || "", registerNote: r.note || "" };
+      const upd = { formality: r.register || "neutral", registerFormal: r.formal || "", registerCasual: r.casual || "", registerNote: r.note || "" };
       save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, ...upd } : c) });
       setRecapCard(prev => prev ? { ...prev, ...upd } : prev);
     } catch (e) { console.error("register error:", e); setFlash(e?.message ? e.message.slice(0, 60) : "Erreur"); setTimeout(() => setFlash(null), 2200); }
@@ -6937,18 +6947,25 @@ function AppInner() {
                   })()}
                   {tl === "ko" && recapCard.type === "vocab" && (
                     <div style={{ marginTop: 10, padding: "10px 12px", background: C.s1, borderRadius: 8 }}>
-                      {(recapCard.registerFormal || recapCard.registerCasual) ? (
+                      {(recapCard.formality || recapCard.registerFormal !== undefined) ? (
                         <>
                           <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 7 }}>🎚 {t.formalityLabel}</div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, padding: "4px 10px", borderRadius: 8, background: C.stStudiedCard, border: `1px solid ${C.stStudiedB}` }}>
-                              <span style={{ fontSize: 10, color: C.stStudied, textTransform: "uppercase", letterSpacing: 0.4 }}>{t.formality.formal}</span>
-                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerFormal || "—"}</span>
-                            </span>
-                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, padding: "4px 10px", borderRadius: 8, background: C.stAcqCard, border: `1px solid ${C.stAcqB}` }}>
-                              <span style={{ fontSize: 10, color: C.stAcq, textTransform: "uppercase", letterSpacing: 0.4 }}>{t.formality.casual}</span>
-                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerCasual || "—"}</span>
-                            </span>
+                          {recapCard.formality && (
+                            <div style={{ marginBottom: 8 }}>
+                              <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: recapCard.formality === "formal" ? "#e8d5f5" : recapCard.formality === "casual" ? "#d5f0e8" : "#e8eaf0", color: recapCard.formality === "formal" ? "#7b2ea0" : recapCard.formality === "casual" ? "#1a8a5c" : "#5a6070" }}>
+                                {t.formality[recapCard.formality] || t.formality.neutral}
+                              </span>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                              <span style={{ fontSize: 10, color: C.stStudied, textTransform: "uppercase", letterSpacing: 0.4, minWidth: 50 }}>{t.formality.formal}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: recapCard.registerFormal ? C.txt : C.txtM }}>{recapCard.registerFormal || t.registerNoFormal}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                              <span style={{ fontSize: 10, color: C.stAcq, textTransform: "uppercase", letterSpacing: 0.4, minWidth: 50 }}>{t.formality.casual}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: recapCard.registerCasual ? C.txt : C.txtM }}>{recapCard.registerCasual || t.registerNoCasual}</span>
+                            </div>
                           </div>
                           {recapCard.registerNote && <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginTop: 7 }}>{recapCard.registerNote}</div>}
                           <button onClick={() => startRecapAction("register")}

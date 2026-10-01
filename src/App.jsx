@@ -144,7 +144,7 @@ const T = {
     studyDirect: "Juste la traduction", studyDirectDesc: "Le sens directement (mot facile)",
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
-    yourAnswer: "Votre réponse...", grammar: "Grammaire", expression: "Expression",
+    yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
@@ -454,7 +454,7 @@ const T = {
     studyDirect: "Just the translation", studyDirectDesc: "The meaning directly (easy word)",
     directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
-    yourAnswer: "Your answer...", grammar: "Grammar", expression: "Expression",
+    yourAnswer: "Your answer...", askQuestion: "Got a question? Ask here.", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
     noCards: "No cards yet. Import a text to get started!",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
@@ -764,7 +764,7 @@ const T = {
     studyDirect: "번역만 보기", studyDirectDesc: "바로 뜻 확인 (쉬운 단어)",
     directLoading: "뜻을 가져오는 중...",
     addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
-    yourAnswer: "답을 입력해 봐...", grammar: "문법", expression: "표현",
+    yourAnswer: "답을 입력해 봐...", askQuestion: "궁금한 게 있으면 여기에 물어봐!", grammar: "문법", expression: "표현",
     points: "포인트", toReview: "복습 필요", acq: "습득 완료",
     noCards: "아직 카드가 없어요. 텍스트를 가져와서 시작해 봐!",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
@@ -6326,9 +6326,9 @@ function AppInner() {
               {/* Images aren't a conversation — no reply bar in image mode. */}
               {recapMode !== "image" && (
                 <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
-                  <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && recapSend()} placeholder={t.yourAnswer}
-                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
-                  <button onClick={recapSend} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
+                  <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && !recapLoad && recapSend()} placeholder={recapLoad ? t.thinking : t.askQuestion} disabled={recapLoad}
+                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: recapLoad ? 0.6 : 1 }} />
+                  <button onClick={recapSend} disabled={recapLoad} style={{ width: 30, height: 30, background: recapLoad ? C.s1 : C.acc, color: recapLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: recapLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
                 </div>
               )}
             </div>
@@ -6757,7 +6757,7 @@ function AppInner() {
                     </div>
                   )}
                   <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
-                    <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={lLoad ? t.thinking : t.yourAnswer} disabled={lLoad}
+                    <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={lLoad ? t.thinking : t.askQuestion} disabled={lLoad}
                       style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: lLoad ? 0.6 : 1 }} />
                     <button onClick={sendMsg} disabled={lLoad} style={{ width: 30, height: 30, background: lLoad ? C.s1 : C.acc, color: lLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: lLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
                     <button onClick={() => !lLoad && setTray(!tray)} disabled={lLoad} style={{ width: 30, height: 30, border: `1px solid ${C.borderS}`, borderRadius: 6, background: tray ? C.s1 : "none", cursor: lLoad ? "default" : "pointer", color: C.txtM, fontSize: 15, letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: lLoad ? 0.55 : 1 }}>···</button>
@@ -6970,9 +6970,9 @@ function AppInner() {
                   )}
                 </div>
                 {!exDone && <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
-                  <input value={exInp} onChange={e => setExInp(e.target.value)} onKeyDown={e => e.key === "Enter" && exSend()} placeholder={t.yourAnswer}
-                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none" }} />
-                  <button onClick={exSend} style={{ width: 30, height: 30, background: C.acc, color: C.onAcc, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
+                  <input value={exInp} onChange={e => setExInp(e.target.value)} onKeyDown={e => e.key === "Enter" && !exLoad && exSend()} placeholder={exLoad ? t.thinking : (exConv.some(m => m.role === "ai" && m.options) ? t.askQuestion : t.yourAnswer)} disabled={exLoad}
+                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: exLoad ? 0.6 : 1 }} />
+                  <button onClick={exSend} disabled={exLoad} style={{ width: 30, height: 30, background: exLoad ? C.s1 : C.acc, color: exLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: exLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
                 </div>}
               </div>
             )}

@@ -4600,6 +4600,7 @@ function AppInner() {
   };
 
   const startLessonFromCard = (c) => {
+    setStudyChoice(null);
     setShowRecap(false); setRecapCard(null); setRecapConv([]); setRecapMode(null);
     beginLesson({
       korean: c.korean, type: c.type, description_fr: c.description_fr || c.description, description_en: c.description_en || c.description,

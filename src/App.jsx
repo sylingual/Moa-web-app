@@ -6968,8 +6968,10 @@ function AppInner() {
                             </div>
                           </div>
                           {recapCard.registerNote && <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginTop: 7 }}>{recapCard.registerNote}</div>}
-                          <button onClick={() => startRecapAction("register")}
-                            style={{ marginTop: 9, padding: "5px 12px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>💬 {t.registerExamples}</button>
+                          {(recapCard.registerFormal || recapCard.registerCasual) && (
+                            <button onClick={() => startRecapAction("register")}
+                              style={{ marginTop: 9, padding: "5px 12px", borderRadius: 16, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>💬 {t.registerExamples}</button>
+                          )}
                         </>
                       ) : (
                         <button onClick={loadRegister} disabled={registerLoad}

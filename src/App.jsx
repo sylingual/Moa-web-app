@@ -114,6 +114,9 @@ const T = {
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
+    fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
+    fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
+    fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.",
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -424,6 +427,9 @@ const T = {
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
+    fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
+    fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
+    fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.",
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -734,6 +740,9 @@ const T = {
     matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
+    fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
+    fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
+    fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.",
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
@@ -1650,35 +1659,47 @@ Structure your message like this:
 
 Keep the whole message SHORT and focused on this single question. Do NOT preview or list the other questions. Do NOT use markdown headers (###). Use "label" as the key for option text.`,
 
-    fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses ALL the vocabulary words listed below.
+    fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
-If you know the student's interests (see LEARNER PROFILE), set the story in a context they care about. The story should feel natural and immersive, not like a textbook exercise.
+IMPORTANT RULES:
+- If you know the student's interests (see LEARNER PROFILE), set the story in a context they care about
+- The story should feel natural and immersive, not like a textbook exercise
+- You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
+- Each word should appear EXACTLY ONCE as a blank
+- Replace each used word with a numbered blank: (1)______, (2)______, etc.
+- Do NOT include a word bank in the story text (the app renders it separately)
 
-Replace each vocabulary word in the text with a numbered blank: (1)______, (2)______, etc.
-Below the story, provide a WORD BANK listing the words to fill in (shuffled, not in order of appearance).
+Return ONLY this JSON structure:
+{
+  "message": "One-line intro setting up the story context (in the student's UI language)",
+  "story": "The story text in the target language with (1)______, (2)______, etc.",
+  "blanks": [
+    {"num": 1, "answer": "exact dictionary form from vocabulary list", "display": "conjugated/inflected form as it fits in the sentence"},
+    {"num": 2, "answer": "exact dictionary form", "display": "form in context"}
+  ]
+}
+CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the story. If they are the same, set both to the same value.`,
 
-Structure your message exactly like this:
-1. A brief one-line intro setting up the story context
-2. The story text with numbered blanks
-3. A line saying "Word bank:" followed by the shuffled words separated by " | "
+    dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
-The student will type each answer. Do NOT use markdown headers (###). Do NOT give MCQ options.
-Return JSON: {"message": "your story with blanks and word bank"}`,
+IMPORTANT RULES:
+- If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about
+- Give the characters names and a realistic situation
+- You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
+- Each word should appear EXACTLY ONCE as a blank
+- Replace each used word with a numbered blank: (1)______, (2)______, etc.
+- Do NOT include a word bank in the text (the app renders it separately)
 
-    dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (8-12 lines) between two characters in the target language that naturally uses ALL the vocabulary words listed below.
-
-If you know the student's interests (see LEARNER PROFILE), set the dialogue in a context they care about. Give the characters names and a realistic situation.
-
-Replace each vocabulary word with a numbered blank: (1)______, (2)______, etc.
-Below the dialogue, provide a WORD BANK listing the words to fill in (shuffled).
-
-Structure your message exactly like this:
-1. A brief one-line intro describing the situation
-2. The dialogue with character names and numbered blanks
-3. A line saying "Word bank:" followed by the shuffled words separated by " | "
-
-The student will type each answer. Do NOT use markdown headers (###). Do NOT give MCQ options.
-Return JSON: {"message": "your dialogue with blanks and word bank"}`
+Return ONLY this JSON structure:
+{
+  "message": "One-line intro describing the situation (in the student's UI language)",
+  "story": "The dialogue text with character names and (1)______, (2)______, etc.",
+  "blanks": [
+    {"num": 1, "answer": "exact dictionary form from vocabulary list", "display": "conjugated/inflected form as it fits in the dialogue"},
+    {"num": 2, "answer": "exact dictionary form", "display": "form in context"}
+  ]
+}
+CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value.`
   };
 
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
@@ -1690,7 +1711,7 @@ ${modes[mode]}
 Structures to practice:
 ${structs}
 
-Return JSON: {"message": "your exercise content"} or {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]} if the exercise format includes MCQ. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
+Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
   return parseJSON((await callAI(sys, `Generate the exercise now.`)).text);
 }
@@ -3911,6 +3932,152 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
+// #64 — Fill-in-the-blank story exercise with interactive word bank
+function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestart }) {
+  const [placed, setPlaced] = useState({});
+  const [selectedBlank, setSelectedBlank] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [results, setResults] = useState(null);
+
+  const blanks = data.blanks || [];
+  const words = useMemo(() => {
+    const w = blanks.map(b => b.answer);
+    for (let i = w.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [w[i], w[j]] = [w[j], w[i]]; }
+    return w;
+  }, [data]);
+
+  const segments = useMemo(() => {
+    const parts = (data.story || "").split(/\((\d+)\)_+/);
+    return parts.map((part, i) => i % 2 === 0 ? { type: "text", value: part } : { type: "blank", num: parseInt(part) });
+  }, [data]);
+
+  const placedWords = new Set(Object.values(placed));
+  const allFilled = blanks.length > 0 && blanks.every(b => placed[b.num]);
+
+  const handleBlankClick = (num) => {
+    if (submitted) return;
+    if (placed[num]) {
+      setPlaced(p => { const np = { ...p }; delete np[num]; return np; });
+      setSelectedBlank(null);
+    } else {
+      setSelectedBlank(num);
+    }
+  };
+
+  const handleWordClick = (word) => {
+    if (submitted || placedWords.has(word)) return;
+    if (selectedBlank !== null && !placed[selectedBlank]) {
+      setPlaced(p => ({ ...p, [selectedBlank]: word }));
+      setSelectedBlank(null);
+    } else {
+      const emptyBlank = blanks.find(b => !placed[b.num]);
+      if (emptyBlank) setPlaced(p => ({ ...p, [emptyBlank.num]: word }));
+    }
+  };
+
+  const handleSubmit = () => {
+    const res = {};
+    blanks.forEach(b => { res[b.num] = placed[b.num] === b.answer; });
+    setResults(res);
+    setSubmitted(true);
+    const usedCardIds = [];
+    blanks.forEach(b => {
+      const card = cards.find(c => c.korean === b.answer);
+      if (card) usedCardIds.push(card.id);
+    });
+    if (usedCardIds.length > 0 && onComplete) onComplete(usedCardIds);
+  };
+
+  const correct = results ? Object.values(results).filter(Boolean).length : 0;
+  const total = blanks.length;
+
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"<-"} {t.back}</button>
+        {submitted && <div style={{ fontSize: 12, fontWeight: 600, color: correct === total ? C.ok : C.warn }}>{t.fillScore(correct, total)}</div>}
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px 24px" }}>
+        {data.message && <div style={{ fontSize: 13, color: C.txtS, marginBottom: 14, lineHeight: 1.6 }}>{data.message}</div>}
+        <div style={{ fontSize: 14.5, lineHeight: 2.4, fontFamily: tFont, color: C.txt, whiteSpace: "pre-wrap" }}>
+          {segments.map((seg, i) => {
+            if (seg.type === "text") return <span key={i}>{seg.value}</span>;
+            const num = seg.num;
+            const word = placed[num];
+            const blank = blanks.find(b => b.num === num);
+            const isSelected = selectedBlank === num;
+            const isCorrect = submitted && results && results[num];
+            const isWrong = submitted && results && !results[num];
+            return (
+              <span key={i} onClick={() => handleBlankClick(num)} style={{
+                display: "inline-block", minWidth: 56, padding: "2px 10px", margin: "0 2px",
+                borderRadius: 6, cursor: submitted ? "default" : "pointer", textAlign: "center",
+                border: `2px solid ${isCorrect ? C.ok : isWrong ? "#e53e3e" : isSelected ? C.acc : C.border}`,
+                background: isCorrect ? C.okBg : isWrong ? "rgba(229,62,62,0.08)" : isSelected ? C.accBg : C.s1,
+                color: isCorrect ? C.ok : isWrong ? "#e53e3e" : word ? C.txt : C.txtM,
+                fontWeight: word ? 500 : 400, fontSize: 13.5, transition: "all 0.15s",
+              }}>
+                {submitted && isWrong ? (
+                  <span><s style={{ color: "#e53e3e", opacity: 0.6 }}>{word}</s> <span style={{ color: C.ok, fontWeight: 600 }}>{blank?.display || blank?.answer}</span></span>
+                ) : submitted && isCorrect ? (
+                  <span>{blank?.display || word}</span>
+                ) : word ? word : (
+                  <span style={{ opacity: 0.4 }}>{num}</span>
+                )}
+              </span>
+            );
+          })}
+        </div>
+
+        {!submitted && <div style={{ fontSize: 11.5, color: C.txtM, marginTop: 12, marginBottom: 4 }}>{t.fillTapBlank}</div>}
+
+        <div style={{ marginTop: 12, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>{t.fillWordBank}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {words.map((w, i) => {
+              const isPlaced = placedWords.has(w);
+              return (
+                <button key={i} onClick={() => handleWordClick(w)} disabled={isPlaced || submitted}
+                  style={{
+                    padding: "6px 14px", borderRadius: 8, fontFamily: tFont, fontSize: 13, fontWeight: 500,
+                    border: `1px solid ${isPlaced ? C.border : C.acc}`,
+                    background: isPlaced ? C.s1 : C.accBg, color: isPlaced ? C.txtM : C.acc,
+                    cursor: isPlaced || submitted ? "default" : "pointer", opacity: isPlaced ? 0.45 : 1,
+                    transition: "all 0.15s", textDecoration: isPlaced ? "line-through" : "none",
+                  }}>{w}</button>
+              );
+            })}
+          </div>
+        </div>
+
+        {!submitted && allFilled && (
+          <div style={{ marginTop: 16, textAlign: "center" }}>
+            <button onClick={handleSubmit} style={{ padding: "10px 28px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              {t.fillCheck}
+            </button>
+          </div>
+        )}
+
+        {submitted && (
+          <div style={{ marginTop: 20, background: C.s2, border: `1px solid ${correct === total ? C.okB : C.warnB}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
+            <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : "💪"}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.fillScore(correct, total)}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 14 }}>{correct === total ? t.fillDone : t.fillDone}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                {">"} {t.fillNewStory}
+              </button>
+              <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
+                {t.backToLibrary}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // =============================================
 // MAIN APP
 // =============================================
@@ -3990,6 +4157,7 @@ function AppInner() {
   const [exInp, setExInp] = useState("");
   const [exOn, setExOn] = useState(false);
   const [exDone, setExDone] = useState(false);
+  const [fillData, setFillData] = useState(null);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
 
@@ -5321,8 +5489,16 @@ function AppInner() {
   const launchEx = async () => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
-    if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setExOn(true); return; }
-    setExOn(true); setExLoad(true); setExDone(false);
+    if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
+    // Fill modes use interactive word-bank UI
+    if (exMode === "fill" || exMode === "dialoguefill") {
+      setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
+      try { const r = await genExercise(sel, exMode, lang, context, tl); setFillData(r); }
+      catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx())]); }
+      setExLoad(false);
+      return;
+    }
+    setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
     try { const r = await genExercise(sel, exMode, lang, context, tl); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx())]); }
     setExLoad(false);
@@ -6931,6 +7107,16 @@ function AppInner() {
               <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+            ) : (exMode === "fill" || exMode === "dialoguefill") && fillData ? (
+              <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+                onComplete={(usedIds) => completeExercise(exMode, usedIds)}
+                onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }}
+                onRestart={() => { setFillData(null); launchEx(); }} />
+            ) : (exMode === "fill" || exMode === "dialoguefill") && exLoad ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+                <div className="pulse" style={{ fontSize: 13, color: C.txtM }}>{t.thinking}</div>
+                <button onClick={() => { setExOn(false); setExStep("category"); setExCategory(null); }} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"<-"} {t.back}</button>
+              </div>
             ) : (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>

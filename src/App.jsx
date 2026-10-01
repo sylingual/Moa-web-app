@@ -2017,8 +2017,8 @@ const CELEBRATION_GIFS = [
 ];
 
 const CELEBRATION_MESSAGES_FR = [
-  "Bien joue !", "Bravo !", "Genial !", "Tu geres !", "Excellent !",
-  "Continue comme ca !", "Super travail !", "Trop fort !", "Yeah !",
+  "Bien joué !", "Bravo !", "Génial !", "Tu gères !", "Excellent !",
+  "Continue comme ça !", "Super travail !", "Trop fort !", "Yeah !",
 ];
 const CELEBRATION_MESSAGES_EN = [
   "Well done!", "Bravo!", "Awesome!", "You nailed it!", "Excellent!",
@@ -3951,6 +3951,173 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
     return parts.map((part, i) => i % 2 === 0 ? { type: "text", value: part } : { type: "blank", num: parseInt(part) });
   }, [data]);
 
+  const trLang = lang === "ko" ? "en" : lang;
+
+  const translateWord = async (word, rect) => {
+    const raw = word.replace(/[.,!?;:()""''「」『』]/g, "").trim();
+    if (!raw) return;
+    const key = tl === "ko" ? stripKoreanParticle(raw) : raw;
+    const popupX = Math.min(rect.left, window.innerWidth - 200);
+    const popupY = rect.bottom + 4;
+    if (trCache[key]) {
+      setWordPopup({ word: key, original: raw !== key ? raw : null, translation: trCache[key], x: popupX, y: popupY });
+      return;
+    }
+    setWordPopup({ word: key, original: raw !== key ? raw : null, translation: null, x: popupX, y: popupY });
+    try {
+      const r = await fetch("/api/translate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: key, from: tl, to: trLang }),
+      });
+      const d = await r.json();
+      const tr = d.translation || "?";
+      setTrCache(prev => ({ ...prev, [key]: tr }));
+      setWordPopup(prev => prev && prev.word === key ? { ...prev, translation: tr } : prev);
+    } catch { setWordPopup(prev => prev && prev.word === key ? { ...prev, translation: "?" } : prev); }
+  };
+
+  const translateStory = async () => {
+    if (storyTr) return;
+    setStoryTrLoad(true);
+    try {
+      const fullText = (data.story || "").replace(/\(\d+\)_+/g, (m) => {
+        const num = parseInt(m.match(/\d+/)[0]);
+        const blank = blanks.find(b => b.num === num);
+        return blank ? (blank.display || blank.answer) : "___";
+      });
+      const lines = fullText.split("\n").filter(l => l.trim());
+      if (mode === "dialoguefill" && lines.length > 1) {
+        const translated = [];
+        for (const line of lines) {
+          const match = line.match(/^([^:]+):\s*(.*)/);
+          const textToTranslate = match ? match[2].trim() : line.trim();
+          const prefix = match ? match[1] + ": " : "";
+          try {
+            const r = await fetch("/api/translate", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: textToTranslate, from: tl, to: trLang }),
+            });
+            const d = await r.json();
+            translated.push(prefix + (d.translation || "?"));
+          } catch { translated.push(prefix + "?"); }
+        }
+        setStoryTr(translated.join("\n"));
+      } else {
+        const r = await fetch("/api/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: fullText, from: tl, to: trLang }),
+        });
+        const d = await r.json();
+        setStoryTr(d.translation || "?");
+      }
+    } catch { setStoryTr("?"); }
+    setStoryTrLoad(false);
+  };
+
+  const getFilledStory = () => {
+    return (data.story || "").replace(/\(\d+\)_+/g, (m) => {
+      const num = parseInt(m.match(/\d+/)[0]);
+      const blank = blanks.find(b => b.num === num);
+      return blank ? (blank.display || blank.answer) : "___";
+    });
+  };
+
+  const fetchTtsAudio = async (text, voiceId) => {
+    const r = await fetch("/api/tts", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice_id: voiceId || undefined }),
+    });
+    if (!r.ok) {
+      const errBody = await r.text().catch(() => "");
+      throw new Error("TTS " + r.status + ": " + errBody.slice(0, 200));
+    }
+    const blob = await r.blob();
+    return URL.createObjectURL(blob);
+  };
+
+  const playAudio = async () => {
+    if (audioState === "playing") {
+      stoppedRef.current = true;
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      setAudioState("idle");
+      return;
+    }
+    stoppedRef.current = false;
+    setAudioState("loading");
+    try {
+      const fullText = getFilledStory();
+      const lines = fullText.split("\n").filter(l => l.trim());
+      const isDialogue = mode === "dialoguefill" && lines.length > 1;
+      if (isDialogue) {
+        const voiceF = "jBpfAFnaylXS5xwziYMM";
+        const voiceM = "onwK4e9ZLuTAKqWW03F9";
+        const voiceMap = {};
+        if (data.characters && data.characters.length >= 2) {
+          data.characters.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });
+        }
+        const chunks = [];
+        let voiceToggle = false;
+        for (const line of lines) {
+          const match = line.match(/^([^:]+):\s*(.*)/);
+          if (match) {
+            const name = match[1].trim();
+            const voice = voiceMap[name] || (voiceToggle ? voiceM : voiceF);
+            if (!voiceMap[name]) voiceToggle = !voiceToggle;
+            chunks.push({ text: match[2].trim(), voice });
+          } else {
+            chunks.push({ text: line.trim(), voice: voiceF });
+          }
+        }
+        setAudioState("playing");
+        for (let ci = 0; ci < chunks.length; ci++) {
+          if (stoppedRef.current) break;
+          const chunk = chunks[ci];
+          if (!chunk.text) continue;
+          const url = await fetchTtsAudio(chunk.text, chunk.voice);
+          if (stoppedRef.current) { URL.revokeObjectURL(url); break; }
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          await new Promise((resolve) => {
+            audio.onended = resolve;
+            audio.onerror = resolve;
+            audio.play().catch(resolve);
+          });
+          URL.revokeObjectURL(url);
+        }
+      } else {
+        const url = await fetchTtsAudio(fullText);
+        if (stoppedRef.current) { URL.revokeObjectURL(url); throw new Error("stopped"); }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setAudioState("playing");
+        await new Promise((resolve) => {
+          audio.onended = resolve;
+          audio.onerror = resolve;
+          audio.play().catch(resolve);
+        });
+        URL.revokeObjectURL(url);
+      }
+      audioRef.current = null;
+      if (!stoppedRef.current) setAudioState("idle");
+    } catch (e) {
+      audioRef.current = null;
+      setAudioState("idle");
+      if (e.message && e.message !== "stopped") {
+        console.error("TTS error:", e.message);
+        alert("Audio: " + e.message);
+      }
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; } };
+  }, []);
+
+  useEffect(() => {
+    const close = () => setWordPopup(null);
+    if (wordPopup) { document.addEventListener("click", close); return () => document.removeEventListener("click", close); }
+  }, [wordPopup]);
+
   const placedWords = new Set(Object.values(placed));
   const allFilled = blanks.length > 0 && blanks.every(b => placed[b.num]);
 
@@ -3980,12 +4147,15 @@ function FillStoryExercise({ data, cards, tFont, t, onComplete, onExit, onRestar
     blanks.forEach(b => { res[b.num] = placed[b.num] === b.answer; });
     setResults(res);
     setSubmitted(true);
-    const usedCardIds = [];
-    blanks.forEach(b => {
-      const card = cards.find(c => c.korean === b.answer);
-      if (card) usedCardIds.push(card.id);
-    });
-    if (usedCardIds.length > 0 && onComplete) onComplete(usedCardIds);
+    const allCorrect = blanks.every(b => placed[b.num] === b.answer);
+    if (allCorrect) {
+      const usedCardIds = [];
+      blanks.forEach(b => {
+        const card = cards.find(c => c.korean === b.answer);
+        if (card) usedCardIds.push(card.id);
+      });
+      if (usedCardIds.length > 0 && onComplete) onComplete(usedCardIds);
+    }
   };
 
   const correct = results ? Object.values(results).filter(Boolean).length : 0;

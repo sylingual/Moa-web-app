@@ -4005,12 +4005,31 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
         const blank = blanks.find(b => b.num === num);
         return blank ? (blank.display || blank.answer) : "___";
       });
-      const r = await fetch("/api/translate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: fullText, from: tl, to: trLang }),
-      });
-      const d = await r.json();
-      setStoryTr(d.translation || "?");
+      const lines = fullText.split("\n").filter(l => l.trim());
+      if (mode === "dialoguefill" && lines.length > 1) {
+        const translated = [];
+        for (const line of lines) {
+          const match = line.match(/^([^:]+):\s*(.*)/);
+          const textToTranslate = match ? match[2].trim() : line.trim();
+          const prefix = match ? match[1] + ": " : "";
+          try {
+            const r = await fetch("/api/translate", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ text: textToTranslate, from: tl, to: trLang }),
+            });
+            const d = await r.json();
+            translated.push(prefix + (d.translation || "?"));
+          } catch { translated.push(prefix + "?"); }
+        }
+        setStoryTr(translated.join("\n"));
+      } else {
+        const r = await fetch("/api/translate", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: fullText, from: tl, to: trLang }),
+        });
+        const d = await r.json();
+        setStoryTr(d.translation || "?");
+      }
     } catch { setStoryTr("?"); }
     setStoryTrLoad(false);
   };
@@ -4252,7 +4271,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
                 {audioState === "loading" ? t.thinking : audioState === "playing" ? t.fillListenStop : t.fillListen}
               </button>
             </div>
-            {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}` }}>{storyTr}</div>}
+            {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>{storyTr}</div>}
           </div>
         )}
       </div>

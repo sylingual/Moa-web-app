@@ -4149,36 +4149,17 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
       const lines = fullText.split("\n").filter(l => l.trim());
       const isDialogue = mode === "dialoguefill" && lines.length > 1;
       if (isDialogue) {
-        const voicesF = ["uyVNoMrnUku1dZyVEXwD", "5I7B1di44aCL15NkP0jn", "8jHHF8rMqMlg8if2mOUe", "sf8Bpb1IU97NI9BHSMRf"];
-        const voicesM = ["PDoCXqBQFGsvfO0hNkEs", "ZNSVYmudV9pOqphY0x8C", "Ir7oQcBXWiq4oFGROCfj", "eiN2gWtm5eTOT7HuSwY6", "4JJwo477JUAx3HV0T7n7"];
-        const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-        const voiceMap = {};
-        if (data.characters && data.characters.length >= 2) {
-          data.characters.forEach(c => {
-            voiceMap[c.name] = c.gender === "F" ? pickRandom(voicesF) : pickRandom(voicesM);
-          });
-        }
         const chunks = [];
-        let fallbackF = pickRandom(voicesF);
-        let fallbackM = pickRandom(voicesM);
-        let voiceToggle = false;
         for (const line of lines) {
           const match = line.match(/^([^:]+):\s*(.*)/);
-          if (match) {
-            const name = match[1].trim();
-            const voice = voiceMap[name] || (voiceToggle ? fallbackM : fallbackF);
-            if (!voiceMap[name]) voiceToggle = !voiceToggle;
-            chunks.push({ text: match[2].trim(), voice });
-          } else {
-            chunks.push({ text: line.trim(), voice: fallbackF });
-          }
+          chunks.push({ text: match ? match[2].trim() : line.trim() });
         }
         setAudioState("playing");
         for (let ci = 0; ci < chunks.length; ci++) {
           if (stoppedRef.current) break;
           const chunk = chunks[ci];
           if (!chunk.text) continue;
-          const url = await fetchTtsAudio(chunk.text, chunk.voice);
+          const url = await fetchTtsAudio(chunk.text);
           if (stoppedRef.current) { URL.revokeObjectURL(url); break; }
           const audio = new Audio(url);
           audioRef.current = audio;

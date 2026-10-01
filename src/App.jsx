@@ -2032,7 +2032,7 @@ function weatherEmoji(code) {
 }
 
 // Local calendar day, used to keep the "Aujourd'hui" set stable until the next day.
-function dayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function dayKey() { return new Date().toISOString().slice(0, 10); }
 
 const LANG_LEVELS = ["native", "bilingual", "advanced", "intermediate"];
 function langLevelLabel(level, t) {

@@ -3945,6 +3945,20 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 }
 
 // #64 — Fill-in-the-blank story exercise with interactive word bank
+function stripKoreanParticle(word) {
+  if (!word || !/[가-힣]/.test(word)) return word;
+  const particles = [
+    "에게서", "으로서", "으로써", "한테서",
+    "에서", "에게", "한테", "으로", "부터", "까지", "처럼", "같이", "보다", "밖에", "대로", "이랑", "이나", "이며", "께서", "마저", "조차",
+    "로서", "로써",
+    "은", "는", "이", "가", "을", "를", "과", "와", "로", "의", "에", "도", "만", "뿐", "나", "랑", "며",
+  ];
+  for (const p of particles) {
+    if (word.length > p.length && word.endsWith(p)) return word.slice(0, -p.length);
+  }
+  return word;
+}
+
 function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, onExit, onRestart, onAddVocab }) {
   const [placed, setPlaced] = useState({});
   const [selectedBlank, setSelectedBlank] = useState(null);
@@ -3975,15 +3989,16 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
   const trLang = lang === "ko" ? "en" : lang;
 
   const translateWord = async (word, rect) => {
-    const key = word.replace(/[.,!?;:()]/g, "").trim();
-    if (!key) return;
+    const raw = word.replace(/[.,!?;:()""''「」『』]/g, "").trim();
+    if (!raw) return;
+    const key = tl === "ko" ? stripKoreanParticle(raw) : raw;
     const popupX = Math.min(rect.left, window.innerWidth - 200);
     const popupY = rect.bottom + 4;
     if (trCache[key]) {
-      setWordPopup({ word: key, translation: trCache[key], x: popupX, y: popupY });
+      setWordPopup({ word: key, original: raw !== key ? raw : null, translation: trCache[key], x: popupX, y: popupY });
       return;
     }
-    setWordPopup({ word: key, translation: null, x: popupX, y: popupY });
+    setWordPopup({ word: key, original: raw !== key ? raw : null, translation: null, x: popupX, y: popupY });
     try {
       const r = await fetch("/api/translate", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -4301,7 +4316,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
           fontSize: 12.5, fontFamily: "'Plus Jakarta Sans'", maxWidth: 220, zIndex: 9999,
           boxShadow: "0 4px 16px rgba(0,0,0,0.25)", lineHeight: 1.5,
         }}>
-          <div style={{ fontWeight: 600, fontSize: 11, opacity: 0.7, marginBottom: 2, fontFamily: tFont }}>{wordPopup.word}</div>
+          <div style={{ fontWeight: 600, fontSize: 11, opacity: 0.7, marginBottom: 2, fontFamily: tFont }}>{wordPopup.word}{wordPopup.original ? <span style={{ fontWeight: 400, opacity: 0.5 }}> ({wordPopup.original})</span> : null}</div>
           {wordPopup.translation ? <div>{wordPopup.translation}</div> : <div className="pulse" style={{ opacity: 0.6 }}>...</div>}
           {wordPopup.translation && onAddVocab && (
             <button onClick={(e) => {

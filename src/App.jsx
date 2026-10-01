@@ -98,7 +98,7 @@ const T = {
     exBackToCat: "Catégories",
     exBackToEx: "Exercices",
     story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
-    qcm: "QCM aléatoire", qcmDesc: "Questions sur des exemples nouveaux.",
+    qcm: "QCM", qcmDesc: "Teste tes connaissances.",
     fillBlanks: "Histoire à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",

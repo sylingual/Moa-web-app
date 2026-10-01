@@ -1437,11 +1437,11 @@ Return ONLY JSON: {"description_target":"<the ${TL} definition>"}`;
 async function analyzeRegister(card, lang) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const d = lang === "fr" ? card.description_fr : (card.description_en || card.description_fr);
-  const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}, express the SAME idea in two registers:
-- "formal": the more formal / polite / honorific Korean word or short expression for this idea.
-- "casual": the everyday / casual Korean word or short expression for this idea.
-If a register has no truly distinct variant, give the closest natural option (it may equal the word itself). Keep each to a word or short phrase, Korean only.
-- "note": ONE short sentence in ${L} on the register difference or when to use each.
+  const sys = `You are a Korean lexicon expert. For the Korean word/expression "${card.korean}"${d ? ` (meaning: ${d})` : ""}, give the formal and casual forms or equivalents:
+- "formal": the formal / polite / honorific form of "${card.korean}" itself (conjugation, honorific variant, or the formal way to say THIS word). If the word is already formal or has no distinct formal form, return "${card.korean}" itself.
+- "casual": the casual / everyday / 반말 form of "${card.korean}" itself. If the word is already casual or has no distinct casual form, return "${card.korean}" itself.
+IMPORTANT: Do NOT return completely different words or synonyms. Stay as close to "${card.korean}" as possible. Only return a different word if it is the standard register variant that native speakers recognize as the formal/casual counterpart (e.g. 먹다/드시다, 있다/계시다).
+- "note": ONE short sentence in ${L} explaining the register difference, mentioning "${card.korean}" explicitly.
 Return ONLY JSON: {"formal":"...","casual":"...","note":"..."}`;
   return parseJSON((await callAI(sys, `Word: ${card.korean}`, 3000)).text);
 }
@@ -3924,6 +3924,8 @@ function AppInner() {
   const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
   const [exTagFilter, setExTagFilter] = useState(null); // null = all, string = specific tag
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
+  const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
+  const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [cardToDelete, setCardToDelete] = useState(null);
@@ -4646,6 +4648,17 @@ function AppInner() {
     const gain = 15;
     save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
     setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
+    updated.filter(c => c.type === "vocab" && studiedWords.includes(c.korean) && !c.description_target).forEach(c => {
+      generateTargetDescription(c, c.targetLang || tl).then(res => {
+        if (res.description_target) {
+          setData(prev => {
+            const nd = { ...prev, cards: prev.cards.map(x => x.id === c.id ? { ...x, description_target: res.description_target } : x) };
+            saveData(nd, syncId);
+            return nd;
+          });
+        }
+      }).catch(() => {});
+    });
     try { localStorage.removeItem("moa-active-vocab"); } catch (e) {}
     setVocabSession(null);
     setView("library");
@@ -5067,6 +5080,17 @@ function AppInner() {
       save({ ...data, cards: updatedCards, summaries: [...(data.summaries || []), summary], profile: withPoints, langProfiles: currentLangProfiles });
       setPendingDerived(newDerivedCards);
       setDerivedSel(new Set());
+      if (!lCard.description_target) {
+        generateTargetDescription(lCard, lCard.targetLang || tl).then(res => {
+          if (res.description_target) {
+            setData(prev => {
+              const nd = { ...prev, cards: prev.cards.map(x => x.id === lCard.id ? { ...x, description_target: res.description_target } : x) };
+              saveData(nd, syncId);
+              return nd;
+            });
+          }
+        }).catch(() => {});
+      }
     } catch (e) {
       console.error("Summary generation error:", e);
       const todayKey2 = new Date().toISOString().slice(0, 10);
@@ -5139,6 +5163,17 @@ function AppInner() {
       return { ...c, tags: (c.tags || []).filter(tt => tt !== tag) };
     }) });
     setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: (prev.tags || []).filter(tt => tt !== tag) } : prev);
+  };
+  const renameTagOnCard = (cardId, oldTag, newTag) => {
+    const tg = (newTag || "").toLowerCase().trim();
+    if (!tg || tg === oldTag) return;
+    save({ ...data, cards: data.cards.map(c => {
+      if (c.id !== cardId) return c;
+      const tags = (c.tags || []).map(tt => tt === oldTag ? tg : tt);
+      if (new Set(tags).size !== tags.length) return { ...c, tags: tags.filter((v, i, a) => a.indexOf(v) === i) };
+      return { ...c, tags };
+    }) });
+    setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: (prev.tags || []).map(tt => tt === oldTag ? tg : tt).filter((v, i, a) => a.indexOf(v) === i) } : prev);
   };
 
   // Attach/reorder/remove images on a card (max 2; images[0] is the thumbnail shown in menus).
@@ -6030,23 +6065,32 @@ function AppInner() {
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.description_target ? 4 : (ex.example_kr ? 8 : 10) }}>{ex.description}</div>
-                                {ex.description_target ? (
-                                  <div style={{ fontSize: 12, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.5, marginBottom: ex.example_kr ? 8 : 10, padding: "4px 8px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>{ex.description_target}</div>
+                                {showTargetDef[ex.id] && ex.description_target ? (
+                                  <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
+                                    {ex.description_target}
+                                    <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: false }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Voir en langue maternelle" : lang === "ko" ? "모국어로 보기" : "Show in native language"}</button>
+                                  </div>
                                 ) : (
-                                  <button onClick={async (e) => {
-                                    e.stopPropagation();
-                                    const btn = e.currentTarget; btn.disabled = true; btn.textContent = "...";
-                                    try {
-                                      const res = await generateTargetDescription(ex, ex.targetLang || tl);
-                                      if (res.description_target) {
-                                        save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, description_target: res.description_target } : x) });
-                                        btn.textContent = t.genTargetDescDone;
-                                      }
-                                    } catch (err) { console.error(err); btn.textContent = "Error"; }
-                                  }} style={{ padding: "3px 10px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", marginBottom: ex.example_kr ? 8 : 10 }}>
-                                    + {t.genTargetDesc}
-                                  </button>
+                                  <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>
+                                    {ex.description}
+                                    {ex.description_target ? (
+                                      <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
+                                    ) : (
+                                      <button onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const btn = e.currentTarget; btn.disabled = true; btn.textContent = "...";
+                                        try {
+                                          const res = await generateTargetDescription(ex, ex.targetLang || tl);
+                                          if (res.description_target) {
+                                            save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, description_target: res.description_target } : x) });
+                                            btn.textContent = t.genTargetDescDone;
+                                          }
+                                        } catch (err) { console.error(err); btn.textContent = "Error"; }
+                                      }} style={{ display: "block", marginTop: 4, padding: "3px 10px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                        + {t.genTargetDesc}
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                                 {ex.example_kr && (
                                   <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
@@ -6057,10 +6101,18 @@ function AppInner() {
                                 {/* Tags */}
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8, alignItems: "center" }}>
                                   {(ex.tags || []).map(tag => (
-                                    <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+                                    editingTag && editingTag.cardId === ex.id && editingTag.tag === tag ? (
+                                      <input key={tag + "_edit"} autoFocus defaultValue={tag}
+                                        style={{ width: 80, padding: "2px 6px", borderRadius: 10, border: `1px solid ${C.acc}`, fontSize: 10, fontFamily: "'Plus Jakarta Sans'", color: C.acc, background: C.accBg, outline: "none" }}
+                                        onBlur={e => { const v = e.target.value.trim(); if (v && v !== tag) renameTagOnCard(ex.id, tag, v); setEditingTag(null); }}
+                                        onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingTag(null); }}
+                                        onClick={e => e.stopPropagation()} />
+                                    ) : (
+                                    <span key={tag} onClick={() => tagEditCard === ex.id ? setEditingTag({ cardId: ex.id, tag }) : null} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: tagEditCard === ex.id ? "text" : "default" }}>
                                       #{tag}
-                                      {tagEditCard === ex.id && <span onClick={() => removeTagFromCard(ex.id, tag)} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+                                      {tagEditCard === ex.id && <span onClick={(e) => { e.stopPropagation(); removeTagFromCard(ex.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
                                     </span>
+                                    )
                                   ))}
                                   {(ex.tags || []).length < 3 && (
                                     <button onClick={() => setTagEditCard(tagEditCard === ex.id ? null : ex.id)}
@@ -6310,7 +6362,19 @@ function AppInner() {
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>{recapCard.description}</div>
+                  {showTargetDef[recapCard.id] && recapCard.description_target ? (
+                    <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.6, marginBottom: 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
+                      {recapCard.description_target}
+                      <button onClick={() => setShowTargetDef(p => ({ ...p, [recapCard.id]: false }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Voir en langue maternelle" : lang === "ko" ? "모국어로 보기" : "Show in native language"}</button>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>
+                      {recapCard.description}
+                      {recapCard.description_target && (
+                        <button onClick={() => setShowTargetDef(p => ({ ...p, [recapCard.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
+                      )}
+                    </div>
+                  )}
                   <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px" }}>
                     <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>
                     <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>
@@ -6318,10 +6382,18 @@ function AppInner() {
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (
-                      <span key={tag} onClick={() => setTagExplore(tagExplore === tag ? null : tag)} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: tagExplore === tag ? C.acc : C.accBg, color: tagExplore === tag ? C.onAcc : C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", transition: "all 0.15s" }}>
+                      editingTag && editingTag.cardId === recapCard.id && editingTag.tag === tag ? (
+                        <input key={tag + "_edit"} autoFocus defaultValue={tag}
+                          style={{ width: 80, padding: "2px 6px", borderRadius: 10, border: `1px solid ${C.acc}`, fontSize: 10, fontFamily: "'Plus Jakarta Sans'", color: C.acc, background: C.accBg, outline: "none" }}
+                          onBlur={e => { const v = e.target.value.trim(); if (v && v !== tag) renameTagOnCard(recapCard.id, tag, v); setEditingTag(null); }}
+                          onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingTag(null); }}
+                          onClick={e => e.stopPropagation()} />
+                      ) : (
+                      <span key={tag} onClick={() => tagEditCard === recapCard.id ? setEditingTag({ cardId: recapCard.id, tag }) : setTagExplore(tagExplore === tag ? null : tag)} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: tagExplore === tag ? C.acc : C.accBg, color: tagExplore === tag ? C.onAcc : C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", transition: "all 0.15s" }}>
                         #{tag}
                         {tagEditCard === recapCard.id && <span onClick={(e) => { e.stopPropagation(); removeTagFromCard(recapCard.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
                       </span>
+                      )
                     ))}
                     {(recapCard.tags || []).length < 3 && (
                       <button onClick={() => setTagEditCard(tagEditCard === recapCard.id ? null : recapCard.id)}

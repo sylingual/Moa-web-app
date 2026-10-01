@@ -2118,10 +2118,24 @@ const TRYAGAIN_MESSAGES_KO = [
   "한 번 더!", "연습하면 잘할 수 있어!", "할 수 있어!",
 ];
 
+const FAILURE_SOUNDS = [
+  "/failure/370209__jugraf__fail-down.wav",
+  "/failure/508862__xyahka__oh-really.m4a",
+  "/failure/643668__snowfightstudios__indiana-jones-fail-music.mp3",
+];
+
 function TryAgainOverlay({ visible, onClose, lang }) {
   const [entry] = useState(() => TRYAGAIN_GIFS[Math.floor(Math.random() * TRYAGAIN_GIFS.length)]);
   const msgs = lang === "fr" ? TRYAGAIN_MESSAGES_FR : lang === "ko" ? TRYAGAIN_MESSAGES_KO : TRYAGAIN_MESSAGES_EN;
   const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
+
+  useEffect(() => {
+    if (!visible) return;
+    const src = FAILURE_SOUNDS[Math.floor(Math.random() * FAILURE_SOUNDS.length)];
+    const a = new Audio(src);
+    a.volume = 0.5;
+    a.play().catch(() => {});
+  }, [visible]);
 
   if (!visible) return null;
   return (

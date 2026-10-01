@@ -7369,7 +7369,9 @@ function AppInner() {
                       ← {t.exBackToEx}
                     </button>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{
+                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
+                  }</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
                     <div style={{ width: "100%", maxWidth: 460 }}>

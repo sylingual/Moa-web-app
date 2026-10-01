@@ -3140,46 +3140,18 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
 }
 
 // #60 — Gender exercise (FLE): pick Le/La for French nouns.
-function GenderExercise({ cards, tFont, t, lang, onComplete, onExit, onSaveGenders }) {
+function GenderExercise({ cards, tFont, t, lang, onComplete, onExit }) {
   const [items, setItems] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState({ correct: 0, wrong: 0 });
   const [feedback, setFeedback] = useState(null);
   const [awarded, setAwarded] = useState(false);
 
   useEffect(() => {
-    const vocabCards = cards.filter(c => c.type === "vocab" && (c.korean || "").trim());
-    if (!vocabCards.length) { setLoading(false); return; }
-    const withGender = vocabCards.filter(c => c.gender);
-    if (withGender.length >= 5) {
+    const withGender = cards.filter(c => c.type === "vocab" && (c.korean || "").trim() && c.gender);
+    if (withGender.length > 0) {
       setItems(shuffle(withGender.map(c => ({ id: c.id, word: c.korean, gender: c.gender, desc: c.description || "" }))));
-      setLoading(false);
-      return;
     }
-    const batch = shuffle(vocabCards).slice(0, 12);
-    const wordList = batch.map(c => c.korean).join(", ");
-    const sys = `You are a French grammar expert. For each French word below, determine its grammatical gender.
-Return ONLY a JSON array of objects: [{"word":"...","gender":"m" or "f","article":"le" or "la"}]
-Use "m" for masculine and "f" for feminine. For words starting with a vowel or silent h, still specify the underlying gender.
-Words: ${wordList}`;
-    callAI(sys, `Determine gender: ${wordList}`, 1000)
-      .then(res => {
-        const genders = parseJSON(res.text);
-        if (!Array.isArray(genders)) throw new Error("bad response");
-        const gMap = {};
-        genders.forEach(g => { gMap[(g.word || "").trim().toLowerCase()] = g.gender; });
-        const result = batch.map(c => {
-          const g = gMap[c.korean.trim().toLowerCase()];
-          return g ? { id: c.id, word: c.korean, gender: g, desc: c.description || "" } : null;
-        }).filter(Boolean);
-        if (result.length > 0) {
-          onSaveGenders(result.map(r => ({ id: r.id, gender: r.gender })));
-          setItems(shuffle(result));
-        }
-        setLoading(false);
-      })
-      .catch(e => { console.error("Gender fetch error:", e); setLoading(false); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -3195,12 +3167,6 @@ Words: ${wordList}`;
   };
 
   const restart = () => { setIdx(0); setScore({ correct: 0, wrong: 0 }); setFeedback(null); setItems(i => shuffle([...i])); setAwarded(false); };
-
-  if (loading) return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: C.txtM, fontSize: 13 }}>
-      {t.searching || "..."}
-    </div>
-  );
 
   if (!items || !items.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
@@ -5697,7 +5663,12 @@ function AppInner() {
                       groups.new = [...groups.in_progress, ...groups.new];
                       groups.in_progress = [];
                       // Fixed daily set (frozen for the day); shows each card's CURRENT status.
-                      const today = (data.today?.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const todayRaw = (data.today?.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const today = [...todayRaw].sort((a, b) => {
+                        const sa = migrateStatus(a.status), sb = migrateStatus(b.status);
+                        const order = { new: 0, in_progress: 1, studied: 2, acquired: 3 };
+                        return (order[sa] ?? 9) - (order[sb] ?? 9);
+                      });
                       const shelf = (status, bg, color, cardBg, { masked, compact, expandable } = {}) => {
                         const cs = groups[status];
                         if (!cs.length) return null;
@@ -5822,7 +5793,7 @@ function AppInner() {
                                       style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "transform 0.1s" }}
                                       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                       onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                      <div style={{ fontSize: 10, color: done ? C.stAcq : "#8a6d00", marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>{done ? <>✓ {t.todayDone}</> : statusInfo(origSt[c.id] || "new", t).label}</div>
+                                      {done && <div style={{ fontSize: 10, color: C.stAcq, marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>✓ {t.todayDone}</div>}
                                       <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
                                     </div>
                                   ); })}
@@ -6422,7 +6393,7 @@ function AppInner() {
                     {(exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
-                      ...(tl === "fr" ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true, ai: true }] : []),
+                      ...(tl === "fr" ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true, ai: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [
@@ -6529,12 +6500,7 @@ function AppInner() {
             ) : exMode === "gender" ? (
               <GenderExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang}
                 onComplete={() => completeExercise("gender", [...exSel])}
-                onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }}
-                onSaveGenders={(genders) => {
-                  const gMap = {};
-                  genders.forEach(g => { gMap[g.id] = g.gender; });
-                  save({ ...data, cards: data.cards.map(c => gMap[c.id] ? { ...c, gender: gMap[c.id] } : c) });
-                }} />
+                onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "flash" ? (
               <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (

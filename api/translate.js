@@ -7,18 +7,27 @@ export default async function handler(req, res) {
   var to = req.body.to || 'fr'
   if (!text) return res.status(400).json({ error: 'No text' })
 
-  try {
-    var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl='
-      + encodeURIComponent(from) + '&tl=' + encodeURIComponent(to)
-      + '&dt=t&q=' + encodeURIComponent(text)
-    var r = await fetch(url)
-    if (!r.ok) {
-      return res.status(r.status).json({ error: 'Google Translate ' + r.status })
+  var instances = [
+    'lingva.ml',
+    'lingva.thedaviddelta.com',
+    'lingva.lunar.icu'
+  ]
+
+  for (var i = 0; i < instances.length; i++) {
+    try {
+      var url = 'https://' + instances[i] + '/api/v1/'
+        + encodeURIComponent(from) + '/' + encodeURIComponent(to)
+        + '/' + encodeURIComponent(text)
+      var r = await fetch(url, { signal: AbortSignal.timeout(5000) })
+      if (!r.ok) continue
+      var data = await r.json()
+      if (data.translation) {
+        return res.status(200).json({ translation: data.translation })
+      }
+    } catch (e) {
+      continue
     }
-    var data = await r.json()
-    var translation = (data[0] || []).map(function(s) { return s[0] || '' }).join('')
-    return res.status(200).json({ translation: translation })
-  } catch (e) {
-    return res.status(500).json({ error: e.message })
   }
+
+  return res.status(502).json({ error: 'Translation unavailable' })
 }

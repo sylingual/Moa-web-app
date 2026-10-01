@@ -115,7 +115,7 @@ const T = {
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
-    fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !",
+    fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !", fillTryAgain: "Bien essayé ! Tu veux retenter ?", fillRetry: "Réessayer",
     fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
     fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio", fillListen: "Écouter", fillListenStop: "Arrêter",
     fillThemeLabel: "Thème du scénario", fillThemeRandom: "Surprise !", fillThemes: ["Vie quotidienne", "Amis / sorties", "K-drama", "K-pop / fandom", "Réseaux sociaux", "Travail / business", "Café / restaurant", "Voyage en Corée"],
@@ -430,7 +430,7 @@ const T = {
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
-    fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!",
+    fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!", fillTryAgain: "Nice try! Want to try again?", fillRetry: "Try again",
     fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
     fillTranslateStory: "Translate story", fillAddVocab: "Add to library", fillListen: "Listen", fillListenStop: "Stop",
     fillThemeLabel: "Scenario theme", fillThemeRandom: "Surprise me!", fillThemes: ["Daily life", "Friends / hangouts", "K-drama", "K-pop / fandom", "Social media", "Work / business", "Cafe / restaurant", "Travel in Korea"],
@@ -745,7 +745,7 @@ const T = {
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
-    fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!",
+    fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!", fillTryAgain: "잘 했어! 다시 해볼래?", fillRetry: "다시 하기",
     fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
     fillTranslateStory: "이야기 번역", fillAddVocab: "라이브러리에 추가", fillListen: "듣기", fillListenStop: "멈추기",
     fillThemeLabel: "시나리오 테마", fillThemeRandom: "랜덤!", fillThemes: ["일상생활", "친구 / 놀기", "한국 드라마", "K-pop / 팬덤", "SNS", "직장 / 비즈니스", "카페 / 식당", "한국 여행"],
@@ -4163,6 +4163,14 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
     if (usedCardIds.length > 0 && onComplete) onComplete(usedCardIds);
   };
 
+  const handleRetry = () => {
+    setPlaced({}); setSelectedBlank(null); setSubmitted(false); setResults(null);
+    setStoryTr(null); setStoryTrLoad(false);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setAudioState("idle"); stoppedRef.current = true;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  };
+
   const correct = results ? Object.values(results).filter(Boolean).length : 0;
   const total = blanks.length;
 
@@ -4250,25 +4258,30 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
 
         {submitted && (
           <div style={{ marginTop: 20, background: C.s2, border: `1px solid ${correct === total ? C.okB : C.warnB}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : "💪"}</div>
+            <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : correct >= total / 2 ? "💪" : "🤔"}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.fillScore(correct, total)}</div>
-            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 14 }}>{t.fillDone}</div>
+            <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 10 }}>{correct === total ? t.fillDone : t.fillTryAgain}</div>
+            <button onClick={playAudio} disabled={audioState === "loading"}
+              style={{ padding: "10px 24px", borderRadius: 10, border: `2px solid ${audioState === "playing" ? C.acc : C.border}`, background: audioState === "playing" ? C.accBg : C.s1, color: audioState === "playing" ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: audioState === "loading" ? "default" : "pointer", opacity: audioState === "loading" ? 0.6 : 1, marginBottom: 14 }}>
+              {audioState === "loading" ? "..." : audioState === "playing" ? `⏹ ${t.fillListenStop}` : `🔊 ${t.fillListen}`}
+            </button>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-              <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {correct < total && (
+                <button onClick={handleRetry} style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                  {t.fillRetry}
+                </button>
+              )}
+              <button onClick={onRestart} style={{ padding: "8px 18px", borderRadius: 8, background: correct === total ? C.acc : "none", color: correct === total ? C.onAcc : C.txtS, border: correct === total ? "none" : `1px solid ${C.borderS}`, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                 {">"} {t.fillNewStory}
               </button>
               <button onClick={onExit} style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
                 {t.backToLibrary}
               </button>
             </div>
-            <div style={{ marginTop: 14, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ marginTop: 14 }}>
               <button onClick={translateStory} disabled={storyTrLoad}
                 style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: storyTrLoad ? "default" : "pointer", opacity: storyTrLoad ? 0.6 : 1 }}>
                 {storyTrLoad ? t.thinking : t.fillTranslateStory}
-              </button>
-              <button onClick={playAudio} disabled={audioState === "loading"}
-                style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${audioState === "playing" ? C.acc : C.border}`, background: audioState === "playing" ? C.accBg : C.s1, color: audioState === "playing" ? C.acc : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: audioState === "loading" ? "default" : "pointer", opacity: audioState === "loading" ? 0.6 : 1 }}>
-                {audioState === "loading" ? t.thinking : audioState === "playing" ? t.fillListenStop : t.fillListen}
               </button>
             </div>
             {storyTr && <div style={{ marginTop: 10, fontSize: 12.5, color: C.txtS, lineHeight: 1.7, textAlign: "left", padding: "10px 12px", background: C.s1, borderRadius: 8, border: `1px solid ${C.border}`, whiteSpace: "pre-wrap" }}>{storyTr}</div>}

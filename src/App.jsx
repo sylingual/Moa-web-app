@@ -287,7 +287,7 @@ const T = {
     onbStep: (a, b) => `${a} / ${b}`,
     // Points
     points_: "points",
-    pointsEarned: (n) => `+${n} points !`,
+    pointsEarned: (n) => `+${n} point${n > 1 ? "s" : ""} !`,
     dailyGoalReached: (n) => `Objectif du jour atteint ! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Questionnaire détaillé",
@@ -597,7 +597,7 @@ const T = {
     onbStep: (a, b) => `${a} / ${b}`,
     // Points
     points_: "points",
-    pointsEarned: (n) => `+${n} points!`,
+    pointsEarned: (n) => `+${n} point${n > 1 ? "s" : ""}!`,
     dailyGoalReached: (n) => `Daily goal reached! +${n} points 🎉`,
     // Detailed questionnaire
     detailedTitle: "Detailed questionnaire",

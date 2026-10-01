@@ -4149,31 +4149,17 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
       const lines = fullText.split("\n").filter(l => l.trim());
       const isDialogue = mode === "dialoguefill" && lines.length > 1;
       if (isDialogue) {
-        const voiceF = "21m00Tcm4TlvDq8ikWAM";
-        const voiceM = "pNInz6obpgDQGcFmaJgB";
-        const voiceMap = {};
-        if (data.characters && data.characters.length >= 2) {
-          data.characters.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });
-        }
         const chunks = [];
-        let voiceToggle = false;
         for (const line of lines) {
           const match = line.match(/^([^:]+):\s*(.*)/);
-          if (match) {
-            const name = match[1].trim();
-            const voice = voiceMap[name] || (voiceToggle ? voiceM : voiceF);
-            if (!voiceMap[name]) voiceToggle = !voiceToggle;
-            chunks.push({ text: match[2].trim(), voice });
-          } else {
-            chunks.push({ text: line.trim(), voice: voiceF });
-          }
+          chunks.push({ text: match ? match[2].trim() : line.trim() });
         }
         setAudioState("playing");
         for (let ci = 0; ci < chunks.length; ci++) {
           if (stoppedRef.current) break;
           const chunk = chunks[ci];
           if (!chunk.text) continue;
-          const url = await fetchTtsAudio(chunk.text, chunk.voice);
+          const url = await fetchTtsAudio(chunk.text);
           if (stoppedRef.current) { URL.revokeObjectURL(url); break; }
           const audio = new Audio(url);
           audioRef.current = audio;

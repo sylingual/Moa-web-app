@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   var text = (req.body.text || '').trim()
-  var voiceId = req.body.voice_id || process.env.ELEVENLABS_VOICE_DEFAULT || '21m00Tcm4TlvDq8ikWAM'
+  var voiceId = req.body.voice_id || process.env.ELEVENLABS_VOICE_DEFAULT || 'nPczCjzI2devNBz1zQrb'
   if (!text) return res.status(400).json({ error: 'No text' })
   if (text.length > 5000) return res.status(400).json({ error: 'Text too long' })
 

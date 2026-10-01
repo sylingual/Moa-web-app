@@ -4063,27 +4063,33 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
     setAudioState("loading");
     try {
       const fullText = getFilledStory();
-      if (mode === "dialoguefill" && data.characters && data.characters.length >= 2) {
-        const chars = data.characters;
+      const lines = fullText.split("\n").filter(l => l.trim());
+      const isDialogue = mode === "dialoguefill" && lines.length > 1;
+      if (isDialogue) {
         const voiceF = "jBpfAFnaylXS5xwziYMM";
         const voiceM = "onwK4e9ZLuTAKqWW03F9";
         const voiceMap = {};
-        chars.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });
-        const lines = fullText.split("\n").filter(l => l.trim());
+        if (data.characters && data.characters.length >= 2) {
+          data.characters.forEach(c => { voiceMap[c.name] = c.gender === "F" ? voiceF : voiceM; });
+        }
         const chunks = [];
+        let voiceToggle = false;
         for (const line of lines) {
           const match = line.match(/^([^:]+):\s*(.*)/);
           if (match) {
             const name = match[1].trim();
-            const voice = voiceMap[name] || voiceF;
+            const voice = voiceMap[name] || (voiceToggle ? voiceM : voiceF);
+            if (!voiceMap[name]) voiceToggle = !voiceToggle;
             chunks.push({ text: match[2].trim(), voice });
           } else {
             chunks.push({ text: line.trim(), voice: voiceF });
           }
         }
         setAudioState("playing");
-        for (const chunk of chunks) {
+        for (let ci = 0; ci < chunks.length; ci++) {
           if (stoppedRef.current) break;
+          const chunk = chunks[ci];
+          if (!chunk.text) continue;
           const url = await fetchTtsAudio(chunk.text, chunk.voice);
           if (stoppedRef.current) { URL.revokeObjectURL(url); break; }
           const audio = new Audio(url);
@@ -4091,7 +4097,6 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
           await new Promise((resolve) => {
             audio.onended = resolve;
             audio.onerror = resolve;
-            audio.onpause = resolve;
             audio.play().catch(resolve);
           });
           URL.revokeObjectURL(url);
@@ -4258,7 +4263,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
 
         {submitted && (
           <div style={{ marginTop: 20, background: C.s2, border: `1px solid ${correct === total ? C.okB : C.warnB}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 28, marginBottom: 6 }}>{correct === total ? "🎉" : correct >= total / 2 ? "💪" : "🤔"}</div>
+            {correct === total && <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>}
             <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.fillScore(correct, total)}</div>
             <div style={{ fontSize: 12.5, color: C.txtS, marginBottom: 10 }}>{correct === total ? t.fillDone : t.fillTryAgain}</div>
             <button onClick={playAudio} disabled={audioState === "loading"}

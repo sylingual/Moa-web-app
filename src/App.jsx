@@ -248,7 +248,7 @@ const T = {
     deleteBtn: "Supprimer", cancelBtn: "Annuler",
     filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
     filterByTag: "Filtrer par tag", allTags: "Tous les tags",
-    addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum",
+    addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum", tagRelated: "Cartes avec ce tag", tagNoOther: "Aucune autre carte avec ce tag",
     tagPlaceholder: "Nouveau tag...", tagSuggested: "Suggere",
     noTags: "Aucun tag",
     restudyText: "Réétudier ce texte",
@@ -558,7 +558,7 @@ const T = {
     deleteBtn: "Delete", cancelBtn: "Cancel",
     filterAll: "All", filterGrammar: "Grammar", filterVocab: "Vocab",
     filterByTag: "Filter by tag", allTags: "All tags",
-    addTag: "Add tag", removeTag: "Remove", tagMax: "3 tags max",
+    addTag: "Add tag", removeTag: "Remove", tagMax: "3 tags max", tagRelated: "Cards with this tag", tagNoOther: "No other cards with this tag",
     tagPlaceholder: "New tag...", tagSuggested: "Suggested",
     noTags: "No tags",
     restudyText: "Study this text again",
@@ -3615,6 +3615,7 @@ function AppInner() {
   const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
   const [exTagFilter, setExTagFilter] = useState(null); // null = all, string = specific tag
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
+  const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
@@ -4511,7 +4512,7 @@ function AppInner() {
     if (effectiveStatus === "studied" || effectiveStatus === "acquired") {
       setRecapCard(c);
       setShowRecap(true);
-      setRecapConv([]); setRecapMode(null); setRecapInp("");
+      setRecapConv([]); setRecapMode(null); setRecapInp(""); setTagExplore(null);
       setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
       window.history.pushState({ view: "lesson" }, "");
       setView("lesson");
@@ -5959,7 +5960,7 @@ function AppInner() {
           ) : showRecap && recapCard ? (
             // RECAP SCREEN
             <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-              <div style={{ width: "100%", maxWidth: 540, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ width: "100%", maxWidth: 540, padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
@@ -5994,9 +5995,9 @@ function AppInner() {
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (
-                      <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'" }}>
+                      <span key={tag} onClick={() => setTagExplore(tagExplore === tag ? null : tag)} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: tagExplore === tag ? C.acc : C.accBg, color: tagExplore === tag ? C.onAcc : C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", transition: "all 0.15s" }}>
                         #{tag}
-                        {tagEditCard === recapCard.id && <span onClick={() => removeTagFromCard(recapCard.id, tag)} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+                        {tagEditCard === recapCard.id && <span onClick={(e) => { e.stopPropagation(); removeTagFromCard(recapCard.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
                       </span>
                     ))}
                     {(recapCard.tags || []).length < 3 && (
@@ -6011,6 +6012,31 @@ function AppInner() {
                       <TagPicker cardId={recapCard.id} existingTags={recapCard.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
                     </div>
                   )}
+                  {tagExplore && (() => {
+                    const related = data.cards.filter(c => c.id !== recapCard.id && (c.tags || []).includes(tagExplore) && (c.targetLang || "ko") === tl);
+                    return (
+                      <div style={{ marginTop: 8, background: C.s1, borderRadius: 8, padding: "10px 12px", animation: "fadeIn 0.2s" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: C.txt }}>{t.tagRelated} <span style={{ color: C.acc }}>#{tagExplore}</span></span>
+                          <span onClick={() => setTagExplore(null)} style={{ fontSize: 11, color: C.txtM, cursor: "pointer" }}>x</span>
+                        </div>
+                        {related.length === 0 ? (
+                          <div style={{ fontSize: 11, color: C.txtM, fontStyle: "italic" }}>{t.tagNoOther}</div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+                            {related.map(c => (
+                              <div key={c.id} onClick={() => openCardFresh(c)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, background: C.s2, border: `1px solid ${C.border}`, cursor: "pointer", transition: "border-color 0.15s" }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                                <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt, flex: 1 }}>{c.korean}</span>
+                                <span style={{ fontSize: 10, color: C.txtM, flexShrink: 0 }}>{c.description ? c.description.slice(0, 30) + (c.description.length > 30 ? "..." : "") : ""}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {tl === "ko" && recapCard.type === "vocab" && (
                     <div style={{ marginTop: 10, padding: "10px 12px", background: C.s1, borderRadius: 8 }}>
                       {(recapCard.registerFormal || recapCard.registerCasual) ? (

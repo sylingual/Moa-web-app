@@ -6160,13 +6160,20 @@ function AppInner() {
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
       {showCelebration && <CelebrationOverlay visible onClose={() => setShowCelebration(false)} lang={lang} />}
 
-      {/* Add-selected-word-to-vocab floating button */}
-      {selAdd && (
+      {selAdd && (winW < 700 ? (
+        <div data-sel-add style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 3000, padding: "10px 16px", background: C.acc, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, boxShadow: "0 -4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.15s ease-out" }}>
+          <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.onAcc, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selAdd.text}</span>
+          <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text)}
+            style={{ flexShrink: 0, padding: "7px 16px", borderRadius: 18, border: `2px solid ${C.onAcc}`, background: "transparent", color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            + {t.addToVocab}
+          </button>
+        </div>
+      ) : (
         <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text)}
           style={{ position: "fixed", left: selAdd.x, top: Math.max(8, selAdd.y - 8), transform: "translate(-50%, -100%)", zIndex: 3000, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 18, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.22)", whiteSpace: "nowrap" }}>
           ➕ {t.addToVocab}
         </button>
-      )}
+      ))}
 
       {flash && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.txt, color: C.s1, padding: "9px 18px", borderRadius: 20, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 16px rgba(0,0,0,0.25)", pointerEvents: "none" }}>

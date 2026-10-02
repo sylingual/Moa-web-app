@@ -69,9 +69,6 @@ export default async function handler(req, res) {
         max_completion_tokens: maxTok,
         messages: [{ role: 'system', content: body.system }, ...body.messages],
       }
-      if (!plainText) {
-        oaiPayload.response_format = { type: 'json_object' }
-      }
 
       var r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',

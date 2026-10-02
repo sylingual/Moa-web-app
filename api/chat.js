@@ -2,19 +2,32 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  var apiKey = process.env.AI_API_KEY || ''
-  if (!apiKey) {
-    return res.status(500).json({ error: 'AI_API_KEY not set' })
-  }
-  var provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase()
-  var raw = ''
-  try {
-    var body = req.body
-    var userMsg = body.messages.map(function(m) { return m.content }).join('\n')
-    var useSearch = body.search === true
-    var plainText = body.plain === true
-    var maxTok = Math.min(8000, Math.max(3000, Number(body.max_tokens) || 4000))
 
+  var body = req.body
+  var useSearch = body.search === true
+  var plainText = body.plain === true
+  var maxTok = Math.min(8000, Math.max(100, Number(body.max_tokens) || 1200))
+  var raw = ''
+
+  // Provider routing: web-search requests go to Gemini (Google Search grounding),
+  // everything else goes to the main provider (AI_PROVIDER, default: openai).
+  var provider
+  var apiKey
+
+  if (useSearch) {
+    provider = 'gemini'
+    apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || ''
+  } else {
+    provider = (process.env.AI_PROVIDER || 'openai').toLowerCase()
+    apiKey = process.env.AI_API_KEY || ''
+  }
+
+  if (!apiKey) {
+    return res.status(500).json({ error: provider === 'gemini' ? 'GEMINI_API_KEY not set (needed for web search)' : 'AI_API_KEY not set' })
+  }
+
+  try {
+    var userMsg = body.messages.map(function(m) { return m.content }).join('\n')
     var text = ''
     var sources = []
 
@@ -50,15 +63,20 @@ export default async function handler(req, res) {
       text = (data.content || []).map(function(b) { return b.text || '' }).join('\n')
 
     } else if (provider === 'openai') {
-      // ---- OpenAI ----
+      // ---- OpenAI (default: GPT-5 nano) ----
+      var oaiPayload = {
+        model: process.env.AI_MODEL || 'gpt-5-nano',
+        max_tokens: maxTok,
+        messages: [{ role: 'system', content: body.system }, ...body.messages],
+      }
+      if (!plainText) {
+        oaiPayload.response_format = { type: 'json_object' }
+      }
+
       var r = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({
-          model: process.env.AI_MODEL || 'gpt-4o-mini',
-          max_tokens: maxTok,
-          messages: [{ role: 'system', content: body.system }, ...body.messages],
-        }),
+        body: JSON.stringify(oaiPayload),
       })
       raw = await r.text()
       if (!r.ok) {
@@ -66,7 +84,11 @@ export default async function handler(req, res) {
         try {
           var errData = JSON.parse(raw)
           var apiMsg = errData.error && errData.error.message ? errData.error.message : ''
-          msg = 'OpenAI ' + r.status + ': ' + apiMsg
+          if (r.status === 429) {
+            msg = 'Quota OpenAI atteint (429). Reessaie dans quelques minutes. ' + apiMsg
+          } else {
+            msg = 'OpenAI ' + r.status + ': ' + apiMsg
+          }
         } catch (e) {
           msg = 'OpenAI ' + r.status + ': ' + raw.substring(0, 300)
         }
@@ -76,9 +98,8 @@ export default async function handler(req, res) {
       text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : ''
 
     } else {
-      // ---- Gemini (default) ----
+      // ---- Gemini (used for web search grounding, or when AI_PROVIDER=gemini) ----
       var parts = [{ text: body.system + '\n\n' + userMsg }]
-      // Optional image input (base64) for vision/OCR.
       if (body.image && body.image.data) {
         parts.push({ inline_data: { mime_type: body.image.mimeType || 'image/jpeg', data: body.image.data } })
       }
@@ -89,13 +110,12 @@ export default async function handler(req, res) {
       }
 
       if (useSearch) {
-        // Grounding with Google Search. responseMimeType JSON is NOT allowed with tools.
         payload.tools = [{ google_search: {} }]
       } else if (!plainText) {
         payload.generationConfig.responseMimeType = 'application/json'
       }
 
-      var geminiModel = process.env.AI_MODEL || 'gemini-3.6-flash'
+      var geminiModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
       var r = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/' + geminiModel + ':generateContent?key=' + apiKey,
         {
@@ -118,7 +138,7 @@ export default async function handler(req, res) {
           } else if (r.status === 400) {
             msg = 'Requete invalide (400). ' + apiMsg
           } else if (r.status === 403) {
-            msg = 'Cle API refusee (403). Verifie AI_API_KEY. ' + apiMsg
+            msg = 'Cle API refusee (403). Verifie GEMINI_API_KEY. ' + apiMsg
           } else {
             msg = 'Gemini ' + r.status + ': ' + apiMsg
           }
@@ -130,22 +150,18 @@ export default async function handler(req, res) {
       var data = JSON.parse(raw)
       var cand = data.candidates && data.candidates[0]
       if (!cand) {
-        // Check for prompt blocking
         if (data.promptFeedback && data.promptFeedback.blockReason) {
           return res.status(500).json({ error: 'Requete bloquee par Gemini: ' + data.promptFeedback.blockReason })
         }
         return res.status(500).json({ error: 'Pas de reponse de Gemini: ' + raw.substring(0, 300) })
       }
-      // Check for truncation
       if (cand.finishReason === 'MAX_TOKENS') {
         console.warn('Response truncated at max tokens')
       }
 
-      // Concatenate all text parts (grounded responses can be split across parts)
       var textParts = (cand.content && cand.content.parts) || []
       text = textParts.map(function(p) { return p.text || '' }).join('')
 
-      // Extract grounding sources if present
       var seenSources = {}
       var gm = cand.groundingMetadata
       if (gm && gm.groundingChunks) {

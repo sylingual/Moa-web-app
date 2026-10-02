@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       // ---- OpenAI (default: GPT-5 nano) ----
       var oaiPayload = {
         model: process.env.AI_MODEL || 'gpt-5-nano',
-        max_tokens: maxTok,
+        max_completion_tokens: maxTok,
         messages: [{ role: 'system', content: body.system }, ...body.messages],
       }
       if (!plainText) {

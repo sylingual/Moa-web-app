@@ -5247,11 +5247,8 @@ function AppInner() {
     setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 1800);
   };
 
-  // Watch text selections app-wide; when the selection is a short target-language snippet,
-  // surface a small "add to vocab" button near it.
   useEffect(() => {
-    const onUp = (e) => {
-      if (e.target && e.target.closest && e.target.closest("input, textarea, [data-sel-add]")) return;
+    const checkSel = () => {
       const sel = window.getSelection && window.getSelection();
       const text = sel ? sel.toString().trim() : "";
       if (!text || text.length > 40 || !hasTargetScript(text, tl)) { setSelAdd(null); return; }
@@ -5261,11 +5258,18 @@ function AppInner() {
         setSelAdd({ text, x: rect.left + rect.width / 2, y: rect.top });
       } catch { setSelAdd(null); }
     };
+    let scTimer = null;
+    const onSelChange = () => { clearTimeout(scTimer); scTimer = setTimeout(checkSel, 250); };
+    const onUp = (e) => {
+      if (e.target && e.target.closest && e.target.closest("input, textarea, [data-sel-add]")) return;
+      checkSel();
+    };
     const onDown = (e) => { if (!(e.target && e.target.closest && e.target.closest("[data-sel-add]"))) setSelAdd(null); };
     document.addEventListener("mouseup", onUp);
-    document.addEventListener("touchend", onUp);
+    document.addEventListener("selectionchange", onSelChange);
     document.addEventListener("mousedown", onDown);
-    return () => { document.removeEventListener("mouseup", onUp); document.removeEventListener("touchend", onUp); document.removeEventListener("mousedown", onDown); };
+    document.addEventListener("touchstart", onDown);
+    return () => { clearTimeout(scTimer); document.removeEventListener("mouseup", onUp); document.removeEventListener("selectionchange", onSelChange); document.removeEventListener("mousedown", onDown); document.removeEventListener("touchstart", onDown); };
   }, [tl]);
 
   // ---- LESSON ----

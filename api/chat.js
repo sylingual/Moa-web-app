@@ -92,7 +92,14 @@ export default async function handler(req, res) {
         return res.status(r.status).json({ error: msg })
       }
       var data = JSON.parse(raw)
-      text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : ''
+      var msg0 = data.choices && data.choices[0] && data.choices[0].message
+      text = (msg0 && msg0.content) || ''
+      if (!text && msg0 && msg0.refusal) {
+        throw new Error('OpenAI a refuse la requete: ' + msg0.refusal)
+      }
+      if (!text) {
+        throw new Error('OpenAI reponse vide. Message: ' + JSON.stringify(msg0 || data).substring(0, 500))
+      }
 
     } else {
       // ---- Gemini (used for web search grounding, or when AI_PROVIDER=gemini) ----

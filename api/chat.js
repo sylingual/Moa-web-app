@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   var raw = ''
 
   // Provider routing: web-search requests go to Gemini (Google Search grounding),
-  // everything else goes to the main provider (AI_PROVIDER, default: openai).
+  // everything else goes to the main provider (AI_PROVIDER, default: groq).
   var provider
   var apiKey
 
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     provider = 'gemini'
     apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || ''
   } else {
-    provider = (process.env.AI_PROVIDER || 'openai').toLowerCase()
+    provider = (process.env.AI_PROVIDER || 'groq').toLowerCase()
     apiKey = process.env.AI_API_KEY || ''
   }
 
@@ -100,6 +100,36 @@ export default async function handler(req, res) {
       if (!text) {
         throw new Error('OpenAI reponse vide. Message: ' + JSON.stringify(msg0 || data).substring(0, 500))
       }
+
+    } else if (provider === 'groq') {
+      // ---- Groq (default: Llama 3.3 70B, ultra-fast inference) ----
+      var r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        body: JSON.stringify({
+          model: process.env.AI_MODEL || 'llama-3.3-70b-versatile',
+          max_tokens: maxTok,
+          messages: [{ role: 'system', content: body.system }, ...body.messages],
+        }),
+      })
+      raw = await r.text()
+      if (!r.ok) {
+        var msg = 'Groq ' + r.status
+        try {
+          var errData = JSON.parse(raw)
+          var apiMsg = errData.error && errData.error.message ? errData.error.message : ''
+          if (r.status === 429) {
+            msg = 'Quota Groq atteint (429). Reessaie dans quelques minutes. ' + apiMsg
+          } else {
+            msg = 'Groq ' + r.status + ': ' + apiMsg
+          }
+        } catch (e) {
+          msg = 'Groq ' + r.status + ': ' + raw.substring(0, 300)
+        }
+        return res.status(r.status).json({ error: msg })
+      }
+      var data = JSON.parse(raw)
+      text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : ''
 
     } else {
       // ---- Gemini (used for web search grounding, or when AI_PROVIDER=gemini) ----

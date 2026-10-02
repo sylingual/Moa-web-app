@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     var userMsg = body.messages.map(function(m) { return m.content }).join('\n')
     var useSearch = body.search === true
     var plainText = body.plain === true
-    var maxTok = Math.min(8000, Math.max(3000, Number(body.max_tokens) || 4000))
+    var maxTok = Math.min(8000, Math.max(100, Number(body.max_tokens) || 1200))
 
     var text = ''
     var sources = []

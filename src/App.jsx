@@ -1277,7 +1277,7 @@ For each structure, provide:
 - "category": a short thematic tag (1-3 words) classifying this item, e.g. "emotions", "travel", "formal speech", "time expressions", "causality", "food", "politeness". Pick the most natural theme.
 
 Return a JSON array of exactly 3 items.`;
-  return parseJSON((await callAI(sys, text)).text);
+  return parseJSON((await callAI(sys, text, 1500)).text);
 }
 
 // Pick likely-unknown vocabulary from a text for the learner to choose from.
@@ -1313,7 +1313,7 @@ For each item provide:
 - "register_casual": the casual/반말 equivalent if one exists, or "" if none
 
 Return a JSON array of 6-10 items.`;
-  return parseJSON((await callAI(sys, text)).text);
+  return parseJSON((await callAI(sys, text, 2000)).text);
 }
 
 // Full 5-part study of ONE vocabulary word: guess (QCM), etymology, synonyms, fun facts, examples.
@@ -1439,7 +1439,7 @@ async function quickTranslateWord(word, lang, tlCode) {
   const TL = getTargetLangName(tlCode, "en");
   const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
 Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","gender":"<for nouns in gendered languages: m/f/n; empty string for non-nouns>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
-  return parseJSON((await callAI(sys, `Word: ${word}`, 3000)).text);
+  return parseJSON((await callAI(sys, `Word: ${word}`, 500)).text);
 }
 
 async function generateTargetDescription(card, tlCode) {
@@ -1465,7 +1465,7 @@ async function analyzeRegister(card, lang) {
 IMPORTANT: Do NOT return completely different words or synonyms. Stay as close to "${card.korean}" as possible. Only return a different word if it is the standard register variant that native speakers recognize as the formal/casual counterpart (e.g. 먹다/드시다, 있다/계시다). Do NOT return "${card.korean}" itself as formal or casual.
 - "note": ONE short sentence in ${L} explaining the register, mentioning "${card.korean}" explicitly.
 Return ONLY JSON: {"register":"...","formal":"...","casual":"...","note":"..."}`;
-  return parseJSON((await callAI(sys, `Word: ${card.korean}`, 3000)).text);
+  return parseJSON((await callAI(sys, `Word: ${card.korean}`, 500)).text);
 }
 
 async function continueChat(card, conv, action, lang) {

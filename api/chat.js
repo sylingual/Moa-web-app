@@ -9,21 +9,13 @@ export default async function handler(req, res) {
   var maxTok = Math.min(8000, Math.max(100, Number(body.max_tokens) || 1200))
   var raw = ''
 
-  // Provider routing: web-search requests go to Gemini (Google Search grounding),
-  // everything else goes to the main provider (AI_PROVIDER, default: groq).
-  var provider
-  var apiKey
-
-  if (useSearch) {
-    provider = 'gemini'
-    apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || ''
-  } else {
-    provider = (process.env.AI_PROVIDER || 'groq').toLowerCase()
-    apiKey = process.env.AI_API_KEY || ''
-  }
+  // Provider routing: default is Gemini (gemini-3.1-flash-lite).
+  // All providers (openai, anthropic, groq) remain available via AI_PROVIDER.
+  var provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase()
+  var apiKey = process.env.AI_API_KEY || ''
 
   if (!apiKey) {
-    return res.status(500).json({ error: provider === 'gemini' ? 'GEMINI_API_KEY not set (needed for web search)' : 'AI_API_KEY not set' })
+    return res.status(500).json({ error: 'AI_API_KEY not set' })
   }
 
   try {
@@ -149,7 +141,7 @@ export default async function handler(req, res) {
         payload.generationConfig.responseMimeType = 'application/json'
       }
 
-      var geminiModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite'
+      var geminiModel = process.env.AI_MODEL || 'gemini-3.1-flash-lite'
       var r = await fetch(
         'https://generativelanguage.googleapis.com/v1beta/models/' + geminiModel + ':generateContent?key=' + apiKey,
         {

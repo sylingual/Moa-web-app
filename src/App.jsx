@@ -122,6 +122,7 @@ const T = {
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
+    etymBtn: "Étymologie & racines", etymLoading: "Recherche étymologique...", etymDone: "Étymologie générée !",
     exGender: "Le ou La ?", exGenderDesc: "Choisis le bon article pour chaque nom.",
     genderQuestion: "Masculin ou féminin ?", genderDone: "Bravo !",
     genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
@@ -438,6 +439,7 @@ const T = {
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
+    etymBtn: "Etymology & roots", etymLoading: "Looking up etymology...", etymDone: "Etymology generated!",
     exGender: "Le or La?", exGenderDesc: "Pick the correct article for each noun.",
     genderQuestion: "Masculine or feminine?", genderDone: "Well done!",
     genderScore: (c, t) => `${c}/${t} correct`,
@@ -754,6 +756,7 @@ const T = {
     crossAcross: "가로", crossDown: "세로",
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
+    etymBtn: "어원 & 관련어", etymLoading: "어원 검색 중...", etymDone: "어원 생성 완료!",
     exGender: "Le ou La?", exGenderDesc: "각 명사에 맞는 관사를 골라봐.",
     genderQuestion: "남성형? 여성형?", genderDone: "잘했어!",
     genderScore: (c, t) => `${c}/${t} 정답`,
@@ -6669,8 +6672,35 @@ function AppInner() {
                                 {tagEditCard === ex.id && (
                                   <TagPicker cardId={ex.id} existingTags={ex.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
                                 )}
+                                {ex.etymology && (
+                                  <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))", border: `1px solid rgba(139,92,246,0.2)`, borderRadius: 8, padding: "9px 11px", marginBottom: 10 }}>
+                                    <div style={{ fontSize: 10, fontWeight: 600, color: "rgb(139,92,246)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>📖 {t.etymBtn}</div>
+                                    <div style={{ fontSize: 12, color: C.txt, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{ex.etymology}</div>
+                                  </div>
+                                )}
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                   <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
+                                  {!ex.etymology && (
+                                    <button onClick={async (e) => {
+                                      e.stopPropagation();
+                                      const btn = e.currentTarget; btn.disabled = true; btn.textContent = t.etymLoading;
+                                      try {
+                                        const TL = getTargetLangName(ex.targetLang || tl, "en");
+                                        const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+                                        const sys = `You are an expert ${TL} etymologist. Write in ${L}. Given a ${TL} word, explain:
+1. Its origin and formation. For Korean: if Sino-Korean, break down each hanja character (한자) with its meaning. If native Korean or mixed, explain the root components.
+2. List 2-4 other common words sharing the same root(s)/hanja, with brief meanings.
+Be concise but insightful. No JSON, just plain text.`;
+                                        const { text: etym } = await callAI(sys, ex.korean, 300, false, true);
+                                        if (etym && etym.trim()) {
+                                          save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, etymology: etym.trim() } : x) });
+                                          btn.textContent = t.etymDone;
+                                        }
+                                      } catch (err) { console.error(err); btn.textContent = "Error"; btn.disabled = false; }
+                                    }} style={{ padding: "6px 13px", borderRadius: 6, border: `1px dashed rgba(139,92,246,0.4)`, background: "rgba(139,92,246,0.06)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                                      📖 {t.etymBtn}
+                                    </button>
+                                  )}
                                   <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>✅ {t.markAcquired}</button>
                                   <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>🗑</button>
                                 </div>

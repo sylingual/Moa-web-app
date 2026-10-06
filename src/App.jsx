@@ -124,6 +124,7 @@ const T = {
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
     etymBtn: "Étymologie & racines", etymLoading: "Recherche étymologique...", etymDone: "Étymologie générée !",
     rootWordsBtn: "Mots de la même famille", rootWordsAsk: "Montre-moi plus de mots partageant les mêmes racines",
+    shelfTagged: "Catégorisé", shelfUntagged: "Non catégorisé",
     exGender: "Le ou La ?", exGenderDesc: "Choisis le bon article pour chaque nom.",
     genderQuestion: "Masculin ou féminin ?", genderDone: "Bravo !",
     genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
@@ -442,6 +443,7 @@ const T = {
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
     etymBtn: "Etymology & roots", etymLoading: "Looking up etymology...", etymDone: "Etymology generated!",
     rootWordsBtn: "Related word family", rootWordsAsk: "Show me more words sharing the same roots",
+    shelfTagged: "Categorized", shelfUntagged: "Uncategorized",
     exGender: "Le or La?", exGenderDesc: "Pick the correct article for each noun.",
     genderQuestion: "Masculine or feminine?", genderDone: "Well done!",
     genderScore: (c, t) => `${c}/${t} correct`,
@@ -760,6 +762,7 @@ const T = {
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
     etymBtn: "어원 & 관련어", etymLoading: "어원 검색 중...", etymDone: "어원 생성 완료!",
     rootWordsBtn: "같은 어근 단어들", rootWordsAsk: "같은 어근을 공유하는 단어 더 보여줘",
+    shelfTagged: "분류됨", shelfUntagged: "미분류",
     exGender: "Le ou La?", exGenderDesc: "각 명사에 맞는 관사를 골라봐.",
     genderQuestion: "남성형? 여성형?", genderDone: "잘했어!",
     genderScore: (c, t) => `${c}/${t} 정답`,
@@ -4767,8 +4770,10 @@ function AppInner() {
   }, [view, tl]);
 
   // Changing the Exercise vocab/grammar filter re-selects the whole filtered set (intuitive default).
+  // Only reset when user is on the "cards" step so programmatic filter changes during
+  // category/mode selection don't consume the preselection ref prematurely.
   useEffect(() => {
-    if (view === "exercise" && !exOn) {
+    if (view === "exercise" && !exOn && exStep === "cards") {
       if (exPreselectedRef.current) { exPreselectedRef.current = false; }
       else { setExSel(new Set(exerciseCards.map(c => c.id))); }
     }
@@ -6604,10 +6609,15 @@ function AppInner() {
                         const order = { new: 0, in_progress: 1, studied: 2, acquired: 3 };
                         return (order[sa] ?? 9) - (order[sb] ?? 9);
                       });
-                      const shelf = (status, bg, color, cardBg, { masked, compact, expandable } = {}) => {
+                      const shelf = (status, bg, color, cardBg, { masked, compact, expandable, subgroups } = {}) => {
                         const cs = groups[status];
                         if (!cs.length) return null;
                         const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
+                        const renderSpines = (cards) => cards.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
+                          onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
+                          onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
+                          onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />);
+                        const hasSubs = subgroups && subgroups.length === 2 && subgroups[0].cards.length > 0 && subgroups[1].cards.length > 0;
                         return (
                           <div style={{ background: bg, borderRadius: 14, padding: "11px 13px" }}>
                             <div style={{ fontSize: 12, color, marginBottom: 10, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
@@ -6616,12 +6626,18 @@ function AppInner() {
                               {masked && <span style={{ color: C.txtM }}>— {t.shelfMaskedHint}</span>}
                               {expandable && <span style={{ color: C.txtM }}>— {t.shelfExpandHint}</span>}
                             </div>
+                            {hasSubs ? subgroups.map((sg, si) => (
+                              <div key={si} style={{ marginBottom: si < subgroups.length - 1 ? 10 : 0 }}>
+                                <div style={{ fontSize: 10.5, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                                  {sg.label} <span style={{ opacity: 0.6 }}>· {sg.cards.length}</span>
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>{renderSpines(sg.cards)}</div>
+                              </div>
+                            )) : (
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
-                              {cs.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
-                                onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
-                                onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
-                                onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />)}
+                              {renderSpines(cs)}
                             </div>
+                            )}
                             {ex && (
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
@@ -6758,7 +6774,10 @@ function AppInner() {
                             );
                           })()}
                           {shelf("new", C.stNewBg, C.stNew, C.stNewCard, { masked: true })}
-                          {shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true })}
+                          {shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true, subgroups: [
+                            { label: t.shelfTagged, cards: groups.studied.filter(c => (c.tags || []).length > 0) },
+                            { label: t.shelfUntagged, cards: groups.studied.filter(c => !(c.tags || []).length) }
+                          ] })}
                           {shelf("acquired", C.stAcqBg, C.stAcq, C.stAcqCard, { compact: true })}
                         </div>
                       );

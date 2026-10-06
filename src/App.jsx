@@ -7075,8 +7075,8 @@ function AppInner() {
                     try {
                       const TL = getTargetLangName(recapCard.targetLang || tl, "en");
                       const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
-                      const sys = `You are an expert ${TL} etymologist. Write in ${L}. Given a ${TL} word, explain:\n1. Its origin and formation. For Korean: if Sino-Korean, break down each hanja character (한자) with its meaning. If native Korean or mixed, explain the root components.\n2. List 2-4 other common words sharing the same root(s)/hanja, with brief meanings.\nBe concise but insightful. No JSON, just plain text.`;
-                      const { text: etym } = await callAI(sys, recapCard.korean, 300, false, true);
+                      const sys = `${TL} etymology, answer in ${L}, be brief. For the given word: 1) Origin (if Sino-Korean: hanja + meaning of each character). 2) 2-3 related words sharing same roots. Plain text, no JSON, max 4 lines.`;
+                      const { text: etym } = await callAI(sys, recapCard.korean, 150, false, true);
                       if (etym && etym.trim()) {
                         save({ ...data, cards: data.cards.map(x => x.korean === recapCard.korean ? { ...x, etymology: etym.trim() } : x) });
                       }

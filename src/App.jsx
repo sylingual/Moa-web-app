@@ -7087,7 +7087,7 @@ function AppInner() {
                   <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, padding: 14 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "rgb(139,92,246)", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>📖 {t.etymBtn}</div>
                     <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{recapCard.etymology}</div>
-                    <button onClick={() => { setShowRecap(false); startRecapAction("rootWords"); }}
+                    <button onClick={() => startRecapAction("rootWords")}
                       style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.08)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>
                       🌳 {t.rootWordsBtn}
                     </button>

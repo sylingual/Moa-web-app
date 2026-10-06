@@ -4558,7 +4558,8 @@ function AppInner() {
   const lastExMsgRef = useRef(null);
   const recapR = useRef(null);
   const lastRecapMsgRef = useRef(null);
-  const skipExResetRef = useRef(false); // skip exercise-tab reset when navigating with a pre-selected card
+  const skipExResetRef = useRef(false);
+  const exPreselectedRef = useRef(false);
 
   const lang = data.lang || "fr";
   const t = T[lang];
@@ -4754,6 +4755,7 @@ function AppInner() {
     if (view === "exercise") {
       if (skipExResetRef.current) {
         skipExResetRef.current = false;
+        exPreselectedRef.current = true;
       } else {
         setExSel(new Set(exerciseCards.map(c => c.id)));
       }
@@ -4766,7 +4768,10 @@ function AppInner() {
 
   // Changing the Exercise vocab/grammar filter re-selects the whole filtered set (intuitive default).
   useEffect(() => {
-    if (view === "exercise" && !exOn) setExSel(new Set(exerciseCards.map(c => c.id)));
+    if (view === "exercise" && !exOn) {
+      if (exPreselectedRef.current) { exPreselectedRef.current = false; }
+      else { setExSel(new Set(exerciseCards.map(c => c.id))); }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exFilter]);
 
@@ -7312,7 +7317,12 @@ function AppInner() {
                             <button onClick={() => {
                               const cardId = data.cards.find(c => c.korean === lCard.korean)?.id;
                               setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set());
-                              if (cardId) { skipExResetRef.current = true; setExSel(new Set([cardId])); }
+                              if (cardId) {
+                                skipExResetRef.current = true;
+                                const eligible = data.cards.filter(x => (x.status === "studied" || x.status === "acquired") && (x.targetLang || "ko") === tl && x.id !== cardId);
+                                const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
+                                setExSel(new Set([cardId, ...shuffled.map(x => x.id)].filter(Boolean)));
+                              }
                               setExStep("category"); setExCategory(null);
                               setView("exercise");
                             }}

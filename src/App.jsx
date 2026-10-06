@@ -7079,6 +7079,7 @@ function AppInner() {
                       const { text: etym } = await callAI(sys, recapCard.korean, 150, false, true);
                       if (etym && etym.trim()) {
                         save({ ...data, cards: data.cards.map(x => x.korean === recapCard.korean ? { ...x, etymology: etym.trim() } : x) });
+                        setRecapCard(prev => prev ? { ...prev, etymology: etym.trim() } : prev);
                       }
                     } catch (err) { console.error(err); btn.textContent = "Error"; btn.disabled = false; }
                   }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.05)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer", width: "100%", textAlign: "left" }}>

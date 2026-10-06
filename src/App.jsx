@@ -1988,6 +1988,7 @@ function typeLabel(type, t) {
 // CARD PROGRESSION (Issue #72)
 // =============================================
 const PROGRESS_TARGETS = { ce: 7, co: 7, pe: 3, po: 3 };
+const GENDERED_LANGS = new Set(["fr", "de", "es", "it", "pt", "ru", "ar", "pl", "nl", "el"]);
 
 function exModeToCategory(mode) {
   switch (mode) {
@@ -6645,7 +6646,7 @@ function AppInner() {
                               <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                                   <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
-                                  {ex.gender && (
+                                  {ex.gender && GENDERED_LANGS.has(ex.targetLang || tl) && (
                                     <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: ex.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: ex.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${ex.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
                                       {ex.gender === "m" ? "masc." : ex.gender === "f" ? "fém." : "n."}
                                     </span>
@@ -6950,7 +6951,7 @@ function AppInner() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
                     <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt }}>{recapCard.korean}</div>
-                    {recapCard.gender && (
+                    {recapCard.gender && GENDERED_LANGS.has(recapCard.targetLang || tl) && (
                       <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: recapCard.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: recapCard.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${recapCard.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
                         {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
                       </span>
@@ -7454,7 +7455,7 @@ function AppInner() {
                     {(exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
-                      ...(tl === "fr" ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
+                      ...(GENDERED_LANGS.has(tl) ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", vocabOnly: true, ai: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [

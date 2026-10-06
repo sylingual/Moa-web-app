@@ -3240,7 +3240,7 @@ function YouglishPanel({ word, lang }) {
           components: 9,
           events: {
             onFetchDone: (e) => { if (e.totalResult === 0) setError(true); else { setTotal(e.totalResult); setCurrent(1); } },
-            onVideoChange: (e) => { setCurrent((e.index || 0) + 1); },
+            onVideoChange: (e) => { setCurrent((e.index != null ? e.index : 0) + 1); },
             onError: () => { setError(true); },
           },
         });
@@ -3260,8 +3260,8 @@ function YouglishPanel({ word, lang }) {
     return () => { widgetRef.current = null; };
   }, [word, lang]);
 
-  const goNext = () => { if (widgetRef.current) { widgetRef.current.next(); setCurrent(c => Math.min(c + 1, total || c + 1)); } };
-  const goPrev = () => { if (widgetRef.current) { widgetRef.current.previous(); setCurrent(c => Math.max(c - 1, 1)); } };
+  const goNext = () => { if (widgetRef.current) widgetRef.current.next(); };
+  const goPrev = () => { if (widgetRef.current) widgetRef.current.previous(); };
 
   const navBtn = { padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 };
 

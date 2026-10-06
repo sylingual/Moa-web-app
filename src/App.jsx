@@ -111,6 +111,7 @@ const T = {
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
     imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
     exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
+    exVocabOnly: "Vocabulaire uniquement",
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
@@ -430,6 +431,7 @@ const T = {
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
     imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
     exNeedImages: "Not enough words with images for this exercise (pick some others).",
+    exVocabOnly: "Vocabulary only",
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
@@ -749,6 +751,7 @@ const T = {
     exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
     imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
     exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
+    exVocabOnly: "어휘 전용",
     matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
@@ -7467,16 +7470,22 @@ function AppInner() {
                       { k: "story", l: t.story, d: t.storyDesc, i: "✍️", ai: true },
                       { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", ai: true },
                     ] : [
-                    ]).map(m => (
-                      <button key={m.k} onClick={() => { if (m.disabled) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}
-                        style={{ flex: "1 1 130px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: m.disabled ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", opacity: m.disabled ? 0.45 : 1, position: "relative" }}>
+                    ]).map(m => {
+                      const vocabCount = allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired") && c.type === "vocab").length;
+                      const noVocab = m.vocabOnly && vocabCount === 0;
+                      const off = m.disabled || noVocab;
+                      return (
+                      <button key={m.k} onClick={() => { if (off) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}
+                        style={{ flex: "1 1 130px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: off ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", opacity: off ? 0.45 : 1, position: "relative" }}>
                         {m.ai && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, background: "#EDE9FE", color: "#7C3AED", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>IA</div>}
                         <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
                         <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>
                         {m.disabled && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>bientot</div>}
+                        {noVocab && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{t.exVocabOnly}</div>}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>)}
                 {exStep === "cards" && (<>

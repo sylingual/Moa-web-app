@@ -6672,35 +6672,8 @@ function AppInner() {
                                 {tagEditCard === ex.id && (
                                   <TagPicker cardId={ex.id} existingTags={ex.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
                                 )}
-                                {ex.etymology && (
-                                  <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))", border: `1px solid rgba(139,92,246,0.2)`, borderRadius: 8, padding: "9px 11px", marginBottom: 10 }}>
-                                    <div style={{ fontSize: 10, fontWeight: 600, color: "rgb(139,92,246)", marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}>📖 {t.etymBtn}</div>
-                                    <div style={{ fontSize: 12, color: C.txt, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{ex.etymology}</div>
-                                  </div>
-                                )}
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                   <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
-                                  {!ex.etymology && (
-                                    <button onClick={async (e) => {
-                                      e.stopPropagation();
-                                      const btn = e.currentTarget; btn.disabled = true; btn.textContent = t.etymLoading;
-                                      try {
-                                        const TL = getTargetLangName(ex.targetLang || tl, "en");
-                                        const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
-                                        const sys = `You are an expert ${TL} etymologist. Write in ${L}. Given a ${TL} word, explain:
-1. Its origin and formation. For Korean: if Sino-Korean, break down each hanja character (한자) with its meaning. If native Korean or mixed, explain the root components.
-2. List 2-4 other common words sharing the same root(s)/hanja, with brief meanings.
-Be concise but insightful. No JSON, just plain text.`;
-                                        const { text: etym } = await callAI(sys, ex.korean, 300, false, true);
-                                        if (etym && etym.trim()) {
-                                          save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, etymology: etym.trim() } : x) });
-                                          btn.textContent = t.etymDone;
-                                        }
-                                      } catch (err) { console.error(err); btn.textContent = "Error"; btn.disabled = false; }
-                                    }} style={{ padding: "6px 13px", borderRadius: 6, border: `1px dashed rgba(139,92,246,0.4)`, background: "rgba(139,92,246,0.06)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                                      📖 {t.etymBtn}
-                                    </button>
-                                  )}
                                   <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>✅ {t.markAcquired}</button>
                                   <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>🗑</button>
                                 </div>
@@ -7089,6 +7062,29 @@ Be concise but insightful. No JSON, just plain text.`;
                     ) : null;
                   })()}
                 </div>
+
+                {/* Etymology */}
+                {recapCard.etymology ? (
+                  <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, padding: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "rgb(139,92,246)", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>📖 {t.etymBtn}</div>
+                    <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{recapCard.etymology}</div>
+                  </div>
+                ) : (
+                  <button onClick={async (e) => {
+                    const btn = e.currentTarget; btn.disabled = true; btn.textContent = t.etymLoading;
+                    try {
+                      const TL = getTargetLangName(recapCard.targetLang || tl, "en");
+                      const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+                      const sys = `You are an expert ${TL} etymologist. Write in ${L}. Given a ${TL} word, explain:\n1. Its origin and formation. For Korean: if Sino-Korean, break down each hanja character (한자) with its meaning. If native Korean or mixed, explain the root components.\n2. List 2-4 other common words sharing the same root(s)/hanja, with brief meanings.\nBe concise but insightful. No JSON, just plain text.`;
+                      const { text: etym } = await callAI(sys, recapCard.korean, 300, false, true);
+                      if (etym && etym.trim()) {
+                        save({ ...data, cards: data.cards.map(x => x.korean === recapCard.korean ? { ...x, etymology: etym.trim() } : x) });
+                      }
+                    } catch (err) { console.error(err); btn.textContent = "Error"; btn.disabled = false; }
+                  }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 10, border: "1px dashed rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.05)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer", width: "100%", textAlign: "left" }}>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>📖</span> {t.etymBtn}
+                  </button>
+                )}
 
                 {/* Progression bars */}
                 {(() => {

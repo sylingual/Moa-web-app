@@ -123,6 +123,7 @@ const T = {
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
     etymBtn: "Étymologie & racines", etymLoading: "Recherche étymologique...", etymDone: "Étymologie générée !",
+    rootWordsBtn: "Mots de la même famille", rootWordsAsk: "Montre-moi plus de mots partageant les mêmes racines",
     exGender: "Le ou La ?", exGenderDesc: "Choisis le bon article pour chaque nom.",
     genderQuestion: "Masculin ou féminin ?", genderDone: "Bravo !",
     genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
@@ -440,6 +441,7 @@ const T = {
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
     etymBtn: "Etymology & roots", etymLoading: "Looking up etymology...", etymDone: "Etymology generated!",
+    rootWordsBtn: "Related word family", rootWordsAsk: "Show me more words sharing the same roots",
     exGender: "Le or La?", exGenderDesc: "Pick the correct article for each noun.",
     genderQuestion: "Masculine or feminine?", genderDone: "Well done!",
     genderScore: (c, t) => `${c}/${t} correct`,
@@ -757,6 +759,7 @@ const T = {
     crossLvl1: "레벨 1 · 단어 보이기", crossLvl2: "레벨 2 · 기억으로", crossLvl3: "레벨 3 · 학습 언어로 된 힌트",
     genTargetDesc: "학습 언어로 된 뜻", genTargetDescDone: "뜻 생성 완료!",
     etymBtn: "어원 & 관련어", etymLoading: "어원 검색 중...", etymDone: "어원 생성 완료!",
+    rootWordsBtn: "같은 어근 단어들", rootWordsAsk: "같은 어근을 공유하는 단어 더 보여줘",
     exGender: "Le ou La?", exGenderDesc: "각 명사에 맞는 관사를 골라봐.",
     genderQuestion: "남성형? 여성형?", genderDone: "잘했어!",
     genderScore: (c, t) => `${c}/${t} 정답`,
@@ -1491,6 +1494,12 @@ async function continueChat(card, conv, action, lang) {
     explain: `The student is struggling. Explain the structure "${card.korean}" differently. Use an analogy with ${L} or compare it to a simpler Korean structure the student likely knows. Use concrete, visual examples rather than abstract grammar explanations. Then give one more example and ask a simpler question to rebuild confidence.`,
 
     register: `Give 2-3 short example sentences that CONTRAST the formal vs casual way of expressing "${card.korean}". Group them clearly (a "Formal" set and a "Casual" set). For each, write the Korean sentence, then its ${L} translation on the next line, and briefly note the situation where you'd use it. Keep it concise. Do NOT include MCQ options.`,
+
+    rootWords: `The student wants to explore the WORD FAMILY of "${card.korean}". Generate 10-15 words that share the same root(s), hanja characters, or morphological base. For each word, write:
+- The word in the target language
+- Its ${L} translation
+- Which root/hanja it shares with "${card.korean}"
+Group them by shared root when there are multiple roots. Format as a clear numbered list. Do NOT include MCQ options. At the end, add a one-line summary of the root meanings.`,
     
     correct: correctByPhase[phase],
     
@@ -5482,7 +5491,7 @@ function AppInner() {
     setRecapMode(action);
     setRecapConv([]);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk };
+    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -5501,6 +5510,16 @@ function AppInner() {
       } else {
         const r = await continueChat(recapCard, u, action, lang);
         setRecapConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
+        if (action === "rootWords" && r.message) {
+          const summary = {
+            id: Date.now().toString(),
+            cardKorean: recapCard.korean,
+            date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
+            grammarRecap: r.message,
+            structuresLearned: t.rootWordsBtn,
+          };
+          save({ ...data, summaries: [...(data.summaries || []), summary] });
+        }
       }
     } catch (e) {
       setSearching(false);
@@ -7068,6 +7087,10 @@ function AppInner() {
                   <div style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.06))", border: "1px solid rgba(139,92,246,0.2)", borderRadius: 12, padding: 14 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "rgb(139,92,246)", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>📖 {t.etymBtn}</div>
                     <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{recapCard.etymology}</div>
+                    <button onClick={() => { setShowRecap(false); startRecapAction("rootWords"); }}
+                      style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(139,92,246,0.3)", background: "rgba(139,92,246,0.08)", color: "rgb(139,92,246)", fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, cursor: "pointer" }}>
+                      🌳 {t.rootWordsBtn}
+                    </button>
                   </div>
                 ) : (
                   <button onClick={async (e) => {

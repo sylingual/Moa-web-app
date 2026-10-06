@@ -1499,7 +1499,7 @@ async function continueChat(card, conv, action, lang) {
 - The word in the target language
 - Its ${L} translation
 - Which root/hanja it shares with "${card.korean}"
-Group them by shared root when there are multiple roots. Format as a clear numbered list. Do NOT include MCQ options. At the end, add a one-line summary of the root meanings.`,
+Group them by shared root when there are multiple roots. Format as a clear numbered list. Do NOT include MCQ options. At the end, invite the student to ask questions if they want to know more about any of these words.`,
     
     correct: correctByPhase[phase],
     

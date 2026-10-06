@@ -4234,6 +4234,10 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
   }, []);
 
   useEffect(() => {
+    if (!exOn && audioRef.current) { audioRef.current.pause(); audioRef.current = null; setAudioState("idle"); }
+  }, [exOn]);
+
+  useEffect(() => {
     const close = () => setWordPopup(null);
     if (wordPopup) { document.addEventListener("click", close); return () => document.removeEventListener("click", close); }
   }, [wordPopup]);
@@ -4770,12 +4774,11 @@ function AppInner() {
   }, [view, tl]);
 
   // Changing the Exercise vocab/grammar filter re-selects the whole filtered set (intuitive default).
-  // Only reset when user is on the "cards" step so programmatic filter changes during
-  // category/mode selection don't consume the preselection ref prematurely.
+  // When the user came from a card (exPreselectedRef), never reset: the preselection
+  // persists through the entire exercise session (back/forth between modes etc.).
   useEffect(() => {
-    if (view === "exercise" && !exOn && exStep === "cards") {
-      if (exPreselectedRef.current) { exPreselectedRef.current = false; }
-      else { setExSel(new Set(exerciseCards.map(c => c.id))); }
+    if (view === "exercise" && !exOn && exStep === "cards" && !exPreselectedRef.current) {
+      setExSel(new Set(exerciseCards.map(c => c.id)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exFilter]);
@@ -5832,7 +5835,7 @@ function AppInner() {
   useEffect(() => {
     const audio = exMusicRef.current;
     if (!audio) return;
-    if (exMusic && view === "exercise") {
+    if (exMusic && view === "exercise" && exOn) {
       audio.volume = 0.25;
       audio.loop = true;
       audio.play().catch(() => {});
@@ -5840,7 +5843,7 @@ function AppInner() {
       audio.pause();
       audio.currentTime = 0;
     }
-  }, [exMusic, view]);
+  }, [exMusic, view, exOn]);
 
   const toggleExMusic = () => {
     const next = !exMusic;

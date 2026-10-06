@@ -5225,15 +5225,24 @@ function AppInner() {
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
 
-  // Add a selected word straight to the vocab library as a bare "new" card (details get
-  // filled when it's studied). De-duplicates on the exact text.
-  const addWordToVocab = (text) => {
+  const addWordToVocab = async (text) => {
     const word = (text || "").trim();
     if (!word) return;
     if (data.cards.find(c => c.korean === word)) { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    let baseForm = word;
+    try {
+      setFlash(lang === "fr" ? "Recherche de la forme de base..." : lang === "ko" ? "기본형 검색 중..." : "Looking up base form...");
+      const sys = "You are a Korean linguistic assistant. Given a Korean word (possibly conjugated, inflected or with particles), return ONLY the dictionary/base form (기본형). For verbs and adjectives, return the -다 form. For nouns with particles, return just the noun. Reply with the single word only, nothing else.";
+      const { text: lemma } = await callAI(sys, word, 50, false, true);
+      const cleaned = (lemma || "").trim().split(/\s/)[0].trim();
+      if (cleaned) baseForm = cleaned;
+    } catch (e) {
+      console.warn("Lemmatization failed, using original word:", e);
+    }
+    if (data.cards.find(c => c.korean === baseForm)) { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
     const card = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-      korean: word, type: "vocab",
+      korean: baseForm, type: "vocab",
       description: "", description_fr: "", description_en: "",
       example_kr: "", example_tr: "",
       tags: [],
@@ -5244,7 +5253,7 @@ function AppInner() {
     save({ ...data, cards: [...data.cards, card] });
     setSelAdd(null);
     try { window.getSelection()?.removeAllRanges(); } catch {}
-    setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 1800);
+    setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
   };
 
   useEffect(() => {

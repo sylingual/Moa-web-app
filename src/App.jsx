@@ -7471,8 +7471,8 @@ function AppInner() {
                       { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", ai: true },
                     ] : [
                     ]).map(m => {
-                      const vocabCount = allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired") && c.type === "vocab").length;
-                      const noVocab = m.vocabOnly && vocabCount === 0;
+                      const selCards = exPreselectedRef.current ? allCards.filter(c => exSel.has(c.id)) : allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired"));
+                      const noVocab = m.vocabOnly && !selCards.some(c => c.type === "vocab");
                       const off = m.disabled || noVocab;
                       return (
                       <button key={m.k} onClick={() => { if (off) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}

@@ -114,7 +114,7 @@ const T = {
     exVocabOnly: "Vocabulaire uniquement",
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
-    crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.",
+    crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.", crossNextLvl: "Niveau suivant →",
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !", fillTryAgain: "Bien essayé ! Tu veux retenter ?", fillRetry: "Réessayer",
     fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
@@ -434,7 +434,7 @@ const T = {
     exVocabOnly: "Vocabulary only",
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
-    crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.",
+    crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.", crossNextLvl: "Next level →",
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
     fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!", fillTryAgain: "Nice try! Want to try again?", fillRetry: "Try again",
     fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
@@ -754,7 +754,7 @@ const T = {
     exVocabOnly: "어휘 전용",
     matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
-    crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.",
+    crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.", crossNextLvl: "다음 레벨 →",
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
     fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!", fillTryAgain: "잘 했어! 다시 해볼래?", fillRetry: "다시 하기",
     fillNewStory: "새 이야기", fillTapBlank: "빈칸을 누르고, 단어를 골라 봐.", fillTapWord: "모르는 단어를 누르면 번역이 나와.",
@@ -4047,7 +4047,8 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
           <button onClick={() => setChecked(true)} style={{ padding: "7px 16px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>✓ {t.crossCheck}</button>
-          {solved && <button onClick={restart} style={{ padding: "7px 16px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>↻ {t.exRestart}</button>}
+          <button onClick={restart} style={{ padding: "7px 16px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>↻ {t.exRestart}</button>
+          {solved && clueMode !== "target" && <button onClick={() => { const next = clueMode === "words" ? "memory" : "target"; setClueMode(next); restart(); }} style={{ padding: "7px 16px", borderRadius: 8, background: C.okBg, border: `1px solid ${C.okB}`, color: C.ok, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>{t.crossNextLvl || "Niveau suivant →"}</button>}
         </div>
         <div style={{ display: "flex", gap: 18, flexWrap: "wrap", flexShrink: 0 }}>
           {across.length > 0 && (

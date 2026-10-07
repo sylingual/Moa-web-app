@@ -7564,7 +7564,7 @@ function AppInner() {
                         <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                           {visibleCards.length > 0 && (
-                            <button onClick={() => setExSel(new Set(shuffle(visibleCards).slice(0, Math.min(8, visibleCards.length)).map(c => c.id)))}
+                            <button onClick={() => { const n = Math.min(3 + Math.floor(Math.random() * 3), visibleCards.length); setExSel(new Set(shuffle(visibleCards).slice(0, n).map(c => c.id))); }}
                               style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                               🎲 {t.exRandom}
                             </button>

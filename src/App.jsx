@@ -1331,40 +1331,32 @@ Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text, 2000)).text);
 }
 
-async function analyzeBulk(text, existing, lang, context, tlCode) {
+async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
   const known = existing.map((c) => c.korean).join(", ");
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are an expert ${TL} language analyst performing an EXHAUSTIVE extraction. Extract EVERY vocabulary word AND grammar structure from this text. Do NOT limit yourself to a small selection. Extract EVERYTHING.
+  const lines = text.split(/\n/).filter(l => l.trim());
+  const CHUNK = 60;
+  const chunks = [];
+  for (let i = 0; i < lines.length; i += CHUNK) chunks.push(lines.slice(i, i + CHUNK).join("\n"));
+  if (!chunks.length) chunks.push(text);
+  const all = [];
+  const foundSoFar = () => [...existing.map(c => c.korean), ...all.map(it => it.korean || it.word)].filter(Boolean).join(", ");
+  for (let ci = 0; ci < chunks.length; ci++) {
+    if (onProgress) onProgress(ci + 1, chunks.length);
+    const skip = foundSoFar();
+    const sys = `Extract every ${TL} vocabulary word and grammar pattern from this text. Return a JSON array. Be exhaustive.
 
-${context}
-TASK: Extract ALL vocabulary AND all grammar structures from the text. This is a bulk import for a serious learner who wants a complete extraction. No limit on number of items.
+Skip these already-known items: ${skip || "none"}
 
-WHAT TO EXTRACT:
-- Every noun, verb, adjective, adverb, expression, idiom
-- Every grammar pattern/structure (conjugation forms, particles, connectors, endings)
-- Include basic AND advanced items
-- The ONLY things to skip are: items in the ALREADY KNOWN list below
+Each item: {"korean":"dictionary form","type":"vocab" or "grammar","meaning_fr":"French","meaning_en":"English","category":"topic tag","reading":"romanization or empty"}
 
-ALREADY KNOWN (skip these): ${known || "none"}
-
-For each item provide:
-- "korean": the word or grammar pattern (dictionary form)
-- "type": "vocab" or "grammar"
-- "meaning_fr": short French meaning
-- "meaning_en": short English meaning
-- "description_target": a clear monolingual definition in ${TL} (as in a ${TL}-${TL} dictionary)
-- "example_kr": the sentence from the text where it appears
-- "example_fr": French translation of that sentence
-- "example_en": English translation of that sentence
-- "category": a short thematic tag (1-3 words)
-- "reading": pronunciation/romanization if helpful (or "")
-- "gender": for gendered languages, "m"/"f"/"n"; else ""
-- "register": "neutral", "formal", or "casual"
-- "register_formal": formal equivalent if exists, or ""
-- "register_casual": casual equivalent if exists, or ""
-
-Return a JSON array. Extract as many items as the text contains. Be EXHAUSTIVE.`;
-  return parseJSON((await callAI(sys, text, 8000)).text);
+Extract ALL items. No limit.`;
+    try {
+      const items = parseJSON((await callAI(sys, chunks[ci], 8000)).text);
+      if (Array.isArray(items)) all.push(...items);
+    } catch (e) { console.warn("Bulk chunk", ci, "failed:", e); }
+  }
+  return all;
 }
 
 // Full 5-part study of ONE vocabulary word: guess (QCM), etymology, synonyms, fun facts, examples.
@@ -4556,6 +4548,7 @@ function AppInner() {
   const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab" | "comprehension" | "bulk"
   const [bulkFound, setBulkFound] = useState([]); // bulk import extracted items
   const [bulkSel, setBulkSel] = useState(new Set()); // indices selected for bulk import
+  const [bulkProgress, setBulkProgress] = useState(null); // { current, total } during scanning
   const [compSession, setCompSession] = useState(null); // { text, existing } or null
   const [vocabFound, setVocabFound] = useState([]); // AI-picked vocab items
   const [vocabSel, setVocabSel] = useState(new Set()); // indices selected to study
@@ -5221,7 +5214,9 @@ function AppInner() {
     setImpStep("scanning");
     try {
       if (impMode === "bulk") {
-        const items = dedupeExtracted(await analyzeBulk(impText, data.cards, lang, context, tl), data.cards);
+        setBulkProgress(null);
+        const items = dedupeExtracted(await analyzeBulk(impText, data.cards, lang, context, tl, (cur, tot) => setBulkProgress({ current: cur, total: tot })), data.cards);
+        setBulkProgress(null);
         setBulkFound(items);
         setBulkSel(new Set(items.map((_, i) => i)));
         setImpStep("bulkpicks");
@@ -6916,7 +6911,7 @@ function AppInner() {
               </button>
             </>)}
             {impStep === "scanning" && <div style={{ fontSize: 36 }}>📄</div>}
-            {impStep === "scanning" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.analyzing}</div>}
+            {impStep === "scanning" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.analyzing}{bulkProgress ? ` (${bulkProgress.current}/${bulkProgress.total})` : ""}</div>}
             {impStep === "ocr" && <div style={{ fontSize: 36 }}>📷</div>}
             {impStep === "ocr" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.ocrLoading}</div>}
             {impStep === "picks" && (

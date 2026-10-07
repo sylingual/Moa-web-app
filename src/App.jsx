@@ -1671,23 +1671,25 @@ async function genExercise(cards, mode, lang, context, tlCode, theme) {
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
   
   const modes = {
-    story: `CONTINUE THE STORY MODE: Write the BEGINNING of a short story in the target language (${TL}), written like the opening of a novel. The student will continue it.
+    story: `CONTINUE THE STORY MODE:
+
+CRITICAL IDENTITY: You are a native ${TL} novelist. Think in ${TL}. Write in ${TL} as your mother tongue. Do NOT translate from English or any other language. Every sentence must sound like it was originally written in ${TL} by a native speaker, with natural word order, native expressions, and culturally authentic details.
+
+Write the BEGINNING of a short story (4-6 sentences) in ${TL}. The student will continue it.
 
 THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this context.` : "Pick a theme from the student's interests (see LEARNER PROFILE). Rotate between varied settings: mystery, romance, slice of life, adventure, drama, etc."}
 
-WRITING STYLE:
-- Write like a novelist: vivid descriptions, inner thoughts, sensory details, dialogue
-- Use literary prose, not a textbook prompt or a scenario description
-- Show, don't tell. "The rain hammered the window as Jiwon stared at the unopened letter" NOT "Imagine a situation where someone receives a letter"
+WRITING RULES:
+- Write like a ${TL} novel: vivid descriptions, inner thoughts, sensory details, natural dialogue
+- Use literary prose native to ${TL} literature, not a textbook exercise or scenario description
+- Use idioms, sentence patterns, and narrative conventions natural to ${TL}
+- Named characters must have culturally authentic names
+- Paint a vivid scene: specific place, time, atmosphere, sensory details
+- Build emotional tension: a dilemma, a secret, a surprise, an unexpected discovery
+- End on a cliffhanger that makes the reader want to know what happens next
+- The story must feel like the opening paragraph of a published ${TL} novel
 
-YOUR STORY BEGINNING MUST:
-- Be 4-6 sentences in the target language, written in narrative prose
-- Have named characters with personality (use culturally appropriate names for ${TL})
-- Paint a scene: specific place, time of day, weather, sounds, feelings
-- Build emotional tension: a dilemma, a secret, a surprise encounter, an unexpected discovery
-- End on a cliffhanger or turning point that leaves the reader wanting more
-
-AFTER the story beginning, write in ${L}:
+AFTER the story beginning, write instructions in ${L}:
 1. A short line asking the student to continue the story (3-5 sentences)
 2. The list of structures they MUST weave naturally into their continuation
 3. A brief reminder to stay in the story's tone and keep it coherent

@@ -4252,10 +4252,6 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
   }, []);
 
   useEffect(() => {
-    if (!exOn && audioRef.current) { audioRef.current.pause(); audioRef.current = null; setAudioState("idle"); }
-  }, [exOn]);
-
-  useEffect(() => {
     const close = () => setWordPopup(null);
     if (wordPopup) { document.addEventListener("click", close); return () => document.removeEventListener("click", close); }
   }, [wordPopup]);
@@ -4779,11 +4775,13 @@ function AppInner() {
   // Reset exercise only when entering the exercise tab or switching target language
   useEffect(() => {
     if (view === "exercise") {
+      exFilterUserRef.current = false;
       if (skipExResetRef.current) {
         skipExResetRef.current = false;
         exPreselectedRef.current = true;
       } else {
         exPrimaryWordRef.current = null;
+        exPreselectedRef.current = false;
         setExSel(new Set(exerciseCards.map(c => c.id)));
       }
       setExOn(false);
@@ -4793,12 +4791,18 @@ function AppInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, tl]);
 
-  // Changing the Exercise vocab/grammar filter re-selects the whole filtered set (intuitive default).
-  // When the user came from a card (exPreselectedRef), never reset: the preselection
-  // persists through the entire exercise session (back/forth between modes etc.).
+  // Changing the Exercise vocab/grammar filter re-selects the whole filtered set.
+  // exPreselectedRef survives mode changes (back/forth) but is consumed on the first
+  // manual filter change on the cards step so the user gets the right card set.
+  const exFilterUserRef = useRef(false);
   useEffect(() => {
-    if (view === "exercise" && !exOn && exStep === "cards" && !exPreselectedRef.current) {
-      setExSel(new Set(exerciseCards.map(c => c.id)));
+    if (view === "exercise" && !exOn && exStep === "cards") {
+      if (exPreselectedRef.current && !exFilterUserRef.current) {
+        // first arrival on cards step with preselection: keep it
+      } else {
+        setExSel(new Set(exerciseCards.map(c => c.id)));
+      }
+      exFilterUserRef.current = true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exFilter]);

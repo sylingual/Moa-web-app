@@ -63,8 +63,9 @@ const T = {
     iKnow: "Je connais", addedAcq: "Ajouté (acquis)",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
     vocab: "Vocabulaire",
-    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeBulk: "Import en masse",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
+    bulkPickTitle: "Contenu extrait", bulkPickSub: "Deselecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter a la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutee${n > 1 ? "s" : ""} !`, bulkNone: "Selectionne au moins un element.",
     compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
     compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
     compQuestion: "Question", compCheck: "Vérifier", compNext: "Suivant",
@@ -383,8 +384,9 @@ const T = {
     iKnow: "I know this", addedAcq: "Added (acquired)",
     startLesson: "Start lesson", morePoints: "Find more points",
     vocab: "Vocabulary",
-    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension",
+    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeBulk: "Bulk import",
     importModeSub: "What do you want to study in this text?",
+    bulkPickTitle: "Extracted content", bulkPickSub: "Deselect what you don't want to import.", bulkAddToLib: "Add to library", bulkAdded: (n) => `${n} card${n > 1 ? "s" : ""} added!`, bulkNone: "Select at least one item.",
     compTitle: "Text Comprehension", compLevel1: "Level 1: QCM", compLevel2: "Level 2: Reformulation",
     compParagraph: (i, n) => `Paragraph ${i}/${n}`,
     compQuestion: "Question", compCheck: "Check", compNext: "Next",
@@ -703,8 +705,9 @@ const T = {
     iKnow: "이거 알아", addedAcq: "추가됨 (습득 완료)",
     startLesson: "레슨 시작", morePoints: "다른 포인트 찾기",
     vocab: "어휘",
-    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해",
+    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeBulk: "대량 가져오기",
     importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
+    bulkPickTitle: "추출된 내용", bulkPickSub: "가져오고 싶지 않은 건 선택 해제해.", bulkAddToLib: "라이브러리에 추가", bulkAdded: (n) => `카드 ${n}개 추가됨!`, bulkNone: "최소 하나는 선택해 줘.",
     compTitle: "텍스트 독해", compLevel1: "레벨 1: 객관식", compLevel2: "레벨 2: 바꿔 말하기",
     compParagraph: (i, n) => `단락 ${i}/${n}`,
     compQuestion: "문제", compCheck: "확인", compNext: "다음",
@@ -1326,6 +1329,42 @@ For each item provide:
 
 Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text, 2000)).text);
+}
+
+async function analyzeBulk(text, existing, lang, context, tlCode) {
+  const known = existing.map((c) => c.korean).join(", ");
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `You are an expert ${TL} language analyst performing an EXHAUSTIVE extraction. Extract EVERY vocabulary word AND grammar structure from this text. Do NOT limit yourself to a small selection. Extract EVERYTHING.
+
+${context}
+TASK: Extract ALL vocabulary AND all grammar structures from the text. This is a bulk import for a serious learner who wants a complete extraction. No limit on number of items.
+
+WHAT TO EXTRACT:
+- Every noun, verb, adjective, adverb, expression, idiom
+- Every grammar pattern/structure (conjugation forms, particles, connectors, endings)
+- Include basic AND advanced items
+- The ONLY things to skip are: items in the ALREADY KNOWN list below
+
+ALREADY KNOWN (skip these): ${known || "none"}
+
+For each item provide:
+- "korean": the word or grammar pattern (dictionary form)
+- "type": "vocab" or "grammar"
+- "meaning_fr": short French meaning
+- "meaning_en": short English meaning
+- "description_target": a clear monolingual definition in ${TL} (as in a ${TL}-${TL} dictionary)
+- "example_kr": the sentence from the text where it appears
+- "example_fr": French translation of that sentence
+- "example_en": English translation of that sentence
+- "category": a short thematic tag (1-3 words)
+- "reading": pronunciation/romanization if helpful (or "")
+- "gender": for gendered languages, "m"/"f"/"n"; else ""
+- "register": "neutral", "formal", or "casual"
+- "register_formal": formal equivalent if exists, or ""
+- "register_casual": casual equivalent if exists, or ""
+
+Return a JSON array. Extract as many items as the text contains. Be EXHAUSTIVE.`;
+  return parseJSON((await callAI(sys, text, 8000)).text);
 }
 
 // Full 5-part study of ONE vocabulary word: guess (QCM), etymology, synonyms, fun facts, examples.
@@ -4514,7 +4553,9 @@ function AppInner() {
   const [found, setFound] = useState([]);
   const [selPick, setSelPick] = useState(0);
   const [known, setKnown] = useState(new Set());
-  const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab" | "comprehension"
+  const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab" | "comprehension" | "bulk"
+  const [bulkFound, setBulkFound] = useState([]); // bulk import extracted items
+  const [bulkSel, setBulkSel] = useState(new Set()); // indices selected for bulk import
   const [compSession, setCompSession] = useState(null); // { text, existing } or null
   const [vocabFound, setVocabFound] = useState([]); // AI-picked vocab items
   const [vocabSel, setVocabSel] = useState(new Set()); // indices selected to study
@@ -5179,7 +5220,12 @@ function AppInner() {
     }
     setImpStep("scanning");
     try {
-      if (impMode === "vocab") {
+      if (impMode === "bulk") {
+        const items = dedupeExtracted(await analyzeBulk(impText, data.cards, lang, context, tl), data.cards);
+        setBulkFound(items);
+        setBulkSel(new Set(items.map((_, i) => i)));
+        setImpStep("bulkpicks");
+      } else if (impMode === "vocab") {
         const items = dedupeExtracted(await analyzeVocab(impText, data.cards, lang, context, tl), data.cards);
         setVocabFound(items);
         setVocabSel(new Set(items.map((_, i) => i))); // all selected by default
@@ -5193,7 +5239,7 @@ function AppInner() {
 
   const makeVocabCard = (v, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
-    korean: v.word, type: "vocab",
+    korean: v.word || v.korean, type: "vocab",
     description: lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr),
     description_fr: v.meaning_fr, description_en: v.meaning_en,
     description_target: v.description_target || "",
@@ -6855,10 +6901,10 @@ function AppInner() {
               {/* Study mode: grammar or vocabulary */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
-                <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}` }}>
-                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["comprehension", t.importModeComprehension]].map(([k, l]) => (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, justifyContent: "center" }}>
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["comprehension", t.importModeComprehension], ["bulk", t.importModeBulk]].map(([k, l]) => (
                     <button key={k} onClick={() => setImpMode(k)}
-                      style={{ padding: "6px 16px", borderRadius: 6, border: "none", fontSize: 12.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
+                      style={{ padding: "6px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
                       {l}
                     </button>
                   ))}
@@ -6923,6 +6969,57 @@ function AppInner() {
                   <button onClick={startVocabLesson} disabled={vocabSel.size === 0}
                     style={{ padding: "8px 18px", borderRadius: 6, background: vocabSel.size ? C.acc : C.s1, color: vocabSel.size ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: vocabSel.size ? "pointer" : "default" }}>
                     → {t.studyTheseWords} ({vocabSel.size})
+                  </button>
+                </div>
+              </div>
+            )}
+            {impStep === "bulkpicks" && (
+              <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.bulkPickTitle} ({bulkFound.length})</div>
+                  <button onClick={() => { setImpStep("input"); setBulkFound([]); setBulkSel(new Set()); }}
+                    style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
+                </div>
+                {bulkFound.length === 0
+                  ? <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>{t.importAllKnown}</div>
+                  : <div style={{ fontSize: 12, color: C.txtM, marginBottom: 6 }}>{t.bulkPickSub}</div>}
+                <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+                  <button onClick={() => setBulkSel(new Set(bulkFound.map((_, i) => i)))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.filterAll || "Tout"}</button>
+                  <button onClick={() => setBulkSel(new Set(bulkFound.map((v, i) => v.type === "vocab" ? i : -1).filter(i => i >= 0)))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.importModeVocab}</button>
+                  <button onClick={() => setBulkSel(new Set(bulkFound.map((v, i) => v.type !== "vocab" ? i : -1).filter(i => i >= 0)))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.importModeGrammar}</button>
+                  <button onClick={() => setBulkSel(new Set())} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>0</button>
+                </div>
+                <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {bulkFound.map((v, i) => {
+                    const on = bulkSel.has(i);
+                    const isVocab = v.type === "vocab";
+                    return (
+                      <div key={i} onClick={() => { const s = new Set(bulkSel); if (s.has(i)) s.delete(i); else s.add(i); setBulkSel(s); }}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, cursor: "pointer", border: `1px solid ${on ? C.acc : C.border}`, background: on ? C.accBg : C.s2 }}>
+                        <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt }}>{v.korean || v.word}{v.reading ? <span style={{ fontSize: 11, color: C.txtM, marginLeft: 6 }}>[{v.reading}]</span> : null}</div>
+                          <div style={{ fontSize: 11, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
+                        </div>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <button onClick={() => {
+                    if (bulkSel.size === 0) { alert(t.bulkNone); return; }
+                    const items = [...bulkSel].sort((a, b) => a - b).map(i => bulkFound[i]).filter(Boolean);
+                    const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
+                      const isVocab = v.type === "vocab";
+                      return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+                    });
+                    if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
+                    alert(t.bulkAdded(newCards.length));
+                    setBulkFound([]); setBulkSel(new Set()); setImpStep("input"); setImpText("");
+                  }} disabled={bulkSel.size === 0}
+                    style={{ padding: "8px 18px", borderRadius: 6, background: bulkSel.size ? C.acc : C.s1, color: bulkSel.size ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: bulkSel.size ? "pointer" : "default" }}>
+                    📥 {t.bulkAddToLib} ({bulkSel.size})
                   </button>
                 </div>
               </div>

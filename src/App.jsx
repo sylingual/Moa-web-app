@@ -97,7 +97,7 @@ const T = {
     exPickCards: "Choisis les cartes à travailler",
     exBackToCat: "Catégories",
     exBackToEx: "Exercices",
-    story: "Raconter une histoire", storyDesc: "Utilise les structures choisies dans un texte cohérent.",
+    story: "Continue l'histoire", storyDesc: "L'IA commence une histoire, tu la continues avec les structures choisies.",
     qcm: "QCM", qcmDesc: "Teste tes connaissances.",
     fillBlanks: "Histoire à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
@@ -417,7 +417,7 @@ const T = {
     exPickCards: "Choose the cards to work on",
     exBackToCat: "Categories",
     exBackToEx: "Exercises",
-    story: "Tell a story", storyDesc: "Use chosen structures in a coherent text.",
+    story: "Continue the story", storyDesc: "The AI starts a story, you continue it using the chosen structures.",
     qcm: "Random quiz", qcmDesc: "Questions on new random examples.",
     fillBlanks: "Story fill-in", fillDesc: "Complete a generated story with chosen words.",
     exMatch: "Match", exMatchDesc: "Match each word to its definition.",
@@ -737,7 +737,7 @@ const T = {
     exPickCards: "연습할 카드를 골라봐",
     exBackToCat: "카테고리",
     exBackToEx: "연습 문제",
-    story: "이야기 만들기", storyDesc: "선택한 구조를 사용해서 글을 써 봐.",
+    story: "이야기 이어쓰기", storyDesc: "AI가 이야기를 시작하면, 선택한 구조를 사용해서 이어 써 봐.",
     qcm: "랜덤 퀴즈", qcmDesc: "새로운 예문으로 된 문제들.",
     fillBlanks: "빈칸 채우기", fillDesc: "생성된 이야기의 빈칸을 선택한 단어로 채워 봐.",
     exMatch: "연결하기", exMatchDesc: "각 단어를 뜻과 연결해 봐.",
@@ -1671,13 +1671,28 @@ async function genExercise(cards, mode, lang, context, tlCode, theme) {
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
   
   const modes = {
-    story: `STORY MODE: Create a creative writing prompt in ${L} that requires using ALL the listed structures naturally in a short paragraph (3-5 sentences). 
-If you know the student's interests (see LEARNER PROFILE), set the scenario in a context they care about.
-Give the student:
-1. A scenario/context personalized to their interests if possible
-2. A starter sentence in the target language to help them begin
-3. Clear instructions about which structures to incorporate
-The goal is a coherent mini-text, not isolated sentences. No MCQ options for this mode.`,
+    story: `CONTINUE THE STORY MODE: Write the BEGINNING of a short story in the target language (${TL}), written like the opening of a novel. The student will continue it.
+
+THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this context.` : "Pick a theme from the student's interests (see LEARNER PROFILE). Rotate between varied settings: mystery, romance, slice of life, adventure, drama, etc."}
+
+WRITING STYLE:
+- Write like a novelist: vivid descriptions, inner thoughts, sensory details, dialogue
+- Use literary prose, not a textbook prompt or a scenario description
+- Show, don't tell. "The rain hammered the window as Jiwon stared at the unopened letter" NOT "Imagine a situation where someone receives a letter"
+
+YOUR STORY BEGINNING MUST:
+- Be 4-6 sentences in the target language, written in narrative prose
+- Have named characters with personality (use culturally appropriate names for ${TL})
+- Paint a scene: specific place, time of day, weather, sounds, feelings
+- Build emotional tension: a dilemma, a secret, a surprise encounter, an unexpected discovery
+- End on a cliffhanger or turning point that leaves the reader wanting more
+
+AFTER the story beginning, write in ${L}:
+1. A short line asking the student to continue the story (3-5 sentences)
+2. The list of structures they MUST weave naturally into their continuation
+3. A brief reminder to stay in the story's tone and keep it coherent
+
+No MCQ options for this mode.`,
 
     qcm: `QUIZ MODE: Ask exactly ONE multiple-choice question now. This is question 1 of 3 in a series.
 
@@ -5920,8 +5935,8 @@ function AppInner() {
       return;
     }
     setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-    try { const r = await genExercise(sel, exMode, lang, context, tl); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
-    catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx())]); }
+    try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
+    catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx(theme))]); }
     setExLoad(false);
   };
 
@@ -7589,7 +7604,7 @@ function AppInner() {
                     {visibleCards.length > 0 && (
                       <button onClick={() => {
                         if (exSel.size === 0) return;
-                        if (exMode === "fill" || exMode === "dialoguefill") { setExTheme(null); setExStep("theme"); }
+                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story") { setExTheme(null); setExStep("theme"); }
                         else launchEx();
                       }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>

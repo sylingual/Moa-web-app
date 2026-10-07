@@ -66,6 +66,7 @@ const T = {
     importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeBulk: "Import en masse",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
     bulkPickTitle: "Contenu extrait", bulkPickSub: "Deselecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter a la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutee${n > 1 ? "s" : ""} !`, bulkNone: "Selectionne au moins un element.",
+    bulkTagBtn: "Tagger", bulkTagTitle: "Tagger en masse", bulkTagApply: "Appliquer", bulkTagDone: "Terminer", bulkTagSelectAll: "Tout", bulkTagNone: "Aucun",
     compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
     compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
     compQuestion: "Question", compCheck: "Vérifier", compNext: "Suivant",
@@ -387,6 +388,7 @@ const T = {
     importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeBulk: "Bulk import",
     importModeSub: "What do you want to study in this text?",
     bulkPickTitle: "Extracted content", bulkPickSub: "Deselect what you don't want to import.", bulkAddToLib: "Add to library", bulkAdded: (n) => `${n} card${n > 1 ? "s" : ""} added!`, bulkNone: "Select at least one item.",
+    bulkTagBtn: "Tag", bulkTagTitle: "Bulk tag", bulkTagApply: "Apply", bulkTagDone: "Done", bulkTagSelectAll: "All", bulkTagNone: "None",
     compTitle: "Text Comprehension", compLevel1: "Level 1: QCM", compLevel2: "Level 2: Reformulation",
     compParagraph: (i, n) => `Paragraph ${i}/${n}`,
     compQuestion: "Question", compCheck: "Check", compNext: "Next",
@@ -708,6 +710,7 @@ const T = {
     importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeBulk: "대량 가져오기",
     importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
     bulkPickTitle: "추출된 내용", bulkPickSub: "가져오고 싶지 않은 건 선택 해제해.", bulkAddToLib: "라이브러리에 추가", bulkAdded: (n) => `카드 ${n}개 추가됨!`, bulkNone: "최소 하나는 선택해 줘.",
+    bulkTagBtn: "태그", bulkTagTitle: "대량 태그", bulkTagApply: "적용", bulkTagDone: "완료", bulkTagSelectAll: "전체", bulkTagNone: "없음",
     compTitle: "텍스트 독해", compLevel1: "레벨 1: 객관식", compLevel2: "레벨 2: 바꿔 말하기",
     compParagraph: (i, n) => `단락 ${i}/${n}`,
     compQuestion: "문제", compCheck: "확인", compNext: "다음",
@@ -4525,6 +4528,10 @@ function AppInner() {
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
+  const [bulkTagMode, setBulkTagMode] = useState(false);
+  const [bulkTagSel, setBulkTagSel] = useState(new Set());
+  const [bulkTagPicker, setBulkTagPicker] = useState(false);
+  const [bulkImportedIds, setBulkImportedIds] = useState([]);
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
@@ -5463,6 +5470,7 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
+    if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
       window.history.pushState({ view: target }, "");
@@ -5825,6 +5833,22 @@ function AppInner() {
       return { ...c, tags };
     }) });
     setRecapCard(prev => prev && prev.id === cardId ? { ...prev, tags: (prev.tags || []).map(tt => tt === oldTag ? tg : tt).filter((v, i, a) => a.indexOf(v) === i) } : prev);
+  };
+
+  const applyBulkTag = (tag) => {
+    const tg = (tag || "").toLowerCase().trim();
+    if (!tg || !bulkTagSel.size) return;
+    let count = 0;
+    const nd = { ...data, cards: data.cards.map(c => {
+      if (!bulkTagSel.has(c.id)) return c;
+      const tags = c.tags || [];
+      if (tags.length >= 3 || tags.includes(tg)) return c;
+      count++;
+      return { ...c, tags: [...tags, tg] };
+    }) };
+    save(nd);
+    setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false);
+    alert((lang === "fr" ? `Tag #${tg} applique a ${count} carte${count > 1 ? "s" : ""}` : lang === "ko" ? `#${tg} 태그가 카드 ${count}개에 적용됨` : `Tag #${tg} applied to ${count} card${count > 1 ? "s" : ""}`));
   };
 
   // Attach/reorder/remove images on a card (max 2; images[0] is the thumbnail shown in menus).
@@ -6671,6 +6695,12 @@ function AppInner() {
                     ))}
                   </div>
                 )}
+                {filteredCards.length > 0 && (
+                  <button onClick={() => { setBulkTagMode(!bulkTagMode); setBulkTagSel(new Set()); setBulkTagPicker(false); }}
+                    style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${bulkTagMode ? C.acc : C.border}`, background: bulkTagMode ? C.accBg : C.s1, color: bulkTagMode ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: bulkTagMode ? 500 : 400 }}>
+                    🏷 {bulkTagMode ? t.bulkTagDone : t.bulkTagBtn}
+                  </button>
+                )}
               </div>
             </div>
             {filteredCards.length === 0
@@ -6702,7 +6732,13 @@ function AppInner() {
                         const cs = groups[status];
                         if (!cs.length) return null;
                         const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
-                        const renderSpines = (cards) => cards.map(c => <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
+                        const renderSpines = (cards) => cards.map(c => bulkTagMode ? (
+                          <div key={c.id} onClick={() => { const s = new Set(bulkTagSel); if (s.has(c.id)) s.delete(c.id); else s.add(c.id); setBulkTagSel(s); }}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                            <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${bulkTagSel.has(c.id) ? C.acc : C.borderS}`, background: bulkTagSel.has(c.id) ? C.acc : "transparent", color: C.onAcc }}>{bulkTagSel.has(c.id) ? "✓" : ""}</span>
+                            <BookSpine card={c} t={t} color={color} cardBg={cardBg} masked={false} compact={compact} active={false} onClick={() => {}} />
+                          </div>
+                        ) : <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
                           onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
                           onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
                           onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />);
@@ -6873,6 +6909,45 @@ function AppInner() {
                     })()
                   : <TreeView cards={filteredCards} t={t} onToggle={(id) => setConfirmToggle(data.cards.find(c => c.id === id))} onReview={(c) => reviewCard(c)} />
             }
+            {bulkTagMode && (
+              <div style={{ position: "sticky", bottom: 0, background: C.s2, borderTop: `1px solid ${C.border}`, padding: "10px 16px", display: "flex", flexDirection: "column", gap: 8, zIndex: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>{t.bulkTagTitle}</span>
+                  <span style={{ fontSize: 11, color: C.txtM }}>({bulkTagSel.size})</span>
+                  <button onClick={() => setBulkTagSel(new Set(filteredCards.map(c => c.id)))}
+                    style={{ padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
+                  <button onClick={() => setBulkTagSel(new Set())}
+                    style={{ padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
+                  {bulkTagSel.size > 0 && !bulkTagPicker && (
+                    <button onClick={() => setBulkTagPicker(true)}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 500 }}>
+                      🏷 {t.bulkTagApply}
+                    </button>
+                  )}
+                </div>
+                {bulkTagPicker && bulkTagSel.size > 0 && (
+                  <div style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px" }}>
+                    <input autoFocus placeholder={t.tagPlaceholder} value={tagInput} onChange={e => setTagInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && tagInput.trim()) { applyBulkTag(tagInput.trim()); setTagInput(""); } }}
+                      style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s2, outline: "none", boxSizing: "border-box", marginBottom: 6 }} />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {tagInput.trim() && !allTags.includes(tagInput.toLowerCase().trim()) && (
+                        <button onClick={() => { applyBulkTag(tagInput.trim()); setTagInput(""); }}
+                          style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 500 }}>
+                          + {tagInput.trim().toLowerCase()}
+                        </button>
+                      )}
+                      {allTags.filter(tag => !tagInput.trim() || tag.includes(tagInput.toLowerCase().trim())).slice(0, 15).map(tag => (
+                        <button key={tag} onClick={() => { applyBulkTag(tag); setTagInput(""); }}
+                          style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="wall-band wall-band-bottom" />
           </div>
         )}
@@ -7009,14 +7084,81 @@ function AppInner() {
                       const isVocab = v.type === "vocab";
                       return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
                     });
-                    if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
-                    alert(t.bulkAdded(newCards.length));
-                    setBulkFound([]); setBulkSel(new Set()); setImpStep("input"); setImpText("");
+                    if (newCards.length) {
+                      save({ ...data, cards: [...data.cards, ...newCards] });
+                      setBulkImportedIds(newCards.map(c => c.id));
+                      setImpStep("bulktag");
+                    } else {
+                      alert(t.bulkAdded(0));
+                      setBulkFound([]); setBulkSel(new Set()); setImpStep("input"); setImpText("");
+                    }
                   }} disabled={bulkSel.size === 0}
                     style={{ padding: "8px 18px", borderRadius: 6, background: bulkSel.size ? C.acc : C.s1, color: bulkSel.size ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: bulkSel.size ? "pointer" : "default" }}>
                     📥 {t.bulkAddToLib} ({bulkSel.size})
                   </button>
                 </div>
+              </div>
+            )}
+            {impStep === "bulktag" && (
+              <div style={{ width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>✓ {t.bulkAdded(bulkImportedIds.length)}</div>
+                <div style={{ fontSize: 12.5, color: C.txtM }}>{lang === "fr" ? "Ajouter un tag a ces cartes ?" : lang === "ko" ? "이 카드들에 태그를 추가할까?" : "Add a tag to these cards?"}</div>
+                <div style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 10px" }}>
+                  <input autoFocus placeholder={t.tagPlaceholder} value={tagInput} onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && tagInput.trim()) {
+                      const tg = tagInput.trim().toLowerCase();
+                      const nd = { ...data, cards: data.cards.map(c => {
+                        if (!bulkImportedIds.includes(c.id)) return c;
+                        const tags = c.tags || [];
+                        if (tags.length >= 3 || tags.includes(tg)) return c;
+                        return { ...c, tags: [...tags, tg] };
+                      }) };
+                      save(nd); setTagInput("");
+                      alert((lang === "fr" ? `Tag #${tg} applique !` : lang === "ko" ? `#${tg} 태그 적용됨!` : `Tag #${tg} applied!`));
+                      setBulkFound([]); setBulkSel(new Set()); setBulkImportedIds([]); setImpStep("input"); setImpText("");
+                    } }}
+                    style={{ width: "100%", border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s2, outline: "none", boxSizing: "border-box", marginBottom: 6 }} />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {tagInput.trim() && !allTags.includes(tagInput.toLowerCase().trim()) && (
+                      <button onClick={() => {
+                        const tg = tagInput.trim().toLowerCase();
+                        const nd = { ...data, cards: data.cards.map(c => {
+                          if (!bulkImportedIds.includes(c.id)) return c;
+                          const tags = c.tags || [];
+                          if (tags.length >= 3 || tags.includes(tg)) return c;
+                          return { ...c, tags: [...tags, tg] };
+                        }) };
+                        save(nd); setTagInput("");
+                        alert((lang === "fr" ? `Tag #${tg} applique !` : lang === "ko" ? `#${tg} 태그 적용됨!` : `Tag #${tg} applied!`));
+                        setBulkFound([]); setBulkSel(new Set()); setBulkImportedIds([]); setImpStep("input"); setImpText("");
+                      }}
+                        style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 500 }}>
+                        + {tagInput.trim().toLowerCase()}
+                      </button>
+                    )}
+                    {allTags.filter(tag => !tagInput.trim() || tag.includes(tagInput.toLowerCase().trim())).slice(0, 15).map(tag => (
+                      <button key={tag} onClick={() => {
+                        const tg = tag;
+                        const nd = { ...data, cards: data.cards.map(c => {
+                          if (!bulkImportedIds.includes(c.id)) return c;
+                          const tags = c.tags || [];
+                          if (tags.length >= 3 || tags.includes(tg)) return c;
+                          return { ...c, tags: [...tags, tg] };
+                        }) };
+                        save(nd); setTagInput("");
+                        alert((lang === "fr" ? `Tag #${tg} applique !` : lang === "ko" ? `#${tg} 태그 적용됨!` : `Tag #${tg} applied!`));
+                        setBulkFound([]); setBulkSel(new Set()); setBulkImportedIds([]); setImpStep("input"); setImpText("");
+                      }}
+                        style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <button onClick={() => { setBulkFound([]); setBulkSel(new Set()); setBulkImportedIds([]); setImpStep("input"); setImpText(""); }}
+                  style={{ alignSelf: "flex-start", padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                  {lang === "fr" ? "Passer" : lang === "ko" ? "건너뛰기" : "Skip"}
+                </button>
               </div>
             )}
           </div>

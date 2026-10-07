@@ -4571,6 +4571,7 @@ function AppInner() {
   const lastRecapMsgRef = useRef(null);
   const skipExResetRef = useRef(false);
   const exPreselectedRef = useRef(false);
+  const exPrimaryWordRef = useRef(null);
 
   const lang = data.lang || "fr";
   const t = T[lang];
@@ -4768,6 +4769,7 @@ function AppInner() {
         skipExResetRef.current = false;
         exPreselectedRef.current = true;
       } else {
+        exPrimaryWordRef.current = null;
         setExSel(new Set(exerciseCards.map(c => c.id)));
       }
       setExOn(false);
@@ -7169,6 +7171,7 @@ function AppInner() {
                           return (
                             <div key={c.key} onClick={() => {
                               const cardId = data.cards.find(x => x.korean === recapCard.korean)?.id;
+                              exPrimaryWordRef.current = recapCard.korean;
                               const eligible = data.cards.filter(x => (x.status === "studied" || x.status === "acquired") && (x.targetLang || "ko") === tl && x.id !== cardId);
                               const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
                               const ids = new Set([cardId, ...shuffled.map(x => x.id)].filter(Boolean));
@@ -7342,6 +7345,7 @@ function AppInner() {
                           <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
                             <button onClick={() => {
                               const cardId = data.cards.find(c => c.korean === lCard.korean)?.id;
+                              exPrimaryWordRef.current = lCard.korean;
                               setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set());
                               if (cardId) {
                                 skipExResetRef.current = true;
@@ -7475,7 +7479,13 @@ function AppInner() {
                       const noVocab = m.vocabOnly && !selCards.some(c => c.type === "vocab");
                       const off = m.disabled || noVocab;
                       return (
-                      <button key={m.k} onClick={() => { if (off) return; setExMode(m.k); if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all"); setExStep("cards"); }}
+                      <button key={m.k} onClick={() => {
+                        if (off) return;
+                        setExMode(m.k);
+                        if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all");
+                        if (m.k === "youglish" && exPrimaryWordRef.current) { setYouglishWord(exPrimaryWordRef.current); }
+                        setExStep("cards");
+                      }}
                         style={{ flex: "1 1 130px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, cursor: off ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", opacity: off ? 0.45 : 1, position: "relative" }}>
                         {m.ai && <div style={{ position: "absolute", top: 8, right: 8, fontSize: 9, background: "#EDE9FE", color: "#7C3AED", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>IA</div>}
                         <div style={{ fontSize: 24, marginBottom: 8 }}>{m.i}</div>

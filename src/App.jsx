@@ -1673,26 +1673,29 @@ async function genExercise(cards, mode, lang, context, tlCode, theme) {
   const modes = {
     story: `CONTINUE THE STORY MODE:
 
-CRITICAL IDENTITY: You are a native ${TL} novelist. Think in ${TL}. Write in ${TL} as your mother tongue. Do NOT translate from English or any other language. Every sentence must sound like it was originally written in ${TL} by a native speaker, with natural word order, native expressions, and culturally authentic details.
+IDENTITY: You are a native ${TL} novelist. Think and write directly in ${TL}. Every sentence must sound originally written in ${TL}, with native word order, idioms, and culturally authentic details.
 
-Write the BEGINNING of a short story (4-6 sentences) in ${TL}. The student will continue it.
+THEME: ${theme ? `"${theme}". Strictly respect this theme as the setting. "Daily life" means ordinary moments (cooking, commuting, shopping, a cafe, studying). Do NOT default to K-drama plots, entertainment industry, or celebrity stories.` : "Pick from the student's interests (see LEARNER PROFILE). Rotate between: daily routine, friendship, work, travel, food, hobbies, campus life, family, etc."}
 
-THEME: ${theme ? `The student chose this theme: "${theme}". You MUST strictly follow this theme. If the theme is "daily life", write about ordinary everyday moments (cooking, commuting, shopping, studying, meeting a friend at a cafe, etc.). Do NOT default to dramatic scenarios like K-drama plots, entertainment industry, or celebrity stories. The theme is the setting, respect it literally.` : "Pick a theme from the student's interests (see LEARNER PROFILE). Rotate between varied settings: daily routine, friendship, work life, travel, food, hobbies, campus life, family, etc."}
+YOUR PRIMARY OBJECTIVE IS CONTINUATION DESIRE: after reading your passage, the learner must immediately have ideas about what could happen next and WANT to write them. Do not resolve the central tension. Give narrative possibilities, not a completed mini-story.
+
+STRUCTURE (6-8 sentences in ${TL}):
+- Sentences 1-2: HOOK. Something unusual, intriguing, funny, unsettling or emotional happens IMMEDIATELY. No generic atmosphere intros (weather, cafe decor, routine description, "it was a beautiful day").
+- Sentences 3-5: Context to understand the situation. Who is this person? What is at stake?
+- Sentences 6-8: A complication or revelation that deepens the tension.
+- LAST SENTENCE: The character must act or react. Stop mid-action so the learner naturally wants to write what happens next.
 
 WRITING RULES:
-- Write like a ${TL} novel: vivid descriptions, inner thoughts, sensory details, natural dialogue
-- Use literary prose native to ${TL} literature, not a textbook exercise or scenario description
-- Use idioms, sentence patterns, and narrative conventions natural to ${TL}
-- Named characters must have culturally authentic names
-- Paint a vivid scene: specific place, time, atmosphere, sensory details
-- Build emotional tension: a dilemma, a secret, a surprise, an unexpected discovery
-- End on a cliffhanger that makes the reader want to know what happens next
-- The story must feel like the opening paragraph of a published ${TL} novel
+- Use culturally authentic character names
+- Show concrete details, not vague labels. NEVER write "something strange", "a mysterious place", "an unexpected message", "a surprising discovery". Instead SHOW the strange thing concretely without explaining it yet.
+- Cut any sentence that could be removed without changing the plot. Prioritize action, reactions, meaningful details and dialogue over decorative descriptions.
+- Before each sentence, silently ask yourself: "Would a reader want to know what comes next?" If not, rewrite with a stronger hook.
+- The passage must read like the opening of a published ${TL} novel or a TV series episode, not a school exercise.
 
-AFTER the story beginning, write instructions in ${L}:
-1. A short line asking the student to continue the story (3-5 sentences)
-2. The list of structures they MUST weave naturally into their continuation
-3. A brief reminder to stay in the story's tone and keep it coherent
+AFTER the story, write in ${L}:
+1. A short line asking the student to continue (3-5 sentences)
+2. The structures they MUST weave into their continuation
+3. A reminder to stay in the story's tone
 
 No MCQ options for this mode.`,
 

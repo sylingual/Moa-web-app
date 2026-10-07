@@ -3234,6 +3234,15 @@ function YouglishPanel({ word, lang }) {
   const [current, setCurrent] = useState(1);
   const [error, setError] = useState(false);
 
+  const syncIndex = useCallback(() => {
+    try {
+      const w = widgetRef.current;
+      if (!w) return;
+      const idx = typeof w.getCurrentTrackIndex === "function" ? w.getCurrentTrackIndex() : null;
+      if (idx != null && typeof idx === "number") setCurrent(idx + 1);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (!word || !containerRef.current) return;
     setTotal(null); setCurrent(1); setError(false);
@@ -3247,7 +3256,12 @@ function YouglishPanel({ word, lang }) {
           components: 9,
           events: {
             onFetchDone: (e) => { if (e.totalResult === 0) setError(true); else { setTotal(e.totalResult); setCurrent(1); } },
-            onVideoChange: (e) => { setCurrent((e.index != null ? e.index : 0) + 1); },
+            onVideoChange: (e) => {
+              const idx = typeof e === "number" ? e : (e && e.index != null ? e.index : e && e.trackIndex != null ? e.trackIndex : null);
+              if (idx != null) setCurrent(idx + 1);
+              else setTimeout(syncIndex, 200);
+            },
+            onCaptionConsumed: () => { setTimeout(syncIndex, 200); },
             onError: () => { setError(true); },
           },
         });
@@ -3265,10 +3279,10 @@ function YouglishPanel({ word, lang }) {
     document.head.appendChild(script);
 
     return () => { widgetRef.current = null; };
-  }, [word, lang]);
+  }, [word, lang, syncIndex]);
 
-  const goNext = () => { if (widgetRef.current) { widgetRef.current.next(); setCurrent(c => total ? Math.min(c + 1, total) : c + 1); } };
-  const goPrev = () => { if (widgetRef.current) { widgetRef.current.previous(); setCurrent(c => Math.max(c - 1, 1)); } };
+  const goNext = () => { if (widgetRef.current) { widgetRef.current.next(); setCurrent(c => total ? Math.min(c + 1, total) : c + 1); setTimeout(syncIndex, 500); } };
+  const goPrev = () => { if (widgetRef.current) { widgetRef.current.previous(); setCurrent(c => Math.max(c - 1, 1)); setTimeout(syncIndex, 500); } };
 
   const navBtn = { padding: "4px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12 };
 

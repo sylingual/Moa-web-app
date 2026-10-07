@@ -1677,7 +1677,7 @@ CRITICAL IDENTITY: You are a native ${TL} novelist. Think in ${TL}. Write in ${T
 
 Write the BEGINNING of a short story (4-6 sentences) in ${TL}. The student will continue it.
 
-THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this context.` : "Pick a theme from the student's interests (see LEARNER PROFILE). Rotate between varied settings: mystery, romance, slice of life, adventure, drama, etc."}
+THEME: ${theme ? `The student chose this theme: "${theme}". You MUST strictly follow this theme. If the theme is "daily life", write about ordinary everyday moments (cooking, commuting, shopping, studying, meeting a friend at a cafe, etc.). Do NOT default to dramatic scenarios like K-drama plots, entertainment industry, or celebrity stories. The theme is the setting, respect it literally.` : "Pick a theme from the student's interests (see LEARNER PROFILE). Rotate between varied settings: daily routine, friendship, work life, travel, food, hobbies, campus life, family, etc."}
 
 WRITING RULES:
 - Write like a ${TL} novel: vivid descriptions, inner thoughts, sensory details, natural dialogue

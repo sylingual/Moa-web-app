@@ -2359,7 +2359,7 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, 
       <div style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0, background: C.s1, border: `1px solid ${C.border}`, color: C.txtM }}>
         {ai ? "✦" : "🧑"}
       </div>
-      <div style={{ minWidth: 0, padding: "9px 12px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
+      <div style={{ minWidth: 0, padding: "10px 13px", borderRadius: ai ? "2px 12px 12px 12px" : "12px 2px 12px 12px", fontSize: 14.5, lineHeight: 1.75, whiteSpace: "pre-wrap", fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", background: ai ? C.s2 : C.acc, border: ai ? `1px solid ${C.border}` : "none", color: ai ? C.txt : C.onAcc }}>
         {msg.degraded && (
           <div style={{ marginBottom: 8, padding: "6px 9px", background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 10.5, color: C.warn, lineHeight: 1.5 }}>
             ⚠️ Recherche web temporairement indisponible. Des liens de recherche ciblés sont proposés ci-dessous.
@@ -2442,10 +2442,10 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, 
                   style={{
                     background: showOk ? C.okBg : bad ? C.warnBg : isPre ? C.accBg : C.s1,
                     border: `1px solid ${showOk ? C.okB : bad ? C.warnB : isPre ? C.acc : C.border}`,
-                    borderRadius: 6, padding: "6px 10px", fontSize: 12,
+                    borderRadius: 8, padding: "8px 12px", fontSize: 13.5,
                     color: showOk ? C.ok : bad ? C.warn : isPre ? C.acc : C.txt,
                     cursor: confirmed ? "default" : "pointer",
-                    fontFamily: "'Plus Jakarta Sans'", textAlign: "left",
+                    fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", textAlign: "left",
                     fontWeight: isPre ? 500 : 400,
                     opacity: confirmed && !sel && !showOk ? 0.4 : 1,
                   }}>
@@ -7309,7 +7309,7 @@ function AppInner() {
               {recapMode !== "image" && !recapDone && (
                 <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                   <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && !recapLoad && recapSend()} placeholder={recapLoad ? t.thinking : t.askQuestion} disabled={recapLoad}
-                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: recapLoad ? 0.6 : 1 }} />
+                    style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", fontSize: 14, color: C.txt, background: C.s1, outline: "none", opacity: recapLoad ? 0.6 : 1 }} />
                   <button onClick={recapSend} disabled={recapLoad} style={{ width: 30, height: 30, background: recapLoad ? C.s1 : C.acc, color: recapLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: recapLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>↑</button>
                 </div>
               )}
@@ -7786,7 +7786,7 @@ function AppInner() {
                   )}
                   <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                     <input value={inp} onChange={e => setInp(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()} placeholder={lLoad ? t.thinking : t.askQuestion} disabled={lLoad}
-                      style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: lLoad ? 0.6 : 1 }} />
+                      style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", fontSize: 14, color: C.txt, background: C.s1, outline: "none", opacity: lLoad ? 0.6 : 1 }} />
                     <button onClick={sendMsg} disabled={lLoad} style={{ width: 30, height: 30, background: lLoad ? C.s1 : C.acc, color: lLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: lLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>
                     <button onClick={() => !lLoad && setTray(!tray)} disabled={lLoad} style={{ width: 30, height: 30, border: `1px solid ${C.borderS}`, borderRadius: 6, background: tray ? C.s1 : "none", cursor: lLoad ? "default" : "pointer", color: C.txtM, fontSize: 15, letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: lLoad ? 0.55 : 1 }}>···</button>
                   </div>

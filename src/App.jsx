@@ -232,8 +232,8 @@ const T = {
     wrapUpTitle: "Tu peux conclure la leçon, ou aller un peu plus loin :",
     summaryTitle: "Résumé de la leçon",
     endPractice: "Terminer la pratique",
-    practiceWrapUp: "Tu peux terminer et generer un resume :",
-    practiceExitWarn: (n) => `Si tu quittes maintenant, aucun resume ne sera genere. Encore ${n} tour${n > 1 ? "s" : ""} avant le resume. Quitter quand meme ?`,
+    practiceWrapUp: "Tu peux terminer et générer un résumé :",
+    practiceExitWarn: (n) => `Si tu quittes maintenant, aucun résumé ne sera généré. Encore ${n} tour${n > 1 ? "s" : ""} avant le résumé. Quitter quand même ?`,
     generating: "Génération du résumé...",
     summaryHistory: "Historique des leçons",
     noSummaries: "Aucune leçon terminée pour le moment.",
@@ -5896,7 +5896,7 @@ function AppInner() {
     }) };
     save(nd);
     setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false);
-    alert((lang === "fr" ? `Tag #${tg} applique a ${count} carte${count > 1 ? "s" : ""}` : lang === "ko" ? `#${tg} 태그가 카드 ${count}개에 적용됨` : `Tag #${tg} applied to ${count} card${count > 1 ? "s" : ""}`));
+    alert((lang === "fr" ? `Tag #${tg} appliqué à ${count} carte${count > 1 ? "s" : ""}` : lang === "ko" ? `#${tg} 태그가 카드 ${count}개에 적용됨` : `Tag #${tg} applied to ${count} card${count > 1 ? "s" : ""}`));
   };
 
   // Attach/reorder/remove images on a card (max 2; images[0] is the thumbnail shown in menus).
@@ -7257,7 +7257,7 @@ function AppInner() {
                     {(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? (
                       <div>
                         <div style={{ fontSize: 12, color: C.warn, lineHeight: 1.6, marginBottom: 8 }}>
-                          ⚠️ {lang === "fr" ? "Erreur lors de la generation du resume" : lang === "ko" ? "요약 생성 중 오류" : "Error generating summary"}
+                          ⚠️ {lang === "fr" ? "Erreur lors de la génération du résumé" : lang === "ko" ? "요약 생성 중 오류" : "Error generating summary"}
                         </div>
                         {recapSummary.error && (
                           <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, marginBottom: 12, background: C.s1, padding: "6px 10px", borderRadius: 6, fontFamily: "monospace", wordBreak: "break-all" }}>
@@ -7267,7 +7267,7 @@ function AppInner() {
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button onClick={() => { setRecapSummary(null); setRecapDone(false); endRecapPractice(); }}
                             style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                            🔄 {lang === "fr" ? "Reessayer" : lang === "ko" ? "다시 시도" : "Retry"}
+                            🔄 {lang === "fr" ? "Réessayer" : lang === "ko" ? "다시 시도" : "Retry"}
                           </button>
                           <button onClick={() => { setRecapMode(null); setRecapConv([]); setRecapInp(""); setRecapDone(false); setRecapSummary(null); }}
                             style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>

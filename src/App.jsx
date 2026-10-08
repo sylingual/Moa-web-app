@@ -231,6 +231,9 @@ const T = {
     endLessonConfirm: "Terminer et voir le résumé ?",
     wrapUpTitle: "Tu peux conclure la leçon, ou aller un peu plus loin :",
     summaryTitle: "Résumé de la leçon",
+    endPractice: "Terminer la pratique",
+    practiceWrapUp: "Tu peux terminer et generer un resume :",
+    practiceExitWarn: (n) => `Si tu quittes maintenant, aucun resume ne sera genere. Encore ${n} tour${n > 1 ? "s" : ""} avant le resume. Quitter quand meme ?`,
     generating: "Génération du résumé...",
     summaryHistory: "Historique des leçons",
     noSummaries: "Aucune leçon terminée pour le moment.",
@@ -553,6 +556,9 @@ const T = {
     endLessonConfirm: "End lesson and see summary?",
     wrapUpTitle: "You can wrap up the lesson, or go a little further:",
     summaryTitle: "Lesson summary",
+    endPractice: "End practice",
+    practiceWrapUp: "You can finish and generate a summary:",
+    practiceExitWarn: (n) => `If you leave now, no summary will be generated. ${n} turn${n > 1 ? "s" : ""} remaining before the summary. Leave anyway?`,
     generating: "Generating summary...",
     summaryHistory: "Lesson history",
     noSummaries: "No completed lessons yet.",
@@ -873,6 +879,9 @@ const T = {
     endLessonConfirm: "레슨을 끝내고 요약을 볼까요?",
     wrapUpTitle: "레슨을 마무리하거나, 좀 더 해볼 수 있어:",
     summaryTitle: "레슨 요약",
+    endPractice: "연습 끝내기",
+    practiceWrapUp: "끝내고 요약을 만들 수 있어:",
+    practiceExitWarn: (n) => `지금 나가면 요약이 생성되지 않아. 요약까지 ${n}턴 남았어. 그래도 나갈래?`,
     generating: "요약 생성 중...",
     summaryHistory: "레슨 기록",
     noSummaries: "아직 완료한 레슨이 없어요.",
@@ -4586,6 +4595,8 @@ function AppInner() {
   const [recapLoad, setRecapLoad] = useState(false);
   const [recapInp, setRecapInp] = useState("");
   const [recapMode, setRecapMode] = useState(null); // null | "examples" | "realExamples" | "resources" | "exercise"
+  const [recapDone, setRecapDone] = useState(false);
+  const [recapSummary, setRecapSummary] = useState(null);
 
   // Exercise
   const [exMode, setExMode] = useState("story");
@@ -5597,6 +5608,7 @@ function AppInner() {
     if (!recapCard) return;
     setRecapMode(action);
     setRecapConv([]);
+    setRecapDone(false); setRecapSummary(null);
     setRecapLoad(true);
     const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk };
     const u = [{ role: "user", content: labels[action] || action }];
@@ -5654,6 +5666,42 @@ function AppInner() {
       const r = await continueChat(recapCard, u, m, lang);
       setRecapConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
     } catch (e) { console.error(e); setRecapConv([...u, aiError(e)]); }
+    setRecapLoad(false);
+  };
+
+  const endRecapPractice = async () => {
+    if (!recapCard || recapConv.length < 2) return;
+    setRecapLoad(true); setRecapDone(true);
+    try {
+      const result = await generateSummary(recapCard, recapConv, lang);
+      const summary = {
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
+        cardKorean: recapCard.korean,
+        targetLang: recapCard.targetLang || tl || "ko",
+        grammarRecap: result.grammarRecap || "",
+        structuresLearned: result.structuresLearned || "",
+        mistakesMade: result.mistakesMade || "",
+        nextSteps: result.nextSteps || "",
+        date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
+        conversationLength: recapConv.length,
+      };
+      setRecapSummary(summary);
+      const category = result.category ? result.category.toLowerCase().trim() : "";
+      let nd = { ...data, summaries: [...(data.summaries || []), summary] };
+      if (category) {
+        nd = { ...nd, cards: nd.cards.map(c => {
+          if (c.korean !== recapCard.korean) return c;
+          const tags = c.tags || [];
+          if (tags.length >= 3 || tags.includes(category)) return c;
+          return { ...c, tags: [...tags, category] };
+        }) };
+      }
+      nd = awardPoints(3, nd);
+      save(nd);
+    } catch (e) {
+      console.error("recap summary error:", e);
+      setRecapSummary({ error: e?.message || "Error", structuresLearned: "Error generating summary" });
+    }
     setRecapLoad(false);
   };
 
@@ -7173,7 +7221,14 @@ function AppInner() {
             // FULL-SCREEN QUICK PRACTICE CHAT
             <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: C.s2, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <button onClick={() => { setRecapMode(null); setRecapConv([]); setRecapInp(""); }}
+                <button onClick={() => {
+                  const aiTurns = recapConv.filter(m => m.role === "ai").length;
+                  const MIN_TURNS = 4;
+                  if (recapMode === "examples" && aiTurns >= 2 && aiTurns < MIN_TURNS && !recapDone) {
+                    if (!confirm(t.practiceExitWarn(MIN_TURNS - aiTurns))) return;
+                  }
+                  setRecapMode(null); setRecapConv([]); setRecapInp(""); setRecapDone(false); setRecapSummary(null);
+                }}
                   style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
                   ← {t.backToRecap}
                 </button>
@@ -7194,10 +7249,64 @@ function AppInner() {
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                   </div>
                 ))}
-                {recapLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}
+                {recapLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : recapDone ? t.generating : t.thinking}</div>}
+                {/* Recap summary display */}
+                {recapSummary && (
+                  <div style={{ background: C.s2, border: `1px solid ${(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? C.warnB : C.okB}`, borderRadius: 10, padding: 16, margin: "4px 0" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 12 }}>📋 {t.summaryTitle}</div>
+                    {(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? (
+                      <div>
+                        <div style={{ fontSize: 12, color: C.warn, lineHeight: 1.6, marginBottom: 8 }}>
+                          ⚠️ {lang === "fr" ? "Erreur lors de la generation du resume" : lang === "ko" ? "요약 생성 중 오류" : "Error generating summary"}
+                        </div>
+                        {recapSummary.error && (
+                          <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, marginBottom: 12, background: C.s1, padding: "6px 10px", borderRadius: 6, fontFamily: "monospace", wordBreak: "break-all" }}>
+                            {String(recapSummary.error).substring(0, 200)}
+                          </div>
+                        )}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button onClick={() => { setRecapSummary(null); setRecapDone(false); endRecapPractice(); }}
+                            style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                            🔄 {lang === "fr" ? "Reessayer" : lang === "ko" ? "다시 시도" : "Retry"}
+                          </button>
+                          <button onClick={() => { setRecapMode(null); setRecapConv([]); setRecapInp(""); setRecapDone(false); setRecapSummary(null); }}
+                            style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                            ← {t.backToRecap}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
+                          {renderMarkdown(recapSummary.grammarRecap || recapSummary.structuresLearned, revealTr)}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+                          <button onClick={() => { setRecapMode(null); setRecapConv([]); setRecapInp(""); setRecapDone(false); setRecapSummary(null); }}
+                            style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                            ← {t.backToRecap}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Images aren't a conversation — no reply bar in image mode. */}
-              {recapMode !== "image" && (
+              {/* Wrap-up bar: show "End practice" after 4 AI turns */}
+              {recapMode === "examples" && !recapDone && (() => {
+                const aiTurns = recapConv.filter(m => m.role === "ai").length;
+                if (aiTurns < 4) return null;
+                return (
+                  <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.okB}`, background: C.okBg }}>
+                    <div style={{ fontSize: 12, color: C.txtS, marginBottom: 8, textAlign: "center" }}>🎓 {t.practiceWrapUp}</div>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <button onClick={endRecapPractice} disabled={recapLoad}
+                        style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: recapLoad ? C.s1 : C.ok, color: recapLoad ? C.txtM : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: recapLoad ? "default" : "pointer" }}>✓ {t.endPractice}</button>
+                    </div>
+                  </div>
+                );
+              })()}
+              {/* Images aren't a conversation -- no reply bar in image mode. */}
+              {recapMode !== "image" && !recapDone && (
                 <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                   <input value={recapInp} onChange={e => setRecapInp(e.target.value)} onKeyDown={e => e.key === "Enter" && !recapLoad && recapSend()} placeholder={recapLoad ? t.thinking : t.askQuestion} disabled={recapLoad}
                     style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: recapLoad ? 0.6 : 1 }} />
@@ -7518,11 +7627,13 @@ function AppInner() {
                   </div>
                 </div>
 
-                {/* Full lesson */}
-                <button onClick={() => startLessonFromCard(recapCard)}
-                  style={{ padding: "12px 16px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "center", flexShrink: 0 }}>
-                  🔄 {t.redoLesson}
-                </button>
+                {/* Full lesson (only for new/in_progress cards) */}
+                {(migrateStatus(recapCard.status) === "new" || migrateStatus(recapCard.status) === "in_progress") && (
+                  <button onClick={() => startLessonFromCard(recapCard)}
+                    style={{ padding: "12px 16px", borderRadius: 10, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "center", flexShrink: 0 }}>
+                    🔄 {t.redoLesson}
+                  </button>
+                )}
               </div>
             </div>
           ) : lCard ? (

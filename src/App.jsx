@@ -4661,7 +4661,13 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
           style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, fontFamily: tFont, fontSize: 14, outline: "none", boxSizing: "border-box" }}
           autoFocus />
       )}
-      {checked && correct && <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.fixitCorrect}</div>}
+      {checked && correct && (
+        <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+          <div style={{ color: "#34C759", fontWeight: 600, marginBottom: 4 }}>{t.fixitCorrect}</div>
+          <div style={{ fontFamily: tFont, fontSize: 13, color: "#34C759", padding: "6px 10px", background: "rgba(52,199,89,0.08)", borderRadius: 6 }}>{input}</div>
+          {sent.explanation && <div style={{ color: C.txtM, marginTop: 6, fontSize: 11.5 }}>{sent.explanation}</div>}
+        </div>
+      )}
       {checked && !correct && (
         <div style={{ fontSize: 12, lineHeight: 1.5 }}>
           <div style={{ color: "#FF3B30", marginBottom: 4 }}>{t.fixitWrong}</div>

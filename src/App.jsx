@@ -6595,7 +6595,7 @@ function AppInner() {
   };
 
   useEffect(() => {
-    if (view !== "goals" || goalView !== "create") return;
+    if (view !== "goals" || (goalView !== "create" && !goalCardPicker)) return;
     const handler = (e) => {
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -6610,7 +6610,7 @@ function AppInner() {
     };
     document.addEventListener("paste", handler);
     return () => document.removeEventListener("paste", handler);
-  }, [view, goalView, goalImpFound]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goalImportConfirm = () => {
     if (!goalImpSel.size) return;
@@ -6629,6 +6629,31 @@ function AppInner() {
     setGoalImpStep(null);
     setGoalImpFound([]);
     setGoalImpSel(new Set());
+  };
+
+  const goalDetailImportConfirm = (goalId) => {
+    if (!goalImpSel.size) return;
+    const goal = goals.find(g => g.id === goalId);
+    const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
+    const deadlineTag = goal?.deadline || "";
+    const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
+      const isVocab = v.type === "vocab";
+      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      if (deadlineTag) card.tags = [deadlineTag];
+      card.goalId = goalId;
+      return card;
+    });
+    if (newCards.length) {
+      save({
+        ...data,
+        cards: [...data.cards, ...newCards],
+        goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...(g.cardIds || []), ...newCards.map(c => c.id)])] } : g),
+      });
+    }
+    setGoalImpStep(null);
+    setGoalImpFound([]);
+    setGoalImpSel(new Set());
+    setGoalCardPicker(false);
   };
 
   const completeExercise = (mode, cardIds) => {
@@ -9174,7 +9199,7 @@ function AppInner() {
                         <div style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 16 }}>{t.goalNoCards}</div>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 300, overflowY: "auto" }}>
-                          {(goal.cardIds || []).map(id => { const c = data.cards.find(x => x.id === id); if (!c) return null; const si = statusInfo(c.status, t); return (
+                          {(goal.cardIds || []).map(id => { const c = data.cards.find(x => x.id === id); return c ? { id, c } : null; }).filter(Boolean).sort((a, b) => { const sa = migrateStatus(a.c.status); const sb = migrateStatus(b.c.status); const order = { "new": 0, "in_progress": 1, "studied": 2, "acquired": 3 }; return (order[sa] ?? 4) - (order[sb] ?? 4); }).map(({ id, c }) => { const si = statusInfo(c.status, t); return (
                             <div key={id} onClick={() => { openCardFresh(c); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer" }}>
                               <span style={{ fontFamily: tFont, fontSize: 14, color: C.txt, flex: 1 }}>{c.korean}</span>
                               <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 8, background: si.bg, color: si.color }}>{si.label}</span>
@@ -9233,8 +9258,46 @@ function AppInner() {
                             style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: goalPickSel.size ? C.acc : C.s1, color: goalPickSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalPickSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                             + {t.goalAddCards} ({goalPickSel.size})
                           </button>
-                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null); }}
+                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
                             style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
+                        </div>
+                        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>
+                          {!goalImpStep && (
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                📷 {t.goalImportScreenshots}
+                                <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
+                              </label>
+                              <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
+                            </div>
+                          )}
+                          {goalImpStep === "ocr" && <div className="pulse" style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 10 }}>{t.goalImportOcr}</div>}
+                          {goalImpStep === "scanning" && <div className="pulse" style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 10 }}>{t.goalImportScanning}{goalImpProgress ? ` (${goalImpProgress.current}/${goalImpProgress.total})` : ""}</div>}
+                          {goalImpStep === "picks" && goalImpFound.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 500, color: C.txt, marginBottom: 6 }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto", marginBottom: 8 }}>
+                                {goalImpFound.map((v, i) => { const on = goalImpSel.has(i); return (
+                                  <div key={i} onClick={() => { const s = new Set(goalImpSel); s.has(i) ? s.delete(i) : s.add(i); setGoalImpSel(s); }}
+                                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, cursor: "pointer", background: on ? C.accBg : C.s1, border: `1px solid ${on ? C.acc : C.border}` }}>
+                                    <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                    <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{v.korean || v.word}</span>
+                                    <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{v.type === "vocab" ? "vocab" : "grammar"}</span>
+                                  </div>
+                                ); })}
+                              </div>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button onClick={() => goalDetailImportConfirm(goal.id)} disabled={!goalImpSel.size}
+                                  style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: goalImpSel.size ? C.acc : C.s1, color: goalImpSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalImpSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  📥 {t.goalImportConfirm} ({goalImpSel.size})
+                                </button>
+                                <label style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  + 📷
+                                  <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
+                                </label>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

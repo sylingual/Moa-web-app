@@ -8122,8 +8122,9 @@ function AppInner() {
                   const reviewCount = getCardReviewCount(cardForReview);
                   const goal = cardObj?.goalId ? (data.goals || []).find(g => g.id === cardObj.goalId) : null;
                   let daysAvailable = Infinity;
-                  if (goal && cardForReview.discoveredDate) {
-                    daysAvailable = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(cardForReview.discoveredDate + "T00:00:00")) / 86400000));
+                  if (goal) {
+                    const created = goal.createdAt ? new Date(goal.createdAt).toISOString().slice(0, 10) : goal.deadline;
+                    daysAvailable = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(created + "T00:00:00")) / 86400000));
                   }
                   const schedule = getSpacedSchedule(daysAvailable);
                   const R = schedule.R;

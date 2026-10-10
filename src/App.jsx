@@ -123,6 +123,7 @@ const T = {
     fillNewStory: "Nouvelle histoire", fillTapBlank: "Touche un trou, puis un mot de la banque.", fillTapWord: "Touche un mot du texte pour le traduire.",
     fillTranslateStory: "Traduire l'histoire", fillAddVocab: "Ajouter à la biblio", fillListen: "Écouter", fillListenStop: "Arrêter",
     fillThemeLabel: "Thème du scénario", fillThemeRandom: "Surprise !", fillThemes: ["Vie quotidienne", "Amis / sorties", "K-drama", "K-pop / fandom", "Réseaux sociaux", "Travail / business", "Café / restaurant", "Voyage en Corée"],
+    grammarVocabLabel: "Vocabulaire spécifique", grammarVocabSub: "Intègre ces mots dans les phrases (optionnel)",
     crossAcross: "Horizontal", crossDown: "Vertical",
     crossLvl1: "Niveau 1 · mots affichés", crossLvl2: "Niveau 2 · de mémoire", crossLvl3: "Niveau 3 · indices en langue cible",
     genTargetDesc: "Définition en langue cible", genTargetDescDone: "Définition générée !",
@@ -545,6 +546,7 @@ const T = {
     fillNewStory: "New story", fillTapBlank: "Tap a blank, then a word from the bank.", fillTapWord: "Tap a word in the text to translate it.",
     fillTranslateStory: "Translate story", fillAddVocab: "Add to library", fillListen: "Listen", fillListenStop: "Stop",
     fillThemeLabel: "Scenario theme", fillThemeRandom: "Surprise me!", fillThemes: ["Daily life", "Friends / hangouts", "K-drama", "K-pop / fandom", "Social media", "Work / business", "Cafe / restaurant", "Travel in Korea"],
+    grammarVocabLabel: "Specific vocabulary", grammarVocabSub: "Include these words in the sentences (optional)",
     crossAcross: "Across", crossDown: "Down",
     crossLvl1: "Level 1 · words shown", crossLvl2: "Level 2 · from memory", crossLvl3: "Level 3 · clues in target language",
     genTargetDesc: "Definition in target language", genTargetDescDone: "Definition generated!",
@@ -936,6 +938,7 @@ const T = {
     exerciseTitle: "연습 문제",
     exerciseSub: "카테고리를 고른 다음, 연습을 골라봐.",
     exCatGrammar: "문법", exCatGrammarDesc: "문법 포인트 연습",
+    grammarVocabLabel: "특정 단어", grammarVocabSub: "이 단어들을 문장에 포함해 (선택 사항)",
     exCatCE: "읽기", exCatCEDesc: "읽고 이해하기",
     exCatCO: "듣기", exCatCODesc: "듣고 이해하기",
     exCatPE: "쓰기", exCatPEDesc: "쓰고 표현하기",
@@ -2001,7 +2004,7 @@ async function findRealExamples(card, lang, tlCode) {
   }
 }
 
-async function genExercise(cards, mode, lang, context, tlCode, theme) {
+async function genExercise(cards, mode, lang, context, tlCode, theme, vocabWords) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)} (example: ${c.example_kr})`).join("\n");
@@ -2148,6 +2151,8 @@ Return ONLY this JSON structure:
 CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value. "characters" lists each speaker with their gender ("F" or "M").`
   };
 
+  const vocabSection = (vocabWords && vocabWords.length > 0) ? `\nVocabulary to integrate into the sentences (use as many as possible naturally):\n${vocabWords.map(w => `- ${w}`).join("\n")}\n` : "";
+
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
 ${TRANSLATION_RULE}
 
@@ -2156,7 +2161,7 @@ ${modes[mode]}
 
 Structures to practice:
 ${structs}
-
+${vocabSection}
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
   const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : (mode === "reorder" || mode === "drill" || mode === "fixit") ? 2000 : undefined;
@@ -5277,6 +5282,7 @@ function AppInner() {
   const [exDone, setExDone] = useState(false);
   const [fillData, setFillData] = useState(null);
   const [exTheme, setExTheme] = useState(null);
+  const [exGrammarVocab, setExGrammarVocab] = useState([]);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
 
@@ -7078,9 +7084,10 @@ function AppInner() {
     // Sentence-based grammar exercises use their own UI
     if (exMode === "reorder" || exMode === "drill" || exMode === "fixit") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-      try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
+      const vocabWords = exGrammarVocab.length > 0 ? allCards.filter(c => exGrammarVocab.includes(c.id)).map(c => c.korean) : [];
+      try { const r = await genExercise(sel, exMode, lang, context, tl, theme, vocabWords); setFillData(r); }
       catch (e) { console.error("launchEx " + exMode + " error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
-      setExLoad(false); setExTheme(null);
+      setExLoad(false); setExTheme(null); setExGrammarVocab([]);
       return;
     }
     // Fill modes use interactive word-bank UI
@@ -9123,7 +9130,7 @@ function AppInner() {
                     {visibleCards.length > 0 && (
                       <button onClick={() => {
                         if (exSel.size === 0) return;
-                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story") { setExTheme(null); setExStep("theme"); }
+                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
                         else launchEx();
                       }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
@@ -9136,6 +9143,8 @@ function AppInner() {
                   const allThemes = t.fillThemes || [];
                   const shuffled = [...allThemes].sort(() => Math.random() - 0.5);
                   const picks = shuffled.slice(0, 3);
+                  const isGrammarEx = exMode === "reorder" || exMode === "drill" || exMode === "fixit";
+                  const vocabPool = isGrammarEx ? allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired") && normType(c.type) === "vocab") : [];
                   return (<>
                     <button onClick={() => setExStep("cards")}
                       style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
@@ -9156,6 +9165,23 @@ function AppInner() {
                         </button>
                       ))}
                     </div>
+                    {isGrammarEx && vocabPool.length > 0 && (<>
+                      <div style={{ marginTop: 20, width: "100%", maxWidth: 340 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 2 }}>{t.grammarVocabLabel}</div>
+                        <div style={{ fontSize: 11, color: C.txtS, marginBottom: 10 }}>{t.grammarVocabSub}</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {vocabPool.map(vc => {
+                            const sel = exGrammarVocab.includes(vc.id);
+                            return (
+                              <button key={vc.id} onClick={() => setExGrammarVocab(prev => sel ? prev.filter(id => id !== vc.id) : [...prev, vc.id])}
+                                style={{ padding: "6px 12px", borderRadius: 20, border: `1px solid ${sel ? C.acc : C.border}`, background: sel ? C.accBg : C.s2, color: sel ? C.acc : C.txt, fontFamily: tFont, fontSize: 13, fontWeight: sel ? 600 : 400, cursor: "pointer", transition: "all 0.15s" }}>
+                                {vc.korean}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>)}
                   </>);
                 })()}
               </div>

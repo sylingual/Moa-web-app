@@ -2106,14 +2106,14 @@ Return ONLY this JSON:
 }
 CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank.`,
 
-    fixit: `TEACHER MODE: Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
+    fixit: `TEACHER MODE: You are an expert ${TL} linguist and native-level speaker. Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
 
 RULES:
-- Each sentence should be natural-sounding but contain exactly ONE grammar error
+- Each sentence should be natural-sounding but contain exactly ONE clear, unambiguous grammar error
 - CRITICAL: The error in each sentence MUST be a misuse of one of the grammar points the student is practicing. For example, if the grammar point is "-은/는 vs -이/가", the error must be using the wrong particle. If the grammar point is "past tense -았/었-", the error must be a wrong conjugation of that tense. Do NOT introduce errors unrelated to the selected grammar points (spelling mistakes, wrong vocabulary, etc.)
-- In the explanation, name which grammar point the error relates to and why the corrected form is right
+- The error must be obvious and clear-cut: there must be ONE unambiguously correct fix. Do NOT create sentences where both the original and corrected versions could be considered acceptable
 - Vary the context: daily life, social media, work, friends, travel, food, etc.
-- Provide the corrected version and a ${L} explanation of the error
+- Provide the corrected version and a SHORT, CLEAR ${L} explanation (2-3 sentences max): state what is wrong, what the correct form is, and why. Do not ramble or second-guess yourself
 
 Return ONLY this JSON:
 {
@@ -2124,7 +2124,7 @@ Return ONLY this JSON:
   ]
 }
 CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.
-VERIFICATION: Before returning, re-read each sentence pair. If "text" and "corrected" are identical, or if "text" is already grammatically correct, you MUST rewrite that sentence to actually contain an error. Every single "text" must be WRONG and different from its "corrected" version.`,
+VERIFICATION: Before returning, re-read each sentence pair as a ${TL} expert. If "text" is already grammatically correct in ${TL}, or if "text" and "corrected" are identical, DISCARD that sentence and generate a new one with a real error. Every "text" must be genuinely WRONG.`,
 
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 

@@ -133,10 +133,12 @@ const T = {
     genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     exRandom: "Au hasard",
     exMusicOn: "Musique", exMusicOff: "Musique",
-    progressTitle: "Répétition espacée", progressGlobal: "Global",
+    progressTitle: "Pratiquer", progressGlobal: "Global",
     progressReviews: (n, r) => `${n}/${r} révision${n > 1 ? "s" : ""}`,
-    progressNextReview: "Prochaine révision",
-    progressNextToday: "Aujourd'hui",
+    progressNextReview: "Prochaine révision recommandée",
+    progressNextDays: (n) => n === 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jour${n > 1 ? "s" : ""}`,
+    progressCanPractice: "Vous pouvez néanmoins vous entraîner aujourd'hui.",
+    progressAlreadyDone: "Vous vous êtes déjà entraîné aujourd'hui, mais vous pouvez réviser encore si vous voulez.",
     progressNextPast: "En retard",
     progressAcquired: "Acquise !",
     progressAutoAcquired: "Carte acquise ! Répétition espacée terminée.",
@@ -508,10 +510,12 @@ const T = {
     genderScore: (c, t) => `${c}/${t} correct`,
     exRandom: "Random",
     exMusicOn: "Music", exMusicOff: "Music",
-    progressTitle: "Spaced repetition", progressGlobal: "Overall",
+    progressTitle: "Practice", progressGlobal: "Overall",
     progressReviews: (n, r) => `${n}/${r} review${n > 1 ? "s" : ""}`,
-    progressNextReview: "Next review",
-    progressNextToday: "Today",
+    progressNextReview: "Next recommended review",
+    progressNextDays: (n) => n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} day${n > 1 ? "s" : ""}`,
+    progressCanPractice: "You can still practice today.",
+    progressAlreadyDone: "You already practiced today, but you can review again if you want.",
     progressNextPast: "Overdue",
     progressAcquired: "Acquired!",
     progressAutoAcquired: "Card acquired! Spaced repetition complete.",
@@ -883,10 +887,12 @@ const T = {
     genderScore: (c, t) => `${c}/${t} 정답`,
     exRandom: "랜덤",
     exMusicOn: "음악", exMusicOff: "음악",
-    progressTitle: "간격 반복", progressGlobal: "전체",
+    progressTitle: "연습하기", progressGlobal: "전체",
     progressReviews: (n, r) => `${n}/${r}번 복습`,
-    progressNextReview: "다음 복습",
-    progressNextToday: "오늘",
+    progressNextReview: "다음 추천 복습",
+    progressNextDays: (n) => n === 0 ? "오늘" : n === 1 ? "내일" : `${n}일 후`,
+    progressCanPractice: "그래도 오늘 연습할 수 있어요.",
+    progressAlreadyDone: "오늘 이미 연습했어요. 그래도 더 복습하고 싶으면 할 수 있어요.",
     progressNextPast: "밀림",
     progressAcquired: "습득 완료!",
     progressAutoAcquired: "카드 습득 완료! 간격 반복 끝.",
@@ -8004,11 +8010,13 @@ function AppInner() {
                   const acquired = reviewCount >= R;
                   const today = new Date().toISOString().slice(0, 10);
                   const nextDate = getCardNextReviewDate(recapCard, daysAvailable);
-                  let nextLabel = "";
-                  if (acquired) nextLabel = t.progressAcquired;
-                  else if (!nextDate) nextLabel = "";
-                  else if (nextDate <= today) nextLabel = nextDate === today ? t.progressNextToday : t.progressNextPast;
-                  else nextLabel = nextDate;
+                  const practicedToday = cardObj && cardObj.reviewDates && cardObj.reviewDates.includes(today);
+                  let daysUntilNext = null;
+                  if (nextDate && !acquired) {
+                    const nd = new Date(nextDate + "T00:00:00");
+                    const td = new Date(today + "T00:00:00");
+                    daysUntilNext = Math.round((nd - td) / 86400000);
+                  }
                   const cats = [
                     { key: "CE", icon: "📖", label: t.exCatCE, color: "#4A90D9" },
                     { key: "CO", icon: "🎧", label: t.exCatCO, color: "#E8A838" },
@@ -8034,14 +8042,25 @@ function AppInner() {
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
                         <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{t.progressReviews(reviewCount, R)}</span>
                       </div>
-                      <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: nextLabel ? 10 : 14, overflow: "hidden" }}>
+                      <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 12, overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
                       </div>
-                      {nextLabel && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                          <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: acquired ? "#34C759" : nextDate && nextDate < today ? C.warn : C.acc }}>{nextLabel}</span>
+                      {acquired ? (
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "#34C759", marginBottom: 14 }}>{t.progressAcquired}</div>
+                      ) : daysUntilNext !== null ? (
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: 4 }}>
+                            {practicedToday ? t.progressAlreadyDone : t.progressCanPractice}
+                          </div>
                         </div>
+                      ) : practicedToday ? (
+                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginBottom: 14 }}>{t.progressAlreadyDone}</div>
+                      ) : (
+                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginBottom: 14 }}>{t.progressCanPractice}</div>
                       )}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (

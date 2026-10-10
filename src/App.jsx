@@ -248,9 +248,9 @@ const T = {
     goalAddCards: "Ajouter des cartes",
     goalImportText: "Importer un texte",
     goalDailyTarget: "Objectif du jour",
-    goalCardsPerDay: (n) => `${n} carte${n > 1 ? "s" : ""} / jour`,
+    goalCardsPerDay: (n) => `~${n} carte${n > 1 ? "s" : ""} / jour`,
     goalDiscoverPerDay: (n) => `${n} à découvrir`,
-    goalPracticePerDay: (n) => `${n} à pratiquer`,
+    goalPracticePerDay: (n) => `${n} révisions`,
     goalTodayTitle: "Aujourd'hui",
     goalTodayDiscover: "À découvrir",
     goalTodayPractice: "À pratiquer",
@@ -625,9 +625,9 @@ const T = {
     goalAddCards: "Add cards",
     goalImportText: "Import text",
     goalDailyTarget: "Today's goal",
-    goalCardsPerDay: (n) => `${n} card${n > 1 ? "s" : ""} / day`,
+    goalCardsPerDay: (n) => `~${n} card${n > 1 ? "s" : ""} / day`,
     goalDiscoverPerDay: (n) => `${n} to discover`,
-    goalPracticePerDay: (n) => `${n} to practice`,
+    goalPracticePerDay: (n) => `${n} reviews`,
     goalTodayTitle: "Today",
     goalTodayDiscover: "To discover",
     goalTodayPractice: "To practice",
@@ -1000,9 +1000,9 @@ const T = {
     goalAddCards: "카드 추가",
     goalImportText: "텍스트 가져오기",
     goalDailyTarget: "오늘의 목표",
-    goalCardsPerDay: (n) => `하루 ${n}장`,
+    goalCardsPerDay: (n) => `하루 ~${n}장`,
     goalDiscoverPerDay: (n) => `${n}장 발견하기`,
-    goalPracticePerDay: (n) => `${n}장 연습하기`,
+    goalPracticePerDay: (n) => `${n}회 복습`,
     goalTodayTitle: "오늘",
     goalTodayDiscover: "발견할 카드",
     goalTodayPractice: "연습할 카드",
@@ -6342,20 +6342,13 @@ function AppInner() {
       const daily = goalDailyTarget(goal);
       const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
       const discoverCards = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
-      const practiceable = goalCards.filter(c => {
+      const practiceCards = goalCards.filter(c => {
         const s = migrateStatus(c.status);
         if (s !== "studied") return false;
         if (c.goalAcquired) return false;
-        return true;
+        const next = getCardNextReviewDate(c, dLeft);
+        return !next || next <= today;
       });
-      const practiceTarget = daily.practice || 5;
-      const due = practiceable.filter(c => { const next = getCardNextReviewDate(c, dLeft); return !next || next <= today; });
-      const notDue = practiceable.filter(c => !due.includes(c)).sort((a, b) => {
-        const na = getCardNextReviewDate(a, dLeft) || "9999";
-        const nb = getCardNextReviewDate(b, dLeft) || "9999";
-        return na < nb ? -1 : na > nb ? 1 : 0;
-      });
-      const practiceCards = [...due, ...notDue].slice(0, practiceTarget);
       updated[goal.id] = { date: today, discoverIds: discoverCards.map(c => c.id), practiceIds: practiceCards.map(c => c.id) };
     }
     if (changed) save({ ...data, goalToday: updated });

@@ -259,6 +259,7 @@ const T = {
     goalEditDeadline: "Modifier la date",
     goalDaysLeft: (n) => n <= 0 ? "Délai dépassé" : `${n} jour${n > 1 ? "s" : ""} restant${n > 1 ? "s" : ""}`,
     goalProgress1: "Découvertes",
+    goalProgress3: "Révisions",
     goalProgress2: "Acquises",
     goalEmpty: "Pas encore d'objectif. Crée ton premier objectif !",
     goalDelete: "Supprimer l'objectif",
@@ -637,6 +638,7 @@ const T = {
     goalEditDeadline: "Change date",
     goalDaysLeft: (n) => n <= 0 ? "Overdue" : `${n} day${n > 1 ? "s" : ""} left`,
     goalProgress1: "Discovered",
+    goalProgress3: "Reviews",
     goalProgress2: "Acquired",
     goalEmpty: "No goals yet. Create your first goal!",
     goalDelete: "Delete goal",
@@ -1013,6 +1015,7 @@ const T = {
     goalEditDeadline: "날짜 변경",
     goalDaysLeft: (n) => n <= 0 ? "기한 초과" : `${n}일 남음`,
     goalProgress1: "학습 시작",
+    goalProgress3: "복습",
     goalProgress2: "습득 완료",
     goalEmpty: "아직 목표가 없어. 첫 번째 목표를 만들어 봐!",
     goalDelete: "목표 삭제",
@@ -6315,10 +6318,16 @@ function AppInner() {
   const goalProgress = (goal) => {
     const cards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
     const total = cards.length;
-    if (!total) return { discovered: 0, acquired: 0, total: 0, pct1: 0, pct2: 0, overall: 0 };
+    if (!total) return { discovered: 0, acquired: 0, total: 0, pct1: 0, pct2: 0, overall: 0, reviewsDone: 0, reviewsTotal: 0, pctReviews: 0 };
     const discovered = cards.filter(c => migrateStatus(c.status) !== "new").length;
     const acquired = cards.filter(c => c.goalAcquired || migrateStatus(c.status) === "acquired").length;
-    return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100) };
+    const daysTotal = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(goal.createdAt || goal.deadline)) / 86400000));
+    const R = getSpacedSchedule(daysTotal).R;
+    let reviewsDone = 0;
+    cards.forEach(c => { reviewsDone += Math.min(getCardReviewCount(c), R); });
+    const reviewsTotal = total * R;
+    const pctReviews = Math.round((reviewsDone / reviewsTotal) * 100);
+    return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100), reviewsDone, reviewsTotal, pctReviews };
   };
 
   const goalDailyTarget = (goal) => {
@@ -9043,6 +9052,15 @@ function AppInner() {
                           <div style={{ height: "100%", width: `${prog.pct1}%`, background: C.acc, borderRadius: 4, transition: "width 0.3s" }} />
                         </div>
                       </div>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress3}</span>
+                          <span style={{ fontSize: 11, color: C.pro, fontWeight: 600 }}>{prog.reviewsDone} {t.goalOf} {prog.reviewsTotal} ({prog.pctReviews}%)</span>
+                        </div>
+                        <div style={{ height: 8, borderRadius: 4, background: C.s1, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${prog.pctReviews}%`, background: C.pro, borderRadius: 4, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                           <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress2}</span>
@@ -9054,14 +9072,6 @@ function AppInner() {
                       </div>
                     </div>
 
-                    {/* Milestones */}
-                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-                      {[25, 50, 75, 100].map(pct => (
-                        <div key={pct} style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, border: `2px solid ${(goal.milestones || {})[pct] ? C.ok : C.border}`, background: (goal.milestones || {})[pct] ? C.okBg : C.s1, color: (goal.milestones || {})[pct] ? C.ok : C.txtM }}>
-                          {(goal.milestones || {})[pct] ? "✓" : `${pct}%`}
-                        </div>
-                      ))}
-                    </div>
 
                     {/* Card list */}
                     <div>
@@ -9202,6 +9212,15 @@ function AppInner() {
                           </div>
                           <div style={{ height: 6, borderRadius: 3, background: C.s1, overflow: "hidden" }}>
                             <div style={{ height: "100%", width: `${prog.pct1}%`, background: C.acc, borderRadius: 3, transition: "width 0.3s" }} />
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                            <span style={{ fontSize: 10, color: C.txtM }}>{t.goalProgress3}</span>
+                            <span style={{ fontSize: 10, color: C.pro, fontWeight: 500 }}>{prog.pctReviews}%</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: C.s1, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${prog.pctReviews}%`, background: C.pro, borderRadius: 3, transition: "width 0.3s" }} />
                           </div>
                         </div>
                         <div style={{ marginBottom: 8 }}>

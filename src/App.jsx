@@ -5066,6 +5066,12 @@ function AppInner() {
       lastRecapMsgRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [recapConv]);
+  const summaryRef = useRef(null);
+  useEffect(() => {
+    if ((lessonSummary || recapSummary) && summaryRef.current) {
+      setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, [lessonSummary, recapSummary]);
 
   // Reset exercise only when entering the exercise tab or switching target language
   useEffect(() => {
@@ -7704,7 +7710,15 @@ function AppInner() {
           ) :
           showRecap && recapCard && recapMode ? (
             // FULL-SCREEN QUICK PRACTICE CHAT
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0, position: "relative" }}>
+              {recapDone && !recapSummary && (
+                <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+                  <div style={{ background: C.s2, borderRadius: 16, padding: "32px 40px", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.15)" }}>
+                    <div className="pulse" style={{ fontSize: 32, marginBottom: 12 }}>{"📝"}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{t.generating}</div>
+                  </div>
+                </div>
+              )}
               <div style={{ padding: "10px 14px", borderBottom: `1px solid ${C.border}`, background: C.s2, display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                 <button onClick={() => {
                   const aiTurns = recapConv.filter(m => m.role === "ai").length;
@@ -7734,10 +7748,10 @@ function AppInner() {
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                   </div>
                 ))}
-                {recapLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : recapDone ? t.generating : t.thinking}</div>}
+                {recapLoad && !recapDone && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}
                 {/* Recap summary display */}
                 {recapSummary && (
-                  <div style={{ background: C.s2, border: `1px solid ${(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? C.warnB : C.okB}`, borderRadius: 10, padding: 16, margin: "4px 0" }}>
+                  <div ref={summaryRef} style={{ background: C.s2, border: `1px solid ${(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? C.warnB : C.okB}`, borderRadius: 10, padding: 16, margin: "4px 0" }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 12 }}>📋 {t.summaryTitle}</div>
                     {(recapSummary.error || recapSummary.structuresLearned === "Error generating summary") ? (
                       <div>
@@ -8164,17 +8178,25 @@ function AppInner() {
                   )) : null}
                 </div>
               </div>
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0 }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", background: C.s1, minHeight: 0, position: "relative" }}>
+                {lessonDone && !lessonSummary && (
+                  <div style={{ position: "absolute", inset: 0, zIndex: 20, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
+                    <div style={{ background: C.s2, borderRadius: 16, padding: "32px 40px", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.15)" }}>
+                      <div className="pulse" style={{ fontSize: 32, marginBottom: 12 }}>{"📝"}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{t.generating}</div>
+                    </div>
+                  </div>
+                )}
                 <div ref={msgsR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
                       <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                     </div>
                   ))}
-                  {lLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : lessonDone ? t.generating : t.thinking}</div>}
+                  {lLoad && !lessonDone && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}
                   {/* LESSON SUMMARY */}
                   {lessonSummary && (
-                    <div style={{ background: C.s2, border: `1px solid ${(lessonSummary.error || lessonSummary.structuresLearned === "Error generating summary") ? C.warnB : C.okB}`, borderRadius: 10, padding: 16, margin: "4px 0" }}>
+                    <div ref={summaryRef} style={{ background: C.s2, border: `1px solid ${(lessonSummary.error || lessonSummary.structuresLearned === "Error generating summary") ? C.warnB : C.okB}`, borderRadius: 10, padding: 16, margin: "4px 0" }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 12 }}>📋 {t.summaryTitle}</div>
                       {(lessonSummary.error || lessonSummary.structuresLearned === "Error generating summary") ? (
                         <div>

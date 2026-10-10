@@ -211,24 +211,31 @@ const T = {
     profileSaved: "Enregistré !", autoSaveHint: "Enregistrement automatique",
     saveProfile: "Enregistrer",
     langProfileTitle: (flag, name) => `Profil pour ${flag} ${name}`,
-    langProfileSub: "Adapte ces informations pour cette langue. Cela permet de personnaliser tes leçons.",
+    langProfileIntro: "Enchanté(e) ! 🤝",
+    langProfileSub: "Je veux vraiment t'aider à rendre ton apprentissage efficace, agréable et mémorable dans la durée. Pour cela, j'ai quelques petites questions à te poser.",
+    langProfileReady: "Tu es prêt(e) ?",
     langProfilePrefill: "Pré-rempli depuis ton profil existant. Modifie ce que tu veux !",
     langProfileSave: "Continuer",
     langProfileSkip: "Plus tard",
-    langDreamLabel: "Ton rêve le plus fou avec cette langue",
-    langLevelLabel: "Ton niveau dans cette langue",
-    langGoalsLabel: "Tes objectifs",
-    langToolsLabel: "Outils utilisés en parallèle pour cette langue",
-    langDailyLabel: "Cartes par jour",
-    langNotesLabel: "Tes notes personnelles",
+    langProfileStart1: "Oui, 가자 (c'est parti) ! 🔥",
+    langProfileStart2: "Prêt(e) comme jamais ! ☕",
+    langDreamLabel: "Raconte-moi ton rêve le plus fou ✨",
+    langDreamSub: "Qu'est-ce qui te donnerait des frissons si tu le réalisais en coréen ?",
+    langDreamBtn: "대박 (Daebak) ! Enregistre mon rêve",
+    langLevelLabel: "Où en es-tu aujourd'hui ? 🧗",
+    langLevelSub: "Génial, ensemble on va accomplir de grandes choses ! As-tu déjà fait tes premiers pas en coréen ?",
+    langGoalsLabel: "Tes grands défis du moment 🎯",
+    langGoalsSub: "Un cap ou un défi particulier à franchir dans les prochains mois ?",
+    langToolsLabel: "Et dans tes bagages ? 🎒",
+    langToolsSub: "Est-ce que tu utilises d'autres outils à côté pour étudier (applis, livres, chaînes YouTube) ?",
     langTeacherNotesLabel: "Notes du professeur",
-    genderLabel: "Genre",
-    genderNone: "Non renseigné(e)",
-    genderM: "Homme",
-    genderF: "Femme",
-    ageLabel: "Âge",
-    agePlaceholder: "ex: 28",
-    nationalityLabel: "Nationalité / langue maternelle",
+    genderLabel: "Comment doit-on s'adresser à toi ? 👋",
+    genderNone: "Ne pas spécifier / Autre ✨",
+    genderM: "Un homme 🙋‍♂️",
+    genderF: "Une femme 🙋‍♀️",
+    ageLabel: "Tu as quel âge ? 🎂",
+    agePlaceholder: "ex: 24",
+    nationalityLabel: "Quelle est ta langue maternelle ou ta nationalité ? 🌍",
     nationalityPlaceholder: "ex: Français, Sénégalais francophone, Japonais...",
     profileAutoUpdate: "Le profil est aussi enrichi automatiquement à chaque leçon en fonction de ce que tu partages.",
     // Lesson summary
@@ -360,7 +367,8 @@ const T = {
     onbTitle2: "Ton rêve le plus fou",
     onbSub2: "Dans cette langue, qu'est-ce que tu rêverais de pouvoir faire ? Pas de limite, sois ambitieux !",
     dreamPlaceholder: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coréen...",
-    spokenLangsLabel: "Langues que tu parles",
+    spokenLangsLabel: "Quelles langues parles-tu déjà ? 🗣️",
+    spokenLangsSub: "Cela nous aide à trouver les meilleures analogies pour t'expliquer la grammaire coréenne.",
     spokenLangsPlaceholder: "ex: Français (natif), Anglais (courant), Espagnol (notions)",
     langColLang: "Langue", langColLevel: "Niveau", langAddRow: "+ Ajouter une langue",
     langPh: "ex : Français", langLevelPick: "Niveau…",
@@ -608,24 +616,31 @@ const T = {
     profileSaved: "Saved!", autoSaveHint: "Saved automatically",
     saveProfile: "Save",
     langProfileTitle: (flag, name) => `Profile for ${flag} ${name}`,
-    langProfileSub: "Customize these settings for this language. This helps personalize your lessons.",
+    langProfileIntro: "Nice to meet you! 🤝",
+    langProfileSub: "I really want to help make your learning effective, enjoyable and memorable. I have a few quick questions for you.",
+    langProfileReady: "Ready?",
     langProfilePrefill: "Pre-filled from your existing profile. Edit what you like!",
     langProfileSave: "Continue",
     langProfileSkip: "Later",
-    langDreamLabel: "Your biggest dream with this language",
-    langLevelLabel: "Your level in this language",
-    langGoalsLabel: "Your goals",
-    langToolsLabel: "Other tools you use for this language",
-    langDailyLabel: "Cards per day",
-    langNotesLabel: "Your personal notes",
+    langProfileStart1: "Yes, let's go! 🔥",
+    langProfileStart2: "Ready as ever! ☕",
+    langDreamLabel: "Tell me your wildest dream ✨",
+    langDreamSub: "What would give you chills if you could do it in Korean?",
+    langDreamBtn: "Daebak! Save my dream",
+    langLevelLabel: "Where are you today? 🧗",
+    langLevelSub: "Amazing, together we'll accomplish great things! Have you already taken your first steps in Korean?",
+    langGoalsLabel: "Your big challenges right now 🎯",
+    langGoalsSub: "Any particular milestone to reach in the coming months?",
+    langToolsLabel: "What's in your toolkit? 🎒",
+    langToolsSub: "Do you use other tools alongside to study (apps, books, YouTube channels)?",
     langTeacherNotesLabel: "Teacher's notes",
-    genderLabel: "Gender",
-    genderNone: "Not specified",
-    genderM: "Male",
-    genderF: "Female",
-    ageLabel: "Age",
-    agePlaceholder: "e.g. 28",
-    nationalityLabel: "Nationality / native language",
+    genderLabel: "How should we address you? 👋",
+    genderNone: "Prefer not to say / Other ✨",
+    genderM: "Male 🙋‍♂️",
+    genderF: "Female 🙋‍♀️",
+    ageLabel: "How old are you? 🎂",
+    agePlaceholder: "e.g. 24",
+    nationalityLabel: "What is your native language or nationality? 🌍",
     nationalityPlaceholder: "e.g. French, Senegalese (French-speaking), Japanese...",
     profileAutoUpdate: "Your profile is also enriched automatically after each lesson based on what you share.",
     // Lesson summary
@@ -757,7 +772,8 @@ const T = {
     onbTitle2: "Your wildest dream",
     onbSub2: "In this language, what would you dream of being able to do? No limits, be ambitious!",
     dreamPlaceholder: "e.g. Chat for hours with my in-laws without a translator. Read Han Kang in the original. Do stand-up in Korean...",
-    spokenLangsLabel: "Languages you speak",
+    spokenLangsLabel: "What languages do you already speak? 🗣️",
+    spokenLangsSub: "This helps us find the best analogies to explain Korean grammar.",
     spokenLangsPlaceholder: "e.g. French (native), English (fluent), Spanish (basics)",
     langColLang: "Language", langColLevel: "Level", langAddRow: "+ Add a language",
     langPh: "e.g. French", langLevelPick: "Level…",
@@ -1004,24 +1020,31 @@ const T = {
     profileSaved: "저장됨!", autoSaveHint: "자동 저장",
     saveProfile: "저장",
     langProfileTitle: (flag, name) => `${flag} ${name} 프로필`,
-    langProfileSub: "이 언어에 맞게 정보를 수정해 봐. 레슨을 맞춤화하는 데 도움이 돼.",
+    langProfileIntro: "반가워요! 🤝",
+    langProfileSub: "효율적이고 즐겁게 한국어를 배울 수 있도록 도와드릴게요. 몇 가지 질문에 답해 주세요.",
+    langProfileReady: "준비되셨나요?",
     langProfilePrefill: "기존 프로필에서 미리 채워졌어. 원하는 대로 수정해!",
     langProfileSave: "계속",
     langProfileSkip: "나중에",
-    langDreamLabel: "이 언어로 이루고 싶은 가장 큰 꿈",
-    langLevelLabel: "이 언어의 수준",
-    langGoalsLabel: "목표",
-    langToolsLabel: "이 언어 공부에 같이 쓰는 도구",
-    langDailyLabel: "하루 카드 수",
-    langNotesLabel: "개인 메모",
+    langProfileStart1: "네, 가자! 🔥",
+    langProfileStart2: "준비 완료! ☕",
+    langDreamLabel: "한국어로 이루고 싶은 가장 큰 꿈은 무엇인가요? ✨",
+    langDreamSub: "생각만 해도 가슴 뛰는 꿈을 들려주세요!",
+    langDreamBtn: "대박! 내 꿈 저장하기",
+    langLevelLabel: "현재 한국어 실력은 어느 정도인가요? 🧗",
+    langLevelSub: "좋아요, 함께라면 할 수 있어요! 이전에도 한국어를 공부한 적이 있나요?",
+    langGoalsLabel: "특별히 이루고 싶은 목표가 있나요? 🎯",
+    langGoalsSub: "앞으로 몇 달 동안 달성하고 싶은 목표를 알려주세요.",
+    langToolsLabel: "함께 사용 중인 다른 학습 도구가 있나요? 🎒",
+    langToolsSub: "앱, 교재, 유튜브 등 함께 사용하는 도구가 있다면 알려주세요.",
     langTeacherNotesLabel: "선생님 메모",
-    genderLabel: "성별",
-    genderNone: "미지정",
-    genderM: "남성",
-    genderF: "여성",
-    ageLabel: "나이",
-    agePlaceholder: "예: 28",
-    nationalityLabel: "국적 / 모국어",
+    genderLabel: "성별을 선택해 주세요 👋",
+    genderNone: "선택 안 함 ✨",
+    genderM: "남성 🙋‍♂️",
+    genderF: "여성 🙋‍♀️",
+    ageLabel: "연령대를 알려주세요 🎂",
+    agePlaceholder: "예: 24",
+    nationalityLabel: "모국어 또는 국적을 알려주세요 🌍",
     nationalityPlaceholder: "예: 한국인, 프랑스어권 세네갈인, 일본인...",
     profileAutoUpdate: "레슨할 때마다 네가 공유하는 내용을 바탕으로 프로필이 자동으로 업데이트돼.",
     endLesson: "레슨 끝내기",
@@ -1151,7 +1174,8 @@ const T = {
     onbTitle2: "네 가장 큰 꿈",
     onbSub2: "이 언어로 뭘 할 수 있으면 좋겠어? 한계 없이 마음껏 상상해 봐!",
     dreamPlaceholder: "예: 시부모님과 통역 없이 몇 시간이고 수다 떨기. 한강 소설 원서로 읽기. 한국어로 스탠드업 코미디 하기...",
-    spokenLangsLabel: "할 수 있는 언어",
+    spokenLangsLabel: "구사할 수 있는 언어가 있나요? 🗣️",
+    spokenLangsSub: "한국어 문법을 더 쉽게 설명해 드리는 데 도움이 됩니다.",
     spokenLangsPlaceholder: "예: 한국어 (모국어), 영어 (유창), 스페인어 (기초)",
     langColLang: "언어", langColLevel: "수준", langAddRow: "+ 언어 추가",
     langPh: "예: 한국어", langLevelPick: "수준...",
@@ -6850,8 +6874,9 @@ function AppInner() {
     const lpConf = TARGET_LANGS[lpCode] || {};
     const lpPh = lpConf.placeholders?.[lang] || lpConf.placeholders?.en || {};
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
-    const lpLabel = { fontSize: 17, fontWeight: 600, color: C.txt, marginBottom: 10 };
-    const lpTotal = 6;
+    const lpLabel = { fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 8 };
+    const lpSub = { fontSize: 13.5, color: C.txtS, lineHeight: 1.5, marginBottom: 12 };
+    const lpTotal = 5;
     const lpS = langProfileStep;
     const saveLangProfile = () => {
       const lps = { ...(data.langProfiles || {}), [lpCode]: { ...langProfileDraft } };
@@ -6867,74 +6892,80 @@ function AppInner() {
     };
     const lpNext = () => lpS < lpTotal - 1 ? setLangProfileStep(lpS + 1) : saveLangProfile();
     const lpPrev = () => lpS > 0 && setLangProfileStep(lpS - 1);
+    const ctaBtn = (label, onClick) => (
+      <button onClick={onClick}
+        style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, cursor: "pointer", marginBottom: 6 }}>
+        {label}
+      </button>
+    );
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${((lpS + 1) / lpTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.25s" }} />
+          {lpS > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: `${(lpS / (lpTotal - 1)) * 100}%`, height: "100%", background: C.acc, transition: "width 0.25s" }} />
+              </div>
+              <span style={{ fontSize: 11, color: C.txtM }}>{t.onbStep(lpS, lpTotal - 1)}</span>
             </div>
-            <span style={{ fontSize: 11, color: C.txtM }}>{t.onbStep(lpS + 1, lpTotal)}</span>
-          </div>
+          )}
           {lpS === 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.langProfileTitle(lpConf.flag || "", lpConf.name?.[lang] || lpCode)}</div>
-              <div style={{ fontSize: 13, color: C.txtS, lineHeight: 1.5, marginBottom: 14 }}>{t.langProfileSub}</div>
-              <div style={lpLabel}>{"✨ " + t.langDreamLabel}</div>
-              <textarea value={langProfileDraft.dream || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, dream: e.target.value })} placeholder={lpPh.dream || t.dreamPlaceholder} rows={3} style={box} />
+            <div style={{ marginTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: C.txt, marginBottom: 12 }}>{t.langProfileIntro}</div>
+              <div style={{ fontSize: 14, color: C.txtS, lineHeight: 1.6, marginBottom: 20 }}>{t.langProfileSub}</div>
+              <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, marginBottom: 16 }}>{t.langProfileReady}</div>
+              {ctaBtn(t.langProfileStart1, () => setLangProfileStep(1))}
+              {ctaBtn(t.langProfileStart2, () => setLangProfileStep(1))}
+              <button onClick={skipLangProfile}
+                style={{ marginTop: 8, padding: "10px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.langProfileSkip}
+              </button>
             </div>
           )}
           {lpS === 1 && (
             <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langLevelLabel}</div>
-              <input value={langProfileDraft.level || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, level: e.target.value })} placeholder={lpPh.level || t.levelPlaceholder} style={box} />
+              <div style={lpLabel}>{t.langDreamLabel}</div>
+              <div style={lpSub}>{t.langDreamSub}</div>
+              <textarea value={langProfileDraft.dream || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, dream: e.target.value })} placeholder={lpPh.dream || t.dreamPlaceholder} rows={3} style={box} />
             </div>
           )}
           {lpS === 2 && (
             <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langGoalsLabel}</div>
-              <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={lpPh.goals || t.goalsPlaceholder} rows={3} style={box} />
+              <div style={lpLabel}>{t.langLevelLabel}</div>
+              <div style={lpSub}>{t.langLevelSub}</div>
+              <input value={langProfileDraft.level || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, level: e.target.value })} placeholder={lpPh.level || t.levelPlaceholder} style={box} />
             </div>
           )}
           {lpS === 3 && (
             <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langToolsLabel}</div>
-              <textarea value={langProfileDraft.otherTools || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, otherTools: e.target.value })} placeholder={t.otherToolsPh} rows={3} style={box} />
+              <div style={lpLabel}>{t.langGoalsLabel}</div>
+              <div style={lpSub}>{t.langGoalsSub}</div>
+              <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={lpPh.goals || t.goalsPlaceholder} rows={3} style={box} />
             </div>
           )}
           {lpS === 4 && (
             <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langDailyLabel}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <input type="number" min="1" max="20" value={langProfileDraft.dailyCount ?? 5}
-                  onChange={e => setLangProfileDraft({ ...langProfileDraft, dailyCount: Math.max(1, Math.min(20, Number(e.target.value) || 1)) })}
-                  style={{ ...box, width: 100, fontSize: 18, textAlign: "center" }} />
-                <span style={{ fontSize: 14, color: C.txtM }}>{t.today.toLowerCase()}</span>
-              </div>
+              <div style={lpLabel}>{t.langToolsLabel}</div>
+              <div style={lpSub}>{t.langToolsSub}</div>
+              <textarea value={langProfileDraft.otherTools || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, otherTools: e.target.value })} placeholder={t.otherToolsPh} rows={3} style={box} />
             </div>
           )}
-          {lpS === 5 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langNotesLabel}</div>
-              <textarea value={langProfileDraft.learnerNotes || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, learnerNotes: e.target.value })} rows={3} style={box} />
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
-            {lpS > 0 && (
+          {lpS > 0 && (
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
               <button onClick={lpPrev}
                 style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
                 {"←"}
               </button>
-            )}
-            <button onClick={lpNext}
-              style={{ flex: 1, padding: "13px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>
-              {lpS < lpTotal - 1 ? t.onbNext : t.langProfileSave}
-            </button>
-            <button onClick={skipLangProfile}
-              style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-              {t.langProfileSkip}
-            </button>
-          </div>
+              <button onClick={lpNext}
+                style={{ flex: 1, padding: "13px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>
+                {lpS === 1 ? t.langDreamBtn : lpS < lpTotal - 1 ? t.onbNext : t.langProfileSave}
+              </button>
+              <button onClick={skipLangProfile}
+                style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.langProfileSkip}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -6944,10 +6975,16 @@ function AppInner() {
   if (!data.profile?.onboarded) {
     const onbTotal = 4;
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
-    const onbLabel = { fontSize: 17, fontWeight: 600, color: C.txt, marginBottom: 10 };
-    const onbSub = { fontSize: 13, color: C.txtS, lineHeight: 1.5, marginBottom: 4 };
+    const onbLabel = { fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 12 };
+    const onbSub = { fontSize: 13.5, color: C.txtS, lineHeight: 1.5, marginBottom: 8 };
     const onbNext = () => onbStep < onbTotal - 1 ? setOnbStep(onbStep + 1) : finishOnboarding(false);
     const onbPrev = () => onbStep > 0 && setOnbStep(onbStep - 1);
+    const genderCard = (val, label) => (
+      <button key={val} onClick={() => { setOnbDraft({ ...onbDraft, gender: val }); setOnbStep(1); }}
+        style={{ flex: 1, padding: "16px 12px", borderRadius: 12, border: `2px solid ${onbDraft.gender === val ? C.acc : C.border}`, background: onbDraft.gender === val ? C.accBg : C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, color: C.txt, textAlign: "center", transition: "border-color 0.15s" }}>
+        {label}
+      </button>
+    );
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
@@ -6958,43 +6995,32 @@ function AppInner() {
             <span style={{ fontSize: 11, color: C.txtM }}>{t.onbStep(onbStep + 1, onbTotal)}</span>
           </div>
           {onbStep === 0 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.onbTitle1}</div>
-              <div style={onbSub}>{t.onbSub1}</div>
-              <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
-                <div style={{ flex: "1 1 130px" }}>
-                  <label style={{ fontSize: 13, fontWeight: 500, color: C.txt, display: "block", marginBottom: 6 }}>{t.genderLabel}</label>
-                  <select value={onbDraft.gender} onChange={e => setOnbDraft({ ...onbDraft, gender: e.target.value })}
-                    style={{ ...box, appearance: "auto", cursor: "pointer" }}>
-                    <option value="">{t.genderNone}</option>
-                    <option value="homme">{t.genderM}</option>
-                    <option value="femme">{t.genderF}</option>
-                  </select>
-                </div>
-                <div style={{ flex: "0 0 100px" }}>
-                  <label style={{ fontSize: 13, fontWeight: 500, color: C.txt, display: "block", marginBottom: 6 }}>{t.ageLabel}</label>
-                  <input type="number" min="1" max="120" value={onbDraft.age} onChange={e => setOnbDraft({ ...onbDraft, age: e.target.value })} placeholder={t.agePlaceholder} style={box} />
-                </div>
+            <div style={{ marginTop: 12 }}>
+              <div style={onbLabel}>{t.genderLabel}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {genderCard("homme", t.genderM)}
+                {genderCard("femme", t.genderF)}
+                {genderCard("", t.genderNone)}
               </div>
             </div>
           )}
           {onbStep === 1 && (
-            <div style={{ marginTop: 8 }}>
+            <div style={{ marginTop: 12 }}>
+              <div style={onbLabel}>{t.ageLabel}</div>
+              <input type="number" min="1" max="120" value={onbDraft.age} onChange={e => setOnbDraft({ ...onbDraft, age: e.target.value })} placeholder={t.agePlaceholder} style={{ ...box, fontSize: 18 }} />
+            </div>
+          )}
+          {onbStep === 2 && (
+            <div style={{ marginTop: 12 }}>
               <div style={onbLabel}>{t.nationalityLabel}</div>
               <input value={onbDraft.nationality} onChange={e => setOnbDraft({ ...onbDraft, nationality: e.target.value })} placeholder={t.nationalityPlaceholder} style={box} />
             </div>
           )}
-          {onbStep === 2 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={onbLabel}>{t.spokenLangsLabel}</div>
-              <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
-            </div>
-          )}
           {onbStep === 3 && (
-            <div style={{ marginTop: 8 }}>
-              <div style={onbLabel}>{"✨ " + t.onbTitle2}</div>
-              <div style={onbSub}>{t.onbSub2}</div>
-              <textarea value={onbDraft.dream} onChange={e => setOnbDraft({ ...onbDraft, dream: e.target.value })} placeholder={t.dreamPlaceholder} rows={4} style={box} />
+            <div style={{ marginTop: 12 }}>
+              <div style={onbLabel}>{t.spokenLangsLabel}</div>
+              <div style={onbSub}>{t.spokenLangsSub}</div>
+              <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
             </div>
           )}
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>

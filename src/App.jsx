@@ -269,6 +269,21 @@ const T = {
     goalDeleteKeep: "Garder les cartes",
     goalDeleteRemove: "Supprimer les cartes",
     goalCancel: "Annuler",
+    goalDeadlineTitle: "La deadline est arrivée !",
+    goalDeadlineMsg: "Bravo pour tes progrès !",
+    goalDeadlineTest: "Si tu as été testé(e), comment s'est passé ton test ?",
+    goalDeadlineGreat: "Super, merci pour ton aide !",
+    goalDeadlineMedium: "Moyen",
+    goalDeadlineBad: "Bof",
+    goalDeadlineNoTest: "Je n'ai pas eu de test",
+    goalDeadlineReplyGreat: "Je suis content pour toi !",
+    goalDeadlineReplyMedium: "Tu as fait de ton mieux, j'en suis sûr !",
+    goalDeadlineStats: "Voici tes statistiques actuelles.",
+    goalDeadlineWhat: "Que veux-tu faire à présent ?",
+    goalDeadlineArchive: "Archiver l'objectif et garder les cartes pour réviser à long terme",
+    goalDeadlineExtend: "Repousser la deadline",
+    goalDeadlineDelete: "Supprimer l'objectif et ses cartes",
+    goalDeadlineDeleteWarn: "(non recommandé)",
     goalSave: "Créer",
     goalUpdate: "Mettre à jour",
     goalTrophyHall: "Hall des trophées",
@@ -649,6 +664,21 @@ const T = {
     goalDeleteKeep: "Keep cards",
     goalDeleteRemove: "Delete cards",
     goalCancel: "Cancel",
+    goalDeadlineTitle: "The deadline has arrived!",
+    goalDeadlineMsg: "Well done on your progress!",
+    goalDeadlineTest: "If you were tested, how did it go?",
+    goalDeadlineGreat: "Great, thanks for your help!",
+    goalDeadlineMedium: "So-so",
+    goalDeadlineBad: "Not great",
+    goalDeadlineNoTest: "I didn't have a test",
+    goalDeadlineReplyGreat: "I'm happy for you!",
+    goalDeadlineReplyMedium: "You did your best, I'm sure!",
+    goalDeadlineStats: "Here are your current stats.",
+    goalDeadlineWhat: "What would you like to do now?",
+    goalDeadlineArchive: "Archive the goal and keep cards for long-term review",
+    goalDeadlineExtend: "Extend the deadline",
+    goalDeadlineDelete: "Delete the goal and its cards",
+    goalDeadlineDeleteWarn: "(not recommended)",
     goalSave: "Create",
     goalUpdate: "Update",
     goalTrophyHall: "Trophy hall",
@@ -1027,6 +1057,21 @@ const T = {
     goalDeleteKeep: "카드 유지",
     goalDeleteRemove: "카드 삭제",
     goalCancel: "취소",
+    goalDeadlineTitle: "마감일이 됐어!",
+    goalDeadlineMsg: "정말 잘했어!",
+    goalDeadlineTest: "시험을 봤다면, 어땠어?",
+    goalDeadlineGreat: "좋았어, 도와줘서 고마워!",
+    goalDeadlineMedium: "그저 그랬어",
+    goalDeadlineBad: "별로였어",
+    goalDeadlineNoTest: "시험은 안 봤어",
+    goalDeadlineReplyGreat: "정말 잘했다!",
+    goalDeadlineReplyMedium: "최선을 다한 거야, 분명!",
+    goalDeadlineStats: "지금까지의 통계야.",
+    goalDeadlineWhat: "이제 어떻게 할래?",
+    goalDeadlineArchive: "목표를 보관하고 카드는 장기 복습용으로 유지",
+    goalDeadlineExtend: "마감일 연장하기",
+    goalDeadlineDelete: "목표와 카드 모두 삭제",
+    goalDeadlineDeleteWarn: "(비추천)",
     goalSave: "만들기",
     goalUpdate: "업데이트",
     goalTrophyHall: "트로피 홀",
@@ -6308,6 +6353,7 @@ function AppInner() {
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
   const [goalCelebration, setGoalCelebration] = useState(null); // { pct }
   const [goalEditingDeadline, setGoalEditingDeadline] = useState(false);
+  const [goalDeadlinePopup, setGoalDeadlinePopup] = useState(null);
   const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
   const [goalImpFound, setGoalImpFound] = useState([]);
@@ -6388,6 +6434,20 @@ function AppInner() {
     if (changed) save({ ...data, goalToday: updated });
   }, [loaded, data.goals, data.cards]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!loaded || !data.goals?.length || goalDeadlinePopup) return;
+    for (const goal of data.goals) {
+      if (goal.trophyDate || goal.deadlineDismissed) continue;
+      const dLeft = Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date()) / 86400000);
+      if (dLeft <= 0) {
+        setGoalDeadlinePopup({ goalId: goal.id, step: 1, feedback: null });
+        setGoalEditId(goal.id);
+        setGoalView("detail");
+        break;
+      }
+    }
+  }, [loaded, data.goals]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const goalDaysLeft = (goal) => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
@@ -6428,6 +6488,17 @@ function AppInner() {
 
   const extendGoalDeadline = (goalId, newDeadline) => {
     save({ ...data, goals: goals.map(g => g.id === goalId ? { ...g, deadline: newDeadline } : g) });
+  };
+
+  const archiveGoal = (goalId) => {
+    save({
+      ...data,
+      goals: goals.map(g => g.id === goalId ? { ...g, trophyDate: new Date().toISOString() } : g),
+      cards: data.cards.map(c => c.goalId === goalId ? { ...c, goalId: undefined } : c),
+    });
+    setGoalDeadlinePopup(null);
+    setGoalEditId(null);
+    setGoalView("list");
   };
 
   const checkGoalMilestones = (goalId) => {
@@ -9169,6 +9240,89 @@ function AppInner() {
                     ) : (
                       <button onClick={() => setGoalDeleteConfirm(goal.id)}
                         style={{ alignSelf: "flex-start", padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.warnB}`, background: "none", color: C.warn, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>🗑 {t.goalDelete}</button>
+                    )}
+
+                    {/* Deadline reached popup */}
+                    {goalDeadlinePopup && goalDeadlinePopup.goalId === goal.id && (
+                      <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)", padding: 20 }}>
+                        <div style={{ background: C.s2, borderRadius: 16, padding: "28px 24px", maxWidth: 400, width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.2)", fontFamily: "'Plus Jakarta Sans'" }}>
+                          {goalDeadlinePopup.step === 1 && (
+                            <>
+                              <div style={{ fontSize: 32, textAlign: "center", marginBottom: 12 }}>{"🏁"}</div>
+                              <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, textAlign: "center", marginBottom: 6 }}>{t.goalDeadlineTitle}</div>
+                              <div style={{ fontSize: 13, color: C.txtM, textAlign: "center", marginBottom: 20 }}>{t.goalDeadlineMsg}</div>
+                              <div style={{ fontSize: 13, color: C.txt, marginBottom: 12 }}>{t.goalDeadlineTest}</div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                {[
+                                  { key: "great", label: t.goalDeadlineGreat, emoji: "😊" },
+                                  { key: "medium", label: t.goalDeadlineMedium, emoji: "😐" },
+                                  { key: "bad", label: t.goalDeadlineBad, emoji: "😕" },
+                                  { key: "notest", label: t.goalDeadlineNoTest, emoji: "💭" },
+                                ].map(opt => (
+                                  <button key={opt.key} onClick={() => setGoalDeadlinePopup({ ...goalDeadlinePopup, step: 2, feedback: opt.key })}
+                                    style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Plus Jakarta Sans'" }}>
+                                    <span>{opt.emoji}</span> {opt.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
+                          )}
+                          {goalDeadlinePopup.step === 2 && (() => {
+                            const p = goalProgress(goal);
+                            const replyMsg = goalDeadlinePopup.feedback === "great" ? t.goalDeadlineReplyGreat
+                              : (goalDeadlinePopup.feedback === "medium" || goalDeadlinePopup.feedback === "bad") ? t.goalDeadlineReplyMedium
+                              : null;
+                            return (
+                              <>
+                                {replyMsg && <div style={{ fontSize: 13, color: C.acc, fontWeight: 500, marginBottom: 14, textAlign: "center" }}>{replyMsg}</div>}
+                                <div style={{ fontSize: 13, color: C.txt, marginBottom: 10 }}>{t.goalDeadlineStats}</div>
+                                <div style={{ background: C.s1, borderRadius: 10, padding: 14, marginBottom: 16 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                                    <span style={{ fontSize: 12, color: C.txtM }}>{t.goalProgress1}</span>
+                                    <span style={{ fontSize: 12, color: C.acc, fontWeight: 500 }}>{p.discovered}/{p.total} ({p.pct1}%)</span>
+                                  </div>
+                                  <div style={{ height: 5, borderRadius: 3, background: C.border, overflow: "hidden", marginBottom: 10 }}>
+                                    <div style={{ height: "100%", width: `${p.pct1}%`, background: C.acc, borderRadius: 3 }} />
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                                    <span style={{ fontSize: 12, color: C.txtM }}>{t.goalProgress3}</span>
+                                    <span style={{ fontSize: 12, color: C.pro, fontWeight: 500 }}>{p.reviewsDone}/{p.reviewsTotal} ({p.pctReviews}%)</span>
+                                  </div>
+                                  <div style={{ height: 5, borderRadius: 3, background: C.border, overflow: "hidden", marginBottom: 10 }}>
+                                    <div style={{ height: "100%", width: `${p.pctReviews}%`, background: C.pro, borderRadius: 3 }} />
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                                    <span style={{ fontSize: 12, color: C.txtM }}>{t.goalProgress2}</span>
+                                    <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>{p.acquired}/{p.total} ({p.pct2}%)</span>
+                                  </div>
+                                  <div style={{ height: 5, borderRadius: 3, background: C.border, overflow: "hidden" }}>
+                                    <div style={{ height: "100%", width: `${p.pct2}%`, background: C.ok, borderRadius: 3 }} />
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: 13, color: C.txt, marginBottom: 12 }}>{t.goalDeadlineWhat}</div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                  <button onClick={() => archiveGoal(goal.id)}
+                                    style={{ padding: "10px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 13, fontWeight: 500, cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {"🏆"} {t.goalDeadlineArchive}
+                                  </button>
+                                  <button onClick={() => { setGoalDeadlinePopup(null); setGoalEditingDeadline(true); }}
+                                    style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {"📅"} {t.goalDeadlineExtend}
+                                  </button>
+                                  <button onClick={() => { deleteGoal(goal.id, true); setGoalDeadlinePopup(null); }}
+                                    style={{ padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 13, cursor: "pointer", textAlign: "left", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {"🗑️"} {t.goalDeadlineDelete} <span style={{ fontSize: 11, color: C.warn }}>{t.goalDeadlineDeleteWarn}</span>
+                                  </button>
+                                </div>
+                                <button onClick={() => { setGoalDeadlinePopup(null); save({ ...data, goals: goals.map(g => g.id === goal.id ? { ...g, deadlineDismissed: true } : g) }); }}
+                                  style={{ marginTop: 12, width: "100%", padding: "8px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  {"✕"} {t.goalCancel}
+                                </button>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
                     )}
                   </div>
                 );

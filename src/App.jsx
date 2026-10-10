@@ -91,6 +91,7 @@ const T = {
     vocabDone: "Vocab étudié ✓", vocabExitConfirm: "Quitter l'étude du vocabulaire ?",
     exerciseTitle: "Exercices",
     exerciseSub: "Choisis une catégorie, puis un exercice.",
+    exCatGrammar: "Grammaire", exCatGrammarDesc: "Exercices sur les points de grammaire",
     exCatCE: "Compréhension Écrite", exCatCEDesc: "Lire et comprendre",
     exCatCO: "Compréhension Orale", exCatCODesc: "Écouter et comprendre",
     exCatPE: "Production Écrite", exCatPEDesc: "Écrire et produire",
@@ -512,6 +513,7 @@ const T = {
     vocabDone: "Vocab studied ✓", vocabExitConfirm: "Leave vocabulary study?",
     exerciseTitle: "Exercises",
     exerciseSub: "Choose a category, then an exercise.",
+    exCatGrammar: "Grammar", exCatGrammarDesc: "Practice grammar points",
     exCatCE: "Reading Comprehension", exCatCEDesc: "Read and understand",
     exCatCO: "Listening Comprehension", exCatCODesc: "Listen and understand",
     exCatPE: "Written Production", exCatPEDesc: "Write and produce",
@@ -933,6 +935,7 @@ const T = {
     vocabDone: "어휘 학습 완료 ✓", vocabExitConfirm: "어휘 학습을 그만둘까요?",
     exerciseTitle: "연습 문제",
     exerciseSub: "카테고리를 고른 다음, 연습을 골라봐.",
+    exCatGrammar: "문법", exCatGrammarDesc: "문법 포인트 연습",
     exCatCE: "읽기", exCatCEDesc: "읽고 이해하기",
     exCatCO: "듣기", exCatCODesc: "듣고 이해하기",
     exCatPE: "쓰기", exCatPEDesc: "쓰고 표현하기",
@@ -8960,6 +8963,17 @@ function AppInner() {
                 </div>
                 {exStep === "category" && (<>
                   <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 420, lineHeight: 1.6 }}>{t.exerciseSub}</div>
+                  <div style={{ width: "100%", maxWidth: 460 }}>
+                    <button onClick={() => { setExCategory("GRAMMAR"); setExStep("exercise"); setExFilter("grammar"); }}
+                      style={{ width: "100%", background: C.s2, border: `2px solid ${C.border}`, borderRadius: 14, padding: "18px 16px", cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", transition: "border-color 0.15s", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "#8B5CF6"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                      <span style={{ fontSize: 28 }}>{"📚"}</span>
+                      <div style={{ textAlign: "left" }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 2 }}>{t.exCatGrammar}</div>
+                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4 }}>{t.exCatGrammarDesc}</div>
+                      </div>
+                    </button>
+                  </div>
                   <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
                     {[
                       { k: "CE", l: t.exCatCE, d: t.exCatCEDesc, i: "📖", clr: "#4A90D9" },
@@ -8984,10 +8998,15 @@ function AppInner() {
                     style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                     ← {t.exBackToCat}
                   </button>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{exCategory === "GRAMMAR" ? `📚 ${t.exCatGrammar}` : exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`}</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickExercise}</div>
                   <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 460, flexWrap: "wrap" }}>
-                    {(exCategory === "CE" ? [
+                    {(exCategory === "GRAMMAR" ? [
+                      { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", ai: true },
+                      { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true },
+                      { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true },
+                      { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true },
+                    ] : exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
                       ...(GENDERED_LANGS.has(tl) ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
@@ -9014,7 +9033,7 @@ function AppInner() {
                       <button key={m.k} onClick={() => {
                         if (off) return;
                         setExMode(m.k);
-                        if (m.vocabOnly) setExFilter("vocab"); else if (m.grammarOnly) setExFilter("grammar"); else setExFilter("all");
+                        if (m.vocabOnly) setExFilter("vocab"); else if (m.grammarOnly || exCategory === "GRAMMAR") setExFilter("grammar"); else setExFilter("all");
                         if (m.k === "youglish" && exPrimaryWordRef.current) { setYouglishWord(exPrimaryWordRef.current); }
                         setExStep("cards");
                       }}
@@ -9069,7 +9088,7 @@ function AppInner() {
                               🎲 {t.exRandom}
                             </button>
                           )}
-                          {!["flash", "imgwrite", "match", "cross"].includes(exMode) && (
+                          {!["flash", "imgwrite", "match", "cross"].includes(exMode) && exCategory !== "GRAMMAR" && (
                             <div style={{ display: "flex", gap: 2, background: C.s1, borderRadius: 6, padding: 2, border: `1px solid ${C.border}` }}>
                               {[["all", t.filterAll], ["grammar", t.filterGrammar], ["vocab", t.filterVocab]].map(([k, label]) => (
                                 <button key={k} onClick={() => setExFilter(k)}

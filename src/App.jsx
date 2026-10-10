@@ -6342,13 +6342,20 @@ function AppInner() {
       const daily = goalDailyTarget(goal);
       const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
       const discoverCards = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
-      const practiceCards = goalCards.filter(c => {
+      const practiceable = goalCards.filter(c => {
         const s = migrateStatus(c.status);
         if (s !== "studied") return false;
         if (c.goalAcquired) return false;
-        const next = getCardNextReviewDate(c, dLeft);
-        return !next || next <= today;
-      }).slice(0, daily.practice || 5);
+        return true;
+      });
+      const practiceTarget = daily.practice || 5;
+      const due = practiceable.filter(c => { const next = getCardNextReviewDate(c, dLeft); return !next || next <= today; });
+      const notDue = practiceable.filter(c => !due.includes(c)).sort((a, b) => {
+        const na = getCardNextReviewDate(a, dLeft) || "9999";
+        const nb = getCardNextReviewDate(b, dLeft) || "9999";
+        return na < nb ? -1 : na > nb ? 1 : 0;
+      });
+      const practiceCards = [...due, ...notDue].slice(0, practiceTarget);
       updated[goal.id] = { date: today, discoverIds: discoverCards.map(c => c.id), practiceIds: practiceCards.map(c => c.id) };
     }
     if (changed) save({ ...data, goalToday: updated });

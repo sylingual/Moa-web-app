@@ -384,8 +384,8 @@ const T = {
     worstMemory: "Une expérience frustrante avec un prof ou une méthode",
     worstMemoryPh: "Qu'est-ce qui ne fonctionnait pas pour toi ?",
     saveAndEarn: "Enregistrer et gagner 100 points",
-    quickPractice: "Pratique rapide",
-    quickPracticeSub: "Travaille cette structure sans refaire toute la leçon.",
+    quickPractice: "Approfondir",
+    quickPracticeSub: "Explore cette structure autrement.",
     backToRecap: "Retour au récap",
     feed: "Feed",
     feedTitle: "Ton feed",
@@ -761,8 +761,8 @@ const T = {
     worstMemory: "A frustrating experience with a teacher or method",
     worstMemoryPh: "What didn't work for you?",
     saveAndEarn: "Save and earn 100 points",
-    quickPractice: "Quick practice",
-    quickPracticeSub: "Work on this structure without redoing the whole lesson.",
+    quickPractice: "Go deeper",
+    quickPracticeSub: "Explore this structure in other ways.",
     backToRecap: "Back to recap",
     feed: "Feed",
     feedTitle: "Your feed",
@@ -1133,8 +1133,8 @@ const T = {
     worstMemory: "선생님이나 학습법에 대한 답답했던 경험",
     worstMemoryPh: "뭐가 안 맞았어?",
     saveAndEarn: "저장하고 100 포인트 받기",
-    quickPractice: "빠른 연습",
-    quickPracticeSub: "전체 레슨 없이 이 구조를 연습해 봐.",
+    quickPractice: "심화 학습",
+    quickPracticeSub: "다른 방법으로 이 구조를 탐구해 봐.",
     backToRecap: "요약으로 돌아가기",
     feed: "피드",
     feedTitle: "내 피드",
@@ -5932,15 +5932,27 @@ function AppInner() {
       };
       setRecapSummary(summary);
       const category = result.category ? result.category.toLowerCase().trim() : "";
-      let nd = { ...data, summaries: [...(data.summaries || []), summary] };
-      if (category) {
-        nd = { ...nd, cards: nd.cards.map(c => {
-          if (c.korean !== recapCard.korean) return c;
-          const tags = c.tags || [];
-          if (tags.length >= 3 || tags.includes(category)) return c;
-          return { ...c, tags: [...tags, category] };
-        }) };
-      }
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const goals = data.goals || [];
+      let nd = { ...data, summaries: [...(data.summaries || []), summary], cards: data.cards.map(c => {
+        if (c.korean !== recapCard.korean) return c;
+        const tags = (category && (c.tags || []).length < 3 && !(c.tags || []).includes(category)) ? [...(c.tags || []), category] : (c.tags || []);
+        const reviewDates = [...(c.reviewDates || [])];
+        if (!reviewDates.includes(todayKey)) reviewDates.push(todayKey);
+        const discoveredDate = c.discoveredDate || todayKey;
+        let newStatus = c.status;
+        if (c.status !== "acquired" && c.status !== "studied") newStatus = "studied";
+        let goalAcquired = c.goalAcquired || false;
+        if (c.goalId) {
+          const goal = goals.find(g => g.id === c.goalId);
+          if (goal) {
+            const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+            if (isCardGoalAcquired({ ...c, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+          }
+        }
+        if (isCardLongTermAcquired({ ...c, reviewDates }) && c.status !== "acquired") newStatus = "acquired";
+        return { ...c, status: newStatus, tags, reviewDates, discoveredDate, goalAcquired };
+      }) };
       nd = awardPoints(3, nd);
       save(nd);
     } catch (e) {
@@ -8073,6 +8085,31 @@ function AppInner() {
                           </div>
                         ))}
                       </div>
+                      <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 14, paddingTop: 12 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 8 }}>{t.quickPractice}</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6 }}>
+                          {[
+                            { k: "examples", l: t.moreExamples, i: "💡" },
+                            { k: "realExamples", l: t.realExamples, i: "🔍" },
+                            { k: "image", l: t.anImage, i: "📷" },
+                            { k: "youglish", l: t.youglishBtn, i: "🎬" },
+                            { k: "resources", l: t.onlineRes, i: "📚" },
+                          ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
+                            <button key={a.k} onClick={() => {
+                              if (a.k === "youglish") {
+                                setYouglishWord(recapCard.korean);
+                              } else {
+                                startRecapAction(a.k);
+                              }
+                            }}
+                              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                              <span style={{ fontSize: 14, flexShrink: 0 }}>{a.i}</span>{a.l}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   );
                 })()}
@@ -8093,33 +8130,6 @@ function AppInner() {
                   );
                 })()}
 
-                {/* Quick practice */}
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: C.txt, marginBottom: 4 }}>{t.quickPractice}</div>
-                  <div style={{ fontSize: 12, color: C.txtM, marginBottom: 10, lineHeight: 1.5 }}>{t.quickPracticeSub}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
-                    {[
-                      { k: "examples", l: t.moreExamples, i: "💡" },
-                      { k: "realExamples", l: t.realExamples, i: "🔍" },
-                      { k: "image", l: t.anImage, i: "📷" },
-                      { k: "youglish", l: t.youglishBtn, i: "🎬" },
-                      { k: "resources", l: t.onlineRes, i: "📚" },
-                    ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
-                      <button key={a.k} onClick={() => {
-                        if (a.k === "youglish") {
-                          setYouglishWord(recapCard.korean);
-                        } else {
-                          startRecapAction(a.k);
-                        }
-                      }}
-                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 13px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, textAlign: "left", transition: "border-color 0.15s" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                        <span style={{ fontSize: 16, flexShrink: 0 }}>{a.i}</span>{a.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Full lesson (only for new/in_progress cards) */}
                 {(migrateStatus(recapCard.status) === "new" || migrateStatus(recapCard.status) === "in_progress") && (

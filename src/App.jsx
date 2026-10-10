@@ -1575,6 +1575,8 @@ Skip these already-known items: ${skip || "none"}
 
 Each item: {"korean":"dictionary form","type":"vocab" or "grammar","meaning_fr":"French","meaning_en":"English","category":"topic tag","reading":"romanization or empty"}
 
+IMPORTANT for grammar: merge conjugation variants of the same pattern into ONE entry using the base/citation form. For Korean, combine verb/adjective/noun-attaching forms (e.g. -는데도/-인데도/-ㄴ데도 become one entry "-ㄴ/는데도", -다가/-았다가 become "-다가"). Use the most general citation form as the "korean" value.
+
 Extract ALL items. No limit.`;
     try {
       const items = parseJSON((await callAI(sys, chunks[ci], 8000)).text);

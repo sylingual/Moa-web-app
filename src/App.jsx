@@ -144,6 +144,9 @@ const T = {
     progressAcquired: "Acquise !",
     progressAutoAcquired: "Carte acquise ! Répétition espacée terminée.",
     progressNewReview: "Nouvelle révision enregistrée !",
+    grammarProgressLabel: (n, r) => `${n}/${r} jour${n > 1 ? "s" : ""} d'exercice`,
+    grammarProgressSub: "Fais un exercice par jour sur des jours différents pour acquérir ce point de grammaire.",
+    grammarProgressDone: "Exercice du jour fait !",
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -551,6 +554,9 @@ const T = {
     progressAcquired: "Acquired!",
     progressAutoAcquired: "Card acquired! Spaced repetition complete.",
     progressNewReview: "New review recorded!",
+    grammarProgressLabel: (n, r) => `${n}/${r} day${n > 1 ? "s" : ""} of exercise`,
+    grammarProgressSub: "Do one exercise per day on different days to acquire this grammar point.",
+    grammarProgressDone: "Today's exercise done!",
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -958,6 +964,9 @@ const T = {
     progressAcquired: "습득 완료!",
     progressAutoAcquired: "카드 습득 완료! 간격 반복 끝.",
     progressNewReview: "새 복습 기록!",
+    grammarProgressLabel: (n, r) => `${n}/${r}일 연습`,
+    grammarProgressSub: "매일 하나씩, 다른 날에 연습해야 이 문법을 습득할 수 있어.",
+    grammarProgressDone: "오늘 연습 완료!",
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
     resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
@@ -8296,13 +8305,15 @@ function AppInner() {
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
-                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{t.progressReviews(reviewCount, R)}</span>
+                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{recapCard.type === "grammar" ? t.grammarProgressLabel(reviewCount, R) : t.progressReviews(reviewCount, R)}</span>
                       </div>
                       <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 12, overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
                       </div>
                       {acquired ? (
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#34C759", marginBottom: 14 }}>{t.progressAcquired}</div>
+                      ) : recapCard.type === "grammar" ? (
+                        <div style={{ marginBottom: 14 }} />
                       ) : (
                         <div style={{ marginBottom: 14 }}>
                           {daysUntilNext !== null && (
@@ -8317,10 +8328,16 @@ function AppInner() {
                         </div>
                       )}
                       {recapCard.type === "grammar" ? (
-                        <button onClick={() => launchCat("CE")}
-                          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
-                          ✏️ {t.moreExercises}
-                        </button>
+                        <div>
+                          <div style={{ fontSize: 12, color: C.txtM, marginBottom: 4 }}>{t.grammarProgressSub}</div>
+                          {practicedToday && !acquired && (
+                            <div style={{ fontSize: 11.5, fontWeight: 600, color: "#34C759", marginBottom: 8 }}>✅ {t.grammarProgressDone}</div>
+                          )}
+                          <button onClick={() => launchCat("CE")}
+                            style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: practicedToday ? C.s1 : C.acc, color: practicedToday ? C.txtM : C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                            ✏️ {t.moreExercises}
+                          </button>
+                        </div>
                       ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (

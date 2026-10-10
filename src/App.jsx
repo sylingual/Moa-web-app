@@ -312,6 +312,7 @@ const T = {
     summaryMistakes: "Points à clarifier",
     summaryNext: "Prochaines étapes",
     newLesson: "Nouvelle leçon",
+    backToGoals: "Revenir aux objectifs",
     derivedTitle: "Structures rencontrées",
     derivedSub: "Coche celles que tu veux ajouter à ta bibliothèque (rien n'est ajouté sans toi).",
     derivedAdd: (n) => n > 0 ? `Ajouter (${n})` : "Ajouter",
@@ -708,6 +709,7 @@ const T = {
     summaryMistakes: "Points to clarify",
     summaryNext: "Next steps",
     newLesson: "New lesson",
+    backToGoals: "Back to goals",
     derivedTitle: "Structures you came across",
     derivedSub: "Tick the ones you'd like to add to your library (nothing is added without you).",
     derivedAdd: (n) => n > 0 ? `Add (${n})` : "Add",
@@ -1102,6 +1104,7 @@ const T = {
     summaryMistakes: "다시 볼 부분",
     summaryNext: "다음 단계",
     newLesson: "새 레슨",
+    backToGoals: "목표로 돌아가기",
     derivedTitle: "만난 구조들",
     derivedSub: "라이브러리에 추가하고 싶은 걸 체크해 (체크 안 하면 추가 안 돼).",
     derivedAdd: (n) => n > 0 ? `추가 (${n})` : "추가",
@@ -4836,6 +4839,7 @@ function AppInner() {
 
   // Lesson
   const [lCard, setLCard] = useState(null);
+  const [lessonOrigin, setLessonOrigin] = useState(null);
   const [lArticle, setLArticle] = useState(null);
   const [conv, setConv] = useState([]);
   const [lLoad, setLLoad] = useState(false);
@@ -5802,6 +5806,7 @@ function AppInner() {
 
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
   const openCardFresh = (c) => {
+    setLessonOrigin(view === "goals" ? "goals" : "library");
     const effectiveStatus = migrateStatus(c.status);
     // An already-studied/acquired card always opens the recap MENU first (consistent, and
     // reviewing it saves nothing — only the recap conversation, for consultation). New or
@@ -5885,7 +5890,7 @@ function AppInner() {
   };
 
   const reviewCard = (c) => {
-    // A resumable session exists for this exact card -> offer to resume rather than restart.
+    setLessonOrigin("library");
     const sess = savedSessionFor(c);
     if (sess) { setResumePrompt({ card: c, sess }); return; }
     openCardFresh(c);
@@ -8305,7 +8310,7 @@ function AppInner() {
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                               🔄 {lang === "fr" ? "Réessayer" : lang === "ko" ? "다시 시도" : "Retry"}
                             </button>
-                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setView("library"); }}
+                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setView(lessonOrigin || "library"); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
                               ← {lang === "fr" ? "Quitter" : lang === "ko" ? "닫기" : "Close"}
                             </button>
@@ -8364,9 +8369,9 @@ function AppInner() {
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                               ✏️ {t.moreExercises}
                             </button>
-                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set()); setView("import"); }}
+                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set()); setView(lessonOrigin || "library"); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                              → {t.newLesson}
+                              ← {lessonOrigin === "goals" ? t.backToGoals : t.backToLibrary}
                             </button>
                           </div>
                         </>
@@ -8665,9 +8670,9 @@ function AppInner() {
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ▶ {t.newExercise}
                         </button>
-                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); setView("library"); }}
+                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); setView(lessonOrigin || "library"); }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
-                          📚 {t.backToLibrary}
+                          {lessonOrigin === "goals" ? t.backToGoals : ("📚 " + t.backToLibrary)}
                         </button>
                       </div>
                     </div>

@@ -245,6 +245,13 @@ const T = {
     goalImportText: "Importer un texte",
     goalDailyTarget: "Objectif du jour",
     goalCardsPerDay: (n) => `${n} carte${n > 1 ? "s" : ""} / jour`,
+    goalDiscoverPerDay: (n) => `${n} à découvrir`,
+    goalPracticePerDay: (n) => `${n} à pratiquer`,
+    goalTodayTitle: "Aujourd'hui",
+    goalTodayDiscover: "À découvrir",
+    goalTodayPractice: "À pratiquer",
+    goalTodayAllDone: "Tout est fait pour aujourd'hui !",
+    goalEditDeadline: "Modifier la date",
     goalDaysLeft: (n) => n <= 0 ? "Délai dépassé" : `${n} jour${n > 1 ? "s" : ""} restant${n > 1 ? "s" : ""}`,
     goalProgress1: "Découvertes",
     goalProgress2: "Acquises",
@@ -611,6 +618,13 @@ const T = {
     goalImportText: "Import text",
     goalDailyTarget: "Today's goal",
     goalCardsPerDay: (n) => `${n} card${n > 1 ? "s" : ""} / day`,
+    goalDiscoverPerDay: (n) => `${n} to discover`,
+    goalPracticePerDay: (n) => `${n} to practice`,
+    goalTodayTitle: "Today",
+    goalTodayDiscover: "To discover",
+    goalTodayPractice: "To practice",
+    goalTodayAllDone: "All done for today!",
+    goalEditDeadline: "Change date",
     goalDaysLeft: (n) => n <= 0 ? "Overdue" : `${n} day${n > 1 ? "s" : ""} left`,
     goalProgress1: "Discovered",
     goalProgress2: "Acquired",
@@ -975,6 +989,13 @@ const T = {
     goalImportText: "텍스트 가져오기",
     goalDailyTarget: "오늘의 목표",
     goalCardsPerDay: (n) => `하루 ${n}장`,
+    goalDiscoverPerDay: (n) => `${n}장 발견하기`,
+    goalPracticePerDay: (n) => `${n}장 연습하기`,
+    goalTodayTitle: "오늘",
+    goalTodayDiscover: "발견할 카드",
+    goalTodayPractice: "연습할 카드",
+    goalTodayAllDone: "오늘 할 거 다 했어!",
+    goalEditDeadline: "날짜 변경",
     goalDaysLeft: (n) => n <= 0 ? "기한 초과" : `${n}일 남음`,
     goalProgress1: "학습 시작",
     goalProgress2: "습득 완료",
@@ -5604,7 +5625,7 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
-    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }
+    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalEditingDeadline(false); }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
@@ -6145,6 +6166,7 @@ function AppInner() {
   const [goalPickSel, setGoalPickSel] = useState(new Set());
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
   const [goalCelebration, setGoalCelebration] = useState(null); // { pct }
+  const [goalEditingDeadline, setGoalEditingDeadline] = useState(false);
   const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
   const [goalImpFound, setGoalImpFound] = useState([]);
@@ -6165,13 +6187,19 @@ function AppInner() {
   };
 
   const goalDailyTarget = (goal) => {
-    const { total, acquired } = goalProgress(goal);
+    const { total, acquired, discovered } = goalProgress(goal);
     const remaining = total - acquired;
-    if (remaining <= 0) return 0;
+    if (remaining <= 0) return { discover: 0, practice: 0, total: 0 };
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
     const daysLeft = Math.max(1, Math.ceil((dl - now) / 86400000));
-    return Math.ceil(remaining / daysLeft);
+    const toDiscover = total - discovered;
+    const toPractice = discovered - acquired;
+    return {
+      discover: toDiscover > 0 ? Math.ceil(toDiscover / daysLeft) : 0,
+      practice: toPractice > 0 ? Math.ceil(toPractice / daysLeft) : 0,
+      total: Math.ceil(remaining / daysLeft)
+    };
   };
 
   const goalDaysLeft = (goal) => {
@@ -8702,39 +8730,101 @@ function AppInner() {
                 const dLeft = goalDaysLeft(goal);
                 const overdue = dLeft <= 0 && !goal.trophyDate;
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <button onClick={() => { setGoalView("list"); setGoalEditId(null); }} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
+                      <button onClick={() => { setGoalView("list"); setGoalEditId(null); setGoalEditingDeadline(false); }} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
                       <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, flex: 1 }}>{goal.name}</div>
                       {overdue && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.warnBg, color: C.warn, fontWeight: 500 }}>{t.goalOverdue}</span>}
                     </div>
 
-                    {/* Deadline + daily */}
+                    {/* Deadline + daily targets */}
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                       <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
                         <div style={{ fontSize: 10, color: C.txtM, fontWeight: 500, marginBottom: 4 }}>{t.goalDeadline}</div>
-                        <div style={{ fontSize: 14, color: overdue ? C.warn : C.txt, fontWeight: 500 }}>{new Date(goal.deadline).toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" })}</div>
-                        <div style={{ fontSize: 11, color: overdue ? C.warn : C.txtM, marginTop: 2 }}>{t.goalDaysLeft(dLeft)}</div>
+                        {goalEditingDeadline ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                            <input type="date" id="goal-edit-date" defaultValue={goal.deadline}
+                              style={{ padding: "5px 8px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1 }} />
+                            <button onClick={() => { const v = document.getElementById("goal-edit-date")?.value; if (v) { extendGoalDeadline(goal.id, v); setGoalEditingDeadline(false); } }}
+                              style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✓</button>
+                            <button onClick={() => setGoalEditingDeadline(false)}
+                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✕</button>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: 14, color: overdue ? C.warn : C.txt, fontWeight: 500 }}>{new Date(goal.deadline).toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" })}</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                              <span style={{ fontSize: 11, color: overdue ? C.warn : C.txtM }}>{t.goalDaysLeft(dLeft)}</span>
+                              <button onClick={() => setGoalEditingDeadline(true)}
+                                style={{ padding: "1px 6px", borderRadius: 4, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 9.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✏️ {t.goalEditDeadline}</button>
+                            </div>
+                          </>
+                        )}
                       </div>
                       <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
                         <div style={{ fontSize: 10, color: C.txtM, fontWeight: 500, marginBottom: 4 }}>{t.goalDailyTarget}</div>
-                        <div style={{ fontSize: 14, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily)}</div>
-                        <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>{t.goalCardCount(prog.total)}</div>
+                        <div style={{ fontSize: 14, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily.total)}</div>
+                        <div style={{ fontSize: 11, color: C.txtM, marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+                          {daily.discover > 0 && <span>📖 {t.goalDiscoverPerDay(daily.discover)}</span>}
+                          {daily.practice > 0 && <span>🔄 {t.goalPracticePerDay(daily.practice)}</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: C.txtM, marginTop: 4 }}>{t.goalCardCount(prog.total)}</div>
                       </div>
                     </div>
 
-                    {/* Overdue: propose extension */}
-                    {overdue && (
-                      <div style={{ background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ fontSize: 12, color: C.warn, fontWeight: 500 }}>⚠️ {t.goalExpired}</div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input type="date" id="goal-extend-date" defaultValue={(() => { const d = new Date(); d.setDate(d.getDate() + Math.max(7, prog.total - prog.acquired)); return d.toISOString().split("T")[0]; })()}
-                            style={{ padding: "6px 10px", border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1 }} />
-                          <button onClick={() => { const v = document.getElementById("goal-extend-date")?.value; if (v) extendGoalDeadline(goal.id, v); }}
-                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalExtend}</button>
-                        </div>
+                    {/* Overdue: warn */}
+                    {overdue && !goalEditingDeadline && (
+                      <div style={{ background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 12, color: C.warn, fontWeight: 500 }}>⚠️ {t.goalExpired}</span>
+                        <button onClick={() => setGoalEditingDeadline(true)}
+                          style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalExtend}</button>
                       </div>
                     )}
+
+                    {/* Today's cards for this goal */}
+                    {(() => {
+                      const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const toDiscover = goalCards.filter(c => migrateStatus(c.status) === "new").slice(0, daily.discover || 3);
+                      const toPractice = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; }).slice(0, daily.practice || 3);
+                      if (!toDiscover.length && !toPractice.length) return null;
+                      return (
+                        <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                            ☀️ {t.goalTodayTitle}
+                          </div>
+                          {toDiscover.length > 0 && (
+                            <div style={{ marginBottom: toPractice.length ? 10 : 0 }}>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.acc, marginBottom: 6 }}>📖 {t.goalTodayDiscover} ({toDiscover.length})</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
+                                {toDiscover.map(c => (
+                                  <div key={c.id} onClick={() => openCardFresh(c)}
+                                    style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(230,180,40,0.25)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{c.korean}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {toPractice.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.length})</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
+                                {toPractice.map(c => (
+                                  <div key={c.id} onClick={() => openCardFresh(c)}
+                                    style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(230,180,40,0.25)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
+                                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{c.korean}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Progress bars */}
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
@@ -8919,7 +9009,7 @@ function AppInner() {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 11, color: C.txtM }}>{t.goalCardCount(prog.total)}</span>
-                          <span style={{ fontSize: 12, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily)}</span>
+                          <span style={{ fontSize: 12, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily.total)}</span>
                         </div>
                       </div>
                     );

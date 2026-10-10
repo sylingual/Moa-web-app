@@ -6295,18 +6295,28 @@ function AppInner() {
   };
 
   const goalDailyTarget = (goal) => {
-    const { total, acquired, discovered } = goalProgress(goal);
-    const remaining = total - acquired;
-    if (remaining <= 0) return { discover: 0, practice: 0, total: 0 };
+    const cards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+    const total = cards.length;
+    if (!total) return { discover: 0, practice: 0, total: 0 };
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
     const daysLeft = Math.max(1, Math.ceil((dl - now) / 86400000));
-    const toDiscover = total - discovered;
-    const toPractice = discovered - acquired;
+    const daysTotal = Math.max(1, Math.ceil((dl - new Date(goal.createdAt || goal.deadline)) / 86400000));
+    const schedule = getSpacedSchedule(daysTotal);
+    const R = schedule.R;
+    const undiscovered = cards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).length;
+    const discoverPerDay = undiscovered > 0 ? Math.ceil(undiscovered / daysLeft) : 0;
+    let reviewsNeeded = 0;
+    cards.forEach(c => {
+      if (c.goalAcquired || migrateStatus(c.status) === "acquired") return;
+      const done = getCardReviewCount(c);
+      reviewsNeeded += Math.max(0, R - done);
+    });
+    const practicePerDay = reviewsNeeded > 0 ? Math.ceil(reviewsNeeded / daysLeft) : 0;
     return {
-      discover: toDiscover > 0 ? Math.ceil(toDiscover / daysLeft) : 0,
-      practice: toPractice > 0 ? Math.ceil(toPractice / daysLeft) : 0,
-      total: Math.ceil(remaining / daysLeft)
+      discover: discoverPerDay,
+      practice: practicePerDay,
+      total: discoverPerDay + practicePerDay
     };
   };
 

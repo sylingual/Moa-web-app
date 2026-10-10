@@ -133,12 +133,14 @@ const T = {
     genderScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     exRandom: "Au hasard",
     exMusicOn: "Musique", exMusicOff: "Musique",
-    progressTitle: "Progression", progressGlobal: "Global",
-    progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
-    progressDays: (n, max) => `${n}/${max} jour${n > 1 ? "s" : ""}`,
-    progressComplete: "Complétée !",
-    progressAutoAcquired: "Carte acquise automatiquement ! Toutes les catégories sont complétées.",
-    progressCatDone: (cat) => `Catégorie ${cat} complétée !`,
+    progressTitle: "Répétition espacée", progressGlobal: "Global",
+    progressReviews: (n, r) => `${n}/${r} révision${n > 1 ? "s" : ""}`,
+    progressNextReview: "Prochaine révision",
+    progressNextToday: "Aujourd'hui",
+    progressNextPast: "En retard",
+    progressAcquired: "Acquise !",
+    progressAutoAcquired: "Carte acquise ! Répétition espacée terminée.",
+    progressNewReview: "Nouvelle révision enregistrée !",
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -506,12 +508,14 @@ const T = {
     genderScore: (c, t) => `${c}/${t} correct`,
     exRandom: "Random",
     exMusicOn: "Music", exMusicOff: "Music",
-    progressTitle: "Progress", progressGlobal: "Overall",
-    progressCE: "CE", progressCO: "CO", progressPE: "PE", progressPO: "PO",
-    progressDays: (n, max) => `${n}/${max} day${n > 1 ? "s" : ""}`,
-    progressComplete: "Complete!",
-    progressAutoAcquired: "Card auto-acquired! All categories completed.",
-    progressCatDone: (cat) => `${cat} category complete!`,
+    progressTitle: "Spaced repetition", progressGlobal: "Overall",
+    progressReviews: (n, r) => `${n}/${r} review${n > 1 ? "s" : ""}`,
+    progressNextReview: "Next review",
+    progressNextToday: "Today",
+    progressNextPast: "Overdue",
+    progressAcquired: "Acquired!",
+    progressAutoAcquired: "Card acquired! Spaced repetition complete.",
+    progressNewReview: "New review recorded!",
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -879,12 +883,14 @@ const T = {
     genderScore: (c, t) => `${c}/${t} 정답`,
     exRandom: "랜덤",
     exMusicOn: "음악", exMusicOff: "음악",
-    progressTitle: "진행 상황", progressGlobal: "전체",
-    progressCE: "읽기", progressCO: "듣기", progressPE: "쓰기", progressPO: "말하기",
-    progressDays: (n, max) => `${n}/${max}일`,
-    progressComplete: "완료!",
-    progressAutoAcquired: "카드 자동 습득! 모든 카테고리 완료.",
-    progressCatDone: (cat) => `${cat} 카테고리 완료!`,
+    progressTitle: "간격 반복", progressGlobal: "전체",
+    progressReviews: (n, r) => `${n}/${r}번 복습`,
+    progressNextReview: "다음 복습",
+    progressNextToday: "오늘",
+    progressNextPast: "밀림",
+    progressAcquired: "습득 완료!",
+    progressAutoAcquired: "카드 습득 완료! 간격 반복 끝.",
+    progressNewReview: "새 복습 기록!",
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
     resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
@@ -2195,9 +2201,49 @@ function typeLabel(type, t) {
 }
 
 // =============================================
-// CARD PROGRESSION (Issue #72)
+// CARD PROGRESSION - Spaced Repetition
 // =============================================
-const PROGRESS_TARGETS = { ce: 7, co: 7, pe: 3, po: 3 };
+const SPACED_REP_SCHEDULE = {
+  6:  { R: 1, intervals: [1] },
+  13: { R: 2, intervals: [1, 5] },
+  21: { R: 3, intervals: [1, 4, 10] },
+  35: { R: 5, intervals: [1, 3, 7, 14, 21] },
+  Infinity: { R: 7, intervals: [1, 3, 7, 14, 21, 30, 42] },
+};
+
+function getSpacedSchedule(daysAvailable) {
+  for (const [maxDays, schedule] of Object.entries(SPACED_REP_SCHEDULE)) {
+    if (daysAvailable <= Number(maxDays)) return schedule;
+  }
+  return SPACED_REP_SCHEDULE[Infinity];
+}
+
+function getCardReviewCount(card) {
+  return (card.reviewDates || []).length;
+}
+
+function getCardNextReviewDate(card, daysAvailable) {
+  const discovered = card.discoveredDate;
+  if (!discovered) return null;
+  const schedule = getSpacedSchedule(daysAvailable || Infinity);
+  const reviewCount = getCardReviewCount(card);
+  if (reviewCount >= schedule.R) return null;
+  const dDate = new Date(discovered + "T00:00:00");
+  const nextInterval = schedule.intervals[reviewCount] || schedule.intervals[schedule.intervals.length - 1];
+  const next = new Date(dDate);
+  next.setDate(next.getDate() + nextInterval);
+  return next.toISOString().slice(0, 10);
+}
+
+function isCardGoalAcquired(card, daysAvailable) {
+  const schedule = getSpacedSchedule(daysAvailable);
+  return getCardReviewCount(card) >= schedule.R;
+}
+
+function isCardLongTermAcquired(card) {
+  return getCardReviewCount(card) >= SPACED_REP_SCHEDULE[Infinity].R;
+}
+
 const GENDERED_LANGS = new Set(["fr", "de", "es", "it", "pt", "ru", "ar", "pl", "nl", "el"]);
 
 function exModeToCategory(mode) {
@@ -2214,20 +2260,29 @@ function recordExerciseProgress(dataObj, cardIds, exMode) {
   if (!cat || !cardIds.length) return { data: dataObj, autoAcquiredIds: [] };
   const today = new Date().toISOString().slice(0, 10);
   let autoAcquiredIds = [];
+  const goals = dataObj.goals || [];
   const cards = dataObj.cards.map(c => {
     if (!cardIds.includes(c.id)) return c;
     const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
     const days = prog[cat] || [];
-    if (!days.includes(today)) {
-      prog[cat] = [...days, today];
-    }
-    const isComplete = Object.keys(PROGRESS_TARGETS).every(k => (prog[k] || []).length >= PROGRESS_TARGETS[k]);
+    if (!days.includes(today)) prog[cat] = [...days, today];
+    const reviewDates = c.reviewDates || [];
+    if (!reviewDates.includes(today)) reviewDates.push(today);
+    const discoveredDate = c.discoveredDate || today;
     let newStatus = c.status;
-    if (isComplete && c.status !== "acquired") {
+    let goalAcquired = c.goalAcquired || false;
+    if (c.goalId) {
+      const goal = goals.find(g => g.id === c.goalId);
+      if (goal) {
+        const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+        if (isCardGoalAcquired({ ...c, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+      }
+    }
+    if (isCardLongTermAcquired({ ...c, reviewDates }) && newStatus !== "acquired") {
       newStatus = "acquired";
       autoAcquiredIds.push(c.id);
     }
-    return { ...c, progress: prog, status: newStatus };
+    return { ...c, progress: prog, reviewDates, discoveredDate, status: newStatus, goalAcquired };
   });
   return { data: { ...dataObj, cards }, autoAcquiredIds };
 }
@@ -4849,8 +4904,22 @@ function AppInner() {
   // Load
   useEffect(() => {
     loadData(syncId).then(d => {
-      const loaded = d || DEFAULT_DATA;
+      let loaded = d || DEFAULT_DATA;
+      let needsSave = false;
+      if (loaded.cards?.length && loaded.cards.some(c => c.progress && !c.reviewDates)) {
+        loaded = { ...loaded, cards: loaded.cards.map(c => {
+          if (c.reviewDates) return c;
+          const prog = c.progress || {};
+          const allDays = new Set();
+          ["ce", "co", "pe", "po"].forEach(k => (prog[k] || []).forEach(d => allDays.add(d)));
+          if (!allDays.size) return c;
+          const sorted = [...allDays].sort();
+          return { ...c, reviewDates: sorted, discoveredDate: c.discoveredDate || sorted[0] };
+        })};
+        needsSave = true;
+      }
       setData(loaded);
+      if (needsSave) saveData(loaded, syncId);
       if (loaded.lastTargetLang) setTargetLang(loaded.lastTargetLang);
       else if (loaded.targetLangs?.length) setTargetLang(loaded.targetLangs[0]);
       setLoaded(true);
@@ -5097,7 +5166,13 @@ function AppInner() {
     const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
     const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
     if (!newCards.length && !reviewCards.length) return;
-    const picked = [...newCards.slice(0, dc), ...reviewCards.sort(() => Math.random() - 0.5).slice(0, Math.max(0, dc - newCards.length))].slice(0, dc);
+    const dueReview = reviewCards.filter(c => {
+      if (isCardLongTermAcquired(c)) return false;
+      const next = getCardNextReviewDate(c, Infinity);
+      return !next || next <= today;
+    });
+    const otherReview = reviewCards.filter(c => !dueReview.includes(c));
+    const picked = [...newCards.slice(0, dc), ...dueReview.slice(0, Math.max(0, dc - newCards.length)), ...otherReview.sort(() => Math.random() - 0.5).slice(0, Math.max(0, dc - newCards.length - dueReview.length))].slice(0, dc);
     const ids = picked.map(c => c.id);
     const originalStatus = {};
     picked.forEach(c => { originalStatus[c.id] = migrateStatus(c.status); });
@@ -5426,11 +5501,25 @@ function AppInner() {
   const finishVocab = () => {
     const studiedWords = (vocabSession?.words || []).map(w => w.word);
     const todayKey = new Date().toISOString().slice(0, 10);
+    const goals = data.goals || [];
     const updated = data.cards.map(c => {
       if (c.type === "vocab" && studiedWords.includes(c.korean)) {
         const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
         if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
-        return { ...c, status: c.status === "acquired" ? "acquired" : "studied", reviewCount: (c.reviewCount || 0) + 1, progress: prog };
+        const reviewDates = [...(c.reviewDates || [])];
+        if (!reviewDates.includes(todayKey)) reviewDates.push(todayKey);
+        const discoveredDate = c.discoveredDate || todayKey;
+        let newStatus = c.status === "acquired" ? "acquired" : "studied";
+        let goalAcquired = c.goalAcquired || false;
+        if (c.goalId) {
+          const goal = goals.find(g => g.id === c.goalId);
+          if (goal) {
+            const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+            if (isCardGoalAcquired({ ...c, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+          }
+        }
+        if (isCardLongTermAcquired({ ...c, reviewDates })) newStatus = "acquired";
+        return { ...c, status: newStatus, reviewCount: (c.reviewCount || 0) + 1, progress: prog, reviewDates, discoveredDate, goalAcquired };
       }
       return c;
     });
@@ -5913,6 +6002,7 @@ function AppInner() {
       const formality = ["casual", "neutral", "formal"].includes(fmt) ? fmt : "";
       const aiCategory = (result.category || "").toLowerCase().trim();
       const todayKey = new Date().toISOString().slice(0, 10);
+      const goals = data.goals || [];
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
@@ -5921,8 +6011,21 @@ function AppInner() {
         const newTags = aiCategory && existingTags.length === 0 ? [aiCategory] : existingTags;
         const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
         if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
-        if (c.status === "acquired") return { ...c, reviewCount: rc, formality: f, tags: newTags, progress: prog };
-        return { ...c, status: "studied", reviewCount: rc, formality: f, tags: newTags, progress: prog };
+        const discoveredDate = c.discoveredDate || todayKey;
+        const reviewDates = [...(c.reviewDates || [])];
+        if (!reviewDates.includes(todayKey)) reviewDates.push(todayKey);
+        let goalAcquired = c.goalAcquired || false;
+        if (c.goalId) {
+          const goal = goals.find(g => g.id === c.goalId);
+          if (goal) {
+            const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+            if (isCardGoalAcquired({ ...c, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+          }
+        }
+        let newStatus = c.status;
+        if (isCardLongTermAcquired({ ...c, reviewDates }) && c.status !== "acquired") newStatus = "acquired";
+        else if (c.status !== "acquired") newStatus = "studied";
+        return { ...c, status: newStatus, reviewCount: rc, formality: f, tags: newTags, progress: prog, discoveredDate, reviewDates, goalAcquired };
       });
       const gain = wasFirstTime ? 20 : 10;
       const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
@@ -6182,7 +6285,7 @@ function AppInner() {
     const total = cards.length;
     if (!total) return { discovered: 0, acquired: 0, total: 0, pct1: 0, pct2: 0, overall: 0 };
     const discovered = cards.filter(c => migrateStatus(c.status) !== "new").length;
-    const acquired = cards.filter(c => migrateStatus(c.status) === "acquired").length;
+    const acquired = cards.filter(c => c.goalAcquired || migrateStatus(c.status) === "acquired").length;
     return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100) };
   };
 
@@ -6344,21 +6447,8 @@ function AppInner() {
       setProgressToast(t.progressAutoAcquired);
       setTimeout(() => setProgressToast(null), 4000);
     } else {
-      const cat = exModeToCategory(mode);
-      if (cat) {
-        const catUp = cat.toUpperCase();
-        const target = PROGRESS_TARGETS[cat];
-        const today = new Date().toISOString().slice(0, 10);
-        const justCompleted = cardIds.some(id => {
-          const card = nd.cards.find(c => c.id === id);
-          const days = card?.progress?.[cat] || [];
-          return days.length === target && days[days.length - 1] === today;
-        });
-        if (justCompleted) {
-          setProgressToast(t.progressCatDone(catUp));
-          setTimeout(() => setProgressToast(null), 3000);
-        }
-      }
+      setProgressToast(t.progressNewReview);
+      setTimeout(() => setProgressToast(null), 2500);
     }
     save(nd);
     setShowCelebration(true);
@@ -7856,60 +7946,41 @@ function AppInner() {
                   </button>
                 )}
 
-                {/* Progression bars */}
+                {/* Spaced repetition progress */}
                 {(() => {
-                  const prog = recapCard.progress || { ce: [], co: [], pe: [], po: [] };
-                  const cats = [
-                    { key: "ce", label: t.progressCE, color: "#4A90D9", max: PROGRESS_TARGETS.ce },
-                    { key: "co", label: t.progressCO, color: "#E8A838", max: PROGRESS_TARGETS.co },
-                    { key: "pe", label: t.progressPE, color: "#7B7FF5", max: PROGRESS_TARGETS.pe },
-                    { key: "po", label: t.progressPO, color: "#E06B6B", max: PROGRESS_TARGETS.po },
-                  ];
-                  const totalDone = cats.reduce((s, c) => s + Math.min((prog[c.key] || []).length, c.max), 0);
-                  const totalMax = cats.reduce((s, c) => s + c.max, 0);
-                  const globalPct = Math.round((totalDone / totalMax) * 100);
+                  const reviewCount = getCardReviewCount(recapCard);
+                  const cardObj = data.cards.find(x => x.korean === recapCard.korean);
+                  const goal = cardObj?.goalId ? (data.goals || []).find(g => g.id === cardObj.goalId) : null;
+                  let daysAvailable = Infinity;
+                  if (goal && cardObj.discoveredDate) {
+                    daysAvailable = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(cardObj.discoveredDate + "T00:00:00")) / 86400000));
+                  }
+                  const schedule = getSpacedSchedule(daysAvailable);
+                  const R = schedule.R;
+                  const pct = Math.min(100, Math.round((reviewCount / R) * 100));
+                  const acquired = reviewCount >= R;
+                  const today = new Date().toISOString().slice(0, 10);
+                  const nextDate = getCardNextReviewDate(recapCard, daysAvailable);
+                  let nextLabel = "";
+                  if (acquired) nextLabel = t.progressAcquired;
+                  else if (!nextDate) nextLabel = "";
+                  else if (nextDate <= today) nextLabel = nextDate === today ? t.progressNextToday : t.progressNextPast;
+                  else nextLabel = nextDate;
                   return (
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
-                        <span style={{ fontSize: 11, color: C.txtM }}>{t.progressGlobal} {globalPct}%</span>
+                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{t.progressReviews(reviewCount, R)}</span>
                       </div>
                       <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 14, overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 3, background: globalPct === 100 ? "#34C759" : C.acc, width: `${globalPct}%`, transition: "width 0.3s" }} />
+                        <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                        {cats.map(c => {
-                          const done = Math.min((prog[c.key] || []).length, c.max);
-                          const pct = Math.round((done / c.max) * 100);
-                          return (
-                            <div key={c.key} onClick={() => {
-                              const cardId = data.cards.find(x => x.korean === recapCard.korean)?.id;
-                              exPrimaryWordRef.current = recapCard.korean;
-                              const eligible = data.cards.filter(x => (x.status === "studied" || x.status === "acquired") && (x.targetLang || "ko") === tl && x.id !== cardId);
-                              const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
-                              const ids = new Set([cardId, ...shuffled.map(x => x.id)].filter(Boolean));
-                              skipExResetRef.current = true;
-                              setExSel(ids);
-                              setExCategory(c.key.toUpperCase());
-                              setExStep("exercise");
-                              setShowRecap(false); setRecapCard(null);
-                              setView("exercise");
-                            }} style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, cursor: "pointer", transition: "border-color 0.15s", border: `1px solid transparent` }}
-                              onMouseEnter={e => { e.currentTarget.style.borderColor = c.color; }}
-                              onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; }}>
-                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: c.color }}>{c.label}</span>
-                                <span style={{ fontSize: 10, color: pct === 100 ? "#34C759" : C.txtM }}>
-                                  {pct === 100 ? t.progressComplete : t.progressDays(done, c.max)}
-                                </span>
-                              </div>
-                              <div style={{ height: 4, borderRadius: 2, background: C.s2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", borderRadius: 2, background: pct === 100 ? "#34C759" : c.color, width: `${pct}%`, transition: "width 0.3s" }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      {nextLabel && (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: acquired ? "#34C759" : nextDate && nextDate < today ? C.warn : C.acc }}>{nextLabel}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -8784,8 +8855,16 @@ function AppInner() {
                     {/* Today's cards for this goal */}
                     {(() => {
                       const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const today = new Date().toISOString().slice(0, 10);
+                      const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
                       const toDiscover = goalCards.filter(c => migrateStatus(c.status) === "new").slice(0, daily.discover || 3);
-                      const toPractice = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; }).slice(0, daily.practice || 3);
+                      const toPractice = goalCards.filter(c => {
+                        const s = migrateStatus(c.status);
+                        if (s !== "in_progress" && s !== "studied") return false;
+                        if (c.goalAcquired) return false;
+                        const next = getCardNextReviewDate(c, dLeft);
+                        return !next || next <= today;
+                      }).slice(0, daily.practice || 5);
                       if (!toDiscover.length && !toPractice.length) return null;
                       return (
                         <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>

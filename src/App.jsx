@@ -268,6 +268,11 @@ const T = {
     goalOf: "sur",
     goalPickCards: "Sélectionner des cartes",
     goalPickSub: "Choisis les cartes à associer à cet objectif.",
+    goalImportScreenshots: "Importer des screenshots",
+    goalImportOcr: "Lecture des images...",
+    goalImportScanning: "Analyse en cours...",
+    goalImportConfirm: "Ajouter à l'objectif",
+    goalImportCancel: "Annuler l'import",
     goalOverdue: "En retard",
     goalActive: "En cours",
     generating: "Génération du résumé...",
@@ -629,6 +634,11 @@ const T = {
     goalOf: "of",
     goalPickCards: "Select cards",
     goalPickSub: "Choose cards to associate with this goal.",
+    goalImportScreenshots: "Import screenshots",
+    goalImportOcr: "Reading images...",
+    goalImportScanning: "Analyzing...",
+    goalImportConfirm: "Add to goal",
+    goalImportCancel: "Cancel import",
     goalOverdue: "Overdue",
     goalActive: "Active",
     generating: "Generating summary...",
@@ -988,6 +998,11 @@ const T = {
     goalOf: "/",
     goalPickCards: "카드 선택",
     goalPickSub: "이 목표에 연결할 카드를 골라 봐.",
+    goalImportScreenshots: "스크린샷 가져오기",
+    goalImportOcr: "이미지 읽는 중...",
+    goalImportScanning: "분석 중...",
+    goalImportConfirm: "목표에 추가",
+    goalImportCancel: "가져오기 취소",
     goalOverdue: "기한 초과",
     goalActive: "진행 중",
     generating: "요약 생성 중...",
@@ -5589,7 +5604,7 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
-    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); }
+    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
@@ -6131,6 +6146,10 @@ function AppInner() {
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
   const [goalCelebration, setGoalCelebration] = useState(null); // { pct }
   const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
+  const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
+  const [goalImpFound, setGoalImpFound] = useState([]);
+  const [goalImpSel, setGoalImpSel] = useState(new Set());
+  const [goalImpProgress, setGoalImpProgress] = useState(null);
 
   const goals = data.goals || [];
   const activeGoals = goals.filter(g => !g.trophyDate);
@@ -6239,6 +6258,56 @@ function AppInner() {
       }
     }
   }, [data.cards, data.goals]);
+
+  const onGoalImagePick = async (e) => {
+    const files = e.target.files;
+    e.target.value = "";
+    if (!files || !files.length) return;
+    setGoalImpStep("ocr");
+    try {
+      let combined = "";
+      for (let i = 0; i < files.length; i++) {
+        const { base64, mimeType } = await fileToScaledBase64(files[i], 1600);
+        const text = await extractImageText(base64, mimeType, getTargetLangName(tl, "en"));
+        if (text && text.trim()) combined += (combined ? "\n" : "") + text;
+      }
+      if (!combined.trim()) {
+        alert(t.ocrNoTarget(getTargetLangName(tl, lang)));
+        setGoalImpStep(null);
+        return;
+      }
+      setGoalImpStep("scanning");
+      setGoalImpProgress(null);
+      const items = dedupeExtracted(
+        await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
+        data.cards
+      );
+      setGoalImpProgress(null);
+      setGoalImpFound(items);
+      setGoalImpSel(new Set(items.map((_, i) => i)));
+      setGoalImpStep("picks");
+    } catch (err) {
+      console.error("Goal import error:", err);
+      alert(err.message);
+      setGoalImpStep(null);
+    }
+  };
+
+  const goalImportConfirm = () => {
+    if (!goalImpSel.size) return;
+    const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
+    const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
+      const isVocab = v.type === "vocab";
+      return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+    });
+    if (newCards.length) {
+      save({ ...data, cards: [...data.cards, ...newCards] });
+      setGoalPickSel(prev => new Set([...prev, ...newCards.map(c => c.id)]));
+    }
+    setGoalImpStep(null);
+    setGoalImpFound([]);
+    setGoalImpSel(new Set());
+  };
 
   const completeExercise = (mode, cardIds) => {
     const result = recordExerciseProgress(data, cardIds, mode);
@@ -8527,6 +8596,90 @@ function AppInner() {
                       </div>
                     )}
                   </div>
+
+                  {/* Screenshot import */}
+                  <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+                    {!goalImpStep && (
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: `2px dashed ${C.borderS}`, background: C.s1, color: C.txtS, fontSize: 12.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", width: "100%", justifyContent: "center" }}>
+                        📷 {t.goalImportScreenshots}
+                        <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
+                      </label>
+                    )}
+                    {goalImpStep === "ocr" && (
+                      <div style={{ textAlign: "center", padding: "12px 0" }}>
+                        <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>📷 {t.goalImportOcr}</div>
+                      </div>
+                    )}
+                    {goalImpStep === "scanning" && (
+                      <div style={{ textAlign: "center", padding: "12px 0" }}>
+                        <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>✨ {t.goalImportScanning}{goalImpProgress ? ` (${goalImpProgress.current}/${goalImpProgress.total})` : ""}</div>
+                      </div>
+                    )}
+                    {goalImpStep === "picks" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            <button onClick={() => setGoalImpSel(new Set(goalImpFound.map((_, i) => i)))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.filterAll || "Tout"}</button>
+                            <button onClick={() => setGoalImpSel(new Set())} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>0</button>
+                          </div>
+                        </div>
+                        <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1 }}>
+                          {goalImpFound.map((v, i) => {
+                            const on = goalImpSel.has(i);
+                            const isVocab = v.type === "vocab";
+                            return (
+                              <div key={i} onClick={() => { const s = new Set(goalImpSel); s.has(i) ? s.delete(i) : s.add(i); setGoalImpSel(s); }}
+                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent" }}>
+                                <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{v.korean || v.word}</div>
+                                  <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 1 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
+                                </div>
+                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={goalImportConfirm} disabled={!goalImpSel.size}
+                            style={{ flex: 1, padding: "7px 14px", borderRadius: 6, border: "none", background: goalImpSel.size ? C.acc : C.s1, color: goalImpSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalImpSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                            📥 {t.goalImportConfirm} ({goalImpSel.size})
+                          </button>
+                          <button onClick={() => { setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
+                            style={{ padding: "7px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            {t.goalImportCancel}
+                          </button>
+                        </div>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "transparent", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", alignSelf: "flex-start" }}>
+                          + 📷
+                          <input type="file" accept="image/*" multiple onChange={async (e) => {
+                            const files = e.target.files; e.target.value = "";
+                            if (!files || !files.length) return;
+                            setGoalImpStep("ocr");
+                            try {
+                              let combined = "";
+                              for (let i = 0; i < files.length; i++) {
+                                const { base64, mimeType } = await fileToScaledBase64(files[i], 1600);
+                                const text = await extractImageText(base64, mimeType, getTargetLangName(tl, "en"));
+                                if (text && text.trim()) combined += (combined ? "\n" : "") + text;
+                              }
+                              if (!combined.trim()) { setGoalImpStep("picks"); return; }
+                              setGoalImpStep("scanning");
+                              const items = dedupeExtracted(await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })), data.cards);
+                              setGoalImpProgress(null);
+                              const merged = [...goalImpFound];
+                              for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
+                              setGoalImpFound(merged);
+                              setGoalImpSel(new Set(merged.map((_, i) => i)));
+                              setGoalImpStep("picks");
+                            } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
+                          }} style={{ display: "none" }} />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ display: "flex", gap: 8 }}>
                     <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel)}
                       style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>

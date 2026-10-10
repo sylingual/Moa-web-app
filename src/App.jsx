@@ -248,10 +248,11 @@ const T = {
     goalNoCards: "Aucune carte associée",
     goalAddCards: "Ajouter des cartes",
     goalImportText: "Importer un texte",
-    goalDailyTarget: "Objectif du jour",
+    goalDailyTarget: "Voilà comment on s'organise par rapport à ta date limite :",
     goalCardsPerDay: (n) => `~${n} carte${n > 1 ? "s" : ""} / jour`,
-    goalDiscoverPerDay: (n) => `${n} à découvrir`,
-    goalPracticePerDay: (n) => `${n} révisions`,
+    goalDiscoverPerDay: (n) => `Tu découvriras ~${n} nouvelle${n > 1 ? "s" : ""} carte${n > 1 ? "s" : ""} par jour`,
+    goalPracticePerDay: (n) => `et en fonction des jours, tu pourras avoir jusqu'à environ ${n} révision${n > 1 ? "s" : ""} à faire`,
+    goalRecommendR: (r) => `Je te recommande de réviser chaque carte ${r} fois avant la date limite.`,
     goalTodayTitle: "Aujourd'hui",
     goalTodayDiscover: "À découvrir",
     goalTodayPractice: "À pratiquer",
@@ -627,10 +628,11 @@ const T = {
     goalNoCards: "No cards associated",
     goalAddCards: "Add cards",
     goalImportText: "Import text",
-    goalDailyTarget: "Today's goal",
+    goalDailyTarget: "Here's how we organize based on your deadline:",
     goalCardsPerDay: (n) => `~${n} card${n > 1 ? "s" : ""} / day`,
-    goalDiscoverPerDay: (n) => `${n} to discover`,
-    goalPracticePerDay: (n) => `${n} reviews`,
+    goalDiscoverPerDay: (n) => `You'll discover ~${n} new card${n > 1 ? "s" : ""} per day`,
+    goalPracticePerDay: (n) => `and depending on the day, you may have up to around ${n} review${n > 1 ? "s" : ""} to do`,
+    goalRecommendR: (r) => `I recommend reviewing each card ${r} time${r > 1 ? "s" : ""} before the deadline.`,
     goalTodayTitle: "Today",
     goalTodayDiscover: "To discover",
     goalTodayPractice: "To practice",
@@ -1004,10 +1006,11 @@ const T = {
     goalNoCards: "연결된 카드 없음",
     goalAddCards: "카드 추가",
     goalImportText: "텍스트 가져오기",
-    goalDailyTarget: "오늘의 목표",
+    goalDailyTarget: "마감일에 맞춰서 이렇게 계획했어:",
     goalCardsPerDay: (n) => `하루 ~${n}장`,
-    goalDiscoverPerDay: (n) => `${n}장 발견하기`,
-    goalPracticePerDay: (n) => `${n}회 복습`,
+    goalDiscoverPerDay: (n) => `하루에 ~${n}장의 새 카드를 발견해`,
+    goalPracticePerDay: (n) => `그리고 날에 따라 최대 약 ${n}회 복습이 있을 수 있어`,
+    goalRecommendR: (r) => `마감일 전에 각 카드를 ${r}번 복습하는 걸 추천해.`,
     goalTodayTitle: "오늘",
     goalTodayDiscover: "발견할 카드",
     goalTodayPractice: "연습할 카드",
@@ -6352,7 +6355,8 @@ function AppInner() {
     return {
       discover: discoverPerDay,
       practice: practicePerDay,
-      total: discoverPerDay + practicePerDay
+      total: discoverPerDay + practicePerDay,
+      R
     };
   };
 
@@ -8969,13 +8973,12 @@ function AppInner() {
                         )}
                       </div>
                       <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
-                        <div style={{ fontSize: 10, color: C.txtM, fontWeight: 500, marginBottom: 4 }}>{t.goalDailyTarget}</div>
-                        <div style={{ fontSize: 14, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily.total)}</div>
-                        <div style={{ fontSize: 11, color: C.txtM, marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
-                          {daily.discover > 0 && <span>📖 {t.goalDiscoverPerDay(daily.discover)}</span>}
-                          {daily.practice > 0 && <span>🔄 {t.goalPracticePerDay(daily.practice)}</span>}
+                        <div style={{ fontSize: 11, color: C.txt, lineHeight: 1.6, marginBottom: 4 }}>{t.goalDailyTarget}</div>
+                        <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.6 }}>
+                          {daily.discover > 0 && <div>{t.goalDiscoverPerDay(daily.discover)},</div>}
+                          {daily.practice > 0 && <div>{t.goalPracticePerDay(daily.practice)}.</div>}
+                          <div style={{ marginTop: 4, color: C.acc, fontWeight: 500 }}>{t.goalRecommendR(daily.R)}</div>
                         </div>
-                        <div style={{ fontSize: 10, color: C.txtM, marginTop: 4 }}>{t.goalCardCount(prog.total)}</div>
                       </div>
                     </div>
 

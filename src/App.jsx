@@ -7946,7 +7946,7 @@ function AppInner() {
                   </button>
                 )}
 
-                {/* Spaced repetition progress */}
+                {/* Spaced repetition progress + exercise shortcuts */}
                 {(() => {
                   const reviewCount = getCardReviewCount(recapCard);
                   const cardObj = data.cards.find(x => x.korean === recapCard.korean);
@@ -7966,21 +7966,51 @@ function AppInner() {
                   else if (!nextDate) nextLabel = "";
                   else if (nextDate <= today) nextLabel = nextDate === today ? t.progressNextToday : t.progressNextPast;
                   else nextLabel = nextDate;
+                  const cats = [
+                    { key: "CE", icon: "📖", label: t.exCatCE, color: "#4A90D9" },
+                    { key: "CO", icon: "🎧", label: t.exCatCO, color: "#E8A838" },
+                    { key: "PE", icon: "✏️", label: t.exCatPE, color: "#7B7FF5" },
+                    { key: "PO", icon: "🎤", label: t.exCatPO, color: "#E06B6B" },
+                  ];
+                  const launchCat = (catKey) => {
+                    const cardId = cardObj?.id;
+                    exPrimaryWordRef.current = recapCard.korean;
+                    const eligible = data.cards.filter(x => (x.status === "studied" || x.status === "acquired") && (x.targetLang || "ko") === tl && x.id !== cardId);
+                    const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
+                    const ids = new Set([cardId, ...shuffled.map(x => x.id)].filter(Boolean));
+                    skipExResetRef.current = true;
+                    setExSel(ids);
+                    setExCategory(catKey);
+                    setExStep("exercise");
+                    setShowRecap(false); setRecapCard(null);
+                    setView("exercise");
+                  };
                   return (
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
                         <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{t.progressReviews(reviewCount, R)}</span>
                       </div>
-                      <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 14, overflow: "hidden" }}>
+                      <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: nextLabel ? 10 : 14, overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
                       </div>
                       {nextLabel && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                           <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
                           <span style={{ fontSize: 12, fontWeight: 600, color: acquired ? "#34C759" : nextDate && nextDate < today ? C.warn : C.acc }}>{nextLabel}</span>
                         </div>
                       )}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {cats.map(c => (
+                          <div key={c.key} onClick={() => launchCat(c.key)}
+                            style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, cursor: "pointer", transition: "border-color 0.15s", border: "1px solid transparent", display: "flex", alignItems: "center", gap: 6 }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = c.color; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; }}>
+                            <span style={{ fontSize: 14 }}>{c.icon}</span>
+                            <span style={{ fontSize: 11.5, fontWeight: 600, color: c.color }}>{c.label}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                 })()}

@@ -234,6 +234,42 @@ const T = {
     endPractice: "Terminer la pratique",
     practiceWrapUp: "Tu peux terminer et générer un résumé :",
     practiceExitWarn: (n) => `Si tu quittes maintenant, aucun résumé ne sera généré. Encore ${n} tour${n > 1 ? "s" : ""} avant le résumé. Quitter quand même ?`,
+    goalsTab: "Objectifs",
+    goalCreate: "Créer un objectif",
+    goalName: "Nom de l'objectif",
+    goalNamePh: "Ex : Topik II, Cours du 7 octobre...",
+    goalDeadline: "Date limite",
+    goalCards: "Cartes associées",
+    goalNoCards: "Aucune carte associée",
+    goalAddCards: "Ajouter des cartes",
+    goalImportText: "Importer un texte",
+    goalDailyTarget: "Objectif du jour",
+    goalCardsPerDay: (n) => `${n} carte${n > 1 ? "s" : ""} / jour`,
+    goalDaysLeft: (n) => n <= 0 ? "Délai dépassé" : `${n} jour${n > 1 ? "s" : ""} restant${n > 1 ? "s" : ""}`,
+    goalProgress1: "Découvertes",
+    goalProgress2: "Acquises",
+    goalEmpty: "Pas encore d'objectif. Crée ton premier objectif !",
+    goalDelete: "Supprimer l'objectif",
+    goalDeleteConfirm: "Supprimer cet objectif ?",
+    goalDeleteCards: "Supprimer aussi les cartes associées ?",
+    goalDeleteKeep: "Garder les cartes",
+    goalDeleteRemove: "Supprimer les cartes",
+    goalCancel: "Annuler",
+    goalSave: "Créer",
+    goalUpdate: "Mettre à jour",
+    goalTrophyHall: "Hall des trophées",
+    goalNoTrophy: "Aucun trophée pour le moment.",
+    goalCompleted: "Terminé le",
+    goalExpired: "Le délai est dépassé. Prolonger ?",
+    goalExtend: "Prolonger",
+    goalNewDeadline: "Nouvelle date limite",
+    goalMilestone: (pct) => `${pct}% de l'objectif atteint !`,
+    goalCardCount: (n) => `${n} carte${n > 1 ? "s" : ""}`,
+    goalOf: "sur",
+    goalPickCards: "Sélectionner des cartes",
+    goalPickSub: "Choisis les cartes à associer à cet objectif.",
+    goalOverdue: "En retard",
+    goalActive: "En cours",
     generating: "Génération du résumé...",
     summaryHistory: "Historique des leçons",
     noSummaries: "Aucune leçon terminée pour le moment.",
@@ -559,6 +595,42 @@ const T = {
     endPractice: "End practice",
     practiceWrapUp: "You can finish and generate a summary:",
     practiceExitWarn: (n) => `If you leave now, no summary will be generated. ${n} turn${n > 1 ? "s" : ""} remaining before the summary. Leave anyway?`,
+    goalsTab: "Goals",
+    goalCreate: "Create a goal",
+    goalName: "Goal name",
+    goalNamePh: "E.g.: Topik II, October 7 class...",
+    goalDeadline: "Deadline",
+    goalCards: "Associated cards",
+    goalNoCards: "No cards associated",
+    goalAddCards: "Add cards",
+    goalImportText: "Import text",
+    goalDailyTarget: "Today's goal",
+    goalCardsPerDay: (n) => `${n} card${n > 1 ? "s" : ""} / day`,
+    goalDaysLeft: (n) => n <= 0 ? "Overdue" : `${n} day${n > 1 ? "s" : ""} left`,
+    goalProgress1: "Discovered",
+    goalProgress2: "Acquired",
+    goalEmpty: "No goals yet. Create your first goal!",
+    goalDelete: "Delete goal",
+    goalDeleteConfirm: "Delete this goal?",
+    goalDeleteCards: "Also delete the associated cards?",
+    goalDeleteKeep: "Keep cards",
+    goalDeleteRemove: "Delete cards",
+    goalCancel: "Cancel",
+    goalSave: "Create",
+    goalUpdate: "Update",
+    goalTrophyHall: "Trophy hall",
+    goalNoTrophy: "No trophies yet.",
+    goalCompleted: "Completed on",
+    goalExpired: "Deadline passed. Extend?",
+    goalExtend: "Extend",
+    goalNewDeadline: "New deadline",
+    goalMilestone: (pct) => `${pct}% of the goal reached!`,
+    goalCardCount: (n) => `${n} card${n > 1 ? "s" : ""}`,
+    goalOf: "of",
+    goalPickCards: "Select cards",
+    goalPickSub: "Choose cards to associate with this goal.",
+    goalOverdue: "Overdue",
+    goalActive: "Active",
     generating: "Generating summary...",
     summaryHistory: "Lesson history",
     noSummaries: "No completed lessons yet.",
@@ -882,6 +954,42 @@ const T = {
     endPractice: "연습 끝내기",
     practiceWrapUp: "끝내고 요약을 만들 수 있어:",
     practiceExitWarn: (n) => `지금 나가면 요약이 생성되지 않아. 요약까지 ${n}턴 남았어. 그래도 나갈래?`,
+    goalsTab: "목표",
+    goalCreate: "목표 만들기",
+    goalName: "목표 이름",
+    goalNamePh: "예: 토픽 II, 10월 7일 수업...",
+    goalDeadline: "마감일",
+    goalCards: "연결된 카드",
+    goalNoCards: "연결된 카드 없음",
+    goalAddCards: "카드 추가",
+    goalImportText: "텍스트 가져오기",
+    goalDailyTarget: "오늘의 목표",
+    goalCardsPerDay: (n) => `하루 ${n}장`,
+    goalDaysLeft: (n) => n <= 0 ? "기한 초과" : `${n}일 남음`,
+    goalProgress1: "학습 시작",
+    goalProgress2: "습득 완료",
+    goalEmpty: "아직 목표가 없어. 첫 번째 목표를 만들어 봐!",
+    goalDelete: "목표 삭제",
+    goalDeleteConfirm: "이 목표를 삭제할까?",
+    goalDeleteCards: "연결된 카드도 삭제할까?",
+    goalDeleteKeep: "카드 유지",
+    goalDeleteRemove: "카드 삭제",
+    goalCancel: "취소",
+    goalSave: "만들기",
+    goalUpdate: "업데이트",
+    goalTrophyHall: "트로피 홀",
+    goalNoTrophy: "아직 트로피가 없어.",
+    goalCompleted: "완료일",
+    goalExpired: "기한이 지났어. 연장할래?",
+    goalExtend: "연장",
+    goalNewDeadline: "새 마감일",
+    goalMilestone: (pct) => `목표의 ${pct}% 달성!`,
+    goalCardCount: (n) => `카드 ${n}장`,
+    goalOf: "/",
+    goalPickCards: "카드 선택",
+    goalPickSub: "이 목표에 연결할 카드를 골라 봐.",
+    goalOverdue: "기한 초과",
+    goalActive: "진행 중",
     generating: "요약 생성 중...",
     summaryHistory: "레슨 기록",
     noSummaries: "아직 완료한 레슨이 없어요.",
@@ -5481,6 +5589,7 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
+    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
@@ -6013,6 +6122,123 @@ function AppInner() {
   const [progressToast, setProgressToast] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
+  // Goals
+  const [goalView, setGoalView] = useState("list"); // "list" | "detail" | "create" | "pick"
+  const [goalEditId, setGoalEditId] = useState(null);
+  const [goalForm, setGoalForm] = useState({ name: "", deadline: "" });
+  const [goalCardPicker, setGoalCardPicker] = useState(false);
+  const [goalPickSel, setGoalPickSel] = useState(new Set());
+  const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
+  const [goalCelebration, setGoalCelebration] = useState(null); // { pct }
+
+  const goals = data.goals || [];
+  const activeGoals = goals.filter(g => !g.trophyDate);
+  const trophyGoals = goals.filter(g => g.trophyDate);
+
+  const goalProgress = (goal) => {
+    const cards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+    const total = cards.length;
+    if (!total) return { discovered: 0, acquired: 0, total: 0, pct1: 0, pct2: 0, overall: 0 };
+    const discovered = cards.filter(c => migrateStatus(c.status) !== "new").length;
+    const acquired = cards.filter(c => migrateStatus(c.status) === "acquired").length;
+    return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100) };
+  };
+
+  const goalDailyTarget = (goal) => {
+    const { total, acquired } = goalProgress(goal);
+    const remaining = total - acquired;
+    if (remaining <= 0) return 0;
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
+    const daysLeft = Math.max(1, Math.ceil((dl - now) / 86400000));
+    return Math.ceil(remaining / daysLeft);
+  };
+
+  const goalDaysLeft = (goal) => {
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
+    return Math.ceil((dl - now) / 86400000);
+  };
+
+  const createGoal = (name, deadline, cardIds) => {
+    const id = Date.now().toString() + Math.random().toString(36).slice(2, 5);
+    const goal = { id, name, deadline, cardIds: [...cardIds], milestones: {}, createdAt: new Date().toISOString(), trophyDate: null };
+    const nd = { ...data, goals: [...goals, goal], cards: data.cards.map(c => cardIds.has(c.id) ? { ...c, goalId: id } : c) };
+    save(nd);
+    setGoalView("list"); setGoalForm({ name: "", deadline: "" }); setGoalPickSel(new Set());
+  };
+
+  const deleteGoal = (goalId, deleteCards) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+    let cards = data.cards;
+    if (deleteCards) {
+      cards = cards.filter(c => !goal.cardIds.includes(c.id));
+    } else {
+      cards = cards.map(c => c.goalId === goalId ? { ...c, goalId: undefined } : c);
+    }
+    save({ ...data, goals: goals.filter(g => g.id !== goalId), cards });
+    setGoalDeleteConfirm(null);
+    if (goalEditId === goalId) { setGoalEditId(null); setGoalView("list"); }
+  };
+
+  const addCardsToGoal = (goalId, newCardIds) => {
+    const nd = {
+      ...data,
+      goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...g.cardIds, ...newCardIds])] } : g),
+      cards: data.cards.map(c => newCardIds.has(c.id) ? { ...c, goalId: goalId } : c),
+    };
+    save(nd);
+    setGoalCardPicker(false); setGoalPickSel(new Set());
+  };
+
+  const extendGoalDeadline = (goalId, newDeadline) => {
+    save({ ...data, goals: goals.map(g => g.id === goalId ? { ...g, deadline: newDeadline } : g) });
+  };
+
+  const checkGoalMilestones = (goalId) => {
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal || goal.trophyDate) return;
+    const { overall } = goalProgress(goal);
+    const ms = goal.milestones || {};
+    const thresholds = [25, 50, 75, 100];
+    let hit = null;
+    for (const pct of thresholds) {
+      if (overall >= pct && !ms[pct]) { hit = pct; }
+    }
+    if (!hit) return;
+    const updatedMs = { ...ms };
+    for (const pct of thresholds) { if (overall >= pct) updatedMs[pct] = true; }
+    let nd = { ...data, goals: data.goals.map(g => g.id !== goalId ? g : { ...g, milestones: updatedMs, ...(hit === 100 ? { trophyDate: new Date().toISOString() } : {}) }) };
+    nd = awardPoints(hit === 100 ? 50 : 25, nd);
+    save(nd);
+    setGoalCelebration({ pct: hit });
+    setShowCelebration(true);
+  };
+
+  // Check milestones whenever card statuses change
+  const goalMsRef = useRef({});
+  useEffect(() => {
+    if (!loaded) return;
+    for (const goal of (data.goals || [])) {
+      if (goal.trophyDate) continue;
+      const { overall } = goalProgress(goal);
+      const prev = goalMsRef.current[goal.id] || 0;
+      if (overall > prev) {
+        goalMsRef.current[goal.id] = overall;
+        const thresholds = [25, 50, 75, 100];
+        for (const pct of thresholds) {
+          if (overall >= pct && prev < pct && !(goal.milestones || {})[pct]) {
+            checkGoalMilestones(goal.id);
+            break;
+          }
+        }
+      } else {
+        goalMsRef.current[goal.id] = overall;
+      }
+    }
+  }, [data.cards, data.goals]);
+
   const completeExercise = (mode, cardIds) => {
     const result = recordExerciseProgress(data, cardIds, mode);
     let nd = awardPoints(15, result.data);
@@ -6360,7 +6586,13 @@ function AppInner() {
       )}
 
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
-      {showCelebration && <CelebrationOverlay visible onClose={() => setShowCelebration(false)} lang={lang} />}
+      {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} />}
+      {goalCelebration && !showCelebration && (
+        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}
+          onClick={() => setGoalCelebration(null)}>
+          🎯 {t.goalMilestone(goalCelebration.pct)}
+        </div>
+      )}
 
       {selAdd && (winW < 700 ? (
         <div data-sel-add style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 3000, padding: "10px 16px", background: C.acc, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, boxShadow: "0 -4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.15s ease-out" }}>
@@ -6593,6 +6825,7 @@ function AppInner() {
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
         {tl === "ko" && <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>}
+        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
@@ -6634,7 +6867,7 @@ function AppInner() {
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+          {[["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["goals", "🎯 " + t.goalsTab], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}
@@ -8223,6 +8456,294 @@ function AppInner() {
             }}
             onExit={() => { setCompSession(null); setView("import"); }}
           />
+        )}
+
+        {/* GOALS */}
+        {view === "goals" && (
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: 560, padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+              {/* GOAL CREATE / EDIT */}
+              {goalView === "create" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button onClick={() => setGoalView("list")} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{t.goalCreate}</div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalName}</label>
+                    <input value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
+                      style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
+                    <input type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
+                      style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "block" }}>{t.goalCards} ({goalPickSel.size})</label>
+                    <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1 }}>
+                      {data.cards.filter(c => !c.goalId).length === 0 ? (
+                        <div style={{ padding: 16, fontSize: 12, color: C.txtM, textAlign: "center" }}>{t.goalNoCards}</div>
+                      ) : data.cards.filter(c => !c.goalId).map(c => (
+                        <div key={c.id} onClick={() => { const s = new Set(goalPickSel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setGoalPickSel(s); }}
+                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: goalPickSel.has(c.id) ? C.accBg : "transparent" }}>
+                          <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${goalPickSel.has(c.id) ? C.acc : C.borderS}`, background: goalPickSel.has(c.id) ? C.acc : "transparent", color: C.onAcc }}>{goalPickSel.has(c.id) ? "✓" : ""}</span>
+                          <span style={{ fontFamily: tFont, fontSize: 14, color: C.txt }}>{c.korean}</span>
+                          <span style={{ fontSize: 11, color: C.txtM, marginLeft: "auto" }}>{c.type === "grammar" ? "📐" : "📝"}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {data.cards.filter(c => !c.goalId).length > 0 && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                        <button onClick={() => setGoalPickSel(new Set(data.cards.filter(c => !c.goalId).map(c => c.id)))}
+                          style={{ fontSize: 11, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
+                        <button onClick={() => setGoalPickSel(new Set())}
+                          style={{ fontSize: 11, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel)}
+                      style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                      {t.goalSave}
+                    </button>
+                    <button onClick={() => setGoalView("list")}
+                      style={{ padding: "10px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 13, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                      {t.goalCancel}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* GOAL DETAIL */}
+              {goalView === "detail" && (() => {
+                const goal = goals.find(g => g.id === goalEditId);
+                if (!goal) return <div style={{ fontSize: 13, color: C.txtM }}>{t.goalEmpty}</div>;
+                const prog = goalProgress(goal);
+                const daily = goalDailyTarget(goal);
+                const dLeft = goalDaysLeft(goal);
+                const overdue = dLeft <= 0 && !goal.trophyDate;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <button onClick={() => { setGoalView("list"); setGoalEditId(null); }} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, flex: 1 }}>{goal.name}</div>
+                      {overdue && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.warnBg, color: C.warn, fontWeight: 500 }}>{t.goalOverdue}</span>}
+                    </div>
+
+                    {/* Deadline + daily */}
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
+                        <div style={{ fontSize: 10, color: C.txtM, fontWeight: 500, marginBottom: 4 }}>{t.goalDeadline}</div>
+                        <div style={{ fontSize: 14, color: overdue ? C.warn : C.txt, fontWeight: 500 }}>{new Date(goal.deadline).toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" })}</div>
+                        <div style={{ fontSize: 11, color: overdue ? C.warn : C.txtM, marginTop: 2 }}>{t.goalDaysLeft(dLeft)}</div>
+                      </div>
+                      <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
+                        <div style={{ fontSize: 10, color: C.txtM, fontWeight: 500, marginBottom: 4 }}>{t.goalDailyTarget}</div>
+                        <div style={{ fontSize: 14, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily)}</div>
+                        <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>{t.goalCardCount(prog.total)}</div>
+                      </div>
+                    </div>
+
+                    {/* Overdue: propose extension */}
+                    {overdue && (
+                      <div style={{ background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ fontSize: 12, color: C.warn, fontWeight: 500 }}>⚠️ {t.goalExpired}</div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input type="date" id="goal-extend-date" defaultValue={(() => { const d = new Date(); d.setDate(d.getDate() + Math.max(7, prog.total - prog.acquired)); return d.toISOString().split("T")[0]; })()}
+                            style={{ padding: "6px 10px", border: `1px solid ${C.warnB}`, borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1 }} />
+                          <button onClick={() => { const v = document.getElementById("goal-extend-date")?.value; if (v) extendGoalDeadline(goal.id, v); }}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalExtend}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Progress bars */}
+                    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress1}</span>
+                          <span style={{ fontSize: 11, color: C.acc, fontWeight: 600 }}>{prog.discovered} {t.goalOf} {prog.total}</span>
+                        </div>
+                        <div style={{ height: 8, borderRadius: 4, background: C.s1, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${prog.pct1}%`, background: C.acc, borderRadius: 4, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress2}</span>
+                          <span style={{ fontSize: 11, color: C.ok, fontWeight: 600 }}>{prog.acquired} {t.goalOf} {prog.total}</span>
+                        </div>
+                        <div style={{ height: 8, borderRadius: 4, background: C.s1, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${prog.pct2}%`, background: C.ok, borderRadius: 4, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Milestones */}
+                    <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                      {[25, 50, 75, 100].map(pct => (
+                        <div key={pct} style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, border: `2px solid ${(goal.milestones || {})[pct] ? C.ok : C.border}`, background: (goal.milestones || {})[pct] ? C.okBg : C.s1, color: (goal.milestones || {})[pct] ? C.ok : C.txtM }}>
+                          {(goal.milestones || {})[pct] ? "✓" : `${pct}%`}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Card list */}
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.goalCards}</div>
+                        <button onClick={() => { setGoalCardPicker(true); setGoalPickSel(new Set()); }}
+                          style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalAddCards}</button>
+                      </div>
+                      {(goal.cardIds || []).length === 0 ? (
+                        <div style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 16 }}>{t.goalNoCards}</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 300, overflowY: "auto" }}>
+                          {(goal.cardIds || []).map(id => { const c = data.cards.find(x => x.id === id); if (!c) return null; const si = statusInfo(c.status, t); return (
+                            <div key={id} onClick={() => { openCardFresh(c); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer" }}>
+                              <span style={{ fontFamily: tFont, fontSize: 14, color: C.txt, flex: 1 }}>{c.korean}</span>
+                              <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 8, background: si.bg, color: si.color }}>{si.label}</span>
+                            </div>
+                          ); })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card picker modal */}
+                    {goalCardPicker && (
+                      <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 4 }}>{t.goalPickCards}</div>
+                        <div style={{ fontSize: 11, color: C.txtM, marginBottom: 8 }}>{t.goalPickSub}</div>
+                        <div style={{ maxHeight: 200, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1, marginBottom: 8 }}>
+                          {data.cards.filter(c => !c.goalId || c.goalId === goal.id).filter(c => !(goal.cardIds || []).includes(c.id)).map(c => (
+                            <div key={c.id} onClick={() => { const s = new Set(goalPickSel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setGoalPickSel(s); }}
+                              style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: goalPickSel.has(c.id) ? C.accBg : "transparent" }}>
+                              <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${goalPickSel.has(c.id) ? C.acc : C.borderS}`, background: goalPickSel.has(c.id) ? C.acc : "transparent", color: C.onAcc }}>{goalPickSel.has(c.id) ? "✓" : ""}</span>
+                              <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button disabled={!goalPickSel.size} onClick={() => addCardsToGoal(goal.id, goalPickSel)}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: goalPickSel.size ? C.acc : C.s1, color: goalPickSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalPickSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                            + {t.goalAddCards} ({goalPickSel.size})
+                          </button>
+                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); }}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Delete */}
+                    {goalDeleteConfirm === goal.id ? (
+                      <div style={{ background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, padding: 14 }}>
+                        <div style={{ fontSize: 12, color: C.warn, fontWeight: 500, marginBottom: 8 }}>{t.goalDeleteConfirm}</div>
+                        <div style={{ fontSize: 12, color: C.txtM, marginBottom: 10 }}>{t.goalDeleteCards}</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button onClick={() => deleteGoal(goal.id, true)}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.warn, color: "#fff", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteRemove}</button>
+                          <button onClick={() => deleteGoal(goal.id, false)}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteKeep}</button>
+                          <button onClick={() => setGoalDeleteConfirm(null)}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => setGoalDeleteConfirm(goal.id)}
+                        style={{ alignSelf: "flex-start", padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.warnB}`, background: "none", color: C.warn, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>🗑 {t.goalDelete}</button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* GOAL LIST */}
+              {goalView === "list" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>🎯 {t.goalsTab}</div>
+                    <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "" }); setGoalPickSel(new Set()); }}
+                      style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalCreate}</button>
+                  </div>
+
+                  {activeGoals.length === 0 && trophyGoals.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "40px 20px", color: C.txtM, fontSize: 13 }}>
+                      <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+                      {t.goalEmpty}
+                    </div>
+                  )}
+
+                  {/* Active goals */}
+                  {activeGoals.map(goal => {
+                    const prog = goalProgress(goal);
+                    const daily = goalDailyTarget(goal);
+                    const dLeft = goalDaysLeft(goal);
+                    const overdue = dLeft <= 0;
+                    return (
+                      <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); }}
+                        style={{ background: C.s2, border: `1px solid ${overdue ? C.warnB : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", transition: "border-color 0.15s" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }} onMouseLeave={e => { e.currentTarget.style.borderColor = overdue ? C.warnB : C.border; }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{goal.name}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {overdue && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: C.warnBg, color: C.warn, fontWeight: 500 }}>{t.goalOverdue}</span>}
+                            <span style={{ fontSize: 10, color: C.txtM }}>{t.goalDaysLeft(dLeft)}</span>
+                          </div>
+                        </div>
+                        {/* Progress bars */}
+                        <div style={{ marginBottom: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                            <span style={{ fontSize: 10, color: C.txtM }}>{t.goalProgress1}</span>
+                            <span style={{ fontSize: 10, color: C.acc, fontWeight: 500 }}>{prog.pct1}%</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: C.s1, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${prog.pct1}%`, background: C.acc, borderRadius: 3, transition: "width 0.3s" }} />
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                            <span style={{ fontSize: 10, color: C.txtM }}>{t.goalProgress2}</span>
+                            <span style={{ fontSize: 10, color: C.ok, fontWeight: 500 }}>{prog.pct2}%</span>
+                          </div>
+                          <div style={{ height: 6, borderRadius: 3, background: C.s1, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${prog.pct2}%`, background: C.ok, borderRadius: 3, transition: "width 0.3s" }} />
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, color: C.txtM }}>{t.goalCardCount(prog.total)}</span>
+                          <span style={{ fontSize: 12, color: C.acc, fontWeight: 600 }}>{t.goalCardsPerDay(daily)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Trophy hall */}
+                  {trophyGoals.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>🏆 {t.goalTrophyHall}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {trophyGoals.map(goal => {
+                          const prog = goalProgress(goal);
+                          return (
+                            <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); }}
+                              style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 24 }}>🏆</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{goal.name}</div>
+                                <div style={{ fontSize: 11, color: C.txtM }}>{t.goalCompleted} {new Date(goal.trophyDate).toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" })}</div>
+                              </div>
+                              <span style={{ fontSize: 11, color: C.ok, fontWeight: 500 }}>{t.goalCardCount(prog.total)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* PROFILE */}

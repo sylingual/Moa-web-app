@@ -4670,7 +4670,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
 function AppInner() {
   const [data, setData] = useState(DEFAULT_DATA);
   const [loaded, setLoaded] = useState(false);
-  const [view, setView] = useState("library");
+  const [view, setView] = useState("goals");
   const [libView, setLibView] = useState("grid");
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab" (library)
   const [libTagFilter, setLibTagFilter] = useState(null); // null = all, string = specific tag
@@ -6919,11 +6919,11 @@ function AppInner() {
         </div>
         {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
         <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
+        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
         {tl === "ko" && <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>}
-        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
@@ -6965,7 +6965,7 @@ function AppInner() {
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["goals", "🎯 " + t.goalsTab], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}

@@ -4665,6 +4665,7 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
       {checked && !correct && (
         <div style={{ fontSize: 12, lineHeight: 1.5 }}>
           <div style={{ color: "#FF3B30", marginBottom: 4 }}>{t.fixitWrong}</div>
+          <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtM, marginBottom: 6, padding: "6px 10px", background: C.s1, borderRadius: 6, textDecoration: "line-through" }}>{input}</div>
           <div style={{ color: "#34C759", fontFamily: tFont, fontWeight: 500 }}>{sent.corrected}</div>
           <div style={{ color: C.txtM, marginTop: 4, fontSize: 11.5 }}>{sent.explanation}</div>
         </div>

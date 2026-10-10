@@ -138,6 +138,7 @@ const T = {
     progressNextReview: "Prochaine révision recommandée",
     progressNextDays: (n) => n === 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jour${n > 1 ? "s" : ""}`,
     progressCanPractice: "Vous pouvez néanmoins vous entraîner aujourd'hui.",
+    progressJustDiscovered: "Vous venez à peine de découvrir cette carte. Mais si vous voulez, vous pouvez déjà vous entraîner.",
     progressAlreadyDone: "Vous vous êtes déjà entraîné aujourd'hui, mais vous pouvez réviser encore si vous voulez.",
     progressNextPast: "En retard",
     progressAcquired: "Acquise !",
@@ -515,6 +516,7 @@ const T = {
     progressNextReview: "Next recommended review",
     progressNextDays: (n) => n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} day${n > 1 ? "s" : ""}`,
     progressCanPractice: "You can still practice today.",
+    progressJustDiscovered: "You just discovered this card. But you can already practice if you want.",
     progressAlreadyDone: "You already practiced today, but you can review again if you want.",
     progressNextPast: "Overdue",
     progressAcquired: "Acquired!",
@@ -892,6 +894,7 @@ const T = {
     progressNextReview: "다음 추천 복습",
     progressNextDays: (n) => n === 0 ? "오늘" : n === 1 ? "내일" : `${n}일 후`,
     progressCanPractice: "그래도 오늘 연습할 수 있어요.",
+    progressJustDiscovered: "방금 이 카드를 발견했어요. 그래도 벌써 연습해 보고 싶으면 해 보세요.",
     progressAlreadyDone: "오늘 이미 연습했어요. 그래도 더 복습하고 싶으면 할 수 있어요.",
     progressNextPast: "밀림",
     progressAcquired: "습득 완료!",
@@ -8009,20 +8012,22 @@ function AppInner() {
 
                 {/* Spaced repetition progress + exercise shortcuts */}
                 {(() => {
-                  const reviewCount = getCardReviewCount(recapCard);
                   const cardObj = data.cards.find(x => x.korean === recapCard.korean);
+                  const cardForReview = cardObj || recapCard;
+                  const reviewCount = getCardReviewCount(cardForReview);
                   const goal = cardObj?.goalId ? (data.goals || []).find(g => g.id === cardObj.goalId) : null;
                   let daysAvailable = Infinity;
-                  if (goal && cardObj.discoveredDate) {
-                    daysAvailable = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(cardObj.discoveredDate + "T00:00:00")) / 86400000));
+                  if (goal && cardForReview.discoveredDate) {
+                    daysAvailable = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(cardForReview.discoveredDate + "T00:00:00")) / 86400000));
                   }
                   const schedule = getSpacedSchedule(daysAvailable);
                   const R = schedule.R;
                   const pct = Math.min(100, Math.round((reviewCount / R) * 100));
                   const acquired = reviewCount >= R;
                   const today = new Date().toISOString().slice(0, 10);
-                  const nextDate = getCardNextReviewDate(recapCard, daysAvailable);
-                  const practicedToday = cardObj && cardObj.reviewDates && cardObj.reviewDates.includes(today);
+                  const nextDate = getCardNextReviewDate(cardForReview, daysAvailable);
+                  const practicedToday = cardForReview.reviewDates && cardForReview.reviewDates.includes(today);
+                  const justDiscovered = cardForReview.discoveredDate === today && reviewCount === 0;
                   let daysUntilNext = null;
                   if (nextDate && !acquired) {
                     const nd = new Date(nextDate + "T00:00:00");
@@ -8059,20 +8064,18 @@ function AppInner() {
                       </div>
                       {acquired ? (
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#34C759", marginBottom: 14 }}>{t.progressAcquired}</div>
-                      ) : daysUntilNext !== null ? (
+                      ) : (
                         <div style={{ marginBottom: 14 }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
-                          </div>
-                          <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: 4 }}>
-                            {practicedToday ? t.progressAlreadyDone : t.progressCanPractice}
+                          {daysUntilNext !== null && (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: 12, color: C.txtM }}>{t.progressNextReview}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: daysUntilNext !== null ? 4 : 0 }}>
+                            {justDiscovered ? t.progressJustDiscovered : practicedToday ? t.progressAlreadyDone : t.progressCanPractice}
                           </div>
                         </div>
-                      ) : practicedToday ? (
-                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginBottom: 14 }}>{t.progressAlreadyDone}</div>
-                      ) : (
-                        <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginBottom: 14 }}>{t.progressCanPractice}</div>
                       )}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (

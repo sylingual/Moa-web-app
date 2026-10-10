@@ -113,7 +113,7 @@ const T = {
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
     imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
     exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
-    exVocabOnly: "Vocabulaire uniquement",
+    exVocabOnly: "Vocabulaire uniquement", exGrammarOnly: "Grammaire uniquement",
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.", crossNextLvl: "Niveau suivant →",
@@ -147,6 +147,10 @@ const T = {
     grammarProgressLabel: (n, r) => `${n}/${r} jour${n > 1 ? "s" : ""} d'exercice`,
     grammarProgressSub: "Fais un exercice par jour sur des jours différents pour acquérir ce point de grammaire.",
     grammarProgressDone: "Exercice du jour fait !",
+    exReorder: "Le Bon Ordre", exReorderDesc: "Remets les mots dans le bon ordre.",
+    reorderInstr: "Touche les mots dans le bon ordre pour former la phrase.",
+    reorderCheck: "Vérifier", reorderNext: "Suivante", reorderCorrect: "Bonne réponse !", reorderWrong: "Pas tout à fait...",
+    reorderSentence: (n, total) => `Phrase ${n}/${total}`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -523,7 +527,7 @@ const T = {
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
     imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
     exNeedImages: "Not enough words with images for this exercise (pick some others).",
-    exVocabOnly: "Vocabulary only",
+    exVocabOnly: "Vocabulary only", exGrammarOnly: "Grammar only",
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.", crossNextLvl: "Next level →",
@@ -557,6 +561,10 @@ const T = {
     grammarProgressLabel: (n, r) => `${n}/${r} day${n > 1 ? "s" : ""} of exercise`,
     grammarProgressSub: "Do one exercise per day on different days to acquire this grammar point.",
     grammarProgressDone: "Today's exercise done!",
+    exReorder: "Word Order", exReorderDesc: "Put the words in the right order.",
+    reorderInstr: "Tap the words in the right order to form the sentence.",
+    reorderCheck: "Check", reorderNext: "Next", reorderCorrect: "Correct!", reorderWrong: "Not quite...",
+    reorderSentence: (n, total) => `Sentence ${n}/${total}`,
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -933,7 +941,7 @@ const T = {
     exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
     imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
     exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
-    exVocabOnly: "어휘 전용",
+    exVocabOnly: "어휘 전용", exGrammarOnly: "문법 전용",
     matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.", crossNextLvl: "다음 레벨 →",
@@ -967,6 +975,10 @@ const T = {
     grammarProgressLabel: (n, r) => `${n}/${r}일 연습`,
     grammarProgressSub: "매일 하나씩, 다른 날에 연습해야 이 문법을 습득할 수 있어.",
     grammarProgressDone: "오늘 연습 완료!",
+    exReorder: "올바른 순서", exReorderDesc: "단어를 올바른 순서로 배열해 봐.",
+    reorderInstr: "단어를 터치해서 올바른 문장을 만들어 봐.",
+    reorderCheck: "확인", reorderNext: "다음", reorderCorrect: "정답!", reorderWrong: "아직...",
+    reorderSentence: (n, total) => `문장 ${n}/${total}`,
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
     resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
@@ -2031,6 +2043,24 @@ Return ONLY this JSON structure:
 }
 CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the story. If they are the same, set both to the same value.`,
 
+    reorder: `WORD ORDER MODE: Generate exactly 5 sentences in ${TL} that each use or illustrate the grammar point(s) listed below.
+
+RULES:
+- Each sentence should be natural, useful, and between 4 and 10 words long
+- Vary the context: daily life, social media, work, friends, travel, etc.
+- Make sure the grammar point is clearly present in each sentence
+- Provide a ${L} translation for each sentence
+
+Return ONLY this JSON:
+{
+  "message": "One-line intro in ${L} (e.g. 'Put these sentences back in order!')",
+  "sentences": [
+    {"text": "the correct sentence in ${TL}", "translation": "${L} translation"},
+    {"text": "...", "translation": "..."}
+  ]
+}
+CRITICAL: "text" must be the grammatically correct sentence. The app will shuffle the words for the student to reorder.`,
+
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
@@ -2069,7 +2099,7 @@ ${structs}
 
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
-  const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : undefined;
+  const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : mode === "reorder" ? 2000 : undefined;
   return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 
@@ -2355,7 +2385,7 @@ const GENDERED_LANGS = new Set(["fr", "de", "es", "it", "pt", "ru", "ar", "pl", 
 
 function exModeToCategory(mode) {
   switch (mode) {
-    case "flash": case "match": case "qcm": case "fill": return "ce";
+    case "flash": case "match": case "qcm": case "fill": case "reorder": return "ce";
     case "youglish": case "dictation": return "co";
     case "imgwrite": case "cross": case "story": case "dialoguefill": return "pe";
     default: return null;
@@ -4430,7 +4460,118 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
-// #64 — Fill-in-the-blank story exercise with interactive word bank
+function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
+  const sentences = data.sentences || [];
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState([]);
+  const [pool, setPool] = useState([]);
+  const [checked, setChecked] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (idx < sentences.length) {
+      const words = sentences[idx].text.split(/\s+/).filter(Boolean);
+      const shuffled = [...words];
+      for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+      if (shuffled.join(" ") === words.join(" ") && shuffled.length > 1) { const tmp = shuffled[0]; shuffled[0] = shuffled[1]; shuffled[1] = tmp; }
+      setPool(shuffled.map((w, i) => ({ word: w, id: i })));
+      setSelected([]);
+      setChecked(false);
+      setCorrect(false);
+    }
+  }, [idx, sentences]);
+
+  const tap = (item) => {
+    if (checked) return;
+    setSelected(prev => [...prev, item]);
+    setPool(prev => prev.filter(p => p.id !== item.id));
+  };
+  const untap = (item) => {
+    if (checked) return;
+    setPool(prev => [...prev, item]);
+    setSelected(prev => prev.filter(p => p.id !== item.id));
+  };
+  const check = () => {
+    const answer = selected.map(s => s.word).join(" ");
+    const target = sentences[idx].text;
+    const isCorrect = answer === target;
+    setCorrect(isCorrect);
+    setChecked(true);
+    if (isCorrect) setScore(prev => prev + 1);
+  };
+  const next = () => {
+    if (idx + 1 >= sentences.length) {
+      setDone(true);
+      onComplete(cards.map(c => c.id));
+    } else {
+      setIdx(prev => prev + 1);
+    }
+  };
+
+  if (done) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
+        <div style={{ fontSize: 40 }}>{score >= sentences.length ? "🎉" : score >= Math.ceil(sentences.length / 2) ? "👍" : "💪"}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{score}/{sentences.length}</div>
+        <button onClick={onExit} style={{ padding: "10px 24px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>{t.back}</button>
+      </div>
+    );
+  }
+
+  const sent = sentences[idx];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txtM }}>{t.reorderSentence(idx + 1, sentences.length)}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
+      </div>
+      <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.5 }}>{t.reorderInstr}</div>
+      {sent?.translation && <div style={{ fontSize: 12, color: C.txtS, fontStyle: "italic", lineHeight: 1.4 }}>{sent.translation}</div>}
+      <div style={{ minHeight: 48, padding: 12, borderRadius: 10, border: `2px dashed ${checked ? (correct ? "#34C759" : "#FF3B30") : C.border}`, background: checked ? (correct ? "rgba(52,199,89,0.06)" : "rgba(255,59,48,0.06)") : C.s2, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+        {selected.length === 0 && !checked && <span style={{ fontSize: 12, color: C.txtS }}>...</span>}
+        {selected.map((item, i) => (
+          <button key={item.id} onClick={() => untap(item)}
+            style={{ padding: "6px 12px", borderRadius: 6, background: checked ? (correct ? "rgba(52,199,89,0.15)" : "rgba(255,59,48,0.15)") : C.acc, color: checked ? C.txt : C.onAcc, border: "none", fontFamily: tFont, fontSize: 14, cursor: checked ? "default" : "pointer", fontWeight: 500 }}>
+            {item.word}
+          </button>
+        ))}
+      </div>
+      {checked && !correct && (
+        <div style={{ fontSize: 12, color: "#FF3B30", lineHeight: 1.4 }}>
+          {t.reorderWrong} <span style={{ fontFamily: tFont, fontWeight: 500 }}>{sent.text}</span>
+        </div>
+      )}
+      {checked && correct && (
+        <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.reorderCorrect}</div>
+      )}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {pool.map(item => (
+          <button key={item.id} onClick={() => tap(item)}
+            style={{ padding: "6px 12px", borderRadius: 6, background: C.s1, color: C.txt, border: `1px solid ${C.border}`, fontFamily: tFont, fontSize: 14, cursor: "pointer" }}>
+            {item.word}
+          </button>
+        ))}
+      </div>
+      <div style={{ marginTop: "auto" }}>
+        {!checked ? (
+          <button onClick={check} disabled={selected.length === 0}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: selected.length > 0 ? C.acc : C.s1, color: selected.length > 0 ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: selected.length > 0 ? "pointer" : "default" }}>
+            {t.reorderCheck}
+          </button>
+        ) : (
+          <button onClick={next}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {idx + 1 >= sentences.length ? t.vocabFinishBtn : t.reorderNext}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// #64 -- Fill-in-the-blank story exercise with interactive word bank
 function stripKoreanParticle(word) {
   if (!word || !/[가-힣]/.test(word)) return word;
   const particles = [
@@ -6715,6 +6856,14 @@ function AppInner() {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
+    // Reorder mode uses its own UI
+    if (exMode === "reorder") {
+      setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
+      try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
+      catch (e) { console.error("launchEx reorder error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
+      setExLoad(false); setExTheme(null);
+      return;
+    }
     // Fill modes use interactive word-bank UI
     if (exMode === "fill" || exMode === "dialoguefill") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
@@ -8627,6 +8776,7 @@ function AppInner() {
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
                       ...(GENDERED_LANGS.has(tl) ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", ai: true },
+                      { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true, grammarOnly: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [
                       { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
@@ -8640,12 +8790,13 @@ function AppInner() {
                     ]).map(m => {
                       const selCards = exPreselectedRef.current ? allCards.filter(c => exSel.has(c.id)) : allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired"));
                       const noVocab = m.vocabOnly && !selCards.some(c => c.type === "vocab");
-                      const off = m.disabled || noVocab;
+                      const noGrammar = m.grammarOnly && !selCards.some(c => c.type === "grammar");
+                      const off = m.disabled || noVocab || noGrammar;
                       return (
                       <button key={m.k} onClick={() => {
                         if (off) return;
                         setExMode(m.k);
-                        if (m.vocabOnly) setExFilter("vocab"); else setExFilter("all");
+                        if (m.vocabOnly) setExFilter("vocab"); else if (m.grammarOnly) setExFilter("grammar"); else setExFilter("all");
                         if (m.k === "youglish" && exPrimaryWordRef.current) { setYouglishWord(exPrimaryWordRef.current); }
                         setExStep("cards");
                       }}
@@ -8656,6 +8807,7 @@ function AppInner() {
                         <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>
                         {m.disabled && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>bientot</div>}
                         {noVocab && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{t.exVocabOnly}</div>}
+                        {noGrammar && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{t.exGrammarOnly}</div>}
                       </button>
                       );
                     })}
@@ -8669,7 +8821,7 @@ function AppInner() {
                     </button>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{
-                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
+                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
                   }</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
@@ -8782,6 +8934,15 @@ function AppInner() {
               <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+            ) : exMode === "reorder" && fillData ? (
+              <ReorderExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+                onComplete={(ids) => completeExercise("reorder", ids)}
+                onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
+            ) : exMode === "reorder" && exLoad ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
+                <div className="pulse" style={{ fontSize: 13, color: C.txtM }}>{t.thinking}</div>
+                <button onClick={() => { setExOn(false); setExStep("category"); setExCategory(null); }} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
+              </div>
             ) : (exMode === "fill" || exMode === "dialoguefill") && fillData ? (
               <FillStoryExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl} mode={exMode}
                 onComplete={(usedIds) => completeExercise(exMode, usedIds)}

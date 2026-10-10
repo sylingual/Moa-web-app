@@ -182,19 +182,21 @@ const T = {
     syncLoading: "Synchronisation...",
     syncError: "Erreur de connexion. Vérifie ta configuration Supabase.",
     syncSuccess: "Données synchronisées !",
-    welcomeTitle: "Bienvenue sur 모아",
-    welcomeSub: "Connecte-toi à ton compte ou crée-en un nouveau pour commencer.",
-    welcomeLoginTitle: "Retrouve ton compte",
-    welcomeLoginSub: "Entre ton code personnel pour retrouver tes données.",
-    welcomeCreateTitle: "Crée ton compte",
-    welcomeCreateSub: "Choisis un code personnel pour créer ton compte.",
-    welcomeLogin: "Se connecter",
-    welcomeCreate: "Créer un compte",
-    welcomeCode: "Code personnel",
-    welcomeCodePlaceholder: "ton code personnel...",
+    welcomeTitle: "Bienvenue sur Moa ! 🌿🇰🇷",
+    welcomeSub: "Tel un seonbi (érudit) dans son 정자 (pavillon), tu es ici au calme pour imprégner ton esprit de la beauté du coréen et réaliser tes objectifs.",
+    welcomeLoginTitle: "Bienvenue cher(e) futur(e) apprenant(e) ! 🔑",
+    welcomeLoginSub: "Utilise le code de ton compte existant pour retrouver tes données.",
+    welcomeCreateTitle: "Bienvenue cher(e) futur(e) apprenant(e) ! 🔑",
+    welcomeCreateSub: "Ton espace sur-mesure arrive bientôt ! Pour sécuriser ton accès, choisis ta clé personnelle ci-dessous.\n(Mot, chiffres ou petite phrase : tout fonctionne !)",
+    welcomeLogin: "Je suis de retour ! (Me connecter)",
+    welcomeCreate: "Bonjour, je suis nouveau ! (M'inscrire)",
+    welcomeCode: "Clé personnelle",
+    welcomeCodePlaceholder: "ta clé personnelle...",
     welcomeNoAccount: "Aucun compte trouvé avec ce code.",
-    welcomeCreateHint: "Choisis n'importe quel mot ou phrase comme code.",
-    welcomeLoginHint: "Utilise le code de ton compte existant pour retrouver tes données.",
+    welcomeCreateHint: "Mot, chiffres ou petite phrase : tout fonctionne !",
+    welcomeLoginHint: "Entre ta clé personnelle pour retrouver tes données.",
+    welcomeLoginAction: "Me connecter",
+    welcomeCreateAction: "Activer ma clé et continuer 🚀",
     welcomeSwitchToLogin: "Se connecter plutôt",
     welcomeSwitchToCreate: "Créer un compte plutôt",
     // Profile
@@ -587,19 +589,21 @@ const T = {
     syncLoading: "Syncing...",
     syncError: "Connection error. Check your Supabase setup.",
     syncSuccess: "Data synced!",
-    welcomeTitle: "Welcome to 모아",
-    welcomeSub: "Log in to your account or create a new one to get started.",
-    welcomeLoginTitle: "Access your account",
-    welcomeLoginSub: "Enter your personal code to retrieve your data.",
-    welcomeCreateTitle: "Create your account",
-    welcomeCreateSub: "Choose a personal code to create your account.",
-    welcomeLogin: "Log in",
-    welcomeCreate: "Create an account",
-    welcomeCode: "Personal code",
-    welcomeCodePlaceholder: "your personal code...",
+    welcomeTitle: "Welcome to Moa! 🌿🇰🇷",
+    welcomeSub: "Like a seonbi (scholar) in their 정자 (pavilion), you are here in peace to immerse your mind in the beauty of Korean and achieve your goals.",
+    welcomeLoginTitle: "Welcome back! 🔑",
+    welcomeLoginSub: "Use your existing account code to retrieve your data.",
+    welcomeCreateTitle: "Welcome, future learner! 🔑",
+    welcomeCreateSub: "Your custom space is almost ready! Choose a personal key below to secure your access.\n(A word, numbers, or a short phrase: anything works!)",
+    welcomeLogin: "I'm back! (Log in)",
+    welcomeCreate: "Hello, I'm new! (Sign up)",
+    welcomeCode: "Personal key",
+    welcomeCodePlaceholder: "your personal key...",
     welcomeNoAccount: "No account was found with this code.",
-    welcomeCreateHint: "Pick any word or phrase as your code.",
-    welcomeLoginHint: "Use your existing account code to retrieve your data.",
+    welcomeCreateHint: "A word, numbers, or a short phrase: anything works!",
+    welcomeLoginHint: "Enter your personal key to retrieve your data.",
+    welcomeLoginAction: "Log in",
+    welcomeCreateAction: "Activate my key and continue 🚀",
     welcomeSwitchToLogin: "Log in instead",
     welcomeSwitchToCreate: "Create an account instead",
     // Profile
@@ -992,19 +996,21 @@ const T = {
     syncLoading: "동기화 중...",
     syncError: "연결 오류. Supabase 설정을 확인해 봐.",
     syncSuccess: "데이터 동기화 완료!",
-    welcomeTitle: "모아에 온 걸 환영해",
-    welcomeSub: "계정에 로그인하거나 새 계정을 만들어서 시작해 봐.",
-    welcomeLoginTitle: "계정 찾기",
-    welcomeLoginSub: "개인 코드를 입력해서 데이터를 불러와.",
-    welcomeCreateTitle: "계정 만들기",
-    welcomeCreateSub: "개인 코드를 정해서 계정을 만들어 봐.",
-    welcomeLogin: "로그인",
-    welcomeCreate: "계정 만들기",
-    welcomeCode: "개인 코드",
-    welcomeCodePlaceholder: "개인 코드를 입력해...",
+    welcomeTitle: "모아에 오신 것을 환영합니다! 🌿",
+    welcomeSub: "정자 속 선비처럼, 이곳에서 마음 편히 한국어의 아름다움을 배우고 목표를 이루어 보세요.",
+    welcomeLoginTitle: "환영합니다, 예비 학도님! 🔑",
+    welcomeLoginSub: "비밀키를 입력해서 데이터를 불러오세요.",
+    welcomeCreateTitle: "환영합니다, 예비 학도님! 🔑",
+    welcomeCreateSub: "나만의 학습 공간이 곧 준비됩니다! 비밀키를 설정해 주세요.\n(단어, 숫자, 문장 모두 가능해요!)",
+    welcomeLogin: "다시 왔어요! (로그인)",
+    welcomeCreate: "안녕하세요, 처음이에요! (회원가입)",
+    welcomeCode: "비밀키",
+    welcomeCodePlaceholder: "비밀키를 입력해주세요...",
     welcomeNoAccount: "이 코드로 된 계정을 찾지 못했어요.",
-    welcomeCreateHint: "아무 단어나 문장이면 돼, 코드로 쓸 거야.",
-    welcomeLoginHint: "기존 계정 코드를 입력하면 데이터를 불러올 수 있어.",
+    welcomeCreateHint: "단어, 숫자, 문장 모두 가능해요!",
+    welcomeLoginHint: "비밀키를 입력해서 데이터를 불러오세요.",
+    welcomeLoginAction: "로그인",
+    welcomeCreateAction: "비밀키 설정하고 시작하기 🚀",
     welcomeSwitchToLogin: "로그인할래",
     welcomeSwitchToCreate: "계정 만들래",
     profileTitle: "내 프로필",
@@ -6774,8 +6780,12 @@ function AppInner() {
 
   // Welcome / login screen if no sync code
   if (!syncId) {
+    const isMobile = winW < 700;
+    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 200, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: isMobile ? 400 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 32 }}>
+          {mascotImg}
         <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
@@ -6788,13 +6798,13 @@ function AppInner() {
           </div>
           {!welcomeMode ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-              <button onClick={() => setWelcomeMode("login")}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-                {t.welcomeLogin}
-              </button>
               <button onClick={() => setWelcomeMode("create")}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
                 {t.welcomeCreate}
+              </button>
+              <button onClick={() => setWelcomeMode("login")}
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
+                {t.welcomeLogin}
               </button>
             </div>
           ) : (
@@ -6815,7 +6825,7 @@ function AppInner() {
               />
               <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
                 style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: syncInput.trim() && syncStatus !== "loading" ? C.acc : C.s1, color: syncInput.trim() && syncStatus !== "loading" ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
-                {syncStatus === "loading" ? t.syncLoading : welcomeMode === "login" ? t.welcomeLogin : t.welcomeCreate}
+                {syncStatus === "loading" ? t.syncLoading : welcomeMode === "login" ? t.welcomeLoginAction : t.welcomeCreateAction}
               </button>
               {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{welcomeMode === "login" ? t.welcomeNoAccount : t.syncError}</div>}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
@@ -6832,14 +6842,19 @@ function AppInner() {
             </>
           )}
         </div>
+        </div>
       </div>
     );
   }
 
   // Language selection screen if no target language chosen yet
   if (!tl || enabledTLs.length === 0) {
+    const isMobile = winW < 700;
+    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 180, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ width: "100%", maxWidth: isMobile ? 400 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 32 }}>
+          {mascotImg}
         <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
           <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
             모<span style={{ color: C.acc }}>아</span>
@@ -6863,6 +6878,7 @@ function AppInner() {
               );
             })}
           </div>
+        </div>
         </div>
       </div>
     );

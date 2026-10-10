@@ -9540,6 +9540,13 @@ function AppInner() {
                     const daily = goalDailyTarget(goal);
                     const dLeft = goalDaysLeft(goal);
                     const overdue = dLeft <= 0;
+                    const todaySet = (data.goalToday || {})[goal.id];
+                    const today = new Date().toISOString().slice(0, 10);
+                    const todayDiscover = todaySet ? (todaySet.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean) : [];
+                    const todayPractice = todaySet ? (todaySet.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean) : [];
+                    const discDone = todayDiscover.filter(c => { const s = migrateStatus(c.status); if (s === "studied" || s === "acquired") return true; const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length;
+                    const pracDone = todayPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length;
+                    const allDoneToday = todayDiscover.length + todayPractice.length > 0 && discDone >= todayDiscover.length && pracDone >= todayPractice.length;
                     return (
                       <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); window.history.pushState({ view: "goals", goalView: "detail", goalEditId: goal.id }, ""); }}
                         style={{ background: C.s2, border: `1px solid ${overdue ? C.warnB : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", transition: "border-color 0.15s" }}
@@ -9551,6 +9558,19 @@ function AppInner() {
                             <span style={{ fontSize: 10, color: C.txtM }}>{t.goalDaysLeft(dLeft)}</span>
                           </div>
                         </div>
+                        {(todayDiscover.length > 0 || todayPractice.length > 0) && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: allDoneToday ? "rgba(52,199,89,0.10)" : "rgba(255,214,102,0.12)", border: `1px solid ${allDoneToday ? "rgba(52,199,89,0.25)" : "rgba(230,180,40,0.20)"}` }}>
+                            {allDoneToday ? (
+                              <span style={{ fontSize: 11, color: "#34C759", fontWeight: 600 }}>{"✅"} {t.goalTodayAllDone}</span>
+                            ) : (
+                              <>
+                                <span style={{ fontSize: 11, fontWeight: 500, color: "#8a6d00" }}>{"☀️"} {t.goalTodayTitle} :</span>
+                                {todayDiscover.length > 0 && <span style={{ fontSize: 10.5, color: C.acc, fontWeight: 500 }}>{"📖"} {discDone}/{todayDiscover.length}</span>}
+                                {todayPractice.length > 0 && <span style={{ fontSize: 10.5, color: C.ok, fontWeight: 500 }}>{"🔄"} {pracDone}/{todayPractice.length}</span>}
+                              </>
+                            )}
+                          </div>
+                        )}
                         {/* Progress bars */}
                         <div style={{ marginBottom: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>

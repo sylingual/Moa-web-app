@@ -6898,9 +6898,13 @@ function AppInner() {
         {label}
       </button>
     );
+    const isMobile = winW < 700;
+    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 180, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-        <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
+        <div style={{ width: "100%", maxWidth: lpS === 0 ? (isMobile ? 420 : 680) : 460, display: "flex", flexDirection: lpS === 0 && !isMobile ? "row" : "column", alignItems: "center", gap: lpS === 0 ? (isMobile ? 16 : 32) : 0 }}>
+          {lpS === 0 && mascotImg}
+          <div style={{ width: "100%", maxWidth: 460, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
           {lpS > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
@@ -6966,6 +6970,7 @@ function AppInner() {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     );
@@ -6985,9 +6990,13 @@ function AppInner() {
         {label}
       </button>
     );
+    const isMobile = winW < 700;
+    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 180, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
     return (
       <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-        <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
+        <div style={{ width: "100%", maxWidth: isMobile ? 420 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "center" : "center", gap: isMobile ? 16 : 32 }}>
+          {mascotImg}
+          <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
               <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.25s" }} />
@@ -7038,6 +7047,7 @@ function AppInner() {
               style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
               {t.onbSkip}
             </button>
+          </div>
           </div>
         </div>
       </div>

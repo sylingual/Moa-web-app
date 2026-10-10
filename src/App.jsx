@@ -6310,6 +6310,34 @@ function AppInner() {
     };
   };
 
+  // Freeze today's card set per goal (like the library's data.today)
+  useEffect(() => {
+    if (!loaded || !data.goals?.length) return;
+    const today = dayKey();
+    const gt = data.goalToday || {};
+    let changed = false;
+    const updated = { ...gt };
+    for (const goal of data.goals) {
+      if (goal.trophyDate) continue;
+      const existing = gt[goal.id];
+      if (existing && existing.date === today) continue;
+      changed = true;
+      const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+      const daily = goalDailyTarget(goal);
+      const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
+      const discoverCards = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
+      const practiceCards = goalCards.filter(c => {
+        const s = migrateStatus(c.status);
+        if (s !== "studied") return false;
+        if (c.goalAcquired) return false;
+        const next = getCardNextReviewDate(c, dLeft);
+        return !next || next <= today;
+      }).slice(0, daily.practice || 5);
+      updated[goal.id] = { date: today, discoverIds: discoverCards.map(c => c.id), practiceIds: practiceCards.map(c => c.id) };
+    }
+    if (changed) save({ ...data, goalToday: updated });
+  }, [loaded, data.goals, data.cards]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const goalDaysLeft = (goal) => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
     const dl = new Date(goal.deadline + "T23:59:59"); dl.setHours(0, 0, 0, 0);
@@ -8887,20 +8915,20 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* Today's cards for this goal */}
+                    {/* Today's cards for this goal (frozen daily set) */}
                     {(() => {
-                      const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
-                      const today = new Date().toISOString().slice(0, 10);
-                      const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
-                      const toDiscover = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
-                      const toPractice = goalCards.filter(c => {
-                        const s = migrateStatus(c.status);
-                        if (s !== "studied") return false;
-                        if (c.goalAcquired) return false;
-                        const next = getCardNextReviewDate(c, dLeft);
-                        return !next || next <= today;
-                      }).slice(0, daily.practice || 5);
+                      const todaySet = (data.goalToday || {})[goal.id];
+                      if (!todaySet) return null;
+                      const toDiscover = (todaySet.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const toPractice = (todaySet.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
                       if (!toDiscover.length && !toPractice.length) return null;
+                      const today = new Date().toISOString().slice(0, 10);
+                      const isDone = (c) => {
+                        const s = migrateStatus(c.status);
+                        if (s === "studied" || s === "acquired") return true;
+                        const p = c.progress || {};
+                        return ["ce","co","pe","po"].some(k => (p[k] || []).includes(today));
+                      };
                       return (
                         <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
@@ -8908,31 +8936,31 @@ function AppInner() {
                           </div>
                           {toDiscover.length > 0 && (
                             <div style={{ marginBottom: toPractice.length ? 10 : 0 }}>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.acc, marginBottom: 6 }}>📖 {t.goalTodayDiscover} ({toDiscover.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.acc, marginBottom: 6 }}>📖 {t.goalTodayDiscover} ({toDiscover.filter(c => !isDone(c)).length}/{toDiscover.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
-                                {toDiscover.map(c => (
+                                {toDiscover.map(c => { const done = isDone(c); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
-                                    style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(230,180,40,0.25)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
+                                    style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{c.korean}</div>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt }}>{done ? "✓ " : ""}{c.korean}</div>
                                   </div>
-                                ))}
+                                ); })}
                               </div>
                             </div>
                           )}
                           {toPractice.length > 0 && (
                             <div>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return !["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
-                                {toPractice.map(c => (
+                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
-                                    style={{ background: "rgba(255,255,255,0.65)", border: "1px solid rgba(230,180,40,0.25)", borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
+                                    style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{c.korean}</div>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt }}>{done ? "✓ " : ""}{c.korean}</div>
                                   </div>
-                                ))}
+                                ); })}
                               </div>
                             </div>
                           )}

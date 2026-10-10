@@ -4616,6 +4616,18 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
   const [done, setDone] = useState(false);
 
   const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").replace(/\s+/g, " ").trim();
+  const diffWords = (userStr, correctStr) => {
+    const uw = userStr.trim().split(/\s+/), cw = correctStr.trim().split(/\s+/);
+    const parts = [];
+    const maxLen = Math.max(uw.length, cw.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i >= uw.length) parts.push({ type: "add", word: cw[i] });
+      else if (i >= cw.length) parts.push({ type: "del", word: uw[i] });
+      else if (uw[i] === cw[i]) parts.push({ type: "same", word: cw[i] });
+      else parts.push({ type: "change", user: uw[i], correct: cw[i] });
+    }
+    return parts;
+  };
   const check = () => {
     const isCorrect = normalize(input) === normalize(sentences[idx].corrected);
     setCorrect(isCorrect);
@@ -4668,14 +4680,27 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
           {sent.explanation && <div style={{ color: C.txtM, marginTop: 6, fontSize: 11.5 }}>{sent.explanation}</div>}
         </div>
       )}
-      {checked && !correct && (
+      {checked && !correct && (() => {
+        const diff = diffWords(input, sent.corrected);
+        return (
         <div style={{ fontSize: 12, lineHeight: 1.5 }}>
           <div style={{ color: "#FF3B30", marginBottom: 4 }}>{t.fixitWrong}</div>
           <div style={{ fontFamily: tFont, fontSize: 13, color: C.txtM, marginBottom: 6, padding: "6px 10px", background: C.s1, borderRadius: 6, textDecoration: "line-through" }}>{input}</div>
-          <div style={{ color: "#34C759", fontFamily: tFont, fontWeight: 500 }}>{sent.corrected}</div>
-          <div style={{ color: C.txtM, marginTop: 4, fontSize: 11.5 }}>{sent.explanation}</div>
+          <div style={{ fontFamily: tFont, fontSize: 14, padding: "8px 10px", background: "rgba(52,199,89,0.06)", borderRadius: 6, marginBottom: 6, lineHeight: 1.8 }}>
+            {diff.map((p, i) => p.type === "same" ? (
+              <span key={i} style={{ color: C.txt }}>{p.word} </span>
+            ) : p.type === "add" ? (
+              <span key={i} style={{ color: "#34C759", fontWeight: 600, background: "rgba(52,199,89,0.15)", borderRadius: 3, padding: "1px 3px" }}>{p.word} </span>
+            ) : p.type === "del" ? (
+              <span key={i} style={{ color: "#FF3B30", textDecoration: "line-through", opacity: 0.6 }}>{p.word} </span>
+            ) : (
+              <span key={i}><span style={{ color: "#FF3B30", textDecoration: "line-through", opacity: 0.6 }}>{p.user}</span>{" "}<span style={{ color: "#34C759", fontWeight: 600, background: "rgba(52,199,89,0.15)", borderRadius: 3, padding: "1px 3px" }}>{p.correct}</span>{" "}</span>
+            ))}
+          </div>
+          <div style={{ color: C.txtM, fontSize: 11.5 }}>{sent.explanation}</div>
         </div>
-      )}
+        );
+      })()}
       <div style={{ marginTop: "auto" }}>
         {!checked ? (
           <button onClick={check} disabled={!input.trim()}

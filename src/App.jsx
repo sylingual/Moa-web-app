@@ -2183,7 +2183,7 @@ function statusInfo(status, t) {
   const s = migrateStatus(status);
   switch (s) {
     case "new": return { label: t.statusNew, color: C.stNew, bg: C.stNewBg, border: C.stNewB };
-    case "in_progress": return { label: t.statusInProgress, color: C.stProg, bg: C.stProgBg, border: C.stProgB };
+    case "in_progress": return { label: t.statusNew, color: C.stNew, bg: C.stNewBg, border: C.stNewB };
     case "studied": return { label: t.statusStudied, color: C.stStudied, bg: C.stStudiedBg, border: C.stStudiedB };
     case "acquired": return { label: t.statusAcquired, color: C.stAcq, bg: C.stAcqBg, border: C.stAcqB };
     default: return { label: s, color: C.stNew, bg: C.stNewBg, border: C.stNewB };
@@ -5677,19 +5677,24 @@ function AppInner() {
   // instead of leaving the app entirely.
   const historyNavRef = useRef(false); // true when popstate is driving the navigation
   useEffect(() => {
-    // Seed the initial state so the first "back" stays inside the app.
-    window.history.replaceState({ view: "library" }, "");
+    window.history.replaceState({ view: "goals" }, "");
     const onPop = (e) => {
       const st = e.state;
       if (st && st.view) {
         historyNavRef.current = true;
-        setView(st.view);
-        // Restore recap/lesson state from history when going back
-        if (st.view !== "lesson") {
+        if (st.recap) {
+          setRecapCard(st.recapCard || null);
+          setShowRecap(true);
+        } else {
           setShowRecap(false); setRecapCard(null); setLCard(null); setConv([]);
         }
+        setView(st.view);
+        setGoalView(st.goalView || "list");
+        setGoalEditId(st.goalEditId || null);
+        setGoalEditingDeadline(false);
+        setGoalDeleteConfirm(null);
+        setGoalCardPicker(false);
       } else {
-        // No state means we'd leave the app. Push current view back.
         window.history.pushState({ view }, "");
       }
     };
@@ -5735,7 +5740,7 @@ function AppInner() {
       setShowRecap(true);
       setRecapConv([]); setRecapMode(null); setRecapInp(""); setTagExplore(null);
       setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
-      window.history.pushState({ view: "lesson" }, "");
+      window.history.pushState({ view: "lesson", recap: true, recapCard: c }, "");
       setView("lesson");
       return;
     }
@@ -8833,7 +8838,7 @@ function AppInner() {
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <button onClick={() => { setGoalView("list"); setGoalEditId(null); setGoalEditingDeadline(false); }} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
+                      <button onClick={() => window.history.back()} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
                       <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, flex: 1 }}>{goal.name}</div>
                       {overdue && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.warnBg, color: C.warn, fontWeight: 500 }}>{t.goalOverdue}</span>}
                     </div>
@@ -8887,10 +8892,10 @@ function AppInner() {
                       const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
                       const today = new Date().toISOString().slice(0, 10);
                       const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
-                      const toDiscover = goalCards.filter(c => migrateStatus(c.status) === "new").slice(0, daily.discover || 3);
+                      const toDiscover = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
                       const toPractice = goalCards.filter(c => {
                         const s = migrateStatus(c.status);
-                        if (s !== "in_progress" && s !== "studied") return false;
+                        if (s !== "studied") return false;
                         if (c.goalAcquired) return false;
                         const next = getCardNextReviewDate(c, dLeft);
                         return !next || next <= today;
@@ -9048,10 +9053,10 @@ function AppInner() {
                         <div style={{ fontSize: 12, color: C.warn, fontWeight: 500, marginBottom: 8 }}>{t.goalDeleteConfirm}</div>
                         <div style={{ fontSize: 12, color: C.txtM, marginBottom: 10 }}>{t.goalDeleteCards}</div>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button onClick={() => deleteGoal(goal.id, true)}
-                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.warn, color: "#fff", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteRemove}</button>
                           <button onClick={() => deleteGoal(goal.id, false)}
-                            style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteKeep}</button>
+                            style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteKeep}</button>
+                          <button onClick={() => deleteGoal(goal.id, true)}
+                            style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.warnB}`, background: "none", color: C.warn, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalDeleteRemove}</button>
                           <button onClick={() => setGoalDeleteConfirm(null)}
                             style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
                         </div>
@@ -9087,7 +9092,7 @@ function AppInner() {
                     const dLeft = goalDaysLeft(goal);
                     const overdue = dLeft <= 0;
                     return (
-                      <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); }}
+                      <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); window.history.pushState({ view: "goals", goalView: "detail", goalEditId: goal.id }, ""); }}
                         style={{ background: C.s2, border: `1px solid ${overdue ? C.warnB : C.border}`, borderRadius: 12, padding: 16, cursor: "pointer", transition: "border-color 0.15s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }} onMouseLeave={e => { e.currentTarget.style.borderColor = overdue ? C.warnB : C.border; }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -9132,7 +9137,7 @@ function AppInner() {
                         {trophyGoals.map(goal => {
                           const prog = goalProgress(goal);
                           return (
-                            <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); }}
+                            <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); window.history.pushState({ view: "goals", goalView: "detail", goalEditId: goal.id }, ""); }}
                               style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
                               <span style={{ fontSize: 24 }}>🏆</span>
                               <div style={{ flex: 1 }}>

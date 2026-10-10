@@ -2331,7 +2331,7 @@ function recordExerciseProgress(dataObj, cardIds, exMode) {
   const goals = dataObj.goals || [];
   const cards = dataObj.cards.map(c => {
     if (!cardIds.includes(c.id)) return c;
-    const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+    const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [] };
     const days = prog[cat] || [];
     if (!days.includes(today)) prog[cat] = [...days, today];
     const reviewDates = c.reviewDates || [];
@@ -5261,7 +5261,7 @@ function AppInner() {
     const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
     const origSt = sel.originalStatus || {};
     const todayDate = sel.date;
-    const exercisedToday = c => { const p = c.progress; return p && ["ce","co","pe","po"].some(k => (p[k] || []).includes(todayDate)); };
+    const exercisedToday = c => { const p = c.progress; return p && ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate)); };
     const isDone = c => {
       const s = migrateStatus(c.status);
       if (s === "acquired") return true;
@@ -5579,7 +5579,7 @@ function AppInner() {
     const goals = data.goals || [];
     const updated = data.cards.map(c => {
       if (c.type === "vocab" && studiedWords.includes(c.korean)) {
-        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [] };
         if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
         const reviewDates = [...(c.reviewDates || [])];
         if (!reviewDates.includes(todayKey)) reviewDates.push(todayKey);
@@ -6102,7 +6102,7 @@ function AppInner() {
         const f = formality || c.formality || "";
         const existingTags = c.tags || [];
         const newTags = aiCategory && existingTags.length === 0 ? [aiCategory] : existingTags;
-        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [] };
         if (!(prog.ce || []).includes(todayKey)) prog.ce = [...(prog.ce || []), todayKey];
         const discoveredDate = c.discoveredDate || todayKey;
         const reviewDates = [...(c.reviewDates || [])];
@@ -6145,7 +6145,7 @@ function AppInner() {
       const updatedCards = data.cards.map(c => {
         if (c.korean !== lCard.korean) return c;
         const rc = (c.reviewCount || 0) + 1;
-        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [], po: [] };
+        const prog = c.progress ? { ...c.progress } : { ce: [], co: [], pe: [] };
         if (!(prog.ce || []).includes(todayKey2)) prog.ce = [...(prog.ce || []), todayKey2];
         if (c.status === "acquired") return { ...c, reviewCount: rc, progress: prog };
         return { ...c, status: "studied", reviewCount: rc, progress: prog };
@@ -7515,7 +7515,7 @@ function AppInner() {
                             const exercisedToday = c => {
                               const p = c.progress;
                               if (!p) return false;
-                              return ["ce","co","pe","po"].some(k => (p[k] || []).includes(todayDate));
+                              return ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate));
                             };
                             const isDone = c => {
                               const s = migrateStatus(c.status);
@@ -8180,7 +8180,6 @@ function AppInner() {
                     { key: "CE", icon: "📖", label: t.exCatCE, color: "#4A90D9" },
                     { key: "CO", icon: "🎧", label: t.exCatCO, color: "#E8A838" },
                     { key: "PE", icon: "✏️", label: t.exCatPE, color: "#7B7FF5" },
-                    { key: "PO", icon: "🎤", label: t.exCatPO, color: "#E06B6B" },
                   ];
                   const launchCat = (catKey) => {
                     const cardId = cardObj?.id;
@@ -8219,6 +8218,12 @@ function AppInner() {
                           </div>
                         </div>
                       )}
+                      {recapCard.type === "grammar" ? (
+                        <button onClick={() => launchCat("CE")}
+                          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                          ✏️ {t.moreExercises}
+                        </button>
+                      ) : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (
                           <div key={c.key} onClick={() => launchCat(c.key)}
@@ -8230,6 +8235,7 @@ function AppInner() {
                           </div>
                         ))}
                       </div>
+                      )}
                       <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 14, paddingTop: 12 }}>
                         <div style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 8 }}>{t.quickPractice}</div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 6 }}>
@@ -8479,14 +8485,15 @@ function AppInner() {
                       { k: "CE", l: t.exCatCE, d: t.exCatCEDesc, i: "📖", clr: "#4A90D9" },
                       { k: "CO", l: t.exCatCO, d: t.exCatCODesc, i: "🎧", clr: "#E8A838" },
                       { k: "PE", l: t.exCatPE, d: t.exCatPEDesc, i: "✏️", clr: "#50B87A" },
-                      { k: "PO", l: t.exCatPO, d: t.exCatPODesc, i: "🎤", clr: "#D96A6A" },
+                      { k: "PO", l: t.exCatPO, d: t.exCatPODesc, i: "🎤", clr: "#D96A6A", disabled: true },
                     ].map(cat => (
-                      <button key={cat.k} onClick={() => { setExCategory(cat.k); setExStep("exercise"); setExFilter("all"); }}
-                        style={{ flex: "1 1 200px", background: C.s2, border: `2px solid ${C.border}`, borderRadius: 14, padding: "22px 16px", cursor: "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", transition: "border-color 0.15s" }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = cat.clr} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                      <button key={cat.k} onClick={() => { if (cat.disabled) return; setExCategory(cat.k); setExStep("exercise"); setExFilter("all"); }}
+                        style={{ flex: "1 1 200px", background: C.s2, border: `2px solid ${C.border}`, borderRadius: 14, padding: "22px 16px", cursor: cat.disabled ? "default" : "pointer", textAlign: "center", fontFamily: "'Plus Jakarta Sans'", transition: "border-color 0.15s", opacity: cat.disabled ? 0.45 : 1 }}
+                        onMouseEnter={e => { if (!cat.disabled) e.currentTarget.style.borderColor = cat.clr; }} onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                         <div style={{ fontSize: 32, marginBottom: 10 }}>{cat.i}</div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{cat.l}</div>
                         <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{cat.d}</div>
+                        {cat.disabled && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{lang === "fr" ? "bientôt" : lang === "ko" ? "공개 예정" : "coming soon"}</div>}
                         <div style={{ marginTop: 8, fontSize: 10, color: cat.clr, fontWeight: 600, letterSpacing: 0.5 }}>{cat.k}</div>
                       </button>
                     ))}
@@ -8512,7 +8519,7 @@ function AppInner() {
                     ] : exCategory === "PE" ? [
                       { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️", vocabOnly: true },
                       { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩", vocabOnly: true },
-                      { k: "story", l: t.story, d: t.storyDesc, i: "✍️", ai: true },
+                      /* story hidden for now */
                       { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", ai: true },
                     ] : [
                     ]).map(m => {
@@ -9121,7 +9128,7 @@ function AppInner() {
                         const s = migrateStatus(c.status);
                         if (s === "studied" || s === "acquired") return true;
                         const p = c.progress || {};
-                        return ["ce","co","pe","po"].some(k => (p[k] || []).includes(today));
+                        return ["ce","co","pe"].some(k => (p[k] || []).includes(today));
                       };
                       return (
                         <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
@@ -9145,9 +9152,9 @@ function AppInner() {
                           )}
                           {toPractice.length > 0 && (
                             <div>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
-                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); return (
+                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe"].some(k => (p[k] || []).includes(today)); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
                                     style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}

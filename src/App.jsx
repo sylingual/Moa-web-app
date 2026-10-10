@@ -298,6 +298,7 @@ const T = {
     goalPickCards: "Sélectionner des cartes",
     goalPickSub: "Choisis les cartes à associer à cet objectif.",
     goalImportScreenshots: "Importer des screenshots",
+    goalImportPaste: "ou coller une image (Ctrl+V)",
     goalImportOcr: "Lecture des images...",
     goalImportScanning: "Analyse en cours...",
     goalImportConfirm: "Ajouter à l'objectif",
@@ -693,6 +694,7 @@ const T = {
     goalPickCards: "Select cards",
     goalPickSub: "Choose cards to associate with this goal.",
     goalImportScreenshots: "Import screenshots",
+    goalImportPaste: "or paste an image (Ctrl+V)",
     goalImportOcr: "Reading images...",
     goalImportScanning: "Analyzing...",
     goalImportConfirm: "Add to goal",
@@ -1086,6 +1088,7 @@ const T = {
     goalPickCards: "카드 선택",
     goalPickSub: "이 목표에 연결할 카드를 골라 봐.",
     goalImportScreenshots: "스크린샷 가져오기",
+    goalImportPaste: "또는 이미지 붙여넣기 (Ctrl+V)",
     goalImportOcr: "이미지 읽는 중...",
     goalImportScanning: "분석 중...",
     goalImportConfirm: "목표에 추가",
@@ -6544,9 +6547,7 @@ function AppInner() {
     }
   }, [data.cards, data.goals]);
 
-  const onGoalImagePick = async (e) => {
-    const files = [...(e.target.files || [])];
-    e.target.value = "";
+  const processGoalImages = async (files) => {
     if (!files.length) return;
     setGoalImpStep("ocr");
     try {
@@ -6568,8 +6569,10 @@ function AppInner() {
         data.cards
       );
       setGoalImpProgress(null);
-      setGoalImpFound(items);
-      setGoalImpSel(new Set(items.map((_, i) => i)));
+      const merged = [...goalImpFound];
+      for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
+      setGoalImpFound(merged);
+      setGoalImpSel(new Set(merged.map((_, i) => i)));
       setGoalImpStep("picks");
     } catch (err) {
       console.error("Goal import error:", err);
@@ -6577,6 +6580,30 @@ function AppInner() {
       setGoalImpStep(null);
     }
   };
+
+  const onGoalImagePick = async (e) => {
+    const files = [...(e.target.files || [])];
+    e.target.value = "";
+    processGoalImages(files);
+  };
+
+  useEffect(() => {
+    if (view !== "goals" || goalView !== "create") return;
+    const handler = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const images = [];
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) images.push(file);
+        }
+      }
+      if (images.length) { e.preventDefault(); processGoalImages(images); }
+    };
+    document.addEventListener("paste", handler);
+    return () => document.removeEventListener("paste", handler);
+  }, [view, goalView, goalImpFound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goalImportConfirm = () => {
     if (!goalImpSel.size) return;
@@ -7167,7 +7194,6 @@ function AppInner() {
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
-        {tl === "ko" && <button style={tabS(view === "feed")} onClick={() => navTo("feed")}>{t.feed}</button>}
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
         </div>{/* end scrollable tabs */}
@@ -7187,29 +7213,14 @@ function AppInner() {
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 13, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, flexShrink: 0, padding: 0 }}>
             👤
           </button>
-          {/* Lang (moves into the hamburger menu on mobile) */}
-          <div className="nav-hide-mobile" style={{ position: "relative" }}>
-            <button onClick={() => setLangOpen(!langOpen)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "4px 6px", border: "none", borderRadius: 6, background: "none", cursor: "pointer", fontSize: 14 }}>
-              {lang === "fr" ? "🇫🇷" : lang === "ko" ? "🇰🇷" : "🇬🇧"} <span style={{ fontSize: 9, color: C.txtM }}>▾</span>
-            </button>
-            {langOpen && (
-              <div style={{ position: "absolute", right: 0, top: "100%", marginTop: 4, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 6, overflow: "hidden", zIndex: 50, minWidth: 110, boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-                {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"], ["ko", "🇰🇷 한국어"]].map(([k, l]) => (
-                  <button key={k} onClick={() => changeLang(k)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", fontSize: 12.5, color: lang === k ? C.acc : C.txtS, fontWeight: lang === k ? 500 : 400, cursor: "pointer", border: "none", background: "none", width: "100%", fontFamily: "'Plus Jakarta Sans'" }}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Lang picker hidden for now (issue #90) */}
         </div>
       </header>
 
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["lesson", t.lesson], ["import", t.import], ...(tl === "ko" ? [["feed", t.feed]] : []), ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["lesson", t.lesson], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}
@@ -7231,16 +7242,7 @@ function AppInner() {
               </button>
             ))}
           </div>
-          {/* Interface language */}
-          <div style={{ padding: "4px 18px 4px", fontSize: 11, fontWeight: 600, color: C.txtM, borderTop: `1px solid ${C.border}` }}>{lang === "fr" ? "Langue de l'appli" : lang === "ko" ? "앱 언어" : "App language"}</div>
-          <div style={{ display: "flex", gap: 8, padding: "0 18px 14px" }}>
-            {[["fr", "🇫🇷 Français"], ["en", "🇬🇧 English"], ["ko", "🇰🇷 한국어"]].map(([k, l]) => (
-              <button key={k} onClick={() => { changeLang(k); setNavMenuOpen(false); }}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, fontSize: 13, cursor: "pointer", border: lang === k ? `2px solid ${C.acc}` : `1px solid ${C.border}`, background: lang === k ? C.accBg : C.s1, color: lang === k ? C.acc : C.txt, fontWeight: lang === k ? 600 : 400, fontFamily: "'Plus Jakarta Sans'" }}>
-                {l}
-              </button>
-            ))}
-          </div>
+          {/* Interface language hidden for now (issue #90) */}
         </div>
       )}
 
@@ -8845,7 +8847,7 @@ function AppInner() {
 
               {/* GOAL CREATE / EDIT */}
               {goalView === "create" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 24 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <button onClick={() => setGoalView("list")} style={{ padding: "5px 11px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>←</button>
                     <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{t.goalCreate}</div>
@@ -8910,10 +8912,13 @@ function AppInner() {
                   {/* Screenshot import */}
                   <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
                     {!goalImpStep && (
-                      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: `2px dashed ${C.borderS}`, background: C.s1, color: C.txtS, fontSize: 12.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", width: "100%", justifyContent: "center" }}>
-                        📷 {t.goalImportScreenshots}
-                        <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
-                      </label>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: `2px dashed ${C.borderS}`, background: C.s1, color: C.txtS, fontSize: 12.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", width: "100%", justifyContent: "center" }}>
+                          📷 {t.goalImportScreenshots}
+                          <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
+                        </label>
+                        <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
+                      </div>
                     )}
                     {goalImpStep === "ocr" && (
                       <div style={{ textAlign: "center", padding: "12px 0" }}>

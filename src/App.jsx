@@ -9049,11 +9049,11 @@ function AppInner() {
                         )}
                       </div>
                       <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
-                        <div style={{ fontSize: 11, color: C.txt, lineHeight: 1.6, marginBottom: 4 }}>{t.goalDailyTarget}</div>
                         <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.6 }}>
-                          {daily.discover > 0 && <div>{t.goalDiscoverPerDay(daily.discover)},</div>}
-                          {daily.practice > 0 && <div>{t.goalPracticePerDay(daily.practice)}.</div>}
-                          <div style={{ marginTop: 4, color: C.acc, fontWeight: 500 }}>{t.goalRecommendR(daily.R)}</div>
+                          {t.goalDailyTarget}{" "}
+                          {daily.discover > 0 && <>{t.goalDiscoverPerDay(daily.discover)}, </>}
+                          {daily.practice > 0 && <>{t.goalPracticePerDay(daily.practice)}. </>}
+                          {t.goalRecommendR(daily.R)}
                         </div>
                       </div>
                     </div>

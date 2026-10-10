@@ -9049,7 +9049,7 @@ function AppInner() {
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
                               <span style={{ fontSize: 11, color: overdue ? C.warn : C.txtM }}>{t.goalDaysLeft(dLeft)}</span>
                               <button onClick={() => setGoalEditingDeadline(true)}
-                                style={{ padding: "1px 6px", borderRadius: 4, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 9.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✏️ {t.goalEditDeadline}</button>
+                                style={{ padding: "1px 6px", borderRadius: 4, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 9.5, cursor: "pointer" }}>✏️</button>
                             </div>
                           </>
                         )}

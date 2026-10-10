@@ -6608,9 +6608,12 @@ function AppInner() {
   const goalImportConfirm = () => {
     if (!goalImpSel.size) return;
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
+    const deadlineTag = goalForm.deadline || "";
     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
       const isVocab = v.type === "vocab";
-      return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      if (deadlineTag) card.tags = [deadlineTag];
+      return card;
     });
     if (newCards.length) {
       save({ ...data, cards: [...data.cards, ...newCards] });

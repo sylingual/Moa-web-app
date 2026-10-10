@@ -2123,7 +2123,8 @@ Return ONLY this JSON:
     {"text": "...", "corrected": "...", "explanation": "..."}
   ]
 }
-CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.`,
+CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.
+VERIFICATION: Before returning, re-read each sentence pair. If "text" and "corrected" are identical, or if "text" is already grammatically correct, you MUST rewrite that sentence to actually contain an error. Every single "text" must be WRONG and different from its "corrected" version.`,
 
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 

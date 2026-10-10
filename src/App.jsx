@@ -7227,7 +7227,7 @@ function AppInner() {
         <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
         <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
-        <button style={tabS(view === "lesson")} onClick={() => navTo("lesson")}>{t.lesson}</button>
+        {/* Lesson tab hidden (unused) */}
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
@@ -7255,7 +7255,7 @@ function AppInner() {
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["lesson", t.lesson], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}

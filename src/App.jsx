@@ -2106,11 +2106,12 @@ Return ONLY this JSON:
 }
 CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank.`,
 
-    fixit: `TEACHER MODE: Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake related to the grammar point(s) listed below. The student must find and correct the error.
+    fixit: `TEACHER MODE: Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
 
 RULES:
 - Each sentence should be natural-sounding but contain exactly ONE grammar error
-- The error must relate to the grammar point: wrong conjugation, wrong particle, wrong usage in context, wrong word order for the grammar structure
+- CRITICAL: The error in each sentence MUST be a misuse of one of the grammar points the student is practicing. For example, if the grammar point is "-은/는 vs -이/가", the error must be using the wrong particle. If the grammar point is "past tense -았/었-", the error must be a wrong conjugation of that tense. Do NOT introduce errors unrelated to the selected grammar points (spelling mistakes, wrong vocabulary, etc.)
+- In the explanation, name which grammar point the error relates to and why the corrected form is right
 - Vary the context: daily life, social media, work, friends, travel, food, etc.
 - Provide the corrected version and a ${L} explanation of the error
 

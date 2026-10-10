@@ -138,7 +138,7 @@ const T = {
     progressNextReview: "Prochaine révision recommandée",
     progressNextDays: (n) => n === 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jour${n > 1 ? "s" : ""}`,
     progressCanPractice: "Vous pouvez néanmoins vous entraîner aujourd'hui.",
-    progressJustDiscovered: "Vous venez à peine de découvrir cette carte. Mais si vous voulez, vous pouvez déjà vous entraîner.",
+    progressJustDiscovered: "Tu viens de découvrir cette carte. Je te conseille d'attendre un peu avant de la réviser, mais tu peux déjà t'exercer si tu veux.",
     progressAlreadyDone: "Vous vous êtes déjà entraîné aujourd'hui, mais vous pouvez réviser encore si vous voulez.",
     progressNextPast: "En retard",
     progressAcquired: "Acquise !",
@@ -535,7 +535,7 @@ const T = {
     progressNextReview: "Next recommended review",
     progressNextDays: (n) => n === 0 ? "today" : n === 1 ? "tomorrow" : `in ${n} day${n > 1 ? "s" : ""}`,
     progressCanPractice: "You can still practice today.",
-    progressJustDiscovered: "You just discovered this card. But you can already practice if you want.",
+    progressJustDiscovered: "You just discovered this card. I recommend waiting a bit before reviewing, but you can already practice if you want.",
     progressAlreadyDone: "You already practiced today, but you can review again if you want.",
     progressNextPast: "Overdue",
     progressAcquired: "Acquired!",
@@ -932,7 +932,7 @@ const T = {
     progressNextReview: "다음 추천 복습",
     progressNextDays: (n) => n === 0 ? "오늘" : n === 1 ? "내일" : `${n}일 후`,
     progressCanPractice: "그래도 오늘 연습할 수 있어요.",
-    progressJustDiscovered: "방금 이 카드를 발견했어요. 그래도 벌써 연습해 보고 싶으면 해 보세요.",
+    progressJustDiscovered: "방금 이 카드를 발견했어. 복습하기 전에 조금 기다리는 게 좋아, 그래도 연습하고 싶으면 해 봐.",
     progressAlreadyDone: "오늘 이미 연습했어요. 그래도 더 복습하고 싶으면 할 수 있어요.",
     progressNextPast: "밀림",
     progressAcquired: "습득 완료!",
@@ -7977,10 +7977,12 @@ function AppInner() {
                       )}
                     </div>
                   )}
+                  {(recapCard.example_kr || recapCard.example_tr) && (
                   <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px" }}>
-                    <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>
-                    <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>
+                    {recapCard.example_kr && <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>}
+                    {recapCard.example_tr && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>}
                   </div>
+                  )}
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (
@@ -8039,23 +8041,27 @@ function AppInner() {
                       {(recapCard.formality || recapCard.registerFormal !== undefined) ? (
                         <>
                           <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 7 }}>🎚 {t.formalityLabel}</div>
-                          {recapCard.formality && (
-                            <div style={{ marginBottom: 8 }}>
-                              <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: recapCard.formality === "formal" ? "#e8d5f5" : recapCard.formality === "casual" ? "#d5f0e8" : "#e8eaf0", color: recapCard.formality === "formal" ? "#7b2ea0" : recapCard.formality === "casual" ? "#1a8a5c" : "#5a6070" }}>
-                                {t.formality[recapCard.formality] || t.formality.neutral}
-                              </span>
-                            </div>
-                          )}
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 12, fontWeight: 600, background: recapCard.formality === "formal" ? "#e8d5f5" : recapCard.formality === "casual" ? "#d5f0e8" : "#e8eaf0", color: recapCard.formality === "formal" ? "#7b2ea0" : recapCard.formality === "casual" ? "#1a8a5c" : "#5a6070" }}>
+                              {t.formality[recapCard.formality] || t.formality.neutral}
+                            </span>
+                          </div>
+                          {(recapCard.registerFormal || recapCard.registerCasual) && (
                           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                            {recapCard.registerFormal && (
                             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                               <span style={{ fontSize: 10, color: C.stStudied, textTransform: "uppercase", letterSpacing: 0.4, minWidth: 50 }}>{t.formality.formal}</span>
-                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: recapCard.registerFormal ? C.txt : C.txtM }}>{recapCard.registerFormal || t.registerNoFormal}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerFormal}</span>
                             </div>
+                            )}
+                            {recapCard.registerCasual && (
                             <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
                               <span style={{ fontSize: 10, color: C.stAcq, textTransform: "uppercase", letterSpacing: 0.4, minWidth: 50 }}>{t.formality.casual}</span>
-                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: recapCard.registerCasual ? C.txt : C.txtM }}>{recapCard.registerCasual || t.registerNoCasual}</span>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{recapCard.registerCasual}</span>
                             </div>
+                            )}
                           </div>
+                          )}
                           {recapCard.registerNote && <div style={{ fontSize: 11.5, color: C.txtS, lineHeight: 1.5, marginTop: 7 }}>{recapCard.registerNote}</div>}
                           {(recapCard.registerFormal || recapCard.registerCasual) && (
                             <button onClick={() => startRecapAction("register")}

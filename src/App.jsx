@@ -8946,7 +8946,7 @@ function AppInner() {
                           </div>
                           {toDiscover.length > 0 && (
                             <div style={{ marginBottom: toPractice.length ? 10 : 0 }}>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.acc, marginBottom: 6 }}>📖 {t.goalTodayDiscover} ({toDiscover.filter(c => !isDone(c)).length}/{toDiscover.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.acc, marginBottom: 6 }}>📖 {t.goalTodayDiscover} ({toDiscover.filter(c => isDone(c)).length}/{toDiscover.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
                                 {toDiscover.map(c => { const done = isDone(c); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
@@ -8961,7 +8961,7 @@ function AppInner() {
                           )}
                           {toPractice.length > 0 && (
                             <div>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return !["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
                                 {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe","po"].some(k => (p[k] || []).includes(today)); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}

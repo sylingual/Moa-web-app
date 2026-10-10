@@ -4606,7 +4606,7 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
   );
 }
 
-function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
+function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) {
   const sentences = data.sentences || [];
   const [idx, setIdx] = useState(0);
   const [input, setInput] = useState("");
@@ -4614,6 +4614,8 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
   const [correct, setCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").replace(/\s+/g, " ").trim();
   const diffWords = (userStr, correctStr) => {
@@ -4628,13 +4630,26 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
     }
     return parts;
   };
-  const check = () => {
+  const check = async () => {
     const isCorrect = normalize(input) === normalize(sentences[idx].corrected);
     setCorrect(isCorrect);
     setChecked(true);
-    if (isCorrect) setScore(prev => prev + 1);
+    setFeedback("");
+    if (isCorrect) { setScore(prev => prev + 1); return; }
+    setFeedbackLoading(true);
+    const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+    const TL = getTargetLangName(tl, "en");
+    try {
+      const r = await callAI(
+        `You are an expert ${TL} teacher. Respond in ${L}. Be concise (2-3 sentences max).`,
+        `The student had to correct this incorrect ${TL} sentence:\n"${sentences[idx].text}"\n\nThe correct answer is:\n"${sentences[idx].corrected}"\n\nThe student wrote:\n"${input}"\n\nExplain specifically why the student's answer is wrong and what they missed or got wrong compared to the correct answer. Focus on the difference between their answer and the correct one. Be direct and helpful.`,
+        400, false, true
+      );
+      setFeedback(r.text || "");
+    } catch (e) { setFeedback(sentences[idx].explanation || ""); }
+    setFeedbackLoading(false);
   };
-  const next = () => {
+  const nextFixit = () => {
     if (idx + 1 >= sentences.length) {
       setDone(true);
       onComplete(cards.map(c => c.id));
@@ -4643,6 +4658,7 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
       setInput("");
       setChecked(false);
       setCorrect(false);
+      setFeedback("");
     }
   };
 
@@ -4697,19 +4713,21 @@ function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
               <span key={i}><span style={{ color: "#FF3B30", textDecoration: "line-through", opacity: 0.6 }}>{p.user}</span>{" "}<span style={{ color: "#34C759", fontWeight: 600, background: "rgba(52,199,89,0.15)", borderRadius: 3, padding: "1px 3px" }}>{p.correct}</span>{" "}</span>
             ))}
           </div>
-          <div style={{ color: C.txtM, fontSize: 11.5 }}>{sent.explanation}</div>
+          {feedbackLoading ? <div className="pulse" style={{ color: C.txtM, fontSize: 11.5 }}>{t.thinking}</div>
+            : feedback ? <div style={{ color: C.txtM, fontSize: 11.5 }}>{feedback}</div>
+            : <div style={{ color: C.txtM, fontSize: 11.5 }}>{sent.explanation}</div>}
         </div>
         );
       })()}
       <div style={{ marginTop: "auto" }}>
         {!checked ? (
-          <button onClick={check} disabled={!input.trim()}
+          <button onClick={check} disabled={!input.trim() || feedbackLoading}
             style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: input.trim() ? "pointer" : "default" }}>
             {t.reorderCheck}
           </button>
         ) : (
-          <button onClick={next}
-            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={nextFixit} disabled={feedbackLoading}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: feedbackLoading ? C.s1 : C.acc, color: feedbackLoading ? C.txtM : C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: feedbackLoading ? "default" : "pointer" }}>
             {idx + 1 >= sentences.length ? t.vocabFinishBtn : t.reorderNext}
           </button>
         )}
@@ -9256,7 +9274,7 @@ function AppInner() {
                 onComplete={(ids) => completeExercise("drill", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "fixit" && fillData ? (
-              <FixItExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+              <FixItExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
                 onComplete={(ids) => completeExercise("fixit", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : (exMode === "reorder" || exMode === "drill" || exMode === "fixit") && exLoad ? (

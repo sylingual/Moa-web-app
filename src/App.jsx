@@ -5283,6 +5283,7 @@ function AppInner() {
   const [fillData, setFillData] = useState(null);
   const [exTheme, setExTheme] = useState(null);
   const [exGrammarVocab, setExGrammarVocab] = useState([]);
+  const [exGrammarVocabTag, setExGrammarVocabTag] = useState(null);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
 
@@ -7087,7 +7088,7 @@ function AppInner() {
       const vocabWords = exGrammarVocab.length > 0 ? allCards.filter(c => exGrammarVocab.includes(c.id)).map(c => c.korean) : [];
       try { const r = await genExercise(sel, exMode, lang, context, tl, theme, vocabWords); setFillData(r); }
       catch (e) { console.error("launchEx " + exMode + " error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
-      setExLoad(false); setExTheme(null); setExGrammarVocab([]);
+      setExLoad(false); setExTheme(null); setExGrammarVocab([]); setExGrammarVocabTag(null);
       return;
     }
     // Fill modes use interactive word-bank UI
@@ -9165,12 +9166,27 @@ function AppInner() {
                         </button>
                       ))}
                     </div>
-                    {isGrammarEx && vocabPool.length > 0 && (<>
+                    {isGrammarEx && vocabPool.length > 0 && (() => {
+                      const vocabTags = [...new Set(vocabPool.flatMap(c => c.tags || []))].sort();
+                      const filtered = exGrammarVocabTag === "__none__" ? vocabPool.filter(c => !(c.tags || []).length)
+                        : exGrammarVocabTag ? vocabPool.filter(c => (c.tags || []).includes(exGrammarVocabTag))
+                        : vocabPool;
+                      return (<>
                       <div style={{ marginTop: 20, width: "100%", maxWidth: 340 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, marginBottom: 2 }}>{t.grammarVocabLabel}</div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{t.grammarVocabLabel}</div>
+                          {vocabTags.length > 0 && (
+                            <select value={exGrammarVocabTag || ""} onChange={e => setExGrammarVocabTag(e.target.value || null)}
+                              style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: exGrammarVocabTag ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
+                              <option value="">{t.allTags}</option>
+                              <option value="__none__">{t.noTags}</option>
+                              {vocabTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
+                            </select>
+                          )}
+                        </div>
                         <div style={{ fontSize: 11, color: C.txtS, marginBottom: 10 }}>{t.grammarVocabSub}</div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {vocabPool.map(vc => {
+                          {filtered.map(vc => {
                             const sel = exGrammarVocab.includes(vc.id);
                             return (
                               <button key={vc.id} onClick={() => setExGrammarVocab(prev => sel ? prev.filter(id => id !== vc.id) : [...prev, vc.id])}
@@ -9181,7 +9197,7 @@ function AppInner() {
                           })}
                         </div>
                       </div>
-                    </>)}
+                    </>); })()}
                   </>);
                 })()}
               </div>

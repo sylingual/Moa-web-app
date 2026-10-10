@@ -151,6 +151,13 @@ const T = {
     reorderInstr: "Touche les mots dans le bon ordre pour former la phrase.",
     reorderCheck: "Vérifier", reorderNext: "Suivante", reorderCorrect: "Bonne réponse !", reorderWrong: "Pas tout à fait...",
     reorderSentence: (n, total) => `Phrase ${n}/${total}`,
+    exDrill: "Drill", exDrillDesc: "Conjugue ou complète le bon mot.",
+    drillPlaceholder: "Ta réponse...", drillCorrect: "Bonne réponse !", drillWrong: "Pas tout à fait...",
+    drillSentence: (n, total) => `Phrase ${n}/${total}`,
+    exFixit: "C'est toi le prof", exFixitDesc: "Trouve et corrige l'erreur.",
+    fixitInstr: "Cette phrase contient une erreur. Écris la correction.",
+    fixitPlaceholder: "Phrase corrigée...", fixitCorrect: "Bonne correction !", fixitWrong: "Pas tout à fait...",
+    fixitSentence: (n, total) => `Phrase ${n}/${total}`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
@@ -565,6 +572,13 @@ const T = {
     reorderInstr: "Tap the words in the right order to form the sentence.",
     reorderCheck: "Check", reorderNext: "Next", reorderCorrect: "Correct!", reorderWrong: "Not quite...",
     reorderSentence: (n, total) => `Sentence ${n}/${total}`,
+    exDrill: "Drill", exDrillDesc: "Conjugate or fill in the right word.",
+    drillPlaceholder: "Your answer...", drillCorrect: "Correct!", drillWrong: "Not quite...",
+    drillSentence: (n, total) => `Sentence ${n}/${total}`,
+    exFixit: "Fix It!", exFixitDesc: "Find and correct the error.",
+    fixitInstr: "This sentence has an error. Write the correction.",
+    fixitPlaceholder: "Corrected sentence...", fixitCorrect: "Good correction!", fixitWrong: "Not quite...",
+    fixitSentence: (n, total) => `Sentence ${n}/${total}`,
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
@@ -979,6 +993,13 @@ const T = {
     reorderInstr: "단어를 터치해서 올바른 문장을 만들어 봐.",
     reorderCheck: "확인", reorderNext: "다음", reorderCorrect: "정답!", reorderWrong: "아직...",
     reorderSentence: (n, total) => `문장 ${n}/${total}`,
+    exDrill: "드릴", exDrillDesc: "올바른 형태를 써 봐.",
+    drillPlaceholder: "답을 입력해...", drillCorrect: "정답!", drillWrong: "아직...",
+    drillSentence: (n, total) => `문장 ${n}/${total}`,
+    exFixit: "네가 선생님!", exFixitDesc: "오류를 찾아서 고쳐 봐.",
+    fixitInstr: "이 문장에 오류가 있어. 고쳐서 써 봐.",
+    fixitPlaceholder: "고친 문장...", fixitCorrect: "좋은 수정!", fixitWrong: "아직...",
+    fixitSentence: (n, total) => `문장 ${n}/${total}`,
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
     resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
@@ -2061,6 +2082,42 @@ Return ONLY this JSON:
 }
 CRITICAL: "text" must be the grammatically correct sentence. The app will shuffle the words for the student to reorder.`,
 
+    drill: `DRILL MODE: Generate exactly 5 sentences in ${TL} that each use the grammar point(s) listed below. Each sentence has ONE blank where the student must write/conjugate the correct form.
+
+RULES:
+- Each sentence should be natural and useful, between 5 and 12 words
+- The blank must test the grammar point (a conjugation, a particle, a connector, etc.)
+- Vary the context: daily life, social media, work, friends, travel, food, etc.
+- Provide a ${L} translation for each sentence (with the answer visible in the translation)
+
+Return ONLY this JSON:
+{
+  "message": "One-line intro in ${L}",
+  "sentences": [
+    {"text": "sentence with ______ where the blank is", "answer": "the correct word/form", "translation": "${L} translation"},
+    {"text": "...", "answer": "...", "translation": "..."}
+  ]
+}
+CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank.`,
+
+    fixit: `TEACHER MODE: Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake related to the grammar point(s) listed below. The student must find and correct the error.
+
+RULES:
+- Each sentence should be natural-sounding but contain exactly ONE grammar error
+- The error must relate to the grammar point: wrong conjugation, wrong particle, wrong usage in context, wrong word order for the grammar structure
+- Vary the context: daily life, social media, work, friends, travel, food, etc.
+- Provide the corrected version and a ${L} explanation of the error
+
+Return ONLY this JSON:
+{
+  "message": "One-line intro in ${L} (e.g. 'Find the mistake in each sentence!')",
+  "sentences": [
+    {"text": "the incorrect sentence", "corrected": "the correct sentence", "explanation": "${L} explanation of the error"},
+    {"text": "...", "corrected": "...", "explanation": "..."}
+  ]
+}
+CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.`,
+
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
@@ -2099,7 +2156,7 @@ ${structs}
 
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
-  const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : mode === "reorder" ? 2000 : undefined;
+  const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : (mode === "reorder" || mode === "drill" || mode === "fixit") ? 2000 : undefined;
   return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 
@@ -2385,7 +2442,7 @@ const GENDERED_LANGS = new Set(["fr", "de", "es", "it", "pt", "ru", "ar", "pl", 
 
 function exModeToCategory(mode) {
   switch (mode) {
-    case "flash": case "match": case "qcm": case "fill": case "reorder": return "ce";
+    case "flash": case "match": case "qcm": case "fill": case "reorder": case "drill": case "fixit": return "ce";
     case "youglish": case "dictation": return "co";
     case "imgwrite": case "cross": case "story": case "dialoguefill": return "pe";
     default: return null;
@@ -4455,6 +4512,165 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
           )}
         </div>
         <div style={{ minHeight: 200, flexShrink: 0 }} />
+      </div>
+    </div>
+  );
+}
+
+function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
+  const sentences = data.sentences || [];
+  const [idx, setIdx] = useState(0);
+  const [input, setInput] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+
+  const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").trim();
+  const check = () => {
+    const isCorrect = normalize(input) === normalize(sentences[idx].answer);
+    setCorrect(isCorrect);
+    setChecked(true);
+    if (isCorrect) setScore(prev => prev + 1);
+  };
+  const next = () => {
+    if (idx + 1 >= sentences.length) {
+      setDone(true);
+      onComplete(cards.map(c => c.id));
+    } else {
+      setIdx(prev => prev + 1);
+      setInput("");
+      setChecked(false);
+      setCorrect(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
+        <div style={{ fontSize: 40 }}>{score >= sentences.length ? "🎉" : score >= Math.ceil(sentences.length / 2) ? "👍" : "💪"}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{score}/{sentences.length}</div>
+        <button onClick={onExit} style={{ padding: "10px 24px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>{t.back}</button>
+      </div>
+    );
+  }
+
+  const sent = sentences[idx];
+  const parts = (sent?.text || "").split("______");
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txtM }}>{t.drillSentence(idx + 1, sentences.length)}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
+      </div>
+      {sent?.translation && <div style={{ fontSize: 12, color: C.txtS, fontStyle: "italic", lineHeight: 1.4 }}>{sent.translation}</div>}
+      <div style={{ fontSize: 16, fontFamily: tFont, lineHeight: 1.6, color: C.txt, padding: 12, background: C.s2, borderRadius: 10 }}>
+        {parts[0]}<span style={{ display: "inline-block", minWidth: 60, borderBottom: `2px solid ${checked ? (correct ? "#34C759" : "#FF3B30") : C.acc}`, textAlign: "center", fontWeight: 600, color: checked ? (correct ? "#34C759" : "#FF3B30") : C.acc }}>{checked ? (correct ? input : sent.answer) : "?"}</span>{parts[1] || ""}
+      </div>
+      {!checked && (
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && input.trim()) check(); }}
+          placeholder={t.drillPlaceholder}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, fontFamily: tFont, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          autoFocus />
+      )}
+      {checked && !correct && (
+        <div style={{ fontSize: 12, color: "#FF3B30", lineHeight: 1.4 }}>
+          {t.drillWrong} <span style={{ fontFamily: tFont, fontWeight: 500 }}>{sent.answer}</span>
+        </div>
+      )}
+      {checked && correct && <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.drillCorrect}</div>}
+      <div style={{ marginTop: "auto" }}>
+        {!checked ? (
+          <button onClick={check} disabled={!input.trim()}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: input.trim() ? "pointer" : "default" }}>
+            {t.reorderCheck}
+          </button>
+        ) : (
+          <button onClick={next}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {idx + 1 >= sentences.length ? t.vocabFinishBtn : t.reorderNext}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FixItExercise({ data, cards, tFont, t, onComplete, onExit }) {
+  const sentences = data.sentences || [];
+  const [idx, setIdx] = useState(0);
+  const [input, setInput] = useState("");
+  const [checked, setChecked] = useState(false);
+  const [correct, setCorrect] = useState(false);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+
+  const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").replace(/\s+/g, " ").trim();
+  const check = () => {
+    const isCorrect = normalize(input) === normalize(sentences[idx].corrected);
+    setCorrect(isCorrect);
+    setChecked(true);
+    if (isCorrect) setScore(prev => prev + 1);
+  };
+  const next = () => {
+    if (idx + 1 >= sentences.length) {
+      setDone(true);
+      onComplete(cards.map(c => c.id));
+    } else {
+      setIdx(prev => prev + 1);
+      setInput("");
+      setChecked(false);
+      setCorrect(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
+        <div style={{ fontSize: 40 }}>{score >= sentences.length ? "🎉" : score >= Math.ceil(sentences.length / 2) ? "👍" : "💪"}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>{score}/{sentences.length}</div>
+        <button onClick={onExit} style={{ padding: "10px 24px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>{t.back}</button>
+      </div>
+    );
+  }
+
+  const sent = sentences[idx];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txtM }}>{t.fixitSentence(idx + 1, sentences.length)}</span>
+        <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
+      </div>
+      <div style={{ fontSize: 12, color: C.txtM }}>{t.fixitInstr}</div>
+      <div style={{ fontSize: 16, fontFamily: tFont, lineHeight: 1.6, color: "#FF3B30", padding: 12, background: "rgba(255,59,48,0.06)", borderRadius: 10, border: "1px solid rgba(255,59,48,0.2)" }}>
+        {sent?.text}
+      </div>
+      {!checked && (
+        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && input.trim()) check(); }}
+          placeholder={t.fixitPlaceholder}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${C.border}`, fontFamily: tFont, fontSize: 14, outline: "none", boxSizing: "border-box" }}
+          autoFocus />
+      )}
+      {checked && correct && <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.fixitCorrect}</div>}
+      {checked && !correct && (
+        <div style={{ fontSize: 12, lineHeight: 1.5 }}>
+          <div style={{ color: "#FF3B30", marginBottom: 4 }}>{t.fixitWrong}</div>
+          <div style={{ color: "#34C759", fontFamily: tFont, fontWeight: 500 }}>{sent.corrected}</div>
+          <div style={{ color: C.txtM, marginTop: 4, fontSize: 11.5 }}>{sent.explanation}</div>
+        </div>
+      )}
+      <div style={{ marginTop: "auto" }}>
+        {!checked ? (
+          <button onClick={check} disabled={!input.trim()}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: input.trim() ? "pointer" : "default" }}>
+            {t.reorderCheck}
+          </button>
+        ) : (
+          <button onClick={next}
+            style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            {idx + 1 >= sentences.length ? t.vocabFinishBtn : t.reorderNext}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -6856,11 +7072,11 @@ function AppInner() {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     // Non-AI exercises render their own component; no generation call.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
-    // Reorder mode uses its own UI
-    if (exMode === "reorder") {
+    // Sentence-based grammar exercises use their own UI
+    if (exMode === "reorder" || exMode === "drill" || exMode === "fixit") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
       try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
-      catch (e) { console.error("launchEx reorder error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
+      catch (e) { console.error("launchEx " + exMode + " error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
       setExLoad(false); setExTheme(null);
       return;
     }
@@ -8777,6 +8993,8 @@ function AppInner() {
                       ...(GENDERED_LANGS.has(tl) ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", ai: true },
                       { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true, grammarOnly: true },
+                      { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true, grammarOnly: true },
+                      { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true, grammarOnly: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
                     ] : exCategory === "CO" ? [
                       { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
@@ -8821,7 +9039,7 @@ function AppInner() {
                     </button>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{
-                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
+                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, drill: `✒️ ${t.exDrill}`, fixit: `👩‍🏫 ${t.exFixit}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
                   }</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
@@ -8938,7 +9156,15 @@ function AppInner() {
               <ReorderExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
                 onComplete={(ids) => completeExercise("reorder", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
-            ) : exMode === "reorder" && exLoad ? (
+            ) : exMode === "drill" && fillData ? (
+              <DrillExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+                onComplete={(ids) => completeExercise("drill", ids)}
+                onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
+            ) : exMode === "fixit" && fillData ? (
+              <FixItExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+                onComplete={(ids) => completeExercise("fixit", ids)}
+                onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
+            ) : (exMode === "reorder" || exMode === "drill" || exMode === "fixit") && exLoad ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
                 <div className="pulse" style={{ fontSize: 13, color: C.txtM }}>{t.thinking}</div>
                 <button onClick={() => { setExOn(false); setExStep("category"); setExCategory(null); }} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>

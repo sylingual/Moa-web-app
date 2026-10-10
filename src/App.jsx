@@ -6545,9 +6545,9 @@ function AppInner() {
   }, [data.cards, data.goals]);
 
   const onGoalImagePick = async (e) => {
-    const files = e.target.files;
+    const files = [...(e.target.files || [])];
     e.target.value = "";
-    if (!files || !files.length) return;
+    if (!files.length) return;
     setGoalImpStep("ocr");
     try {
       let combined = "";
@@ -8964,8 +8964,8 @@ function AppInner() {
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "transparent", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", alignSelf: "flex-start" }}>
                           + 📷
                           <input type="file" accept="image/*" multiple onChange={async (e) => {
-                            const files = e.target.files; e.target.value = "";
-                            if (!files || !files.length) return;
+                            const files = [...(e.target.files || [])]; e.target.value = "";
+                            if (!files.length) return;
                             setGoalImpStep("ocr");
                             try {
                               let combined = "";

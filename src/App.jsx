@@ -10316,7 +10316,7 @@ function AppInner() {
 
               {/* GOAL LIST */}
               {goalView === "list" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 24 }}>
                   {weather && (
                     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: C.s2, border: `1px solid ${C.border}` }}>
                       <span style={{ fontSize: 28, lineHeight: 1 }}>{weather.emoji}</span>

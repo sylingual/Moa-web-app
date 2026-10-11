@@ -9172,11 +9172,13 @@ function AppInner() {
                       /* story hidden for now */
                       { k: "dialoguefill", l: t.exDialogueFill, d: t.exDialogueFillDesc, i: "💬", ai: true },
                     ] : [
-                    ]).map(m => {
+                    ]).filter(m => {
                       const selCards = exPreselectedRef.current ? allCards.filter(c => exSel.has(c.id)) : allCards.filter(c => (c.targetLang || "ko") === tl && (c.status === "studied" || c.status === "acquired"));
-                      const noVocab = m.vocabOnly && !selCards.some(c => c.type === "vocab");
-                      const noGrammar = m.grammarOnly && !selCards.some(c => c.type === "grammar");
-                      const off = m.disabled || noVocab || noGrammar;
+                      if (m.vocabOnly && !selCards.some(c => c.type === "vocab")) return false;
+                      if (m.grammarOnly && !selCards.some(c => c.type === "grammar")) return false;
+                      return true;
+                    }).map(m => {
+                      const off = m.disabled;
                       return (
                       <button key={m.k} onClick={() => {
                         if (off) return;
@@ -9191,8 +9193,6 @@ function AppInner() {
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 3 }}>{m.l}</div>
                         <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5 }}>{m.d}</div>
                         {m.disabled && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>bientot</div>}
-                        {noVocab && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{t.exVocabOnly}</div>}
-                        {noGrammar && <div style={{ fontSize: 9, color: C.txtM, marginTop: 6, fontStyle: "italic" }}>{t.exGrammarOnly}</div>}
                       </button>
                       );
                     })}

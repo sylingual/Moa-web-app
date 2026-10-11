@@ -6974,6 +6974,7 @@ function AppInner() {
   const [goalImpSel, setGoalImpSel] = useState(new Set());
   const [goalImpKnown, setGoalImpKnown] = useState(new Set());
   const [goalImpProgress, setGoalImpProgress] = useState(null);
+  const goalCardListRef = useRef(null);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -7134,6 +7135,7 @@ function AppInner() {
     };
     save(nd);
     setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null);
+    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
   };
 
   const extendGoalDeadline = (goalId, newDeadline) => {
@@ -10099,7 +10101,7 @@ function AppInner() {
                       {(goal.cardIds || []).length === 0 ? (
                         <div style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 16 }}>{t.goalNoCards}</div>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 300, overflowY: "auto" }}>
+                        <div ref={goalCardListRef} style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 300, overflowY: "auto" }}>
                           {(goal.cardIds || []).map(id => { const c = data.cards.find(x => x.id === id); return c ? { id, c } : null; }).filter(Boolean).sort((a, b) => { const sa = migrateStatus(a.c.status); const sb = migrateStatus(b.c.status); const order = { "new": 0, "in_progress": 1, "studied": 2, "acquired": 3 }; return (order[sa] ?? 4) - (order[sb] ?? 4); }).map(({ id, c }) => { const si = statusInfo(c.status, t); return (
                             <div key={id} onClick={() => { openCardFresh(c); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer" }}>
                               {c.images && c.images[0] && <img src={c.images[0].thumb || c.images[0].url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}

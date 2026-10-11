@@ -6977,6 +6977,7 @@ function AppInner() {
   const [goalImpKnown, setGoalImpKnown] = useState(new Set());
   const [goalImpProgress, setGoalImpProgress] = useState(null);
   const goalCardListRef = useRef(null);
+  const goalScrollRef = useRef(null);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -7294,6 +7295,12 @@ function AppInner() {
     document.addEventListener("paste", handler);
     return () => document.removeEventListener("paste", handler);
   }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (goalImpStep === "picks" && goalScrollRef.current) {
+      setTimeout(() => { const el = goalScrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, 100);
+    }
+  }, [goalImpStep]);
 
   const markGoalImpKnown = (i) => {
     const v = goalImpFound[i], nk = new Set(goalImpKnown);
@@ -9789,7 +9796,7 @@ function AppInner() {
 
         {/* GOALS */}
         {view === "goals" && (
-          <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+          <div ref={goalScrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
             <div style={{ width: "100%", maxWidth: 560, padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* GOAL CREATE / EDIT */}

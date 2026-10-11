@@ -8376,7 +8376,6 @@ function AppInner() {
                 )}
               </div>
             )}
-            <div className="wall-band wall-band-bottom" />
           </div>
         )}
 

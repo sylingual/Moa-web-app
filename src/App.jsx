@@ -273,6 +273,11 @@ const T = {
     goalName: "Nom de l'objectif",
     goalNamePh: "Ex : Topik II, Cours du 7 octobre...",
     goalDeadline: "Date limite",
+    goalStartDate: "Date de début",
+    goalStartDatePh: "Immédiat si vide",
+    goalScheduled: "Programmés",
+    goalStartsOn: (d) => `Début le ${d}`,
+    statusPending: "En attente",
     goalCards: "Cartes associées",
     goalNoCards: "Aucune carte associée",
     goalAddCards: "Ajouter des cartes",
@@ -700,6 +705,11 @@ const T = {
     goalName: "Goal name",
     goalNamePh: "E.g.: Topik II, October 7 class...",
     goalDeadline: "Deadline",
+    goalStartDate: "Start date",
+    goalStartDatePh: "Immediate if empty",
+    goalScheduled: "Scheduled",
+    goalStartsOn: (d) => `Starts on ${d}`,
+    statusPending: "Pending",
     goalCards: "Associated cards",
     goalNoCards: "No cards associated",
     goalAddCards: "Add cards",
@@ -1125,6 +1135,11 @@ const T = {
     goalName: "목표 이름",
     goalNamePh: "예: 토픽 II, 10월 7일 수업...",
     goalDeadline: "마감일",
+    goalStartDate: "시작일",
+    goalStartDatePh: "비워두면 바로 시작",
+    goalScheduled: "예정됨",
+    goalStartsOn: (d) => `${d}에 시작`,
+    statusPending: "대기 중",
     goalCards: "연결된 카드",
     goalNoCards: "연결된 카드 없음",
     goalAddCards: "카드 추가",
@@ -2374,7 +2389,7 @@ For "derivedStructures": include any related patterns the TEACHER introduced. Em
 // Migrate old statuses: "review" → "new", "acquired" stays
 function migrateStatus(s) {
   if (s === "review") return "new";
-  if (s === "acquired" || s === "studied" || s === "in_progress" || s === "new") return s;
+  if (s === "acquired" || s === "studied" || s === "in_progress" || s === "new" || s === "pending") return s;
   return "new";
 }
 
@@ -2402,6 +2417,7 @@ function statusInfo(status, t) {
     case "in_progress": return { label: t.statusNew, color: C.stNew, bg: C.stNewBg, border: C.stNewB };
     case "studied": return { label: t.statusStudied, color: C.stStudied, bg: C.stStudiedBg, border: C.stStudiedB };
     case "acquired": return { label: t.statusAcquired, color: C.stAcq, bg: C.stAcqBg, border: C.stAcqB };
+    case "pending": return { label: t.statusPending, color: C.txtS, bg: C.s1, border: C.border };
     default: return { label: s, color: C.stNew, bg: C.stNewBg, border: C.stNewB };
   }
 }
@@ -3091,7 +3107,7 @@ function GrammarCard({ card, t, onToggle, onReview, onDelete, onAddTag, onRemove
         {(card.status === "new" || card.status === "review" || card.status === "studied") && (
           <button onClick={e => { e.stopPropagation(); onReview(); }}
             style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer", border: `1px solid ${si.border}`, background: "#ffffff", color: si.color }}>
-            {card.status === "new" || card.status === "review" ? t.startLesson : t.reviewBtn}
+            {card.status === "new" || card.status === "review" || card.status === "pending" ? t.startLesson : t.reviewBtn}
           </button>
         )}
       </div>
@@ -5279,6 +5295,7 @@ function AppInner() {
   const [cardToDelete, setCardToDelete] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
+  const [pendingExpanded, setPendingExpanded] = useState(false);
   const [weather, setWeather] = useState(null); // { city, temp, emoji } for the target language
   const [weatherCityInput, setWeatherCityInput] = useState("");
   const [weatherCitySuggestions, setWeatherCitySuggestions] = useState([]);
@@ -5423,7 +5440,7 @@ function AppInner() {
     else if (libFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     if (libTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
     else if (libTagFilter) base = base.filter(c => (c.tags || []).includes(libTagFilter));
-    const order = { in_progress: 0, new: 1, review: 1, studied: 2, acquired: 3 };
+    const order = { in_progress: 0, new: 1, review: 1, studied: 2, acquired: 3, pending: 5 };
     return [...base].sort((a, b) => {
       const oa = order[migrateStatus(a.status)] ?? 4;
       const ob = order[migrateStatus(b.status)] ?? 4;
@@ -6904,7 +6921,7 @@ function AppInner() {
   // Goals
   const [goalView, setGoalView] = useState("list"); // "list" | "detail" | "create" | "pick"
   const [goalEditId, setGoalEditId] = useState(null);
-  const [goalForm, setGoalForm] = useState({ name: "", deadline: "" });
+  const [goalForm, setGoalForm] = useState({ name: "", deadline: "", startDate: "" });
   const [goalCardPicker, setGoalCardPicker] = useState(false);
   const [goalPickSel, setGoalPickSel] = useState(new Set());
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
@@ -6919,7 +6936,9 @@ function AppInner() {
   const [goalImpProgress, setGoalImpProgress] = useState(null);
 
   const goals = data.goals || [];
-  const activeGoals = goals.filter(g => !g.trophyDate);
+  const todayKey = dayKey();
+  const scheduledGoals = goals.filter(g => !g.trophyDate && g.startDate && g.startDate > todayKey);
+  const activeGoals = goals.filter(g => !g.trophyDate && !(g.startDate && g.startDate > todayKey));
   const trophyGoals = goals.filter(g => g.trophyDate);
 
   const goalProgress = (goal) => {
@@ -6964,6 +6983,18 @@ function AppInner() {
     };
   };
 
+  // Auto-activate scheduled goals whose start date has arrived
+  useEffect(() => {
+    if (!loaded || !data.goals?.length) return;
+    const today = dayKey();
+    const toActivate = data.goals.filter(g => g.startDate && g.startDate <= today && !g.trophyDate);
+    if (!toActivate.length) return;
+    const activatedIds = new Set(toActivate.flatMap(g => g.cardIds || []));
+    const updatedCards = data.cards.map(c => activatedIds.has(c.id) && c.status === "pending" ? { ...c, status: "new" } : c);
+    const updatedGoals = data.goals.map(g => toActivate.includes(g) ? { ...g, startDate: undefined, createdAt: new Date().toISOString() } : g);
+    save({ ...data, goals: updatedGoals, cards: updatedCards });
+  }, [loaded, data.goals]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Freeze today's card set per goal (like the library's data.today)
   useEffect(() => {
     if (!loaded || !data.goals?.length) return;
@@ -6973,6 +7004,7 @@ function AppInner() {
     const updated = { ...gt };
     for (const goal of data.goals) {
       if (goal.trophyDate) continue;
+      if (goal.startDate && goal.startDate > today) continue;
       const existing = gt[goal.id];
       if (existing && existing.date === today) continue;
       changed = true;
@@ -6995,7 +7027,7 @@ function AppInner() {
   useEffect(() => {
     if (!loaded || !data.goals?.length || goalDeadlinePopup) return;
     for (const goal of data.goals) {
-      if (goal.trophyDate || goal.deadlineDismissed) continue;
+      if (goal.trophyDate || goal.deadlineDismissed || (goal.startDate && goal.startDate > dayKey())) continue;
       const dLeft = Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date()) / 86400000);
       if (dLeft <= 0) {
         setGoalDeadlinePopup({ goalId: goal.id, step: 1, feedback: null });
@@ -7012,12 +7044,14 @@ function AppInner() {
     return Math.ceil((dl - now) / 86400000);
   };
 
-  const createGoal = (name, deadline, cardIds) => {
+  const createGoal = (name, deadline, cardIds, startDate) => {
     const id = Date.now().toString() + Math.random().toString(36).slice(2, 5);
-    const goal = { id, name, deadline, cardIds: [...cardIds], milestones: {}, createdAt: new Date().toISOString(), trophyDate: null };
-    const nd = { ...data, goals: [...goals, goal], cards: data.cards.map(c => cardIds.has(c.id) ? { ...c, goalId: id } : c) };
+    const today = dayKey();
+    const isScheduled = startDate && startDate > today;
+    const goal = { id, name, deadline, cardIds: [...cardIds], milestones: {}, createdAt: new Date().toISOString(), trophyDate: null, ...(isScheduled ? { startDate } : {}) };
+    const nd = { ...data, goals: [...goals, goal], cards: data.cards.map(c => cardIds.has(c.id) ? { ...c, goalId: id, ...(isScheduled ? { status: "pending" } : {}) } : c) };
     save(nd);
-    setGoalView("list"); setGoalForm({ name: "", deadline: "" }); setGoalPickSel(new Set());
+    setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
   };
 
   const deleteGoal = (goalId, deleteCards) => {
@@ -8016,7 +8050,7 @@ function AppInner() {
                 ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} />
                 : libView === "grid"
                   ? (() => {
-                      const groups = { new: [], in_progress: [], studied: [], acquired: [] };
+                      const groups = { new: [], in_progress: [], studied: [], acquired: [], pending: [] };
                       filteredCards.forEach(c => { const s = migrateStatus(c.status); (groups[s] || groups.new).push(c); });
                       // "En cours" is folded into "à découvrir": lessons don't persist the
                       // conversation, so a started card is just one still waiting to be studied.
@@ -8205,6 +8239,25 @@ function AppInner() {
                             { label: t.shelfUntagged, cards: groups.studied.filter(c => !(c.tags || []).length) }
                           ] })}
                           {shelf("acquired", C.stAcqBg, C.stAcq, C.stAcqCard, { compact: true })}
+                          {groups.pending.length > 0 && (
+                            <div style={{ marginTop: 8 }}>
+                              <div onClick={() => setPendingExpanded(!pendingExpanded)} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "8px 10px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                                <span style={{ fontSize: 10, color: C.txtS, transform: pendingExpanded ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}>{"▶"}</span>
+                                <span style={{ fontSize: 12, color: C.txtS, fontWeight: 500 }}>{t.statusPending}</span>
+                                <span style={{ fontSize: 11, color: C.txtM }}>({groups.pending.length})</span>
+                              </div>
+                              {pendingExpanded && (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8, paddingLeft: 4 }}>
+                                  {groups.pending.map(c => (
+                                    <div key={c.id} onClick={() => reviewCard(c)}
+                                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1, fontFamily: tFont, fontSize: 12, color: C.txtM, cursor: "pointer", opacity: 0.7 }}>
+                                      {c.korean}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })()
@@ -9649,10 +9702,19 @@ function AppInner() {
                     <input value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
                       style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                   </div>
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
-                    <input type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
-                      style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 140px" }}>
+                      <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
+                      <input type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                    </div>
+                    <div style={{ flex: "1 1 140px" }}>
+                      <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalStartDate}</label>
+                      <input type="date" value={goalForm.startDate || ""} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })}
+                        placeholder={t.goalStartDatePh}
+                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                      <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 3 }}>{t.goalStartDatePh}</div>
+                    </div>
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "block" }}>{t.goalCards} ({goalPickSel.size})</label>
@@ -9792,7 +9854,7 @@ function AppInner() {
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel)}
+                    <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
                       style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                       {t.goalSave}
                     </button>
@@ -9819,6 +9881,12 @@ function AppInner() {
                       <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, flex: 1 }}>{goal.name}</div>
                       {overdue && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.warnBg, color: C.warn, fontWeight: 500 }}>{t.goalOverdue}</span>}
                     </div>
+
+                    {goal.startDate && goal.startDate > dayKey() && (
+                      <div style={{ padding: "8px 12px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}`, fontSize: 12, color: C.txtS, display: "flex", alignItems: "center", gap: 6 }}>
+                        {"⏳"} {t.goalStartsOn(new Date(goal.startDate + "T00:00:00").toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }))}
+                      </div>
+                    )}
 
                     {/* Deadline + daily targets */}
                     <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -10183,11 +10251,11 @@ function AppInner() {
                   )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>🎯 {t.goalsTab}</div>
-                    <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "" }); setGoalPickSel(new Set()); }}
+                    <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); }}
                       style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalCreate}</button>
                   </div>
 
-                  {activeGoals.length === 0 && trophyGoals.length === 0 && (
+                  {activeGoals.length === 0 && trophyGoals.length === 0 && scheduledGoals.length === 0 && (
                     <div style={{ textAlign: "center", padding: "40px 20px", color: C.txtM, fontSize: 13 }}>
                       <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
                       {t.goalEmpty}
@@ -10266,6 +10334,30 @@ function AppInner() {
                       </div>
                     );
                   })}
+
+                  {/* Scheduled goals */}
+                  {scheduledGoals.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.txtS, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>{"⏳"} {t.goalScheduled}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {scheduledGoals.map(goal => {
+                          const cardCount = (goal.cardIds || []).length;
+                          const startFmt = new Date(goal.startDate + "T00:00:00").toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" });
+                          const endFmt = new Date(goal.deadline + "T00:00:00").toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" });
+                          return (
+                            <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); window.history.pushState({ view: "goals", goalView: "detail", goalEditId: goal.id }, ""); }}
+                              style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, opacity: 0.75 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 12.5, fontWeight: 500, color: C.txt }}>{goal.name}</div>
+                                <div style={{ fontSize: 10.5, color: C.txtS }}>{startFmt} {"→"} {endFmt}</div>
+                              </div>
+                              <span style={{ fontSize: 10.5, color: C.txtM }}>{t.goalCardCount(cardCount)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Trophy hall */}
                   {trophyGoals.length > 0 && (

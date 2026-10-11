@@ -9888,13 +9888,7 @@ function AppInner() {
                     )}
                     {goalImpStep === "picks" && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
-                          <div style={{ display: "flex", gap: 4 }}>
-                            <button onClick={() => setGoalImpSel(new Set(goalImpFound.map((_, i) => i)))} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.filterAll || "Tout"}</button>
-                            <button onClick={() => setGoalImpSel(new Set())} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>0</button>
-                          </div>
-                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
                         <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1 }}>
                           {goalImpFound.map((v, i) => {
                             const on = goalImpSel.has(i);

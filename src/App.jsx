@@ -8137,8 +8137,89 @@ function AppInner() {
                       const shelf = (status, bg, color, cardBg, { masked, compact, expandable, subgroups } = {}) => {
                         const cs = groups[status];
                         if (!cs.length) return null;
-                        const ex = expandable && expandedId ? cs.find(c => c.id === expandedId) : null;
-                        const renderSpines = (cards) => cards.map(c => bulkTagMode ? (
+                        const expandPanel = (ex) => (
+                          <div key={ex.id + "_panel"} style={{ flexBasis: "100%", width: "100%", marginTop: 4, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
+                              {ex.images && ex.images[0] && <img src={ex.images[0].thumb || ex.images[0].url} alt="" style={{ width: 28, height: 28, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} />}
+                              {ex.gender && GENDERED_LANGS.has(ex.targetLang || tl) && (
+                                <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: ex.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: ex.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${ex.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
+                                  {ex.gender === "m" ? "masc." : ex.gender === "f" ? "fém." : "n."}
+                                </span>
+                              )}
+                              {tl === "ko" && ex.type === "vocab" && ex.formality && t.formality[ex.formality] && (
+                                <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
+                                  {t.formalityLabel} · {t.formality[ex.formality]}
+                                </span>
+                              )}
+                            </div>
+                            {showTargetDef[ex.id] && ex.description_target ? (
+                              <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
+                                {ex.description_target}
+                                <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: false }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Voir en langue maternelle" : lang === "ko" ? "모국어로 보기" : "Show in native language"}</button>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>
+                                {ex.description}
+                                {ex.description_target ? (
+                                  <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
+                                ) : (
+                                  <button onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const btn = e.currentTarget; btn.disabled = true; btn.textContent = "...";
+                                    try {
+                                      const res = await generateTargetDescription(ex, ex.targetLang || tl);
+                                      if (res.description_target) {
+                                        save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, description_target: res.description_target } : x) });
+                                        btn.textContent = t.genTargetDescDone;
+                                      }
+                                    } catch (err) { console.error(err); btn.textContent = "Error"; }
+                                  }} style={{ display: "block", marginTop: 4, padding: "3px 10px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    + {t.genTargetDesc}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            {ex.example_kr && (
+                              <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
+                                <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>
+                                <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 2 }}>{ex.example_tr}</div>
+                              </div>
+                            )}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8, alignItems: "center" }}>
+                              {(ex.tags || []).map(tag => (
+                                editingTag && editingTag.cardId === ex.id && editingTag.tag === tag ? (
+                                  <input key={tag + "_edit"} autoFocus defaultValue={tag}
+                                    style={{ width: 80, padding: "2px 6px", borderRadius: 10, border: `1px solid ${C.acc}`, fontSize: 10, fontFamily: "'Plus Jakarta Sans'", color: C.acc, background: C.accBg, outline: "none" }}
+                                    onBlur={e => { const v = e.target.value.trim(); if (v && v !== tag) renameTagOnCard(ex.id, tag, v); setEditingTag(null); }}
+                                    onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingTag(null); }}
+                                    onClick={e => e.stopPropagation()} />
+                                ) : (
+                                <span key={tag} onClick={() => tagEditCard === ex.id ? setEditingTag({ cardId: ex.id, tag }) : null} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: tagEditCard === ex.id ? "text" : "default" }}>
+                                  #{tag}
+                                  {tagEditCard === ex.id && <span onClick={(e) => { e.stopPropagation(); removeTagFromCard(ex.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
+                                </span>
+                                )
+                              ))}
+                              {(ex.tags || []).length < 3 && (
+                                <button onClick={() => setTagEditCard(tagEditCard === ex.id ? null : ex.id)}
+                                  style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  + {t.addTag}
+                                </button>
+                              )}
+                            </div>
+                            {tagEditCard === ex.id && (
+                              <TagPicker cardId={ex.id} existingTags={ex.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
+                            )}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{"▶"} {t.reviewBtn}</button>
+                              <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>{"✅"} {t.markAcquired}</button>
+                              <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>{"🗑"}</button>
+                            </div>
+                          </div>
+                        );
+                        const renderSpines = (cards) => cards.flatMap(c => {
+                          const spine = bulkTagMode ? (
                           <div key={c.id} onClick={() => { const s = new Set(bulkTagSel); if (s.has(c.id)) s.delete(c.id); else s.add(c.id); setBulkTagSel(s); }}
                             style={{ display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
                             <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${bulkTagSel.has(c.id) ? C.acc : C.borderS}`, background: bulkTagSel.has(c.id) ? C.acc : "transparent", color: C.onAcc }}>{bulkTagSel.has(c.id) ? "✓" : ""}</span>
@@ -8147,7 +8228,10 @@ function AppInner() {
                         ) : <BookSpine key={c.id} card={c} t={t} color={color} cardBg={cardBg} masked={masked} compact={compact} active={expandable && expandedId === c.id}
                           onClick={() => { if (expandable) setExpandedId(expandedId === c.id ? null : c.id); else reviewCard(c); }}
                           onToggleStatus={compact ? () => setConfirmToggle(c) : undefined}
-                          onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />);
+                          onDelete={(masked || compact) ? () => setCardToDelete(c) : undefined} />;
+                          if (expandable && expandedId === c.id) return [spine, expandPanel(c)];
+                          return [spine];
+                        });
                         const hasSubs = subgroups && subgroups.length === 2 && subgroups[0].cards.length > 0 && subgroups[1].cards.length > 0;
                         return (
                           <div style={{ background: bg, borderRadius: 14, padding: "11px 13px" }}>
@@ -8162,93 +8246,12 @@ function AppInner() {
                                 <div style={{ fontSize: 10.5, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
                                   {sg.label} <span style={{ opacity: 0.6 }}>· {sg.cards.length}</span>
                                 </div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>{renderSpines(sg.cards)}</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 9, alignItems: "flex-start" }}>{renderSpines(sg.cards)}</div>
                               </div>
                             )) : (
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 9 }}>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 9, alignItems: "flex-start" }}>
                               {renderSpines(cs)}
                             </div>
-                            )}
-                            {ex && (
-                              <div style={{ marginTop: 10, background: C.s2, border: `1px solid ${color}`, borderRadius: 10, padding: "12px 13px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
-                                  <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 15, color: C.txt }}>{ex.korean}</span>
-                                  {ex.gender && GENDERED_LANGS.has(ex.targetLang || tl) && (
-                                    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: ex.gender === "m" ? "#EFF6FF" : "#FDF2F8", color: ex.gender === "m" ? "#1D4ED8" : "#BE185D", border: `1px solid ${ex.gender === "m" ? "#BFDBFE" : "#FBCFE8"}` }}>
-                                      {ex.gender === "m" ? "masc." : ex.gender === "f" ? "fém." : "n."}
-                                    </span>
-                                  )}
-                                  {tl === "ko" && ex.type === "vocab" && ex.formality && t.formality[ex.formality] && (
-                                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
-                                      {t.formalityLabel} · {t.formality[ex.formality]}
-                                    </span>
-                                  )}
-                                </div>
-                                {showTargetDef[ex.id] && ex.description_target ? (
-                                  <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
-                                    {ex.description_target}
-                                    <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: false }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Voir en langue maternelle" : lang === "ko" ? "모국어로 보기" : "Show in native language"}</button>
-                                  </div>
-                                ) : (
-                                  <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.55, marginBottom: ex.example_kr ? 8 : 10 }}>
-                                    {ex.description}
-                                    {ex.description_target ? (
-                                      <button onClick={() => setShowTargetDef(p => ({ ...p, [ex.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
-                                    ) : (
-                                      <button onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const btn = e.currentTarget; btn.disabled = true; btn.textContent = "...";
-                                        try {
-                                          const res = await generateTargetDescription(ex, ex.targetLang || tl);
-                                          if (res.description_target) {
-                                            save({ ...data, cards: data.cards.map(x => x.id === ex.id ? { ...x, description_target: res.description_target } : x) });
-                                            btn.textContent = t.genTargetDescDone;
-                                          }
-                                        } catch (err) { console.error(err); btn.textContent = "Error"; }
-                                      }} style={{ display: "block", marginTop: 4, padding: "3px 10px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                        + {t.genTargetDesc}
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
-                                {ex.example_kr && (
-                                  <div style={{ background: C.s1, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
-                                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, color: C.txt }}>{ex.example_kr}</div>
-                                    <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 2 }}>{ex.example_tr}</div>
-                                  </div>
-                                )}
-                                {/* Tags */}
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8, alignItems: "center" }}>
-                                  {(ex.tags || []).map(tag => (
-                                    editingTag && editingTag.cardId === ex.id && editingTag.tag === tag ? (
-                                      <input key={tag + "_edit"} autoFocus defaultValue={tag}
-                                        style={{ width: 80, padding: "2px 6px", borderRadius: 10, border: `1px solid ${C.acc}`, fontSize: 10, fontFamily: "'Plus Jakarta Sans'", color: C.acc, background: C.accBg, outline: "none" }}
-                                        onBlur={e => { const v = e.target.value.trim(); if (v && v !== tag) renameTagOnCard(ex.id, tag, v); setEditingTag(null); }}
-                                        onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingTag(null); }}
-                                        onClick={e => e.stopPropagation()} />
-                                    ) : (
-                                    <span key={tag} onClick={() => tagEditCard === ex.id ? setEditingTag({ cardId: ex.id, tag }) : null} style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontSize: 10, fontWeight: 500, fontFamily: "'Plus Jakarta Sans'", cursor: tagEditCard === ex.id ? "text" : "default" }}>
-                                      #{tag}
-                                      {tagEditCard === ex.id && <span onClick={(e) => { e.stopPropagation(); removeTagFromCard(ex.id, tag); }} style={{ cursor: "pointer", opacity: 0.6, marginLeft: 2 }}>x</span>}
-                                    </span>
-                                    )
-                                  ))}
-                                  {(ex.tags || []).length < 3 && (
-                                    <button onClick={() => setTagEditCard(tagEditCard === ex.id ? null : ex.id)}
-                                      style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                      + {t.addTag}
-                                    </button>
-                                  )}
-                                </div>
-                                {tagEditCard === ex.id && (
-                                  <TagPicker cardId={ex.id} existingTags={ex.tags || []} allTags={allTags} onAdd={(id, tag) => { addTagToCard(id, tag); }} onClose={() => setTagEditCard(null)} t={t} />
-                                )}
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                  <button onClick={() => reviewCard(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>▶ {t.reviewBtn}</button>
-                                  <button onClick={() => setConfirmToggle(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>✅ {t.markAcquired}</button>
-                                  <button onClick={() => setCardToDelete(ex)} style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>🗑</button>
-                                </div>
-                              </div>
                             )}
                           </div>
                         );

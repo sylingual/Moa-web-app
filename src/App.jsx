@@ -8775,9 +8775,11 @@ function AppInner() {
                               <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
                             </div>
                           )}
+                          {(justDiscovered || practicedToday) && (
                           <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: daysUntilNext !== null ? 4 : 0 }}>
-                            {justDiscovered ? t.progressJustDiscovered : practicedToday ? t.progressAlreadyDone : t.progressCanPractice}
+                            {justDiscovered ? t.progressJustDiscovered : t.progressAlreadyDone}
                           </div>
+                          )}
                         </div>
                       )}
                       {recapCard.type === "grammar" ? (

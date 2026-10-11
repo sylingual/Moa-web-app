@@ -2406,7 +2406,25 @@ function dedupeExtracted(items, existingCards) {
     seen.add(key);
     const ex = byKorean[key];
     if (!ex) return true;                        // brand new -> show
-    return migrateStatus(ex.status) === "studied"; // studied -> re-show; acquired/queued -> hide
+    const s = migrateStatus(ex.status);
+    return s === "studied" || s === "pending";   // studied or pending -> re-show; acquired/queued -> hide
+  });
+}
+
+function findShortestDeadlineGoalId(cardId, goals) {
+  const active = goals.filter(g => !g.trophyDate && (g.cardIds || []).includes(cardId));
+  if (!active.length) return undefined;
+  return active.sort((a, b) => a.deadline.localeCompare(b.deadline))[0].id;
+}
+
+function activatePendingMatches(cards, koreanKeys) {
+  if (!koreanKeys.length) return cards;
+  const keys = new Set(koreanKeys.map(k => k.trim()));
+  return cards.map(c => {
+    if (c.status === "pending" && c.korean && keys.has(c.korean.trim())) {
+      return { ...c, status: "new" };
+    }
+    return c;
   });
 }
 
@@ -6075,8 +6093,11 @@ function AppInner() {
   const startVocabLesson = () => {
     const words = [...vocabSel].sort((a, b) => a - b).map(i => vocabFound[i]).filter(Boolean);
     if (!words.length) { alert(t.vocabNoneSelected); return; }
+    const wordKeys = words.map(w => w.word);
     const newCards = words.filter(w => !data.cards.find(c => c.korean === w.word)).map(w => makeVocabCard(w, "in_progress"));
-    if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
+    const activated = activatePendingMatches(data.cards, wordKeys);
+    if (newCards.length) save({ ...data, cards: [...activated, ...newCards] });
+    else if (activated !== data.cards) save({ ...data, cards: activated });
     setVocabSession({ words, idx: 0 });
     setLCard(null); setConv([]); setShowRecap(false); setRecapCard(null); setLessonDone(false); setLessonSummary(null);
     setView("lesson");
@@ -6150,8 +6171,11 @@ function AppInner() {
     if (nk.has(i)) { nk.delete(i); save({ ...data, cards: data.cards.filter(c => c.korean !== p.korean) }); }
     else {
       nk.add(i);
-      if (!data.cards.find(c => c.korean === p.korean)) {
+      const ex = data.cards.find(c => c.korean === p.korean);
+      if (!ex) {
         save({ ...data, cards: [...data.cards, makeCard(p, "acquired")] });
+      } else if (ex.status === "pending") {
+        save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }
     setKnown(nk);
@@ -6164,8 +6188,11 @@ function AppInner() {
     else {
       nk.add(i);
       setVocabSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
-      if (!data.cards.find(c => c.korean === word)) {
+      const ex = data.cards.find(c => c.korean === word);
+      if (!ex) {
         save({ ...data, cards: [...data.cards, makeVocabCard(v, "acquired")] });
+      } else if (ex.status === "pending") {
+        save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }
     setVocabKnown(nk);
@@ -6178,10 +6205,13 @@ function AppInner() {
     else {
       nk.add(i);
       setBulkSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
-      if (!data.cards.find(c => c.korean === word)) {
+      const ex = data.cards.find(c => c.korean === word);
+      if (!ex) {
         const isVocab = v.type === "vocab";
         const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
+      } else if (ex.status === "pending") {
+        save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }
     setBulkKnown(nk);
@@ -6204,7 +6234,12 @@ function AppInner() {
   const addWordToVocab = async (text) => {
     const word = (text || "").trim();
     if (!word) return;
-    if (data.cards.find(c => c.korean === word)) { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    const exWord = data.cards.find(c => c.korean === word);
+    if (exWord && exWord.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    if (exWord && exWord.status === "pending") {
+      save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
+      setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
+    }
     let baseForm = word;
     try {
       setFlash(lang === "fr" ? "Recherche de la forme de base..." : lang === "ko" ? "기본형 검색 중..." : "Looking up base form...");
@@ -6215,7 +6250,12 @@ function AppInner() {
     } catch (e) {
       console.warn("Lemmatization failed, using original word:", e);
     }
-    if (data.cards.find(c => c.korean === baseForm)) { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    const exBase = data.cards.find(c => c.korean === baseForm);
+    if (exBase && exBase.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    if (exBase && exBase.status === "pending") {
+      save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
+      setSelAdd(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
+    }
     const card = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
       korean: baseForm, type: "vocab",
@@ -6265,7 +6305,7 @@ function AppInner() {
     // Set card to in_progress (or create it)
     const existing = data.cards.find(c => c.korean === p.korean);
     if (existing) {
-      save({ ...data, cards: data.cards.map(c => c.korean === p.korean ? { ...c, status: c.status === "new" || c.status === "review" ? "in_progress" : c.status } : c) });
+      save({ ...data, cards: data.cards.map(c => c.korean === p.korean ? { ...c, status: c.status === "new" || c.status === "review" || c.status === "pending" ? "in_progress" : c.status } : c) });
     } else {
       save({ ...data, cards: [...data.cards, card] });
     }
@@ -7049,7 +7089,13 @@ function AppInner() {
     const today = dayKey();
     const isScheduled = startDate && startDate > today;
     const goal = { id, name, deadline, cardIds: [...cardIds], milestones: {}, createdAt: new Date().toISOString(), trophyDate: null, ...(isScheduled ? { startDate } : {}) };
-    const nd = { ...data, goals: [...goals, goal], cards: data.cards.map(c => cardIds.has(c.id) ? { ...c, goalId: id, ...(isScheduled ? { status: "pending" } : {}) } : c) };
+    const allGoals = [...goals, goal];
+    const nd = { ...data, goals: allGoals, cards: data.cards.map(c => {
+      if (!cardIds.has(c.id)) return c;
+      const bestId = findShortestDeadlineGoalId(c.id, allGoals);
+      const shouldPend = isScheduled && !c.goalId && (c.status === "new" || !c.status);
+      return { ...c, goalId: bestId || id, ...(shouldPend ? { status: "pending" } : {}) };
+    }) };
     save(nd);
     setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
   };
@@ -7057,22 +7103,34 @@ function AppInner() {
   const deleteGoal = (goalId, deleteCards) => {
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
+    const remainingGoals = goals.filter(g => g.id !== goalId);
     let cards = data.cards;
     if (deleteCards) {
       cards = cards.filter(c => !goal.cardIds.includes(c.id));
     } else {
-      cards = cards.map(c => c.goalId === goalId ? { ...c, goalId: undefined } : c);
+      cards = cards.map(c => {
+        if (c.goalId !== goalId) return c;
+        const nextId = findShortestDeadlineGoalId(c.id, remainingGoals);
+        return { ...c, goalId: nextId || undefined, goalAcquired: nextId ? false : c.goalAcquired };
+      });
     }
-    save({ ...data, goals: goals.filter(g => g.id !== goalId), cards });
+    save({ ...data, goals: remainingGoals, cards });
     setGoalDeleteConfirm(null);
     if (goalEditId === goalId) { setGoalEditId(null); setGoalView("list"); }
   };
 
   const addCardsToGoal = (goalId, newCardIds) => {
+    const updatedGoals = goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...g.cardIds, ...newCardIds])] } : g);
     const nd = {
       ...data,
-      goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...g.cardIds, ...newCardIds])] } : g),
-      cards: data.cards.map(c => newCardIds.has(c.id) ? { ...c, goalId: goalId } : c),
+      goals: updatedGoals,
+      cards: data.cards.map(c => {
+        if (!newCardIds.has(c.id)) return c;
+        const bestId = findShortestDeadlineGoalId(c.id, updatedGoals);
+        const updated = { ...c, goalId: bestId || goalId };
+        if (c.status === "pending") updated.status = "new";
+        return updated;
+      }),
     };
     save(nd);
     setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null);
@@ -7083,10 +7141,15 @@ function AppInner() {
   };
 
   const archiveGoal = (goalId) => {
+    const updatedGoals = goals.map(g => g.id === goalId ? { ...g, trophyDate: new Date().toISOString() } : g);
     save({
       ...data,
-      goals: goals.map(g => g.id === goalId ? { ...g, trophyDate: new Date().toISOString() } : g),
-      cards: data.cards.map(c => c.goalId === goalId ? { ...c, goalId: undefined } : c),
+      goals: updatedGoals,
+      cards: data.cards.map(c => {
+        if (c.goalId !== goalId) return c;
+        const nextId = findShortestDeadlineGoalId(c.id, updatedGoals);
+        return { ...c, goalId: nextId || undefined, goalAcquired: nextId ? false : c.goalAcquired };
+      }),
     });
     setGoalDeadlinePopup(null);
     setGoalEditId(null);
@@ -7106,7 +7169,15 @@ function AppInner() {
     if (!hit) return;
     const updatedMs = { ...ms };
     for (const pct of thresholds) { if (overall >= pct) updatedMs[pct] = true; }
-    let nd = { ...data, goals: data.goals.map(g => g.id !== goalId ? g : { ...g, milestones: updatedMs, ...(hit === 100 ? { trophyDate: new Date().toISOString() } : {}) }) };
+    const updatedGoalList = data.goals.map(g => g.id !== goalId ? g : { ...g, milestones: updatedMs, ...(hit === 100 ? { trophyDate: new Date().toISOString() } : {}) });
+    let nd = { ...data, goals: updatedGoalList };
+    if (hit === 100) {
+      nd.cards = nd.cards.map(c => {
+        if (c.goalId !== goalId) return c;
+        const nextId = findShortestDeadlineGoalId(c.id, updatedGoalList);
+        return { ...c, goalId: nextId || undefined, goalAcquired: nextId ? false : c.goalAcquired };
+      });
+    }
     nd = awardPoints(hit === 100 ? 50 : 25, nd);
     save(nd);
     setGoalCelebration({ pct: hit });

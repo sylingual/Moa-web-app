@@ -6346,6 +6346,7 @@ function AppInner() {
         setGoalView(st.goalView || "list");
         setGoalEditId(st.goalEditId || null);
         setGoalEditingDeadline(false);
+        setGoalEditingStartDate(false);
         setGoalDeleteConfirm(null);
         setGoalCardPicker(false);
       } else {
@@ -6373,7 +6374,7 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
-    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); }
+    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false); }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
@@ -6967,6 +6968,7 @@ function AppInner() {
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
   const [goalCelebration, setGoalCelebration] = useState(null); // { pct }
   const [goalEditingDeadline, setGoalEditingDeadline] = useState(false);
+  const [goalEditingStartDate, setGoalEditingStartDate] = useState(false);
   const [goalDeadlinePopup, setGoalDeadlinePopup] = useState(null);
   const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
@@ -7140,6 +7142,31 @@ function AppInner() {
 
   const extendGoalDeadline = (goalId, newDeadline) => {
     save({ ...data, goals: goals.map(g => g.id === goalId ? { ...g, deadline: newDeadline } : g) });
+  };
+
+  const updateGoalStartDate = (goalId, newStart) => {
+    const today = dayKey();
+    const wasScheduled = (g) => g.startDate && g.startDate > today;
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+    const isNowScheduled = newStart && newStart > today;
+    const updatedGoals = goals.map(g => g.id === goalId ? { ...g, startDate: newStart || undefined } : g);
+    const cardIds = new Set(goal.cardIds || []);
+    const nd = {
+      ...data,
+      goals: updatedGoals,
+      cards: data.cards.map(c => {
+        if (!cardIds.has(c.id)) return c;
+        if (isNowScheduled && !wasScheduled(goal) && c.status === "new") {
+          return { ...c, status: "pending" };
+        }
+        if (!isNowScheduled && wasScheduled(goal) && c.status === "pending") {
+          return { ...c, status: "new" };
+        }
+        return c;
+      }),
+    };
+    save(nd);
   };
 
   const archiveGoal = (goalId) => {
@@ -9958,8 +9985,23 @@ function AppInner() {
                     </div>
 
                     {goal.startDate && goal.startDate > dayKey() && (
-                      <div style={{ padding: "8px 12px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}`, fontSize: 12, color: C.txtS, display: "flex", alignItems: "center", gap: 6 }}>
-                        {"⏳"} {t.goalStartsOn(new Date(goal.startDate + "T00:00:00").toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }))}
+                      <div style={{ padding: "8px 12px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}`, fontSize: 12, color: C.txtS }}>
+                        {goalEditingStartDate ? (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                            <input type="date" id="goal-edit-start" defaultValue={goal.startDate}
+                              style={{ padding: "5px 8px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s2 }} />
+                            <button onClick={() => { const v = document.getElementById("goal-edit-start")?.value; updateGoalStartDate(goal.id, v || ""); setGoalEditingStartDate(false); }}
+                              style={{ padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✓</button>
+                            <button onClick={() => setGoalEditingStartDate(false)}
+                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✕</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {"⏳"} {t.goalStartsOn(new Date(goal.startDate + "T00:00:00").toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }))}
+                            <button onClick={() => setGoalEditingStartDate(true)}
+                              style={{ padding: "1px 6px", borderRadius: 4, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 9.5, cursor: "pointer", marginLeft: "auto" }}>✏️</button>
+                          </div>
+                        )}
                       </div>
                     )}
 

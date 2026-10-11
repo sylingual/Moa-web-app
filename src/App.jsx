@@ -6378,8 +6378,32 @@ function AppInner() {
     setRegisterLoad(false);
   };
 
+  const recordPracticeReview = (card) => {
+    if (!card) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const cardObj = data.cards.find(c => c.korean === card.korean);
+    if (!cardObj) return;
+    const reviewDates = [...(cardObj.reviewDates || [])];
+    if (reviewDates.includes(today)) return;
+    reviewDates.push(today);
+    const discoveredDate = cardObj.discoveredDate || today;
+    let newStatus = cardObj.status;
+    let goalAcquired = cardObj.goalAcquired || false;
+    if (cardObj.goalId) {
+      const goal = (data.goals || []).find(g => g.id === cardObj.goalId);
+      if (goal) {
+        const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+        if (isCardGoalAcquired({ ...cardObj, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+      }
+    }
+    if (isCardLongTermAcquired({ ...cardObj, reviewDates }) && newStatus !== "acquired") newStatus = "acquired";
+    save({ ...data, cards: data.cards.map(c => c.korean === card.korean ? { ...c, reviewDates, discoveredDate, status: newStatus, goalAcquired } : c) });
+    if (card === recapCard) setRecapCard(prev => prev ? { ...prev, reviewDates, discoveredDate, status: newStatus, goalAcquired } : prev);
+  };
+
   const startRecapAction = async (action) => {
     if (!recapCard) return;
+    recordPracticeReview(recapCard);
     setRecapMode(action);
     setRecapConv([]);
     setRecapDone(false); setRecapSummary(null);
@@ -6744,6 +6768,7 @@ function AppInner() {
 
   const quickAct = async (a) => {
     if (lLoad) return;
+    recordPracticeReview(lCard);
     setTray(false); setLLoad(true);
     const labels = { resources: t.resourcesAsk, realExamples: t.realExamples, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
@@ -8791,6 +8816,7 @@ function AppInner() {
                           ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
                             <button key={a.k} onClick={() => {
                               if (a.k === "youglish") {
+                                recordPracticeReview(recapCard);
                                 setYouglishWord(recapCard.korean);
                               } else {
                                 startRecapAction(a.k);
@@ -8974,7 +9000,7 @@ function AppInner() {
                           <button onClick={() => quickAct("examples")} disabled={lLoad} style={sBtn}>💡 {t.moreExamples}</button>
                           <button onClick={() => quickAct("exercise")} disabled={lLoad} style={sBtn}>✏️ {t.anExercise}</button>
                           {!showRes && <button onClick={() => quickAct("image")} disabled={lLoad} style={sBtn}>📷 {t.anImage}</button>}
-                          {!showRes && <button onClick={() => setYouglishWord(lCard?.korean)} disabled={lLoad} style={sBtn}>🎬 {t.youglishBtn}</button>}
+                          {!showRes && <button onClick={() => { recordPracticeReview(lCard); setYouglishWord(lCard?.korean); }} disabled={lLoad} style={sBtn}>🎬 {t.youglishBtn}</button>}
                           {showRes && <button onClick={() => quickAct("resources")} disabled={lLoad} style={sBtn}>📚 {t.onlineRes}</button>}
                         </div>
                       </div>
@@ -8983,7 +9009,7 @@ function AppInner() {
                   {tray && (
                     <div style={{ padding: "6px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 5, flexWrap: "wrap", background: C.s1 }}>
                       {qa.filter(a => (a.k !== "resources" || lCard?.type !== "vocab") && (a.k !== "image" || lCard?.type === "vocab") && (a.k !== "youglish" || lCard?.type === "vocab")).map(a => (
-                        <button key={a.k} onClick={() => a.k === "youglish" ? setYouglishWord(lCard?.korean) : quickAct(a.k)} disabled={lLoad}
+                        <button key={a.k} onClick={() => a.k === "youglish" ? (recordPracticeReview(lCard), setYouglishWord(lCard?.korean)) : quickAct(a.k)} disabled={lLoad}
                           style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", background: C.s2, border: `1px solid ${C.borderS}`, borderRadius: 20, fontFamily: "'Plus Jakarta Sans'", fontSize: 11.5, color: C.txtS, cursor: lLoad ? "default" : "pointer", opacity: lLoad ? 0.55 : 1 }}>
                           {a.i} {a.l}
                         </button>

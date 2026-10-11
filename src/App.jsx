@@ -5720,7 +5720,7 @@ function AppInner() {
     const cards = (sel.ids || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
     const origSt = sel.originalStatus || {};
     const todayDate = sel.date;
-    const exercisedToday = c => { const p = c.progress; return p && ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate)); };
+    const exercisedToday = c => { const p = c.progress; return (p && ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate))) || (c.reviewDates || []).includes(todayDate); };
     const isDone = c => {
       const s = migrateStatus(c.status);
       if (s === "acquired") return true;
@@ -8074,8 +8074,8 @@ function AppInner() {
                             const origSt = data.today?.originalStatus || {};
                             const exercisedToday = c => {
                               const p = c.progress;
-                              if (!p) return false;
-                              return ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate));
+                              if (p && ["ce","co","pe"].some(k => (p[k] || []).includes(todayDate))) return true;
+                              return (c.reviewDates || []).includes(todayDate);
                             };
                             const isDone = c => {
                               const s = migrateStatus(c.status);
@@ -9793,9 +9793,9 @@ function AppInner() {
                           )}
                           {toPractice.length > 0 && (
                             <div>
-                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length}/{toPractice.length})</div>
+                              <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); }).length}/{toPractice.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
-                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe"].some(k => (p[k] || []).includes(today)); return (
+                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
                                     style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
@@ -10088,7 +10088,7 @@ function AppInner() {
                     const todayDiscover = todaySet ? (todaySet.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean) : [];
                     const todayPractice = todaySet ? (todaySet.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean) : [];
                     const discDone = todayDiscover.filter(c => { const s = migrateStatus(c.status); if (s === "studied" || s === "acquired") return true; const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length;
-                    const pracDone = todayPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); }).length;
+                    const pracDone = todayPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); }).length;
                     const allDoneToday = todayDiscover.length + todayPractice.length > 0 && discDone >= todayDiscover.length && pracDone >= todayPractice.length;
                     return (
                       <div key={goal.id} onClick={() => { setGoalEditId(goal.id); setGoalView("detail"); window.history.pushState({ view: "goals", goalView: "detail", goalEditId: goal.id }, ""); }}

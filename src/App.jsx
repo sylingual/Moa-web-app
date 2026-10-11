@@ -9795,7 +9795,7 @@ function AppInner() {
                             <div>
                               <div style={{ fontSize: 10.5, fontWeight: 500, color: C.ok, marginBottom: 6 }}>🔄 {t.goalTodayPractice} ({toPractice.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); }).length}/{toPractice.length})</div>
                               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 6 }}>
-                                {toPractice.map(c => { const p = c.progress || {}; const done = ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); return (
+                                {[...toPractice].sort((a, b) => { const da = ["ce","co","pe"].some(k => ((a.progress || {})[k] || []).includes(today)) || (a.reviewDates || []).includes(today); const db = ["ce","co","pe"].some(k => ((b.progress || {})[k] || []).includes(today)) || (b.reviewDates || []).includes(today); return da === db ? 0 : da ? 1 : -1; }).map(c => { const p = c.progress || {}; const done = ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); return (
                                   <div key={c.id} onClick={() => openCardFresh(c)}
                                     style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}

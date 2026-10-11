@@ -255,6 +255,10 @@ const T = {
     agePlaceholder: "ex: 24",
     nationalityLabel: "Quelle est ta langue maternelle ou ta nationalité ? 🌍",
     nationalityPlaceholder: "ex: Français, Sénégalais francophone, Japonais...",
+    weatherCityLabel: "Ville pour la météo",
+    weatherCityPh: "ex: Paris, Tokyo, New York...",
+    weatherCitySearching: "Recherche...",
+    weatherCityNone: "Ville par défaut (capitale)",
     profileAutoUpdate: "Le profil est aussi enrichi automatiquement à chaque leçon en fonction de ce que tu partages.",
     // Lesson summary
     endLesson: "Terminer la leçon",
@@ -678,6 +682,10 @@ const T = {
     agePlaceholder: "e.g. 24",
     nationalityLabel: "What is your native language or nationality? 🌍",
     nationalityPlaceholder: "e.g. French, Senegalese (French-speaking), Japanese...",
+    weatherCityLabel: "Weather city",
+    weatherCityPh: "e.g. Paris, Tokyo, New York...",
+    weatherCitySearching: "Searching...",
+    weatherCityNone: "Default city (capital)",
     profileAutoUpdate: "Your profile is also enriched automatically after each lesson based on what you share.",
     // Lesson summary
     endLesson: "End lesson",
@@ -1100,6 +1108,10 @@ const T = {
     agePlaceholder: "예: 24",
     nationalityLabel: "모국어 또는 국적을 알려주세요 🌍",
     nationalityPlaceholder: "예: 한국인, 프랑스어권 세네갈인, 일본인...",
+    weatherCityLabel: "날씨 도시",
+    weatherCityPh: "예: 서울, 도쿄, 파리...",
+    weatherCitySearching: "검색 중...",
+    weatherCityNone: "기본 도시 (수도)",
     profileAutoUpdate: "레슨할 때마다 네가 공유하는 내용을 바탕으로 프로필이 자동으로 업데이트돼.",
     endLesson: "레슨 끝내기",
     endLessonConfirm: "레슨을 끝내고 요약을 볼까요?",
@@ -5268,6 +5280,8 @@ function AppInner() {
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
   const [weather, setWeather] = useState(null); // { city, temp, emoji } for the target language
+  const [weatherCityInput, setWeatherCityInput] = useState("");
+  const [weatherCitySuggestions, setWeatherCitySuggestions] = useState([]);
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -5655,9 +5669,10 @@ function AppInner() {
     return () => window.removeEventListener("resize", onR);
   }, []);
 
-  // Today's weather in the target-language's city (Open-Meteo — free, no key).
+  // Today's weather: custom city from profile, or default per target language.
   useEffect(() => {
-    const city = WEATHER_CITY[tl];
+    const custom = data.profile?.weatherCity;
+    const city = custom || WEATHER_CITY[tl];
     if (!city) { setWeather(null); return; }
     let alive = true;
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code`)
@@ -5665,7 +5680,7 @@ function AppInner() {
       .then(d => { if (alive && d && d.current) setWeather({ city: city.name, temp: Math.round(d.current.temperature_2m), emoji: weatherEmoji(d.current.weather_code) }); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [tl]);
+  }, [tl, data.profile?.weatherCity]);
 
   // Keep the app sized to the visible viewport so the on-screen keyboard
   // shrinks the app instead of pushing content off-screen.
@@ -10159,6 +10174,13 @@ function AppInner() {
               {/* GOAL LIST */}
               {goalView === "list" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {weather && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: C.s2, border: `1px solid ${C.border}` }}>
+                      <span style={{ fontSize: 28, lineHeight: 1 }}>{weather.emoji}</span>
+                      <span style={{ fontSize: 18, fontWeight: 600, color: C.txt }}>{weather.temp}°</span>
+                      <span style={{ fontSize: 12, color: C.txtS }}>{weather.city}</span>
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>🎯 {t.goalsTab}</div>
                     <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "" }); setGoalPickSel(new Set()); }}
@@ -10373,6 +10395,41 @@ function AppInner() {
                     placeholder={t.nationalityPlaceholder} style={fieldStyle} />
                   {savedTag("nationality")}
                 </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.weatherCityLabel}</label>
+                <div style={{ position: "relative" }}>
+                  <input value={weatherCityInput} onChange={e => {
+                    const v = e.target.value; setWeatherCityInput(v);
+                    if (v.trim().length < 2) { setWeatherCitySuggestions([]); return; }
+                    const ctl = new AbortController();
+                    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(v.trim())}&count=5&language=${lang}`, { signal: ctl.signal })
+                      .then(r => r.json()).then(d => setWeatherCitySuggestions((d.results || []).map(r => ({ name: r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? ", " + r.country : ""), lat: r.latitude, lon: r.longitude }))))
+                      .catch(() => {});
+                  }} placeholder={profileDraft.weatherCity ? profileDraft.weatherCity.name : t.weatherCityPh} style={fieldStyle} />
+                  {weatherCitySuggestions.length > 0 && (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 180, overflowY: "auto" }}>
+                      {weatherCitySuggestions.map((s, i) => (
+                        <div key={i} onClick={() => { setProfileDraft({ ...profileDraft, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } }); setWeatherCityInput(""); setWeatherCitySuggestions([]); }}
+                          style={{ padding: "8px 12px", fontSize: 12, color: C.txt, cursor: "pointer", borderBottom: i < weatherCitySuggestions.length - 1 ? `1px solid ${C.border}` : "none" }}
+                          onMouseEnter={e => { e.currentTarget.style.background = C.accBg; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                          {s.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {profileDraft.weatherCity && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                    <span style={{ fontSize: 11, color: C.txtS }}>{profileDraft.weatherCity.name}</span>
+                    <button onClick={() => { setProfileDraft({ ...profileDraft, weatherCity: null }); setWeatherCityInput(""); }}
+                      style={{ fontSize: 10, color: C.txtM, cursor: "pointer", background: "none", border: "none", textDecoration: "underline", fontFamily: "'Plus Jakarta Sans'" }}>
+                      {t.weatherCityNone}
+                    </button>
+                  </div>
+                )}
+                {savedTag("weatherCity")}
               </div>
 
               <div>

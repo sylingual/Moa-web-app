@@ -10030,7 +10030,7 @@ function AppInner() {
                                     style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt }}>{done ? "✓ " : ""}{c.korean}</div>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt, display: "flex", alignItems: "center", gap: 6 }}>{done ? "✓ " : ""}{c.images && c.images[0] && <img src={c.images[0].thumb || c.images[0].url} alt="" style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}{c.korean}</div>
                                   </div>
                                 ); })}
                               </div>
@@ -10045,7 +10045,7 @@ function AppInner() {
                                     style={{ background: done ? "rgba(52,199,89,0.12)" : "rgba(255,255,255,0.65)", border: `1px solid ${done ? "rgba(52,199,89,0.3)" : "rgba(230,180,40,0.25)"}`, borderRadius: 8, padding: "8px 10px", cursor: "pointer", transition: "transform 0.1s" }}
                                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt }}>{done ? "✓ " : ""}{c.korean}</div>
+                                    <div style={{ fontFamily: tFont, fontSize: 13.5, color: done ? "#34C759" : C.txt, display: "flex", alignItems: "center", gap: 6 }}>{done ? "✓ " : ""}{c.images && c.images[0] && <img src={c.images[0].thumb || c.images[0].url} alt="" style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}{c.korean}</div>
                                   </div>
                                 ); })}
                               </div>
@@ -10100,6 +10100,7 @@ function AppInner() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 300, overflowY: "auto" }}>
                           {(goal.cardIds || []).map(id => { const c = data.cards.find(x => x.id === id); return c ? { id, c } : null; }).filter(Boolean).sort((a, b) => { const sa = migrateStatus(a.c.status); const sb = migrateStatus(b.c.status); const order = { "new": 0, "in_progress": 1, "studied": 2, "acquired": 3 }; return (order[sa] ?? 4) - (order[sb] ?? 4); }).map(({ id, c }) => { const si = statusInfo(c.status, t); return (
                             <div key={id} onClick={() => { openCardFresh(c); }} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s2, cursor: "pointer" }}>
+                              {c.images && c.images[0] && <img src={c.images[0].thumb || c.images[0].url} alt="" style={{ width: 22, height: 22, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}
                               <span style={{ fontFamily: tFont, fontSize: 14, color: C.txt, flex: 1 }}>{c.korean}</span>
                               <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 8, background: si.bg, color: si.color }}>{si.label}</span>
                             </div>
@@ -10137,6 +10138,7 @@ function AppInner() {
                                 <div key={c.id} onClick={() => { const s = new Set(goalPickSel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setGoalPickSel(s); }}
                                   style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: goalPickSel.has(c.id) ? C.accBg : "transparent" }}>
                                   <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${goalPickSel.has(c.id) ? C.acc : C.borderS}`, background: goalPickSel.has(c.id) ? C.acc : "transparent", color: C.onAcc }}>{goalPickSel.has(c.id) ? "✓" : ""}</span>
+                                  {c.images && c.images[0] && <img src={c.images[0].thumb || c.images[0].url} alt="" style={{ width: 20, height: 20, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}
                                   <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
                                   {(c.tags || []).length > 0 && <span style={{ fontSize: 9.5, color: C.txtM, marginLeft: "auto", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{(c.tags || []).map(tg => "#" + tg).join(" ")}</span>}
                                 </div>

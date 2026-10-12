@@ -6536,7 +6536,7 @@ function AppInner() {
     try {
       if (action === "image") {
         setSearching(true);
-        const imgRes = await fetchImages(recapCard.korean, 20);
+        const imgRes = await fetchImages(recapCard.korean, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
@@ -6873,7 +6873,7 @@ function AppInner() {
     const setArr = scope === "recap" ? setRecapConv : setConv;
     if (refine && refine.trim()) {
       setSearching(true);
-      const imgRes = await fetchImages(word + " " + refine.trim(), 20);
+      const imgRes = await fetchImages(word + " " + refine.trim(), 8);
       setSearching(false);
       const pool = imgRes.images;
       setArr(prev => prev.map((m, j) => j === idx
@@ -6900,7 +6900,7 @@ function AppInner() {
     try {
       if (a === "image") {
         setSearching(true);
-        const imgRes = await fetchImages(lCard.korean, 20);
+        const imgRes = await fetchImages(lCard.korean, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);

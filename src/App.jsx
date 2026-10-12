@@ -142,6 +142,7 @@ const T = {
     progressCanPractice: "Vous pouvez néanmoins vous entraîner aujourd'hui.",
     progressJustDiscovered: "Tu viens de découvrir cette carte. Je te conseille d'attendre un peu avant de la réviser, mais tu peux déjà t'exercer si tu veux.",
     progressAlreadyDone: "Vous vous êtes déjà entraîné aujourd'hui, mais vous pouvez réviser encore si vous voulez.",
+    progressRestAdvised: "Vous vous êtes déjà entraîné récemment, alors je vous conseille d'attendre et de vous reposer l'esprit. Mais vous pouvez réviser quand même si vous voulez.",
     progressNextPast: "En retard",
     progressAcquired: "Acquise !",
     progressAutoAcquired: "Carte acquise ! Répétition espacée terminée.",
@@ -574,6 +575,7 @@ const T = {
     progressCanPractice: "You can still practice today.",
     progressJustDiscovered: "You just discovered this card. I recommend waiting a bit before reviewing, but you can already practice if you want.",
     progressAlreadyDone: "You already practiced today, but you can review again if you want.",
+    progressRestAdvised: "You already practiced recently, so I recommend waiting and resting your mind. But you can still review if you want.",
     progressNextPast: "Overdue",
     progressAcquired: "Acquired!",
     progressAutoAcquired: "Card acquired! Spaced repetition complete.",
@@ -1006,6 +1008,7 @@ const T = {
     progressCanPractice: "그래도 오늘 연습할 수 있어요.",
     progressJustDiscovered: "방금 이 카드를 발견했어. 복습하기 전에 조금 기다리는 게 좋아, 그래도 연습하고 싶으면 해 봐.",
     progressAlreadyDone: "오늘 이미 연습했어요. 그래도 더 복습하고 싶으면 할 수 있어요.",
+    progressRestAdvised: "최근에 이미 연습했어요. 좀 쉬면서 기다리는 걸 추천해요. 그래도 복습하고 싶으면 할 수 있어요.",
     progressNextPast: "밀림",
     progressAcquired: "습득 완료!",
     progressAutoAcquired: "카드 습득 완료! 간격 반복 끝.",
@@ -9043,9 +9046,9 @@ function AppInner() {
                               <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
                             </div>
                           )}
-                          {(justDiscovered || practicedToday) && (
+                          {(justDiscovered || practicedToday || (daysUntilNext !== null && daysUntilNext > 0)) && (
                           <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: daysUntilNext !== null ? 4 : 0 }}>
-                            {justDiscovered ? t.progressJustDiscovered : t.progressAlreadyDone}
+                            {justDiscovered ? t.progressJustDiscovered : (daysUntilNext !== null && daysUntilNext > 0) ? t.progressRestAdvised : t.progressAlreadyDone}
                           </div>
                           )}
                         </div>

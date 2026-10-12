@@ -7054,13 +7054,14 @@ function AppInner() {
       changed = true;
       const goalCards = (goal.cardIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
       const daily = goalDailyTarget(goal);
-      const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - Date.now()) / 86400000));
+      const created = goal.createdAt ? new Date(goal.createdAt).toISOString().slice(0, 10) : goal.deadline;
+      const daysTotal = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(created + "T00:00:00")) / 86400000));
       const discoverCards = goalCards.filter(c => { const s = migrateStatus(c.status); return s === "new" || s === "in_progress"; }).slice(0, daily.discover || 3);
       const practiceCards = goalCards.filter(c => {
         const s = migrateStatus(c.status);
         if (s !== "studied") return false;
         if (c.goalAcquired) return false;
-        const next = getCardNextReviewDate(c, dLeft);
+        const next = getCardNextReviewDate(c, daysTotal);
         return !next || next <= today;
       });
       updated[goal.id] = { date: today, discoverIds: discoverCards.map(c => c.id), practiceIds: practiceCards.map(c => c.id) };

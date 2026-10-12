@@ -2316,10 +2316,10 @@ async function fetchImages(query, count) {
       body: JSON.stringify({ q: query, count: count || 20 }),
     });
     const raw = await res.text();
-    let d; try { d = JSON.parse(raw); } catch { console.warn("[fetchImages] bad JSON:", raw.slice(0, 200)); return []; }
+    let d; try { d = JSON.parse(raw); } catch { console.warn("[fetchImages] bad JSON:", raw.slice(0, 200)); return { images: [], error: "bad response" }; }
     if (d.error) console.warn("[fetchImages] API error:", d.error, "query:", query);
-    return d.images || [];
-  } catch (err) { console.warn("[fetchImages] fetch failed:", err.message); return []; }
+    return { images: d.images || [], error: d.error || null };
+  } catch (err) { console.warn("[fetchImages] fetch failed:", err.message); return { images: [], error: err.message }; }
 }
 
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
@@ -3447,7 +3447,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
         `You generate a short image search query (2-4 English words) to find an illustration that helps visualize the meaning of a ${TL} paragraph. Return ONLY the search query, nothing else.`,
         paragraphs[paraIdx], 50, false, true
       );
-      const images = await fetchImages(prompt.text.trim(), 4);
+      const { images } = await fetchImages(prompt.text.trim(), 4);
       if (images.length > 0) setIllustration(images[0]);
     } catch (e) { console.error(e); }
     setIllustrationLoading(false);
@@ -6536,9 +6536,11 @@ function AppInner() {
     try {
       if (action === "image") {
         setSearching(true);
-        const pool = await fetchImages(recapCard.korean, 20);
+        const imgRes = await fetchImages(recapCard.korean, 20);
         setSearching(false);
-        setRecapConv([...u, { role: "ai", content: pool.length ? `📷 ${recapCard.korean}` : t.imageNone, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: recapCard.korean, options: null, selected: null }]);
+        const pool = imgRes.images;
+        const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
+        setRecapConv([...u, { role: "ai", content: pool.length ? `📷 ${recapCard.korean}` : noImg, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: recapCard.korean, options: null, selected: null }]);
       } else if (action === "resources" || action === "realExamples") {
         setSearching(true);
         const r = action === "resources"
@@ -6871,10 +6873,11 @@ function AppInner() {
     const setArr = scope === "recap" ? setRecapConv : setConv;
     if (refine && refine.trim()) {
       setSearching(true);
-      const pool = await fetchImages(word + " " + refine.trim(), 20);
+      const imgRes = await fetchImages(word + " " + refine.trim(), 20);
       setSearching(false);
+      const pool = imgRes.images;
       setArr(prev => prev.map((m, j) => j === idx
-        ? { ...m, imagePool: pool, imgFrom: 0, images: pool.slice(0, 4), imageWord: word, content: pool.length ? `📷 ${word} · ${refine.trim()}` : t.imageNone }
+        ? { ...m, imagePool: pool, imgFrom: 0, images: pool.slice(0, 4), imageWord: word, content: pool.length ? `📷 ${word} · ${refine.trim()}` : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone) }
         : m));
       return;
     }
@@ -6897,9 +6900,11 @@ function AppInner() {
     try {
       if (a === "image") {
         setSearching(true);
-        const pool = await fetchImages(lCard.korean, 20);
+        const imgRes = await fetchImages(lCard.korean, 20);
         setSearching(false);
-        setConv([...u, { role: "ai", content: pool.length ? `📷 ${lCard.korean}` : t.imageNone, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: lCard.korean, options: null, selected: null }]);
+        const pool = imgRes.images;
+        const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
+        setConv([...u, { role: "ai", content: pool.length ? `📷 ${lCard.korean}` : noImg, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: lCard.korean, options: null, selected: null }]);
       } else if (a === "resources" || a === "realExamples") {
         setSearching(true);
         const r = a === "resources"

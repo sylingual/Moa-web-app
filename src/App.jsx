@@ -10629,6 +10629,14 @@ function AppInner() {
                     fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(v.trim())}&count=5&language=${lang}`, { signal: ctl.signal })
                       .then(r => r.json()).then(d => setWeatherCitySuggestions((d.results || []).map(r => ({ name: r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? ", " + r.country : ""), lat: r.latitude, lon: r.longitude }))))
                       .catch(() => {});
+                  }} onBlur={() => {
+                    setTimeout(() => {
+                      if (weatherCitySuggestions.length > 0 && weatherCityInput.trim()) {
+                        const s = weatherCitySuggestions[0];
+                        setProfileDraft({ ...profileDraft, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } });
+                        setWeatherCityInput(""); setWeatherCitySuggestions([]);
+                      }
+                    }, 200);
                   }} placeholder={profileDraft.weatherCity ? profileDraft.weatherCity.name : t.weatherCityPh} style={fieldStyle} />
                   {weatherCitySuggestions.length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 180, overflowY: "auto" }}>

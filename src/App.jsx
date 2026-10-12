@@ -2316,9 +2316,10 @@ async function fetchImages(query, count) {
       body: JSON.stringify({ q: query, count: count || 20 }),
     });
     const raw = await res.text();
-    let d; try { d = JSON.parse(raw); } catch { return []; }
+    let d; try { d = JSON.parse(raw); } catch { console.warn("[fetchImages] bad JSON:", raw.slice(0, 200)); return []; }
+    if (d.error) console.warn("[fetchImages] API error:", d.error, "query:", query);
     return d.images || [];
-  } catch { return []; }
+  } catch (err) { console.warn("[fetchImages] fetch failed:", err.message); return []; }
 }
 
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.

@@ -18,16 +18,20 @@ export default async function handler(req, res) {
 
     var count = Math.min(50, Math.max(4, Number(body.count) || 20))
     var params = new URLSearchParams({ q: q, count: String(count), safesearch: 'strict' })
-    var r = await fetch('https://api.search.brave.com/res/v1/images/search?' + params.toString(), {
+    var url = 'https://api.search.brave.com/res/v1/images/search?' + params.toString()
+    console.log('[image] Brave request:', q, 'key:', key ? key.slice(0, 6) + '...' : 'MISSING')
+    var r = await fetch(url, {
       headers: { Accept: 'application/json', 'Accept-Encoding': 'gzip', 'X-Subscription-Token': key },
     })
     var raw = await r.text()
+    console.log('[image] Brave status:', r.status, 'body length:', raw.length, 'preview:', raw.slice(0, 200))
     if (!r.ok) {
       var msg = 'Brave ' + r.status
       try { var ej = JSON.parse(raw); msg = (ej.error && (ej.error.detail || ej.error.message)) || ej.message || msg } catch (e) {}
       return res.status(200).json({ error: msg, images: [] })
     }
     var data = JSON.parse(raw)
+    console.log('[image] results count:', (data.results || []).length)
     var images = (data.results || []).map(function (it) {
       return {
         // Brave-hosted thumbnail loads reliably (no hotlink/CORS issues); full image + page as links.
@@ -39,7 +43,11 @@ export default async function handler(req, res) {
       }
     }).filter(function (x) { return x.thumb || x.url })
 
-    return res.status(200).json({ images: images.slice(0, count) })
+    var result = images.slice(0, count)
+    if (result.length === 0) {
+      return res.status(200).json({ error: 'Brave returned 0 results for: ' + q, images: [] })
+    }
+    return res.status(200).json({ images: result })
   } catch (err) {
     return res.status(200).json({ error: err.message, images: [] })
   }

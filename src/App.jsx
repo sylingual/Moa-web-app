@@ -1904,7 +1904,8 @@ ${phaseGuide}
 
 ${instruction}
 
-Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.`;
+Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.
+IMPORTANT: Only include the "correct" field on quiz/comprehension questions. If you offer navigation choices (like "continue" vs "stop", or "try another exercise" vs "end lesson"), omit the "correct" field entirely from those options — they are not right or wrong.`;
   
   return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 3500)).text);
 }
@@ -2883,10 +2884,11 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, 
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
             {msg.options.map((o, i) => {
               const oLabel = o.label || o.text || String(o);
-              const oCorrect = (o.correct === true || o.correct === "true");
+              const isQuiz = msg.options.some(x => x.correct === true || x.correct === "true");
+              const oCorrect = isQuiz && (o.correct === true || o.correct === "true");
               const sel = msg.selected === oLabel;
               const showOk = confirmed && oCorrect;
-              const bad = sel && !oCorrect;
+              const bad = isQuiz && sel && !oCorrect;
               const isPre = !confirmed && preSel === oLabel;
               return (
                 <button key={i}
@@ -6791,10 +6793,11 @@ function AppInner() {
 
   const pickOpt = async (i, opt) => {
     if (lLoad) return;
-    const isRight = (opt.correct === true || opt.correct === "true");
     const nc = [...conv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setConv(u); setLLoad(true);
-    try { const r = await continueChat(lCard, u, isRight ? "correct" : "incorrect, explain", lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
+    const hasQuiz = nc[i].options && nc[i].options.some(o => o.correct === true || o.correct === "true");
+    const action = hasQuiz ? ((opt.correct === true || opt.correct === "true") ? "correct" : "incorrect, explain") : opt.label;
+    try { const r = await continueChat(lCard, u, action, lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("pickOpt error:", e); setConv([...u, aiError(e, () => pickOpt(i, opt))]); }
     setLLoad(false);
   };

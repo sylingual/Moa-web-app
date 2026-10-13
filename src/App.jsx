@@ -2213,7 +2213,7 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
 ${TRANSLATION_RULE}
 
-${context}
+${mode === "topik" ? "" : context}
 ${modes[mode]}
 
 Structures to practice:

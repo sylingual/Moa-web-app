@@ -10663,17 +10663,27 @@ function AppInner() {
                       .catch(() => {});
                   }} onBlur={() => {
                     setTimeout(() => {
-                      if (weatherCitySuggestions.length > 0 && weatherCityInput.trim()) {
+                      if (!weatherCityInput.trim()) return;
+                      if (weatherCitySuggestions.length > 0) {
                         const s = weatherCitySuggestions[0];
-                        setProfileDraft({ ...profileDraft, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } });
+                        setProfileDraft(prev => ({ ...prev, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } }));
                         setWeatherCityInput(""); setWeatherCitySuggestions([]);
+                      } else {
+                        fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(weatherCityInput.trim())}&count=1&language=${lang}`)
+                          .then(r => r.json()).then(d => {
+                            const r = (d.results || [])[0];
+                            if (r) {
+                              setProfileDraft(prev => ({ ...prev, weatherCity: { name: r.name, lat: r.latitude, lon: r.longitude } }));
+                              setWeatherCityInput(""); setWeatherCitySuggestions([]);
+                            }
+                          }).catch(() => {});
                       }
                     }, 200);
                   }} placeholder={profileDraft.weatherCity ? profileDraft.weatherCity.name : t.weatherCityPh} style={fieldStyle} />
                   {weatherCitySuggestions.length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 10, background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, marginTop: 2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", maxHeight: 180, overflowY: "auto" }}>
                       {weatherCitySuggestions.map((s, i) => (
-                        <div key={i} onClick={() => { setProfileDraft({ ...profileDraft, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } }); setWeatherCityInput(""); setWeatherCitySuggestions([]); }}
+                        <div key={i} onClick={() => { setProfileDraft(prev => ({ ...prev, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } })); setWeatherCityInput(""); setWeatherCitySuggestions([]); }}
                           style={{ padding: "8px 12px", fontSize: 12, color: C.txt, cursor: "pointer", borderBottom: i < weatherCitySuggestions.length - 1 ? `1px solid ${C.border}` : "none" }}
                           onMouseEnter={e => { e.currentTarget.style.background = C.accBg; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
                           {s.name}
@@ -10685,7 +10695,7 @@ function AppInner() {
                 {profileDraft.weatherCity && (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
                     <span style={{ fontSize: 11, color: C.txtS }}>{profileDraft.weatherCity.name}</span>
-                    <button onClick={() => { setProfileDraft({ ...profileDraft, weatherCity: null }); setWeatherCityInput(""); }}
+                    <button onClick={() => { setProfileDraft(prev => ({ ...prev, weatherCity: null })); setWeatherCityInput(""); }}
                       style={{ fontSize: 10, color: C.txtM, cursor: "pointer", background: "none", border: "none", textDecoration: "underline", fontFamily: "'Plus Jakarta Sans'" }}>
                       {t.weatherCityNone}
                     </button>

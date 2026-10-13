@@ -102,6 +102,7 @@ const T = {
     exBackToEx: "Exercices",
     story: "Continue l'histoire", storyDesc: "L'IA commence une histoire, tu la continues avec les structures choisies.",
     qcm: "QCM", qcmDesc: "Teste tes connaissances.",
+    topik: "Prépa TOPIK", topikDesc: "Questions style TOPIK II avec phrases à trous.",
     fillBlanks: "Histoire à trous", fillDesc: "Complète une histoire générée avec les mots choisis.",
     exMatch: "Relier", exMatchDesc: "Associe chaque mot à sa définition.",
     exCross: "Mots croisés", exCrossDesc: "Retrouve les mots à partir des définitions.",
@@ -535,6 +536,7 @@ const T = {
     exBackToEx: "Exercises",
     story: "Continue the story", storyDesc: "The AI starts a story, you continue it using the chosen structures.",
     qcm: "Random quiz", qcmDesc: "Questions on new random examples.",
+    topik: "TOPIK Prep", topikDesc: "TOPIK II style fill-in-the-blank questions.",
     fillBlanks: "Story fill-in", fillDesc: "Complete a generated story with chosen words.",
     exMatch: "Match", exMatchDesc: "Match each word to its definition.",
     exCross: "Crossword", exCrossDesc: "Find the words from their definitions.",
@@ -969,6 +971,7 @@ const T = {
     exBackToEx: "연습 문제",
     story: "이야기 이어쓰기", storyDesc: "AI가 이야기를 시작하면, 선택한 구조를 사용해서 이어 써 봐.",
     qcm: "랜덤 퀴즈", qcmDesc: "새로운 예문으로 된 문제들.",
+    topik: "TOPIK 준비", topikDesc: "TOPIK II 스타일 빈칸 채우기 문제.",
     fillBlanks: "빈칸 채우기", fillDesc: "생성된 이야기의 빈칸을 선택한 단어로 채워 봐.",
     exMatch: "연결하기", exMatchDesc: "각 단어를 뜻과 연결해 봐.",
     exCross: "십자말풀이", exCrossDesc: "뜻을 보고 단어를 찾아봐.",
@@ -2080,6 +2083,27 @@ Structure your message like this:
 
 Keep the whole message SHORT and focused on this single question. Do NOT preview or list the other questions. Do NOT use markdown headers (###). Use "label" as the key for option text.`,
 
+    topik: `TOPIK II PREPARATION MODE: Create exactly ONE TOPIK II style question now. This is question 1 of 3 in a series.
+
+You are preparing the student for the TOPIK II reading section (읽기). Create questions that mirror the real TOPIK II format.
+
+Structure your message like this:
+1. A brief one-line intro (only for question 1, e.g. "TOPIK II 읽기 연습")
+2. A sentence or short passage (2-3 sentences) in Korean that naturally uses one of the structures/vocabulary listed below
+3. One word or expression in the passage is replaced with ( ㄱ ) or a blank
+4. The question: "( ㄱ )에 들어갈 가장 알맞은 것을 고르십시오." (or similar TOPIK phrasing)
+5. Provide exactly 4 MCQ options (labeled ①, ②, ③, ④), only one correct
+
+IMPORTANT:
+- The passage should feel like a real TOPIK II reading passage: news excerpts, notices, essays, letters, or informational text
+- ${theme ? `Set the passage in this context: "${theme}". Do NOT mix in other topics.` : "Vary the context: announcements, blog posts, newspaper articles, formal letters, academic text, advertisements, etc."}
+- The 4 options must be plausible Korean words/expressions that could grammatically fit the blank, but only one is semantically correct in context
+- Difficulty level: TOPIK II (intermediate to advanced)
+- Write the question and passage entirely in Korean, but write the intro line in ${L}
+- Do NOT preview or list other questions
+- Do NOT use markdown headers (###)
+- Use "label" as the key for option text`,
+
     fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
@@ -2222,6 +2246,8 @@ async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {
 
   const next = (isLast || isFillMode)
     ? `${isFillMode ? "This is a fill-in exercise, so after your correction feedback," : "This was the last question. After your feedback,"} wrap up with a short encouraging summary of how the session went (2-3 sentences). Do NOT ask another question, do NOT include options, and do NOT tell the student where to click or which tab to open: the app already shows them the buttons.`
+    : mode === "topik"
+      ? `Then create question ${asked + 1} of 3: a NEW TOPIK II style reading question. Write a short Korean passage (2-3 sentences) using one of the structures, replace a key word/expression with ( ㄱ ), ask "( ㄱ )에 들어갈 가장 알맞은 것을 고르십시오.", and provide exactly 4 options (labeled ①, ②, ③, ④, one correct). Vary the passage type (notice, essay, letter, article, ad). Keep it short.`
     : mode === "qcm"
       ? `Then ask question ${asked + 1} of 3: a NEW multiple-choice question on one of the structures, with a short real-world context line, the sentence in ${TL}, the question, and exactly 3 options (one correct). Keep it short.`
       : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
@@ -2503,7 +2529,7 @@ const GENDERED_LANGS = new Set(["fr", "de", "es", "it", "pt", "ru", "ar", "pl", 
 
 function exModeToCategory(mode) {
   switch (mode) {
-    case "flash": case "match": case "qcm": case "fill": case "reorder": case "drill": case "fixit": return "ce";
+    case "flash": case "match": case "qcm": case "topik": case "fill": case "reorder": case "drill": case "fixit": return "ce";
     case "youglish": case "dictation": return "co";
     case "imgwrite": case "cross": case "story": case "dialoguefill": return "pe";
     default: return null;
@@ -9368,11 +9394,13 @@ function AppInner() {
                       { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true },
                       { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true },
                       { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true },
+                      ...(tl === "ko" ? [{ k: "topik", l: t.topik, d: t.topikDesc, i: "📝", ai: true }] : []),
                     ] : exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
                       { k: "match", l: t.exMatch, d: t.exMatchDesc, i: "🔗", vocabOnly: true },
                       ...(GENDERED_LANGS.has(tl) ? [{ k: "gender", l: t.exGender, d: t.exGenderDesc, i: "🔤", vocabOnly: true }] : []),
                       { k: "qcm", l: t.qcm, d: t.qcmDesc, i: "🔀", ai: true },
+                      ...(tl === "ko" ? [{ k: "topik", l: t.topik, d: t.topikDesc, i: "📝", ai: true }] : []),
                       { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true, grammarOnly: true },
                       { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true, grammarOnly: true },
                       { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true, grammarOnly: true },
@@ -9420,7 +9448,7 @@ function AppInner() {
                     </button>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{
-                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, drill: `✒️ ${t.exDrill}`, fixit: `👩‍🏫 ${t.exFixit}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
+                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, topik: `📝 ${t.topik}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, drill: `✒️ ${t.exDrill}`, fixit: `👩‍🏫 ${t.exFixit}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
                   }</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
@@ -9486,7 +9514,7 @@ function AppInner() {
                     {visibleCards.length > 0 && (
                       <button onClick={() => {
                         if (exSel.size === 0) return;
-                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
+                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit" || exMode === "topik") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
                         else launchEx();
                       }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>

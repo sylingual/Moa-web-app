@@ -7916,14 +7916,6 @@ function AppInner() {
                     {vocabPreview.translation}
                   </div>
                 )}
-                {vocabPreview.context && (
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 500, color: C.txtS, marginBottom: 4 }}>{t.vocabPreviewContext}</div>
-                    <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.5, padding: "8px 10px", background: C.s1, borderRadius: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>
-                      {vocabPreview.context}
-                    </div>
-                  </div>
-                )}
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 11, fontWeight: 500, color: C.txtS, marginBottom: 6 }}>{t.vocabPreviewTag}</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
@@ -7938,27 +7930,30 @@ function AppInner() {
                   {(vocabPreview.tags || []).length < 3 && (() => {
                     const chosen = vocabPreview.tags || [];
                     const available = allTags.filter(x => !chosen.includes(x));
+                    const filterVal = vocabPreview.tagFilter || "";
+                    const filtered = filterVal ? available.filter(x => x.toLowerCase().includes(filterVal.toLowerCase())) : available;
                     return (
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                           <input
                             placeholder={t.tagPlaceholder}
                             id="vocab-preview-tag-input"
+                            value={filterVal}
+                            onChange={e => setVocabPreview(prev => prev ? { ...prev, tagFilter: e.target.value } : null)}
                             onKeyDown={e => {
                               if (e.key === "Enter") {
                                 const v = e.target.value.trim().toLowerCase();
                                 if (v && !chosen.includes(v) && chosen.length < 3) {
-                                  setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, v] } : null);
-                                  e.target.value = "";
+                                  setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, v], tagFilter: "" } : null);
                                 }
                               }
                             }}
                             style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1, outline: "none", boxSizing: "border-box" }} />
                         </div>
-                        {available.length > 0 && (
+                        {filtered.length > 0 && (
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                            {available.slice(0, 10).map(tag => (
-                              <button key={tag} onClick={() => setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, tag] } : null)}
+                            {filtered.slice(0, 10).map(tag => (
+                              <button key={tag} onClick={() => setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, tag], tagFilter: "" } : null)}
                                 style={{ padding: "3px 8px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                                 #{tag}
                               </button>

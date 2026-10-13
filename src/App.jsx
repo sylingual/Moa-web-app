@@ -10817,9 +10817,9 @@ function AppInner() {
                     if (weatherCityCtlRef.current) weatherCityCtlRef.current.abort();
                     const ctl = new AbortController(); weatherCityCtlRef.current = ctl;
                     const hasKo = /[가-힯]/.test(v.trim());
-                    const geoLang = hasKo ? "ko" : lang;
-                    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(v.trim())}&count=5&language=${geoLang}`, { signal: ctl.signal })
-                      .then(r => r.json()).then(d => { if (!ctl.signal.aborted) setWeatherCitySuggestions((d.results || []).map(r => ({ name: r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? ", " + r.country : ""), lat: r.latitude, lon: r.longitude }))); })
+                    const acceptLang = hasKo ? "ko" : lang === "fr" ? "fr" : lang === "ko" ? "ko" : "en";
+                    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(v.trim())}&format=jsonv2&limit=5&accept-language=${acceptLang}&featuretype=city`, { signal: ctl.signal })
+                      .then(r => r.json()).then(d => { if (!ctl.signal.aborted) setWeatherCitySuggestions(d.filter(r => r.lat && r.lon).map(r => ({ name: r.display_name, lat: parseFloat(r.lat), lon: parseFloat(r.lon) }))); })
                       .catch(() => {});
                   }} onBlur={() => {
                     setTimeout(() => {
@@ -10830,12 +10830,12 @@ function AppInner() {
                         setWeatherCityInput(""); setWeatherCitySuggestions([]);
                       } else {
                         const hasKo = /[가-힯]/.test(weatherCityInput.trim());
-                        const geoLang = hasKo ? "ko" : lang;
-                        fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(weatherCityInput.trim())}&count=1&language=${geoLang}`)
+                        const acceptLang = hasKo ? "ko" : lang === "fr" ? "fr" : lang === "ko" ? "ko" : "en";
+                        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(weatherCityInput.trim())}&format=jsonv2&limit=1&accept-language=${acceptLang}&featuretype=city`)
                           .then(r => r.json()).then(d => {
-                            const r = (d.results || [])[0];
+                            const r = d[0];
                             if (r) {
-                              setProfileDraft(prev => ({ ...prev, weatherCity: { name: r.name, lat: r.latitude, lon: r.longitude } }));
+                              setProfileDraft(prev => ({ ...prev, weatherCity: { name: r.display_name.split(",")[0], lat: parseFloat(r.lat), lon: parseFloat(r.lon) } }));
                               setWeatherCityInput(""); setWeatherCitySuggestions([]);
                             }
                           }).catch(() => {});

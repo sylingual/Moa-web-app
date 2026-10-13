@@ -178,6 +178,7 @@ const T = {
     studyDirect: "Juste la traduction", studyDirectDesc: "Le sens directement (mot facile)",
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
+    vocabPreviewTitle: "Ajouter ce mot ?", vocabPreviewLoading: "Traduction en cours...", vocabPreviewAdd: "Ajouter", vocabPreviewCancel: "Annuler", vocabPreviewContext: "Contexte", vocabPreviewTag: "Tag (optionnel)",
     yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
@@ -612,6 +613,7 @@ const T = {
     studyDirect: "Just the translation", studyDirectDesc: "The meaning directly (easy word)",
     directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
+    vocabPreviewTitle: "Add this word?", vocabPreviewLoading: "Translating...", vocabPreviewAdd: "Add", vocabPreviewCancel: "Cancel", vocabPreviewContext: "Context", vocabPreviewTag: "Tag (optional)",
     yourAnswer: "Your answer...", askQuestion: "Got a question? Ask here.", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
     noCards: "No cards yet. Import a text to get started!",
@@ -1046,6 +1048,7 @@ const T = {
     studyDirect: "번역만 보기", studyDirectDesc: "바로 뜻 확인 (쉬운 단어)",
     directLoading: "뜻을 가져오는 중...",
     addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
+    vocabPreviewTitle: "이 단어 추가할까?", vocabPreviewLoading: "번역 중...", vocabPreviewAdd: "추가", vocabPreviewCancel: "취소", vocabPreviewContext: "문맥", vocabPreviewTag: "태그 (선택)",
     yourAnswer: "답을 입력해 봐...", askQuestion: "궁금한 게 있으면 여기에 물어봐!", grammar: "문법", expression: "표현",
     points: "포인트", toReview: "복습 필요", acq: "습득 완료",
     noCards: "아직 카드가 없어요. 텍스트를 가져와서 시작해 봐!",
@@ -5435,7 +5438,8 @@ function AppInner() {
   const [langProfileStep, setLangProfileStep] = useState(0);
   const [langProfDraft, setLangProfDraft] = useState(null);
   // Select any target-language word anywhere → offer to add it to the vocab library.
-  const [selAdd, setSelAdd] = useState(null); // { text, x, y } or null
+  const [selAdd, setSelAdd] = useState(null); // { text, x, y, context } or null
+  const [vocabPreview, setVocabPreview] = useState(null); // { word, baseForm, translation, context, tags, loading }
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
   const [imgReplace, setImgReplace] = useState(null); // { korean, image } when a card already has 2 images
   const [studyChoice, setStudyChoice] = useState(null); // a vocab card awaiting "lesson vs direct translation"
@@ -6263,7 +6267,7 @@ function AppInner() {
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
 
-  const addWordToVocab = async (text) => {
+  const addWordToVocab = async (text, context) => {
     const word = (text || "").trim();
     if (!word) return;
     const exWord = data.cards.find(c => c.korean === word);
@@ -6272,9 +6276,11 @@ function AppInner() {
       save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
       setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
     }
+    setSelAdd(null);
+    try { window.getSelection()?.removeAllRanges(); } catch {}
+    setVocabPreview({ word, baseForm: null, translation: null, context: context || "", tags: [], loading: true });
     let baseForm = word;
     try {
-      setFlash(lang === "fr" ? "Recherche de la forme de base..." : lang === "ko" ? "기본형 검색 중..." : "Looking up base form...");
       const sys = "You are a Korean linguistic assistant. Given a Korean word (possibly conjugated, inflected or with particles), return ONLY the dictionary/base form (기본형). For verbs and adjectives, return the -다 form. For nouns with particles, return just the noun. Reply with the single word only, nothing else.";
       const { text: lemma } = await callAI(sys, word, 50, false, true);
       const cleaned = (lemma || "").trim().split(/\s/)[0].trim();
@@ -6283,25 +6289,40 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    if (exBase && exBase.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setVocabPreview(null); return; }
     if (exBase && exBase.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
-      setSelAdd(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
+      setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
     }
+    let translation = "";
+    try {
+      const tLang = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+      const sys2 = `You are a Korean-${tLang} dictionary. Given a Korean word, return a short translation in ${tLang} (1-2 lines max: the meaning, and optionally a brief usage note). No extra text.`;
+      const { text: tr } = await callAI(sys2, baseForm, 100, false, true);
+      translation = (tr || "").trim();
+    } catch (e) {
+      console.warn("Translation failed:", e);
+    }
+    setVocabPreview(prev => prev ? { ...prev, baseForm, translation, loading: false } : null);
+  };
+
+  const confirmVocabAdd = () => {
+    if (!vocabPreview) return;
+    const { baseForm, word, context, tags } = vocabPreview;
+    const korean = baseForm || word;
     const card = {
       id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-      korean: baseForm, type: "vocab",
+      korean, type: "vocab",
       description: "", description_fr: "", description_en: "",
       example_kr: "", example_tr: "",
-      tags: [],
-      status: "new", source: t.selectionSource, articleText: "", reviewCount: 0,
+      tags: tags || [],
+      status: "new", source: t.selectionSource, sourceContext: context || "", articleText: "", reviewCount: 0,
       targetLang: tl || "ko",
       date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
     };
     save({ ...data, cards: [...data.cards, card] });
-    setSelAdd(null);
-    try { window.getSelection()?.removeAllRanges(); } catch {}
-    setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
+    setVocabPreview(null);
+    setFlash((korean !== word ? korean + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
   };
 
   useEffect(() => {
@@ -6312,7 +6333,17 @@ function AppInner() {
       try {
         const rect = sel.getRangeAt(0).getBoundingClientRect();
         if (!rect || (!rect.width && !rect.height)) { setSelAdd(null); return; }
-        setSelAdd({ text, x: rect.left + rect.width / 2, y: rect.top });
+        let context = "";
+        try {
+          const node = sel.anchorNode;
+          const block = node && node.nodeType === 3 ? node.parentElement : node;
+          const container = block ? (block.closest("p, div, span, li, td") || block) : null;
+          if (container) {
+            const raw = container.innerText || container.textContent || "";
+            context = raw.length > 200 ? raw.slice(0, 200) + "..." : raw;
+          }
+        } catch {}
+        setSelAdd({ text, x: rect.left + rect.width / 2, y: rect.top, context });
       } catch { setSelAdd(null); }
     };
     let scTimer = null;
@@ -7819,20 +7850,110 @@ function AppInner() {
         </div>
       )}
 
-      {selAdd && (winW < 700 ? (
+      {selAdd && !vocabPreview && (winW < 700 ? (
         <div data-sel-add style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 3000, padding: "10px 16px", background: C.acc, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, boxShadow: "0 -4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.15s ease-out" }}>
           <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.onAcc, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selAdd.text}</span>
-          <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text)}
+          <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text, selAdd.context)}
             style={{ flexShrink: 0, padding: "7px 16px", borderRadius: 18, border: `2px solid ${C.onAcc}`, background: "transparent", color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
             + {t.addToVocab}
           </button>
         </div>
       ) : (
-        <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text)}
+        <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text, selAdd.context)}
           style={{ position: "fixed", left: selAdd.x, top: Math.max(8, selAdd.y - 8), transform: "translate(-50%, -100%)", zIndex: 3000, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 18, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.22)", whiteSpace: "nowrap" }}>
-          ➕ {t.addToVocab}
+          + {t.addToVocab}
         </button>
       ))}
+
+      {vocabPreview && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 4000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: winW < 700 ? "flex-end" : "center", justifyContent: "center" }}
+          onClick={() => { if (!vocabPreview.loading) setVocabPreview(null); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, borderRadius: winW < 700 ? "16px 16px 0 0" : 16, padding: "20px 22px", width: winW < 700 ? "100%" : 380, maxWidth: "100%", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease-out" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 14 }}>{t.vocabPreviewTitle}</div>
+            <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 22, fontWeight: 600, color: C.txt, marginBottom: 8 }}>
+              {vocabPreview.loading ? vocabPreview.word : (vocabPreview.baseForm || vocabPreview.word)}
+              {vocabPreview.baseForm && vocabPreview.baseForm !== vocabPreview.word && (
+                <span style={{ fontSize: 12, fontWeight: 400, color: C.txtS, marginLeft: 8 }}>({vocabPreview.word})</span>
+              )}
+            </div>
+            {vocabPreview.loading ? (
+              <div style={{ fontSize: 13, color: C.txtS, padding: "12px 0" }}>{t.vocabPreviewLoading}</div>
+            ) : (
+              <>
+                {vocabPreview.translation && (
+                  <div style={{ fontSize: 13, color: C.txt, lineHeight: 1.5, padding: "10px 12px", background: C.s1, borderRadius: 8, marginBottom: 10 }}>
+                    {vocabPreview.translation}
+                  </div>
+                )}
+                {vocabPreview.context && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: C.txtS, marginBottom: 4 }}>{t.vocabPreviewContext}</div>
+                    <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.5, padding: "8px 10px", background: C.s1, borderRadius: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      {vocabPreview.context}
+                    </div>
+                  </div>
+                )}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: C.txtS, marginBottom: 6 }}>{t.vocabPreviewTag}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
+                    {(vocabPreview.tags || []).map(tag => (
+                      <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 10, background: C.accBg, border: `1px solid ${C.acc}`, color: C.acc, fontSize: 10, fontFamily: "'Plus Jakarta Sans'", fontWeight: 500 }}>
+                        #{tag}
+                        <span onClick={() => setVocabPreview(prev => prev ? { ...prev, tags: prev.tags.filter(x => x !== tag) } : null)}
+                          style={{ cursor: "pointer", marginLeft: 2, fontSize: 12, lineHeight: 1 }}>&times;</span>
+                      </span>
+                    ))}
+                  </div>
+                  {(vocabPreview.tags || []).length < 3 && (() => {
+                    const chosen = vocabPreview.tags || [];
+                    const available = allTags.filter(x => !chosen.includes(x));
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                          <input
+                            placeholder={t.tagPlaceholder}
+                            id="vocab-preview-tag-input"
+                            onKeyDown={e => {
+                              if (e.key === "Enter") {
+                                const v = e.target.value.trim().toLowerCase();
+                                if (v && !chosen.includes(v) && chosen.length < 3) {
+                                  setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, v] } : null);
+                                  e.target.value = "";
+                                }
+                              }
+                            }}
+                            style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1, outline: "none", boxSizing: "border-box" }} />
+                        </div>
+                        {available.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {available.slice(0, 10).map(tag => (
+                              <button key={tag} onClick={() => setVocabPreview(prev => prev ? { ...prev, tags: [...prev.tags, tag] } : null)}
+                                style={{ padding: "3px 8px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                #{tag}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                  <button onClick={() => setVocabPreview(null)}
+                    style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                    {t.vocabPreviewCancel}
+                  </button>
+                  <button onClick={confirmVocabAdd}
+                    style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                    {t.vocabPreviewAdd}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {flash && (
         <div style={{ position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)", zIndex: 1000, background: C.txt, color: C.s1, padding: "9px 18px", borderRadius: 20, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 16px rgba(0,0,0,0.25)", pointerEvents: "none" }}>

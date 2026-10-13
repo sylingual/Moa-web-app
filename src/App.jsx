@@ -9051,7 +9051,7 @@ function AppInner() {
                           )}
                           {(justDiscovered || practicedToday || (daysUntilNext !== null && daysUntilNext > 0)) && (
                           <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: daysUntilNext !== null ? 4 : 0 }}>
-                            {justDiscovered ? t.progressJustDiscovered : (daysUntilNext !== null && daysUntilNext > 0) ? t.progressRestAdvised : t.progressAlreadyDone}
+                            {justDiscovered ? t.progressJustDiscovered : practicedToday ? ((daysUntilNext !== null && daysUntilNext > 0) ? t.progressRestAdvised : t.progressAlreadyDone) : t.progressCanPractice}
                           </div>
                           )}
                         </div>

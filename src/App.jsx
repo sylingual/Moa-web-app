@@ -2217,7 +2217,7 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
   const vocabSection = (vocabWords && vocabWords.length > 0) ? `\nVocabulary to integrate into the sentences (use as many as possible naturally):\n${vocabWords.map(w => `- ${w}`).join("\n")}\n` : "";
 
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
-${TRANSLATION_RULE}
+${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
 
 ${mode === "topik" ? "" : context}
 ${modes[mode]}
@@ -2270,7 +2270,7 @@ async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode, nex
           : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
 
   const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. Be warm and concise.
-${TRANSLATION_RULE}
+${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
 
 Structures being practiced:
 ${structs}
@@ -9781,19 +9781,19 @@ function AppInner() {
                 <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
                   <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>{t.exercise}</span>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <button
+                    {exMode !== "topik" && <button
                       onClick={() => { const v = !revealTr; setRevealTr(v); localStorage.setItem("moa-reveal-tr", v ? "1" : "0"); }}
                       title={t.tapToReveal}
                       style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁 " : "🙈 "}{t.showTranslations}
-                    </button>
+                    </button>}
                     <button onClick={() => { setExOn(false); setExStep("category"); setExCategory(null); }} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
                   </div>
                 </div>
                 <div ref={exR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {exConv.map((m, i) => (
                     <div key={i} ref={i === exConv.length - 1 ? lastExMsgRef : null}>
-                      <Bubble revealAll={revealTr} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => exOpt(i, o) : null }} />
+                      <Bubble revealAll={exMode === "topik" ? false : revealTr} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => exOpt(i, o) : null }} />
                     </div>
                   ))}
                   {exLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{t.thinking}</div>}

@@ -8364,14 +8364,14 @@ function AppInner() {
                                   {doneCount > 0 && <span style={{ fontSize: 11, fontWeight: 500, color: C.stAcq }}>· {doneCount}/{today.length} ✓</span>}
                                 </div>
                                 {today.length > 0 ? (
-                                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 8 }}>
+                                <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${winW < 700 ? 100 : 112}px,1fr))`, gap: winW < 700 ? 6 : 8 }}>
                                   {today.map(c => { const done = isDone(c); return (
                                     <div key={c.id} onClick={() => reviewCard(c)} title={done ? t.todayDone : ""}
-                                      style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: 10, padding: 10, cursor: "pointer", transition: "transform 0.1s" }}
+                                      style={{ background: done ? C.stAcqCard : "rgba(255,255,255,0.65)", border: `1px solid ${done ? C.stAcqB : "rgba(230,180,40,0.3)"}`, borderRadius: winW < 700 ? 8 : 10, padding: winW < 700 ? "6px 8px" : 10, cursor: "pointer", transition: "transform 0.1s" }}
                                       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                       onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                                      {done && <div style={{ fontSize: 10, color: C.stAcq, marginBottom: 6, display: "flex", alignItems: "center", gap: 3 }}>✓ {t.todayDone}</div>}
-                                      <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{c.korean}</div>
+                                      {done && <div style={{ fontSize: winW < 700 ? 9 : 10, color: C.stAcq, marginBottom: winW < 700 ? 3 : 6, display: "flex", alignItems: "center", gap: 3 }}>✓ {t.todayDone}</div>}
+                                      <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: winW < 700 ? 12.5 : 14, color: C.txt }}>{c.korean}</div>
                                     </div>
                                   ); })}
                                 </div>
@@ -9514,7 +9514,8 @@ function AppInner() {
                     {visibleCards.length > 0 && (
                       <button onClick={() => {
                         if (exSel.size === 0) return;
-                        if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit" || exMode === "topik") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
+                        if (exMode === "topik") { setExTheme(null); setExGrammarVocab([]); launchEx(null); }
+                        else if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
                         else launchEx();
                       }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>

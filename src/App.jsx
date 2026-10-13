@@ -2083,7 +2083,7 @@ Keep the whole message SHORT and focused on this single question. Do NOT preview
     fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story STRICTLY in this specific context. Do NOT mix in their dream, goals, or other profile topics — use ONLY the chosen theme as the setting.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - The story should feel natural and immersive, not like a textbook exercise
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank

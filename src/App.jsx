@@ -179,6 +179,7 @@ const T = {
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     vocabPreviewTitle: "Ajouter ce mot ?", vocabPreviewLoading: "Traduction en cours...", vocabPreviewAdd: "Ajouter", vocabPreviewCancel: "Annuler", vocabPreviewContext: "Contexte", vocabPreviewTag: "Tag (optionnel)",
+    topikNext: "Question suivante ▶",
     yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
@@ -614,6 +615,7 @@ const T = {
     directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     vocabPreviewTitle: "Add this word?", vocabPreviewLoading: "Translating...", vocabPreviewAdd: "Add", vocabPreviewCancel: "Cancel", vocabPreviewContext: "Context", vocabPreviewTag: "Tag (optional)",
+    topikNext: "Next question ▶",
     yourAnswer: "Your answer...", askQuestion: "Got a question? Ask here.", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
     noCards: "No cards yet. Import a text to get started!",
@@ -1049,6 +1051,7 @@ const T = {
     directLoading: "뜻을 가져오는 중...",
     addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
     vocabPreviewTitle: "이 단어 추가할까?", vocabPreviewLoading: "번역 중...", vocabPreviewAdd: "추가", vocabPreviewCancel: "취소", vocabPreviewContext: "문맥", vocabPreviewTag: "태그 (선택)",
+    topikNext: "다음 문제 ▶",
     yourAnswer: "답을 입력해 봐...", askQuestion: "궁금한 게 있으면 여기에 물어봐!", grammar: "문법", expression: "표현",
     points: "포인트", toReview: "복습 필요", acq: "습득 완료",
     noCards: "아직 카드가 없어요. 텍스트를 가져와서 시작해 봐!",
@@ -2228,32 +2231,43 @@ Return JSON as specified in the mode instructions above. For MCQ: {"message": "y
   return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
 }
 
-async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode) {
+async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode, nextQuestion) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const structs = cards.map((c) => `- ${c.korean}: ${lang === "fr" ? c.description_fr : (c.description_en || c.description_fr)}`).join("\n");
   const hist = conv.map((m) => `${m.role === "ai" ? "Teacher" : "Student"}: ${m.content}${m.selected ? ` [chose: ${m.selected}]` : ""}`).join("\n");
-  // Count how many questions have been asked so far
-  const asked = conv.filter(m => m.role === "ai").length;
+  // Count questions: for TOPIK, count only AI messages that had MCQ options (actual questions)
+  const aiMsgs = conv.filter(m => m.role === "ai");
+  const asked = mode === "topik" ? aiMsgs.filter(m => m.options && m.options.length > 0).length : aiMsgs.length;
   const isLast = asked >= 3;
 
   const isFillMode = mode === "fill" || mode === "dialoguefill";
 
-  const feedback = wasCorrect === true
-    ? "The student answered CORRECTLY. Confirm briefly (1 sentence) and explain why in 1-2 sentences."
-    : wasCorrect === false
-      ? "The student answered INCORRECTLY. Say which answer was right and explain why in 2-3 sentences. Be encouraging."
-      : isFillMode
-        ? "The student submitted their answers for the blanks. Check each answer: list which ones are correct and which are wrong. For wrong answers, give the correct word and a brief explanation. Be encouraging."
-        : "Evaluate the student's written answer. If correct, confirm and explain. If not, point out what to fix and give the correct form.";
+  const topikFollowUp = mode === "topik" && wasCorrect === null && !nextQuestion;
 
-  const next = (isLast || isFillMode)
-    ? `${isFillMode ? "This is a fill-in exercise, so after your correction feedback," : "This was the last question. After your feedback,"} wrap up with a short encouraging summary of how the session went (2-3 sentences). Do NOT ask another question, do NOT include options, and do NOT tell the student where to click or which tab to open: the app already shows them the buttons.`
-    : mode === "topik"
-      ? `Then create question ${asked + 1} of 3: a NEW TOPIK II style reading question. Write a short Korean passage (2-3 sentences) using one of the structures, replace a key word/expression with ( ㄱ ), ask "( ㄱ )에 들어갈 가장 알맞은 것을 고르십시오.", and provide exactly 4 options (labeled ①, ②, ③, ④, one correct). Vary the passage type (notice, essay, letter, article, ad). Keep it short.`
-    : mode === "qcm"
-      ? `Then ask question ${asked + 1} of 3: a NEW multiple-choice question on one of the structures, with a short real-world context line, the sentence in ${TL}, the question, and exactly 3 options (one correct). Keep it short.`
-      : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
+  const feedback = topikFollowUp
+    ? "The student is asking a follow-up question about the previous exercise. Answer their question clearly and helpfully. Do NOT generate a new exercise question or MCQ options."
+    : wasCorrect === true
+      ? "The student answered CORRECTLY. Confirm briefly (1 sentence) and explain why in 1-2 sentences."
+      : wasCorrect === false
+        ? "The student answered INCORRECTLY. Say which answer was right and explain why in 2-3 sentences. Be encouraging."
+        : isFillMode
+          ? "The student submitted their answers for the blanks. Check each answer: list which ones are correct and which are wrong. For wrong answers, give the correct word and a brief explanation. Be encouraging."
+          : "Evaluate the student's written answer. If correct, confirm and explain. If not, point out what to fix and give the correct form.";
+
+  const topikNextOnly = mode === "topik" && nextQuestion === true;
+
+  const next = topikFollowUp
+    ? "Just answer the student's question. Do NOT include MCQ options or a new exercise."
+    : topikNextOnly
+      ? `Create question ${asked + 1} of 3: a NEW TOPIK II style reading question. Write a short Korean passage (2-3 sentences) using one of the structures, replace a key word/expression with ( ㄱ ), ask "( ㄱ )에 들어갈 가장 알맞은 것을 고르십시오.", and provide exactly 4 options (labeled ①, ②, ③, ④, one correct). Vary the passage type (notice, essay, letter, article, ad). Keep it short. Do NOT give any feedback or summary, just the new question.`
+      : (isLast || isFillMode)
+      ? `${isFillMode ? "This is a fill-in exercise, so after your correction feedback," : "This was the last question. After your feedback,"} wrap up with a short encouraging summary of how the session went (2-3 sentences). Do NOT ask another question, do NOT include options, and do NOT tell the student where to click or which tab to open: the app already shows them the buttons.`
+      : mode === "topik"
+        ? `Give ONLY your feedback and explanation. Do NOT include the next question. Do NOT include any MCQ options. The student will ask for the next question when ready.`
+        : mode === "qcm"
+          ? `Then ask question ${asked + 1} of 3: a NEW multiple-choice question on one of the structures, with a short real-world context line, the sentence in ${TL}, the question, and exactly 3 options (one correct). Keep it short.`
+          : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
 
   const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. Be warm and concise.
 ${TRANSLATION_RULE}
@@ -7480,12 +7494,25 @@ function AppInner() {
     const u = [...nc, { role: "user", content: opt.label }]; setExConv(u); setExLoad(true);
     try {
       const sel = exerciseCards.filter(c => exSel.has(c.id));
-      const wasLast = u.filter(m => m.role === "ai").length >= 3;
+      const questionCount = exMode === "topik"
+        ? u.filter(m => m.role === "ai" && m.options && m.options.length > 0).length
+        : u.filter(m => m.role === "ai").length;
+      const wasLast = questionCount >= 3;
       const r = await continueExercise(sel, exMode, lang, u, isRight, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
       if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
     }
     catch (e) { console.error("exOpt error:", e); setExConv([...u, aiError(e)]); }
+    setExLoad(false);
+  };
+
+  const topikNextQuestion = async () => {
+    setExLoad(true);
+    try {
+      const sel = exerciseCards.filter(c => exSel.has(c.id));
+      const r = await continueExercise(sel, exMode, lang, exConv, null, tl, true);
+      setExConv([...exConv, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
+    } catch (e) { console.error("topikNext error:", e); setExConv([...exConv, aiError(e)]); }
     setExLoad(false);
   };
 
@@ -7495,7 +7522,9 @@ function AppInner() {
     try {
       const sel = exerciseCards.filter(c => exSel.has(c.id));
       const isFill = exMode === "fill" || exMode === "dialoguefill";
-      const wasLast = isFill ? u.filter(msg => msg.role === "user").length >= 1 : u.filter(msg => msg.role === "ai").length >= 3;
+      const wasLast = exMode === "topik" ? false
+        : isFill ? u.filter(msg => msg.role === "user").length >= 1
+        : u.filter(msg => msg.role === "ai").length >= 3;
       const r = await continueExercise(sel, exMode, lang, u, null, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
       if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
@@ -9767,6 +9796,17 @@ function AppInner() {
                     </div>
                   ))}
                   {exLoad && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{t.thinking}</div>}
+                  {!exLoad && !exDone && exMode === "topik" && exConv.length > 0 && (() => {
+                    const last = exConv[exConv.length - 1];
+                    return last.role === "ai" && !last.options;
+                  })() && (
+                    <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+                      <button onClick={topikNextQuestion}
+                        style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }}>
+                        {t.topikNext}
+                      </button>
+                    </div>
+                  )}
                   {exDone && !exLoad && (
                     <div style={{ background: C.s2, border: `1px solid ${C.okB}`, borderRadius: 12, padding: 16, margin: "4px 0", textAlign: "center" }}>
                       <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>

@@ -5366,6 +5366,7 @@ function AppInner() {
   const [weather, setWeather] = useState(null); // { city, temp, emoji } for the target language
   const [weatherCityInput, setWeatherCityInput] = useState("");
   const [weatherCitySuggestions, setWeatherCitySuggestions] = useState([]);
+  const weatherCityCtlRef = useRef(null);
   const [langOpen, setLangOpen] = useState(false);
   const [targetLang, setTargetLang] = useState(null); // "ko", "de", etc.
   const [tlOpen, setTlOpen] = useState(false);
@@ -10818,9 +10819,12 @@ function AppInner() {
                   <input value={weatherCityInput} onChange={e => {
                     const v = e.target.value; setWeatherCityInput(v);
                     if (v.trim().length < 2) { setWeatherCitySuggestions([]); return; }
-                    const ctl = new AbortController();
-                    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(v.trim())}&count=5&language=${lang}`, { signal: ctl.signal })
-                      .then(r => r.json()).then(d => setWeatherCitySuggestions((d.results || []).map(r => ({ name: r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? ", " + r.country : ""), lat: r.latitude, lon: r.longitude }))))
+                    if (weatherCityCtlRef.current) weatherCityCtlRef.current.abort();
+                    const ctl = new AbortController(); weatherCityCtlRef.current = ctl;
+                    const hasKo = /[가-힯]/.test(v.trim());
+                    const geoLang = hasKo ? "ko" : lang;
+                    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(v.trim())}&count=5&language=${geoLang}`, { signal: ctl.signal })
+                      .then(r => r.json()).then(d => { if (!ctl.signal.aborted) setWeatherCitySuggestions((d.results || []).map(r => ({ name: r.name + (r.admin1 ? ", " + r.admin1 : "") + (r.country ? ", " + r.country : ""), lat: r.latitude, lon: r.longitude }))); })
                       .catch(() => {});
                   }} onBlur={() => {
                     setTimeout(() => {
@@ -10830,7 +10834,9 @@ function AppInner() {
                         setProfileDraft(prev => ({ ...prev, weatherCity: { name: s.name.split(",")[0], lat: s.lat, lon: s.lon } }));
                         setWeatherCityInput(""); setWeatherCitySuggestions([]);
                       } else {
-                        fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(weatherCityInput.trim())}&count=1&language=${lang}`)
+                        const hasKo = /[가-힯]/.test(weatherCityInput.trim());
+                        const geoLang = hasKo ? "ko" : lang;
+                        fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(weatherCityInput.trim())}&count=1&language=${geoLang}`)
                           .then(r => r.json()).then(d => {
                             const r = (d.results || [])[0];
                             if (r) {

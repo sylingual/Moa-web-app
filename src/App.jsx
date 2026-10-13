@@ -9049,9 +9049,9 @@ function AppInner() {
                               <span style={{ fontSize: 12, fontWeight: 600, color: daysUntilNext <= 0 ? C.warn : C.acc }}>{t.progressNextDays(Math.max(0, daysUntilNext))}</span>
                             </div>
                           )}
-                          {(justDiscovered || practicedToday || (daysUntilNext !== null && daysUntilNext > 0)) && (
+                          {(justDiscovered || practicedToday || (!practicedToday && daysUntilNext !== null && daysUntilNext > 0)) && (
                           <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4, marginTop: daysUntilNext !== null ? 4 : 0 }}>
-                            {justDiscovered ? t.progressJustDiscovered : practicedToday ? ((daysUntilNext !== null && daysUntilNext > 0) ? t.progressRestAdvised : t.progressAlreadyDone) : t.progressCanPractice}
+                            {justDiscovered ? t.progressJustDiscovered : practicedToday ? t.progressAlreadyDone : t.progressRestAdvised}
                           </div>
                           )}
                         </div>

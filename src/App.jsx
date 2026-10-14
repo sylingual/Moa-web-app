@@ -6282,20 +6282,39 @@ function AppInner() {
   const exitVocab = () => { setVocabSession(null); setView("library"); };
 
   // Import from an image/screenshot: extract the text via OCR, then let the user review it.
-  const onImagePick = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = ""; // allow re-selecting the same file
-    if (!file) return;
+  const processImportImage = async (file) => {
     setImpStep("ocr");
     try {
       const { base64, mimeType } = await fileToScaledBase64(file, 1600);
       const text = await extractImageText(base64, mimeType, getTargetLangName(tl, "en"));
-      // Warn if the image has no text in the target language (likely the wrong image).
       if (!hasTargetScript(text, tl)) { alert(t.ocrNoTarget(getTargetLangName(tl, lang))); setImpStep("input"); return; }
       setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
       setImpStep("input");
     } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }
   };
+
+  const onImagePick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    processImportImage(file);
+  };
+
+  useEffect(() => {
+    if (view !== "import" || impStep !== "input") return;
+    const handler = (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) { e.preventDefault(); processImportImage(file); return; }
+        }
+      }
+    };
+    document.addEventListener("paste", handler);
+    return () => document.removeEventListener("paste", handler);
+  }, [view, impStep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const markKnown = (i) => {
     const p = found[i], nk = new Set(known);
@@ -8714,10 +8733,13 @@ function AppInner() {
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
               {/* Import from an image / screenshot (OCR) */}
-              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                📷 {t.importImage}
-                <input type="file" accept="image/*" onChange={onImagePick} style={{ display: "none" }} />
-              </label>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                  📷 {t.importImage}
+                  <input type="file" accept="image/*" onChange={onImagePick} style={{ display: "none" }} />
+                </label>
+                <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
+              </div>
               {/* Study mode: grammar or vocabulary */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>

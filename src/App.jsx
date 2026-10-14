@@ -5398,6 +5398,8 @@ function AppInner() {
   const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
   const [exTagFilter, setExTagFilter] = useState(null); // null = all, string = specific tag
   const [exDueOnly, setExDueOnly] = useState("off");
+  const [adminData, setAdminData] = useState(null);
+  const [adminLoading, setAdminLoading] = useState(false);
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
@@ -8284,6 +8286,7 @@ function AppInner() {
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
+        {syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") && <button style={tabS(view === "admin")} onClick={() => navTo("admin")}>{"📊"} Admin</button>}
         </div>{/* end scrollable tabs */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
           {/* Hamburger (mobile only) */}
@@ -8308,7 +8311,7 @@ function AppInner() {
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
+          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile], ...(syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") ? [["admin", "📊 Admin"]] : [])].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}
@@ -10854,6 +10857,252 @@ function AppInner() {
             </div>
           </div>
         )}
+
+        {/* ADMIN DASHBOARD */}
+        {view === "admin" && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") && (() => {
+          const loadAdmin = async () => {
+            if (adminLoading) return;
+            setAdminLoading(true);
+            try {
+              const res = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId }) });
+              const d = await res.json();
+              if (d.error) { console.error("[admin]", d.error); setAdminData(null); }
+              else setAdminData(d);
+            } catch (e) { console.error("[admin]", e); }
+            setAdminLoading(false);
+          };
+          if (!adminData && !adminLoading) loadAdmin();
+          const d = adminData;
+          const fmtDur = (s) => { if (!s) return "0s"; const m = Math.floor(s / 60); const sec = s % 60; return m ? m + "m " + sec + "s" : sec + "s"; };
+          const sortedObj = (obj) => Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+          const dowNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+          const barMax = (arr) => Math.max(...arr.map(x => x[1] || x), 1);
+          const Bar = ({ val, max, color }) => (<div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}><div style={{ flex: 1, height: 10, borderRadius: 5, background: C.s2, overflow: "hidden" }}><div style={{ width: Math.round(val / max * 100) + "%", height: "100%", background: color || C.acc, borderRadius: 5 }} /></div><span style={{ fontSize: 11, color: C.txtM, minWidth: 30, textAlign: "right" }}>{val}</span></div>);
+          return (
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 80px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"📊"} Dashboard Admin</h2>
+                <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraîchir</button>
+              </div>
+              {adminLoading && <div style={{ textAlign: "center", padding: 40, color: C.txtM }}>Chargement...</div>}
+              {d && (<>
+                {/* OVERVIEW TILES */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
+                  {[
+                    ["Sessions AJD", d.overview.sessions_today],
+                    ["Sessions 7j", d.overview.sessions_week],
+                    ["Sessions 30j", d.overview.sessions_month],
+                    ["Total sessions", d.overview.total_sessions],
+                    ["DAU", d.overview.dau],
+                    ["WAU", d.overview.wau],
+                    ["MAU", d.overview.mau],
+                    ["Utilisateurs", d.overview.total_users],
+                    ["Durée moy.", fmtDur(d.overview.avg_duration_sec)],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ background: C.s1, borderRadius: 10, padding: "14px 12px", border: `1px solid ${C.border}`, textAlign: "center" }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: C.acc }}>{val}</div>
+                      <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* DEVICES / OS / BROWSER */}
+                <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+                  {[["Appareils", d.devices], ["Systèmes", d.os], ["Navigateurs", d.browsers]].map(([title, obj]) => (
+                    <div key={title} style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{title}</div>
+                      {sortedObj(obj).map(([k, v]) => (
+                        <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: C.txt, minWidth: 70 }}>{k}</span>
+                          <Bar val={v} max={barMax(sortedObj(obj))} />
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* EXERCISES */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Exercices ({d.exercises.total_started} lancés, {d.exercises.total_completed} complétés)</div>
+                  {sortedObj(d.exercises.by_type).map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: C.txt, minWidth: 90 }}>{k}</span>
+                      <Bar val={v} max={barMax(sortedObj(d.exercises.by_type))} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* CARDS */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Cartes ajoutées ({d.cards.total_added} total)</div>
+                  {sortedObj(d.cards.by_source).map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: C.txt, minWidth: 90 }}>{k}</span>
+                      <Bar val={v} max={barMax(sortedObj(d.cards.by_source))} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* TABS */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Onglets visités</div>
+                  {sortedObj(d.tabs).map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: C.txt, minWidth: 90 }}>{k}</span>
+                      <Bar val={v} max={barMax(sortedObj(d.tabs))} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* AI & IMAGES */}
+                <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Messages IA ({d.ai.total_messages})</div>
+                    {sortedObj(d.ai.by_context).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: C.txt, minWidth: 70 }}>{k}</span>
+                        <Bar val={v} max={barMax(sortedObj(d.ai.by_context))} />
+                      </div>
+                    ))}
+                    <div style={{ fontSize: 11, color: C.txtM, marginTop: 6 }}>Recherches image : {d.ai.image_gens}</div>
+                  </div>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Liens externes ({d.links.total_clicks})</div>
+                    {sortedObj(d.links.by_context).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: C.txt, minWidth: 70 }}>{k}</span>
+                        <Bar val={v} max={barMax(sortedObj(d.links.by_context))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* LANGUAGES */}
+                <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Langue interface</div>
+                    {sortedObj(d.languages.interface).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: C.txt, minWidth: 40 }}>{k}</span>
+                        <Bar val={v} max={barMax(sortedObj(d.languages.interface))} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Langue cible</div>
+                    {sortedObj(d.languages.target).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: C.txt, minWidth: 40 }}>{k}</span>
+                        <Bar val={v} max={barMax(sortedObj(d.languages.target))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* HOURLY + DOW PATTERNS */}
+                <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Heures de connexion</div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 60 }}>
+                      {(d.hourly_pattern || []).map((v, i) => (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <div style={{ width: "100%", background: C.acc, borderRadius: 2, height: Math.max(2, v / Math.max(...d.hourly_pattern, 1) * 50) }} />
+                          {i % 4 === 0 && <span style={{ fontSize: 8, color: C.txtM, marginTop: 2 }}>{i}h</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Jours de la semaine</div>
+                    {(d.day_of_week || []).map((v, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                        <span style={{ fontSize: 11, color: C.txt, minWidth: 30 }}>{dowNames[i]}</span>
+                        <Bar val={v} max={Math.max(...(d.day_of_week || [1]))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SESSIONS PER DAY */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Sessions / jour (30 derniers jours)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 60, overflow: "hidden" }}>
+                    {Object.entries(d.sessions_per_day || {}).sort().slice(-30).map(([day, v]) => (
+                      <div key={day} title={day + ": " + v} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <div style={{ width: "100%", background: C.acc, borderRadius: 2, height: Math.max(2, v / barMax(Object.values(d.sessions_per_day || { x: 1 }).map(x => [null, x])) * 50) }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                    <span style={{ fontSize: 8, color: C.txtM }}>{Object.keys(d.sessions_per_day || {}).sort()[0] || ""}</span>
+                    <span style={{ fontSize: 8, color: C.txtM }}>{Object.keys(d.sessions_per_day || {}).sort().slice(-1)[0] || ""}</span>
+                  </div>
+                </div>
+
+                {/* USERS TABLE */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Utilisateurs ({(d.users || []).length})</div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                          {["SyncID", "Sessions", "Durée moy.", "Cartes", "Exercices", "IA msgs", "Images", "Appareils", "Vu en dernier"].map(h => (
+                            <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(d.users || []).sort((a, b) => b.sessions - a.sessions).map(u => (
+                          <tr key={u.sync_id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                            <td style={{ padding: "6px 4px", color: C.txt, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{u.sync_id}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.sessions}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{fmtDur(u.avg_duration_sec)}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.cards_added}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.exercises}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.ai_messages}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.image_gens}</td>
+                            <td style={{ padding: "6px 4px", color: C.txt }}>{u.devices.join(", ")}</td>
+                            <td style={{ padding: "6px 4px", color: C.txtM }}>{u.last_seen?.slice(0, 10)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* GOALS & REVIEWS */}
+                <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Objectifs</div>
+                    {sortedObj(d.goals).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.txt, marginBottom: 4 }}>
+                        <span>{k}</span><span style={{ fontWeight: 600 }}>{v}</span>
+                      </div>
+                    ))}
+                    {!Object.keys(d.goals || {}).length && <div style={{ fontSize: 11, color: C.txtM }}>Aucun objectif enregistré</div>}
+                  </div>
+                  <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Révisions complètes</div>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: C.acc }}>{d.review_completions}</div>
+                    <div style={{ fontSize: 11, color: C.txtM }}>fois où toutes les cartes du jour ont été révisées</div>
+                  </div>
+                </div>
+
+                {/* ALL EVENT TYPES */}
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>Tous les événements</div>
+                  {sortedObj(d.event_types).map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: C.txt, minWidth: 120 }}>{k}</span>
+                      <Bar val={v} max={barMax(sortedObj(d.event_types))} />
+                    </div>
+                  ))}
+                </div>
+              </>)}
+            </div>
+          </div>);
+        })()}
 
         {/* PROFILE */}
         {view === "profile" && profileDraft && (

@@ -165,6 +165,7 @@ const T = {
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
     resourcesAsk: "Peux-tu me donner des ressources supplémentaires sur ce point, s'il te plaît ? 📚",
+    realExamplesAsk: "Peux-tu me donner des exemples qui viennent de sources authentiques ? 🔍",
     askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
     askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
@@ -601,6 +602,7 @@ const T = {
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
     resourcesAsk: "Could you give me some extra resources on this point, please? 📚",
+    realExamplesAsk: "Can you show me examples from real, authentic sources? 🔍",
     askExamples: "Could you give me more examples, please? 💡",
     askExercise: "Could you give me a quick exercise, please? ✏️",
     askExplain: "Could you explain this differently? 🔄",
@@ -1037,6 +1039,7 @@ const T = {
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
     resourcesAsk: "이 포인트에 대한 추가 자료 좀 보여줄래? 📚",
+    realExamplesAsk: "진짜 소스에서 나온 예문 좀 보여줄 수 있어? 🔍",
     askExamples: "예문 좀 더 보여줄래? 💡",
     askExercise: "연습 문제 하나만 내줄래? ✏️",
     askExplain: "다른 방식으로 설명해 줄 수 있어? 🔄",
@@ -6607,7 +6610,7 @@ function AppInner() {
     setRecapConv([]);
     setRecapDone(false); setRecapSummary(null);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamples, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk };
+    const labels = { examples: t.askExamples, realExamples: t.realExamplesAsk, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -6973,7 +6976,7 @@ function AppInner() {
     if (lLoad) return;
     recordPracticeReview(lCard);
     setTray(false); setLLoad(true);
-    const labels = { resources: t.resourcesAsk, realExamples: t.realExamples, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamplesAsk, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
       if (a === "image") {

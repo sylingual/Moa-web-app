@@ -5576,11 +5576,14 @@ function AppInner() {
     else if (exTagFilter && exTagFilter.startsWith("__goal:")) { const gid = exTagFilter.slice(7, -2); base = base.filter(c => c.goalId === gid); }
     else if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
     if (exDueOnly) {
-      const todayIds = new Set((data.today?.ids || []));
-      base = base.filter(c => todayIds.has(c.id));
+      const today = dayKey();
+      base = base.filter(c => {
+        const next = getCardNextReviewDate(c, Infinity);
+        return next && next <= today;
+      });
     }
     return base;
-  }, [allCards, tl, exFilter, exTagFilter, exDueOnly, data.today]);
+  }, [allCards, tl, exFilter, exTagFilter, exDueOnly]);
   const context = useMemo(() => buildContext(data, lang, tl), [data, lang, tl]);
 
   // Load

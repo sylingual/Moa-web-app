@@ -180,6 +180,7 @@ const T = {
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     vocabPreviewTitle: "Ajouter ce mot ?", vocabPreviewLoading: "Traduction en cours...", vocabPreviewAdd: "Ajouter", vocabPreviewCancel: "Annuler", vocabPreviewContext: "Contexte", vocabPreviewTag: "Tag (optionnel)",
+    myExamples: "Mes exemples", myExamplesInfo: "Si tu trouves des exemples d’utilisation de ce mot, ajoute-les par toi-même ici", myExamplesAdd: "Ajouter un exemple", myExamplesPh: "Ex : 오늘 날씨가 좋아요",
     topikNext: "Question suivante ▶",
     yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
@@ -617,6 +618,7 @@ const T = {
     directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     vocabPreviewTitle: "Add this word?", vocabPreviewLoading: "Translating...", vocabPreviewAdd: "Add", vocabPreviewCancel: "Cancel", vocabPreviewContext: "Context", vocabPreviewTag: "Tag (optional)",
+    myExamples: "My examples", myExamplesInfo: "Found an example of this word in the wild? Add it yourself here", myExamplesAdd: "Add an example", myExamplesPh: "e.g. 오늘 날씨가 좋아요",
     topikNext: "Next question ▶",
     yourAnswer: "Your answer...", askQuestion: "Got a question? Ask here.", grammar: "Grammar", expression: "Expression",
     points: "points", toReview: "to review", acq: "acquired",
@@ -1054,6 +1056,7 @@ const T = {
     directLoading: "뜻을 가져오는 중...",
     addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
     vocabPreviewTitle: "이 단어 추가할까?", vocabPreviewLoading: "번역 중...", vocabPreviewAdd: "추가", vocabPreviewCancel: "취소", vocabPreviewContext: "문맥", vocabPreviewTag: "태그 (선택)",
+    myExamples: "내 예문", myExamplesInfo: "이 단어의 예문을 발견하면 여기에 직접 추가해 봐", myExamplesAdd: "예문 추가", myExamplesPh: "예: 오늘 날씨가 좋아요",
     topikNext: "다음 문제 ▶",
     yourAnswer: "답을 입력해 봐...", askQuestion: "궁금한 게 있으면 여기에 물어봐!", grammar: "문법", expression: "표현",
     points: "포인트", toReview: "복습 필요", acq: "습득 완료",
@@ -8982,6 +8985,64 @@ function AppInner() {
                     {recapCard.example_tr && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>}
                   </div>
                   )}
+                  {recapCard.sourceContext && (
+                    <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px", marginTop: 6 }}>
+                      <div style={{ fontSize: 10, color: C.txtM, marginBottom: 3 }}>{t.vocabPreviewContext}</div>
+                      <div style={{ fontFamily: tFont, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>{recapCard.sourceContext}</div>
+                    </div>
+                  )}
+                  {/* User examples */}
+                  <div style={{ marginTop: 10 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: C.txt }}>✏️ {t.myExamples}</span>
+                      <span onClick={() => setRecapCard(prev => prev ? { ...prev, _showExInfo: !prev._showExInfo } : prev)}
+                        style={{ width: 16, height: 16, borderRadius: "50%", border: `1px solid ${C.borderS}`, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: C.txtM, cursor: "pointer", flexShrink: 0 }}>i</span>
+                    </div>
+                    {recapCard._showExInfo && (
+                      <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5, marginBottom: 8, padding: "6px 10px", background: C.s1, borderRadius: 6, fontStyle: "italic" }}>{t.myExamplesInfo}</div>
+                    )}
+                    {(recapCard.userExamples || []).map((ex, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5 }}>
+                        <div style={{ flex: 1, fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.6, padding: "5px 9px", background: C.s1, borderRadius: 6 }}>{ex}</div>
+                        <button onClick={() => {
+                          const updated = (recapCard.userExamples || []).filter((_, j) => j !== i);
+                          save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
+                          setRecapCard(prev => prev ? { ...prev, userExamples: updated } : prev);
+                        }} style={{ padding: 0, border: "none", background: "none", color: C.txtM, fontSize: 12, cursor: "pointer", lineHeight: 1, marginTop: 5, flexShrink: 0 }}>&times;</button>
+                      </div>
+                    ))}
+                    {recapCard._addingExample ? (
+                      <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                        <input autoFocus id="user-example-input" placeholder={t.myExamplesPh}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              const v = e.target.value.trim();
+                              if (v) {
+                                const updated = [...(recapCard.userExamples || []), v];
+                                save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
+                                setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false } : prev);
+                              }
+                            }
+                            if (e.key === "Escape") setRecapCard(prev => prev ? { ...prev, _addingExample: false } : prev);
+                          }}
+                          style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "6px 9px", fontSize: 12, fontFamily: tFont, color: C.txt, background: C.s1, outline: "none" }} />
+                        <button onClick={() => {
+                          const inp = document.getElementById("user-example-input");
+                          const v = (inp?.value || "").trim();
+                          if (v) {
+                            const updated = [...(recapCard.userExamples || []), v];
+                            save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
+                            setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false } : prev);
+                          }
+                        }} style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>+</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingExample: true } : prev)}
+                        style={{ padding: "5px 12px", borderRadius: 8, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                        + {t.myExamplesAdd}
+                      </button>
+                    )}
+                  </div>
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (

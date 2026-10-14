@@ -5400,6 +5400,9 @@ function AppInner() {
   const [exDueOnly, setExDueOnly] = useState("off");
   const [adminData, setAdminData] = useState(null);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [adminExclude, setAdminExclude] = useState(new Set());
+  const [adminFilterUser, setAdminFilterUser] = useState("");
+  const [adminAllUsers, setAdminAllUsers] = useState([]);
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
@@ -10870,14 +10873,22 @@ function AppInner() {
 
         {/* ADMIN DASHBOARD */}
         {view === "admin" && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") && (() => {
-          const loadAdmin = async () => {
+          const loadAdmin = async (opts = {}) => {
             if (adminLoading) return;
             setAdminLoading(true);
             try {
-              const res = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId }) });
+              const body = { syncId };
+              const excl = opts.exclude || adminExclude;
+              const solo = opts.filterUser !== undefined ? opts.filterUser : adminFilterUser;
+              if (excl.size) body.exclude = [...excl];
+              if (solo) body.filterUser = solo;
+              const res = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
               const d = await res.json();
               if (d.error) { console.error("[admin]", d.error); setAdminData(null); }
-              else setAdminData(d);
+              else {
+                if (d.all_users && d.all_users.length) setAdminAllUsers(d.all_users);
+                setAdminData(d);
+              }
             } catch (e) { console.error("[admin]", e); }
             setAdminLoading(false);
           };
@@ -10895,6 +10906,49 @@ function AppInner() {
                 <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"📊"} Dashboard Admin</h2>
                 <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraîchir</button>
               </div>
+              {adminAllUsers.length > 0 && (
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>Filtrer par utilisateur</div>
+                    {(adminExclude.size > 0 || adminFilterUser) && (
+                      <button onClick={() => { setAdminExclude(new Set()); setAdminFilterUser(""); setAdminData(null); }} style={{ padding: "4px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s2, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>Reset filtres</button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {adminAllUsers.map(uid => {
+                      const isExcluded = adminExclude.has(uid);
+                      const isSolo = adminFilterUser === uid;
+                      const short = uid.length > 12 ? uid.slice(0, 6) + "…" + uid.slice(-4) : uid;
+                      return (
+                        <div key={uid} style={{ display: "flex", alignItems: "center", gap: 0, borderRadius: 6, overflow: "hidden", border: `1px solid ${isSolo ? C.acc : isExcluded ? "transparent" : C.border}` }}>
+                          <button
+                            title={uid + (isExcluded ? " (exclu)" : isSolo ? " (solo)" : "")}
+                            onClick={() => {
+                              if (isSolo) { setAdminFilterUser(""); setAdminData(null); return; }
+                              const next = new Set(adminExclude);
+                              if (isExcluded) next.delete(uid); else next.add(uid);
+                              setAdminExclude(next);
+                              setAdminData(null);
+                            }}
+                            style={{ padding: "4px 8px", border: "none", background: isExcluded ? C.s2 : isSolo ? C.accBg : C.s1, color: isExcluded ? C.txtM : isSolo ? C.acc : C.txt, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", textDecoration: isExcluded ? "line-through" : "none", opacity: isExcluded ? 0.5 : 1 }}
+                          >{short}</button>
+                          <button
+                            title={"Solo : " + uid}
+                            onClick={() => {
+                              setAdminFilterUser(isSolo ? "" : uid);
+                              setAdminExclude(new Set());
+                              setAdminData(null);
+                            }}
+                            style={{ padding: "4px 6px", border: "none", borderLeft: `1px solid ${C.border}`, background: isSolo ? C.acc : C.s2, color: isSolo ? "#fff" : C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                          >{"🔍"}</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {adminFilterUser && <div style={{ fontSize: 11, color: C.acc, marginTop: 6 }}>Filtré : {adminFilterUser}</div>}
+                  {adminExclude.size > 0 && <div style={{ fontSize: 11, color: C.txtM, marginTop: 6 }}>{adminExclude.size} utilisateur{adminExclude.size > 1 ? "s" : ""} exclu{adminExclude.size > 1 ? "s" : ""}</div>}
+                </div>
+              )}
               {adminLoading && <div style={{ textAlign: "center", padding: 40, color: C.txtM }}>Chargement...</div>}
               {d && (<>
                 {/* OVERVIEW TILES */}

@@ -8,10 +8,18 @@ const supabase = createClient(
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { syncId } = req.body || {};
+  const { syncId, exclude, filterUser } = req.body || {};
   if (!syncId || syncId !== process.env.ADMIN_SYNC_ID) {
     return res.status(403).json({ error: 'Forbidden' });
   }
+
+  const excludeSet = new Set(Array.isArray(exclude) ? exclude : []);
+  const soloUser = typeof filterUser === 'string' && filterUser ? filterUser : null;
+
+  const shouldKeep = (sid) => {
+    if (soloUser) return sid === soloUser;
+    return !excludeSet.has(sid);
+  };
 
   try {
     const now = new Date();
@@ -30,9 +38,10 @@ export default async function handler(req, res) {
       supabase.from('sessions').select('sync_id, started_at, ended_at, device_type, os, browser, interface_lang, target_lang').gte('started_at', twoMonthsAgo).order('started_at', { ascending: false }).limit(5000),
     ]);
 
-    const sessions = sessionsAll.data || [];
-    const events = eventsAll.data || [];
-    const recentSessions = sessionsRecent.data || [];
+    const allUsers = [...new Set((sessionsAll.data || []).map(s => s.sync_id).filter(Boolean))];
+    const sessions = (sessionsAll.data || []).filter(s => shouldKeep(s.sync_id));
+    const events = (eventsAll.data || []).filter(e => shouldKeep(e.sync_id));
+    const recentSessions = (sessionsRecent.data || []).filter(s => shouldKeep(s.sync_id));
 
     // --- SESSIONS ---
     const sessionsToday = sessions.filter(s => s.started_at?.startsWith(todayStr)).length;
@@ -239,6 +248,7 @@ export default async function handler(req, res) {
       day_of_week: dowCounts,
       event_types: eventTypeCounts,
       users,
+      all_users: allUsers,
     });
   } catch (err) {
     console.error('[admin]', err);

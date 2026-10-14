@@ -48,9 +48,32 @@ export function stopTracking() {
   );
 }
 
+function detectDevice() {
+  const ua = navigator.userAgent || '';
+  const mobile = /Mobi|Android|iPhone|iPod/i.test(ua);
+  const tablet = /iPad|Android(?!.*Mobi)/i.test(ua);
+  const device_type = tablet ? 'tablet' : mobile ? 'mobile' : 'desktop';
+  let os = 'other';
+  if (/iPhone|iPad|iPod|Macintosh.*like Mac/i.test(ua)) os = 'iOS';
+  else if (/Macintosh|Mac OS/i.test(ua) && !mobile) os = 'macOS';
+  else if (/Android/i.test(ua)) os = 'Android';
+  else if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+  else if (/CrOS/i.test(ua)) os = 'ChromeOS';
+  let browser = 'other';
+  if (/Edg\//i.test(ua)) browser = 'Edge';
+  else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) browser = 'Opera';
+  else if (/SamsungBrowser/i.test(ua)) browser = 'Samsung';
+  else if (/Chrome/i.test(ua)) browser = 'Chrome';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  else if (/Firefox/i.test(ua)) browser = 'Firefox';
+  return { device_type, os, browser };
+}
+
 async function startSession(interfaceLang, targetLang) {
   if (!supabase || !syncId) return;
   try {
+    const { device_type, os, browser } = detectDevice();
     const { data, error } = await supabase
       .from('sessions')
       .insert({
@@ -59,6 +82,11 @@ async function startSession(interfaceLang, targetLang) {
         interface_lang: interfaceLang || null,
         target_lang: targetLang || null,
         user_agent: navigator.userAgent || null,
+        device_type,
+        os,
+        browser,
+        screen_width: window.screen?.width || null,
+        screen_height: window.screen?.height || null,
       })
       .select('id')
       .single();

@@ -97,7 +97,7 @@ const T = {
     exCatPE: "Production Écrite", exCatPEDesc: "Écrire et produire",
     exCatPO: "Production Orale", exCatPODesc: "Parler et s'exprimer",
     exPickExercise: "Choisis un exercice",
-    exPickCards: "Choisis les cartes à travailler",
+    exPickCards: "Choisis les cartes à travailler", exDueOnly: "Du jour", exDueNone: "Aucune carte du jour à réviser",
     exBackToCat: "Catégories",
     exBackToEx: "Exercices",
     story: "Continue l'histoire", storyDesc: "L'IA commence une histoire, tu la continues avec les structures choisies.",
@@ -536,7 +536,7 @@ const T = {
     exCatPE: "Written Production", exCatPEDesc: "Write and produce",
     exCatPO: "Oral Production", exCatPODesc: "Speak and express",
     exPickExercise: "Choose an exercise",
-    exPickCards: "Choose the cards to work on",
+    exPickCards: "Choose the cards to work on", exDueOnly: "Due today", exDueNone: "No cards due for review today",
     exBackToCat: "Categories",
     exBackToEx: "Exercises",
     story: "Continue the story", storyDesc: "The AI starts a story, you continue it using the chosen structures.",
@@ -976,7 +976,7 @@ const T = {
     exCatPE: "쓰기", exCatPEDesc: "쓰고 표현하기",
     exCatPO: "말하기", exCatPODesc: "말하고 표현하기",
     exPickExercise: "연습을 골라봐",
-    exPickCards: "연습할 카드를 골라봐",
+    exPickCards: "연습할 카드를 골라봐", exDueOnly: "오늘의 카드", exDueNone: "오늘 복습할 카드가 없어",
     exBackToCat: "카테고리",
     exBackToEx: "연습 문제",
     story: "이야기 이어쓰기", storyDesc: "AI가 이야기를 시작하면, 선택한 구조를 사용해서 이어 써 봐.",
@@ -5395,6 +5395,7 @@ function AppInner() {
   const [libTagFilter, setLibTagFilter] = useState(null); // null = all, string = specific tag
   const [exFilter, setExFilter] = useState("all"); // "all" | "grammar" | "vocab" (Exercise tab, independent of the library)
   const [exTagFilter, setExTagFilter] = useState(null); // null = all, string = specific tag
+  const [exDueOnly, setExDueOnly] = useState(false);
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
@@ -5574,8 +5575,12 @@ function AppInner() {
     if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
     else if (exTagFilter && exTagFilter.startsWith("__goal:")) { const gid = exTagFilter.slice(7, -2); base = base.filter(c => c.goalId === gid); }
     else if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
+    if (exDueOnly) {
+      const todayIds = new Set((data.today?.ids || []));
+      base = base.filter(c => todayIds.has(c.id));
+    }
     return base;
-  }, [allCards, tl, exFilter, exTagFilter]);
+  }, [allCards, tl, exFilter, exTagFilter, exDueOnly, data.today]);
   const context = useMemo(() => buildContext(data, lang, tl), [data, lang, tl]);
 
   // Load
@@ -9727,6 +9732,10 @@ function AppInner() {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <button onClick={() => { setExDueOnly(!exDueOnly); setExSel(new Set()); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${exDueOnly ? C.acc : C.border}`, background: exDueOnly ? C.accBg : C.s1, color: exDueOnly ? C.acc : C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: exDueOnly ? 500 : 400 }}>
+                            📅 {t.exDueOnly}
+                          </button>
                           {visibleCards.length > 0 && (
                             <button onClick={() => { const n = Math.min(3 + Math.floor(Math.random() * 3), visibleCards.length); setExSel(new Set(shuffle(visibleCards).slice(0, n).map(c => c.id))); }}
                               style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
@@ -9755,7 +9764,7 @@ function AppInner() {
                         </div>
                       </div>
                       {visibleCards.length === 0
-                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{exMode === "imgwrite" ? t.exNeedImages : t.noAcquired}</div>
+                        ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{exDueOnly ? t.exDueNone : exMode === "imgwrite" ? t.exNeedImages : t.noAcquired}</div>
                         : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                             {visibleCards.map(c => (
                               <button key={c.id} onClick={() => { const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}

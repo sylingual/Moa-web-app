@@ -29,10 +29,12 @@ export default async function handler(req, res) {
     // resources: pedagogical explanation pages. examples: real occurrences of the exact
     // structure (quoted phrase) as used by native speakers. lyrics: song lyrics containing the word.
     var lyricsKeyword = targetLang === 'Korean' ? '가사' : targetLang === 'Japanese' ? '歌詞' : 'lyrics'
+    var exampleContext = targetLang === 'Korean' ? '네이버 블로그 지식인 커뮤니티' : 'blog forum community'
+    var exampleExclude = '-site:dict.naver.com -site:ko.dict.naver.com -site:papago.naver.com -site:translate.google.com -site:wordreference.com -site:reverso.net -site:linguee.com -site:glosbe.com -site:wiktionary.org -site:dict.cc -site:krdict.korean.go.kr -site:krdic.naver.com'
     var query = isLyrics
       ? '"' + structure + '" ' + lyricsKeyword
       : isExamples
-      ? '"' + structure + '"'
+      ? '"' + structure + '" ' + exampleContext + ' ' + exampleExclude
       : structure + ' ' + targetLang + ' grammar meaning usage explanation'
     var params = new URLSearchParams({
       q: query,
@@ -78,9 +80,13 @@ export default async function handler(req, res) {
       var lyricsSites = mapped.filter(function (it) { return /lyrics|genius|musixmatch|azlyrics|colorcodedlyrics|klyrics|가사/i.test(it.uri + ' ' + it.title + ' ' + it.snippet) })
       results = (lyricsSites.length ? lyricsSites : mapped).slice(0, 6)
     } else if (isExamples) {
+      // Filter out dictionary / translation sites that aren't native usage.
+      var dictPattern = /dict\.naver|papago|translate\.google|wordreference|reverso\.net|linguee|glosbe|wiktionary|dict\.cc|krdict|krdic|endic\.naver|jisho\.org|tangorin/i
+      var nativeOnly = mapped.filter(function (it) { return !dictPattern.test(it.uri) })
+      var pool = nativeOnly.length ? nativeOnly : mapped
       // Prefer results whose snippet actually contains the structure (real occurrences).
-      var withHit = mapped.filter(function (it) { return it.snippet && it.snippet.indexOf(structure) !== -1 })
-      results = (withHit.length ? withHit : mapped).slice(0, 6)
+      var withHit = pool.filter(function (it) { return it.snippet && it.snippet.indexOf(structure) !== -1 })
+      results = (withHit.length ? withHit : pool).slice(0, 6)
     } else {
       // Surface How To Study Korean first when it shows up — it's usually the most relevant.
       function isHtsk(it) { return /howtostudykorean\.com/i.test(it.uri) }

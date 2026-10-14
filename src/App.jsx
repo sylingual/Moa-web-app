@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
 import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE } from "./storage.js";
+import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
 // ERROR BOUNDARY
@@ -2403,6 +2404,7 @@ Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":
 // user; separate quota from Gemini). Resolves to [] on any error so the caller can degrade.
 async function fetchImages(query, count) {
   try {
+    trackEvent("image_gen", { query, count: count || 20 });
     const res = await fetch("/api/image", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ q: query, count: count || 20 }),
@@ -2949,7 +2951,7 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, 
               {msg.sources.map((s, i) => (
                 <div key={i} style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
                   <a href={s.uri} target="_blank" rel="noopener noreferrer"
-                    onClick={() => { if (msg.pointOnClick && onResourceClick && s.uri && !clickedLinks.has(s.uri)) { onResourceClick(); setClickedLinks(prev => { const n = new Set(prev); n.add(s.uri); return n; }); } }}
+                    onClick={() => { trackEvent("link_click", { url: s.uri, context: "resources" }); if (msg.pointOnClick && onResourceClick && s.uri && !clickedLinks.has(s.uri)) { onResourceClick(); setClickedLinks(prev => { const n = new Set(prev); n.add(s.uri); return n; }); } }}
                     style={{ fontSize: 11, color: C.acc, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, lineHeight: 1.4, minWidth: 0, maxWidth: "100%" }}>
                     <span style={{ flexShrink: 0 }}>🔗</span>
                     <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
@@ -5618,6 +5620,18 @@ function AppInner() {
     });
   }, [syncId]);
 
+  // Analytics tracking
+  const trackingInitRef = useRef(false);
+  useEffect(() => {
+    if (loaded && syncId && !trackingInitRef.current) {
+      trackingInitRef.current = true;
+      initTracking(syncId, data.lang, tl);
+    }
+  }, [loaded, syncId]);
+
+  useEffect(() => { if (loaded) trackEvent("tab_view", { tab: view }); }, [view]);
+  useEffect(() => { if (loaded && lang) updateSessionLangs(lang, tl); }, [lang, tl]);
+
   // Restore an in-progress lesson into memory on first load — but stay on the Library
   // (default) view, so the user lands there and chooses to resume (via the card or the
   // Leçon tab) rather than being dropped straight into the lesson.
@@ -5905,6 +5919,7 @@ function AppInner() {
       return exercisedToday(c);
     };
     if (!cards.length || !cards.every(isDone)) return;
+    trackEvent("review_completion", { due_count: cards.length, reviewed_count: cards.filter(isDone).length, ratio: 1 });
     const base = data.profile || DEFAULT_PROFILE;
     save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
     setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
@@ -6396,6 +6411,7 @@ function AppInner() {
       date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
     };
     save({ ...data, cards: [...data.cards, card] });
+    trackEvent("card_add", { card_id: card.id, word: korean, source: "selection" });
     setVocabPreview(null);
     setFlash((korean !== word ? korean + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
   };
@@ -7065,6 +7081,7 @@ function AppInner() {
 
   const sendMsg = async () => {
     if (lLoad || !inp.trim()) return; const m = inp.trim(); setInp(""); setLLoad(true);
+    trackEvent("ai_message", { context: "lesson", card_id: lCard?.id, word: lCard?.korean });
     const u = [...conv, { role: "user", content: m }]; setConv(u);
     try { const r = await continueChat(lCard, u, m, lang); setConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("sendMsg error:", e); setConv([...u, aiError(e, () => { setInp(m); })]); }
@@ -7250,6 +7267,7 @@ function AppInner() {
       return { ...c, goalId: bestId || id, ...(shouldPend ? { status: "pending" } : {}) };
     }) };
     save(nd);
+    trackEvent("goal_update", { goal_id: id, status: isScheduled ? "scheduled" : "created", card_count: cardIds.size });
     setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
   };
 
@@ -7512,6 +7530,7 @@ function AppInner() {
   };
 
   const completeExercise = (mode, cardIds) => {
+    trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
     const result = recordExerciseProgress(data, cardIds, mode);
     let nd = awardPoints(15, result.data);
     if (result.autoAcquiredIds.length > 0) {
@@ -7528,6 +7547,7 @@ function AppInner() {
   // ---- EXERCISE ----
   const launchEx = async (theme) => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
+    trackEvent("exercise_start", { exercise_type: exMode, card_count: sel.length, category: exCategory, due_filter: exDueOnly, theme: theme || null });
     // Non-AI exercises render their own component; no generation call.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
     // Sentence-based grammar exercises use their own UI
@@ -7555,6 +7575,7 @@ function AppInner() {
 
   const exOpt = async (i, opt) => {
     const isRight = (opt.correct === true || opt.correct === "true");
+    trackEvent("ai_message", { context: "exercise", exercise_type: exMode, correct: isRight });
     const nc = [...exConv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setExConv(u); setExLoad(true);
     try {

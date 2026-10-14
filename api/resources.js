@@ -20,19 +20,23 @@ export default async function handler(req, res) {
     var targetLang = (body.targetLang || '').toString().trim()
     var mode = (body.mode || 'resources').toString()
     var isExamples = mode === 'examples'
+    var isLyrics = mode === 'lyrics'
 
     if (!structure) {
       return res.status(400).json({ error: 'No structure provided', results: [] })
     }
 
     // resources: pedagogical explanation pages. examples: real occurrences of the exact
-    // structure (quoted phrase) as used by native speakers.
-    var query = isExamples
+    // structure (quoted phrase) as used by native speakers. lyrics: song lyrics containing the word.
+    var lyricsKeyword = targetLang === 'Korean' ? '가사' : targetLang === 'Japanese' ? '歌詞' : 'lyrics'
+    var query = isLyrics
+      ? '"' + structure + '" ' + lyricsKeyword
+      : isExamples
       ? '"' + structure + '"'
       : structure + ' ' + targetLang + ' grammar meaning usage explanation'
     var params = new URLSearchParams({
       q: query,
-      count: isExamples ? '15' : '10',
+      count: (isExamples || isLyrics) ? '15' : '10',
       safesearch: 'moderate',
       text_decorations: 'false',
     })
@@ -70,7 +74,10 @@ export default async function handler(req, res) {
     }).filter(function (it) { return it.uri })
 
     var results
-    if (isExamples) {
+    if (isLyrics) {
+      var lyricsSites = mapped.filter(function (it) { return /lyrics|genius|musixmatch|azlyrics|colorcodedlyrics|klyrics|가사/i.test(it.uri + ' ' + it.title + ' ' + it.snippet) })
+      results = (lyricsSites.length ? lyricsSites : mapped).slice(0, 6)
+    } else if (isExamples) {
       // Prefer results whose snippet actually contains the structure (real occurrences).
       var withHit = mapped.filter(function (it) { return it.snippet && it.snippet.indexOf(structure) !== -1 })
       results = (withHit.length ? withHit : mapped).slice(0, 6)

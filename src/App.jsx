@@ -169,7 +169,8 @@ const T = {
     askExamples: "Donne-moi plus d'exemples, s'il te plaît 💡",
     askExercise: "Propose-moi un petit exercice, s'il te plaît ✏️",
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
-    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo",
+    anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo", lyricsBtn: "Une chanson",
+    lyricsAsk: "Est-ce qu’il y a une chanson qui contient ce mot ? 🎵",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
@@ -607,7 +608,8 @@ const T = {
     askExamples: "Could you give me more examples, please? 💡",
     askExercise: "Could you give me a quick exercise, please? ✏️",
     askExplain: "Could you explain this differently? 🔄",
-    anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image", youglishBtn: "In video",
+    anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image", youglishBtn: "In video", lyricsBtn: "A song",
+    lyricsAsk: "Is there a song that contains this word? 🎵",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
@@ -1045,7 +1047,8 @@ const T = {
     askExamples: "예문 좀 더 보여줄래? 💡",
     askExercise: "연습 문제 하나만 내줄래? ✏️",
     askExplain: "다른 방식으로 설명해 줄 수 있어? 🔄",
-    anExercise: "연습 문제", explainOther: "다르게 설명", anImage: "이미지", youglishBtn: "영상",
+    anExercise: "연습 문제", explainOther: "다르게 설명", anImage: "이미지", youglishBtn: "영상", lyricsBtn: "노래",
+    lyricsAsk: "이 단어가 들어간 노래가 있어? 🎵",
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
@@ -2046,6 +2049,42 @@ async function findRealExamples(card, lang, tlCode) {
     return curatedFallback();
   } catch (e) {
     console.error("findRealExamples error:", e);
+    return curatedFallback();
+  }
+}
+
+async function findSongLyrics(card, lang, tlCode) {
+  const structure = card.korean.trim();
+  const TL = getTargetLangName(tlCode, "en");
+  const lyricsWord = tlCode === "ko" ? "가사" : "lyrics";
+
+  const curatedFallback = () => {
+    const q = encodeURIComponent(structure + " " + lyricsWord);
+    const note = lang === "fr"
+      ? `Recherche de chansons contenant « ${structure} » dans les paroles :`
+      : lang === "ko"
+        ? `« ${structure} »가 포함된 노래 가사 검색:`
+        : `Search for songs containing "${structure}" in their lyrics:`;
+    return { text: note, sources: [
+      { title: `Google — ${structure} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
+      { title: `YouTube — ${structure} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
+    ] };
+  };
+
+  try {
+    const data = await callResources(structure, TL, lang, "lyrics");
+    const results = (data.results || []).filter((r) => r && r.uri);
+    if (results.length) {
+      const intro = lang === "fr"
+        ? `Chansons contenant « ${structure} » dans les paroles. Clique pour voir les paroles :`
+        : lang === "ko"
+          ? `« ${structure} »가 포함된 노래 가사. 클릭하면 가사를 봼 수 있어:`
+          : `Songs containing "${structure}" in their lyrics. Click to see the lyrics:`;
+      return { text: intro, sources: results };
+    }
+    return curatedFallback();
+  } catch (e) {
+    console.error("findSongLyrics error:", e);
     return curatedFallback();
   }
 }
@@ -6613,7 +6652,7 @@ function AppInner() {
     setRecapConv([]);
     setRecapDone(false); setRecapSummary(null);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamplesAsk, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk };
+    const labels = { examples: t.askExamples, realExamples: t.realExamplesAsk, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk, lyrics: t.lyricsAsk };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
@@ -6624,11 +6663,13 @@ function AppInner() {
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
         setRecapConv([...u, { role: "ai", content: pool.length ? `📷 ${recapCard.korean}` : noImg, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: recapCard.korean, options: null, selected: null }]);
-      } else if (action === "resources" || action === "realExamples") {
+      } else if (action === "resources" || action === "realExamples" || action === "lyrics") {
         setSearching(true);
         const r = action === "resources"
           ? await findResources(recapCard, lang, tl)
-          : await findRealExamples(recapCard, lang, tl, data.profile?.interests || "");
+          : action === "lyrics"
+            ? await findSongLyrics(recapCard, lang, tl)
+            : await findRealExamples(recapCard, lang, tl, data.profile?.interests || "");
         setSearching(false);
         setRecapConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, pointOnClick: action === "resources", options: null, selected: null }]);
       } else {
@@ -6979,7 +7020,7 @@ function AppInner() {
     if (lLoad) return;
     recordPracticeReview(lCard);
     setTray(false); setLLoad(true);
-    const labels = { resources: t.resourcesAsk, realExamples: t.realExamplesAsk, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamplesAsk, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, lyrics: t.lyricsAsk };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
       if (a === "image") {
@@ -6989,11 +7030,13 @@ function AppInner() {
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
         setConv([...u, { role: "ai", content: pool.length ? `📷 ${lCard.korean}` : noImg, images: pool.slice(0, 4), imagePool: pool, imgFrom: 0, imageWord: lCard.korean, options: null, selected: null }]);
-      } else if (a === "resources" || a === "realExamples") {
+      } else if (a === "resources" || a === "realExamples" || a === "lyrics") {
         setSearching(true);
         const r = a === "resources"
           ? await findResources(lCard, lang, tl)
-          : await findRealExamples(lCard, lang, tl, data.profile?.interests || "");
+          : a === "lyrics"
+            ? await findSongLyrics(lCard, lang, tl)
+            : await findRealExamples(lCard, lang, tl, data.profile?.interests || "");
         setSearching(false);
         setConv([...u, { role: "ai", content: r.text, sources: r.sources, degraded: r.degraded, pointOnClick: a === "resources", options: null, selected: null }]);
       } else {
@@ -7558,6 +7601,7 @@ function AppInner() {
     { k: "resources", l: t.onlineRes, i: "📚" },
     { k: "exercise", l: t.anExercise, i: "✏️" }, { k: "explain", l: t.explainOther, i: "🔄" },
     { k: "image", l: t.anImage, i: "📷" }, { k: "youglish", l: t.youglishBtn, i: "🎬" },
+    { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
   ];
 
   const fieldStyle = {
@@ -9324,8 +9368,9 @@ function AppInner() {
                             { k: "realExamples", l: t.realExamples, i: "🔍" },
                             { k: "image", l: t.anImage, i: "📷" },
                             { k: "youglish", l: t.youglishBtn, i: "🎬" },
+                            { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
                             { k: "resources", l: t.onlineRes, i: "📚" },
-                          ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab")).map(a => (
+                          ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab") && (a.k !== "lyrics" || recapCard?.type === "vocab")).map(a => (
                             <button key={a.k} onClick={() => {
                               if (a.k === "youglish") {
                                 recordPracticeReview(recapCard);

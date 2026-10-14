@@ -6513,6 +6513,17 @@ function AppInner() {
     return () => window.removeEventListener("popstate", onPop);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    const checkAdminHash = () => {
+      if (window.location.hash === "#admin" && syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "")) {
+        setView("admin");
+      }
+    };
+    checkAdminHash();
+    window.addEventListener("hashchange", checkAdminHash);
+    return () => window.removeEventListener("hashchange", checkAdminHash);
+  }, [syncId]);
+
   const navTo = (target) => {
     // Flush any unsaved profile edits before leaving the profile.
     if (view === "profile") {
@@ -8286,7 +8297,6 @@ function AppInner() {
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
         <button style={tabS(view === "exercise")} onClick={() => navTo("exercise")}>{t.exercise}</button>
         <button style={tabS(view === "profile")} onClick={() => navTo("profile")}>{t.profile}</button>
-        {syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") && <button style={tabS(view === "admin")} onClick={() => navTo("admin")}>{"📊"} Admin</button>}
         </div>{/* end scrollable tabs */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: "auto" }}>
           {/* Hamburger (mobile only) */}
@@ -8311,7 +8321,7 @@ function AppInner() {
       {/* MOBILE NAV MENU (hamburger) */}
       {navMenuOpen && (
         <div className="nav-menu" style={{ flexDirection: "column", background: "var(--panel-bg)", borderBottom: `1px solid ${C.border}`, flexShrink: 0, boxShadow: "0 6px 16px rgba(0,0,0,0.12)" }}>
-          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile], ...(syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") ? [["admin", "📊 Admin"]] : [])].map(([v, label]) => (
+          {[["goals", "🎯 " + t.goalsTab], ["library", t.library], ["import", t.import], ["exercise", t.exercise], ["profile", t.profile]].map(([v, label]) => (
             <button key={v} onClick={() => { navTo(v); setNavMenuOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 8, padding: "13px 18px", border: "none", borderBottom: `1px solid ${C.border}`, background: view === v ? C.accBg : "transparent", color: view === v ? C.acc : C.txt, fontWeight: view === v ? 600 : 400, fontSize: 14.5, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer", textAlign: "left" }}>
               {label}
@@ -10880,7 +10890,7 @@ function AppInner() {
           const Bar = ({ val, max, color }) => (<div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}><div style={{ flex: 1, height: 10, borderRadius: 5, background: C.s2, overflow: "hidden" }}><div style={{ width: Math.round(val / max * 100) + "%", height: "100%", background: color || C.acc, borderRadius: 5 }} /></div><span style={{ fontSize: 11, color: C.txtM, minWidth: 30, textAlign: "right" }}>{val}</span></div>);
           return (
           <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 80px" }}>
+            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 160px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"📊"} Dashboard Admin</h2>
                 <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraîchir</button>

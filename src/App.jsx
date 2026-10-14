@@ -10890,7 +10890,7 @@ function AppInner() {
           const Bar = ({ val, max, color }) => (<div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}><div style={{ flex: 1, height: 10, borderRadius: 5, background: C.s2, overflow: "hidden" }}><div style={{ width: Math.round(val / max * 100) + "%", height: "100%", background: color || C.acc, borderRadius: 5 }} /></div><span style={{ fontSize: 11, color: C.txtM, minWidth: 30, textAlign: "right" }}>{val}</span></div>);
           return (
           <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 160px" }}>
+            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 300px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"📊"} Dashboard Admin</h2>
                 <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraîchir</button>

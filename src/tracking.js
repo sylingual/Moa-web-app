@@ -74,9 +74,11 @@ async function startSession(interfaceLang, targetLang) {
   if (!supabase || !syncId) return;
   try {
     const { device_type, os, browser } = detectDevice();
-    const { data, error } = await supabase
+    const id = crypto.randomUUID();
+    const { error } = await supabase
       .from('sessions')
       .insert({
+        id,
         sync_id: syncId,
         started_at: new Date().toISOString(),
         interface_lang: interfaceLang || null,
@@ -87,10 +89,9 @@ async function startSession(interfaceLang, targetLang) {
         browser,
         screen_width: window.screen?.width || null,
         screen_height: window.screen?.height || null,
-      })
-      .select('id')
-      .single();
-    if (!error && data) sessionId = data.id;
+      });
+    if (!error) sessionId = id;
+    else console.error('[tracking] startSession insert error:', error);
   } catch (e) {
     console.error('[tracking] startSession:', e);
   }

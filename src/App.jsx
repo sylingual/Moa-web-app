@@ -4820,6 +4820,7 @@ ${history ? "Conversation so far:\n" + history : ""}`;
               <div style={{ display: "flex", gap: 6 }}>
                 <input value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                  onFocus={e => { setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 350); }}
                   placeholder={t.reorderChatPlaceholder}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", outline: "none" }} />
                 <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}
@@ -5145,6 +5146,7 @@ ${history ? "Conversation so far:\n" + history : ""}`;
               <div style={{ display: "flex", gap: 6 }}>
                 <input value={chatInput} onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                  onFocus={e => { setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 350); }}
                   placeholder={t.reorderChatPlaceholder}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", outline: "none" }} />
                 <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}

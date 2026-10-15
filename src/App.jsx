@@ -9329,6 +9329,44 @@ function AppInner() {
                   </button>
                 )}
 
+                {/* Associated goals */}
+                {(() => {
+                  const cardObj = data.cards.find(x => x.korean === recapCard.korean);
+                  if (!cardObj) return null;
+                  const allGoals = data.goals || [];
+                  const linked = allGoals.filter(g => (g.cardIds || []).includes(cardObj.id));
+                  if (!linked.length) return null;
+                  const active = linked.filter(g => !g.trophyDate);
+                  const archived = linked.filter(g => g.trophyDate);
+                  return (
+                    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.txtM, marginBottom: 8 }}>{lang === "fr" ? "Objectifs associés" : lang === "ko" ? "관련 목표" : "Associated goals"}</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {active.map(g => (
+                          <button key={g.id} onClick={() => {
+                            setShowRecap(false); setRecapCard(null);
+                            setGoalEditId(g.id); setGoalView("detail");
+                            window.history.pushState({ view: "goals", goalView: "detail", goalEditId: g.id }, "");
+                            setView("goals");
+                          }} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            {"🎯"} {g.name}
+                          </button>
+                        ))}
+                        {archived.map(g => (
+                          <button key={g.id} onClick={() => {
+                            setShowRecap(false); setRecapCard(null);
+                            setGoalEditId(g.id); setGoalView("detail");
+                            window.history.pushState({ view: "goals", goalView: "detail", goalEditId: g.id }, "");
+                            setView("goals");
+                          }} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            {"🏆"} {g.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Spaced repetition progress + exercise shortcuts */}
                 {(() => {
                   const cardObj = data.cards.find(x => x.korean === recapCard.korean);

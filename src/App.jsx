@@ -156,6 +156,7 @@ const T = {
     reorderInstr: "Touche les mots dans le bon ordre pour former la phrase.",
     reorderCheck: "Vérifier", reorderNext: "Suivante", reorderCorrect: "Bonne réponse !", reorderWrong: "Pas tout à fait...",
     reorderSentence: (n, total) => `Phrase ${n}/${total}`,
+    reorderAsk: "Une question ?", reorderChatPlaceholder: "Pose ta question...", reorderChatSend: "Envoyer",
     exDrill: "Drill", exDrillDesc: "Conjugue ou complète le bon mot.",
     drillPlaceholder: "Ta réponse...", drillCorrect: "Bonne réponse !", drillWrong: "Pas tout à fait...",
     drillSentence: (n, total) => `Phrase ${n}/${total}`,
@@ -597,6 +598,7 @@ const T = {
     reorderInstr: "Tap the words in the right order to form the sentence.",
     reorderCheck: "Check", reorderNext: "Next", reorderCorrect: "Correct!", reorderWrong: "Not quite...",
     reorderSentence: (n, total) => `Sentence ${n}/${total}`,
+    reorderAsk: "Got a question?", reorderChatPlaceholder: "Ask your question...", reorderChatSend: "Send",
     exDrill: "Drill", exDrillDesc: "Conjugate or fill in the right word.",
     drillPlaceholder: "Your answer...", drillCorrect: "Correct!", drillWrong: "Not quite...",
     drillSentence: (n, total) => `Sentence ${n}/${total}`,
@@ -1038,6 +1040,7 @@ const T = {
     reorderInstr: "단어를 터치해서 올바른 문장을 만들어 봐.",
     reorderCheck: "확인", reorderNext: "다음", reorderCorrect: "정답!", reorderWrong: "아직...",
     reorderSentence: (n, total) => `문장 ${n}/${total}`,
+    reorderAsk: "질문 있어?", reorderChatPlaceholder: "질문을 입력해...", reorderChatSend: "보내기",
     exDrill: "드릴", exDrillDesc: "올바른 형태를 써 봐.",
     drillPlaceholder: "답을 입력해...", drillCorrect: "정답!", drillWrong: "아직...",
     drillSentence: (n, total) => `문장 ${n}/${total}`,
@@ -4884,7 +4887,7 @@ function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
   );
 }
 
-function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
+function ReorderExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) {
   const sentences = data.sentences || [];
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState([]);
@@ -4893,6 +4896,11 @@ function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
   const [correct, setCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatEndRef = useRef(null);
 
   useEffect(() => {
     if (idx < sentences.length) {
@@ -4904,8 +4912,13 @@ function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
       setSelected([]);
       setChecked(false);
       setCorrect(false);
+      setChatMsgs([]);
+      setChatInput("");
+      setChatOpen(false);
     }
   }, [idx, sentences]);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs]);
 
   const tap = (item) => {
     if (checked) return;
@@ -4934,6 +4947,40 @@ function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
     }
   };
 
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+    const newMsgs = [...chatMsgs, { role: "user", text: msg }];
+    setChatMsgs(newMsgs);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const sent = sentences[idx];
+      const userAnswer = selected.map(s => s.word).join(" ");
+      const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+      const TL = getTargetLangName(tl, "en");
+      const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
+      const sys = `You are a ${TL} grammar teacher. The student is doing a word-ordering exercise. Write all explanations in ${L}.
+
+The sentence to reconstruct: "${sent.text}"
+${sent.translation ? `Translation: "${sent.translation}"` : ""}
+The student's answer: "${userAnswer}"
+The app marked it as: ${correct ? "CORRECT" : "INCORRECT"}
+
+IMPORTANT: Be critical and honest. If the app's expected answer "${sent.text}" is not the only valid word order, say so clearly. If the student's answer "${userAnswer}" is actually correct or acceptable (even if the app marked it wrong), acknowledge that. If multiple valid orderings exist, explain which ones work and why.
+
+Answer concisely (2-4 sentences). Be helpful and encouraging but never hide errors.
+
+${history ? "Conversation so far:\n" + history : ""}`;
+      const { text: reply } = await callAI(sys, msg, 400, false, true);
+      setChatMsgs(prev => [...prev, { role: "ai", text: reply }]);
+    } catch (e) {
+      console.error("Reorder chat error:", e);
+      setChatMsgs(prev => [...prev, { role: "ai", text: "Error: " + e.message }]);
+    }
+    setChatLoading(false);
+  };
+
   if (done) {
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24 }}>
@@ -4946,7 +4993,7 @@ function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
 
   const sent = sentences[idx];
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12, fontWeight: 500, color: C.txtM }}>{t.reorderSentence(idx + 1, sentences.length)}</span>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
@@ -4978,7 +5025,47 @@ function ReorderExercise({ data, cards, tFont, t, onComplete, onExit }) {
           </button>
         ))}
       </div>
-      <div style={{ marginTop: "auto" }}>
+      {checked && (
+        <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, overflow: "hidden" }}>
+          <button onClick={() => setChatOpen(prev => !prev)}
+            style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.acc }}>💬 {t.reorderAsk}</span>
+            <span style={{ fontSize: 10, color: C.txtS, transform: chatOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+          </button>
+          {chatOpen && (
+            <div style={{ borderTop: `1px solid ${C.border}`, padding: 10 }}>
+              {chatMsgs.length > 0 && (
+                <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 10, paddingRight: 4 }}>
+                  {chatMsgs.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, fontSize: 12, lineHeight: 1.5, color: m.role === "user" ? C.onAcc : C.txt, background: m.role === "user" ? C.acc : C.s1, fontFamily: m.role === "ai" ? "'Plus Jakarta Sans'" : tFont, whiteSpace: "pre-wrap" }}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div className="pulse" style={{ padding: "8px 12px", borderRadius: 10, fontSize: 12, color: C.txtS, background: C.s1 }}>...</div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6 }}>
+                <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                  placeholder={t.reorderChatPlaceholder}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", outline: "none" }} />
+                <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: chatInput.trim() && !chatLoading ? C.acc : C.s1, color: chatInput.trim() && !chatLoading ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: chatInput.trim() && !chatLoading ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                  {t.reorderChatSend}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: "auto", flexShrink: 0 }}>
         {!checked ? (
           <button onClick={check} disabled={selected.length === 0}
             style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: selected.length > 0 ? C.acc : C.s1, color: selected.length > 0 ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: selected.length > 0 ? "pointer" : "default" }}>
@@ -10093,7 +10180,7 @@ function AppInner() {
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "reorder" && fillData ? (
-              <ReorderExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+              <ReorderExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
                 onComplete={(ids) => completeExercise("reorder", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "drill" && fillData ? (

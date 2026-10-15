@@ -182,6 +182,7 @@ const T = {
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     vocabPreviewTitle: "Ajouter ce mot ?", vocabPreviewLoading: "Traduction en cours...", vocabPreviewAdd: "Ajouter", vocabPreviewCancel: "Annuler", vocabPreviewContext: "Contexte", vocabPreviewTag: "Tag (optionnel)",
+    selAnalyze: "Analyser", selAnalyzing: "Analyse en cours...", selPickTitle: "Vocab et grammaire trouves", selPickAdd: "Ajouter la selection", selPickNone: "Rien de nouveau trouve", selPickVocab: "Vocab", selPickGrammar: "Grammaire",
     myExamples: "Mes exemples", myExamplesInfo: "Si tu trouves des exemples d’utilisation de ce mot, ajoute-les par toi-même ici", myExamplesAdd: "Ajouter un exemple", myExamplesPh: "Ex : 오늘 날씨가 좋아요",
     topikNext: "Question suivante ▶",
     yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
@@ -621,6 +622,7 @@ const T = {
     directLoading: "Fetching the meaning…",
     addToVocab: "Add to vocab", addedToVocab: "Added to your library ✓", alreadyInLib: "Already in your library", selectionSource: "Selection",
     vocabPreviewTitle: "Add this word?", vocabPreviewLoading: "Translating...", vocabPreviewAdd: "Add", vocabPreviewCancel: "Cancel", vocabPreviewContext: "Context", vocabPreviewTag: "Tag (optional)",
+    selAnalyze: "Analyze", selAnalyzing: "Analyzing...", selPickTitle: "Vocab & grammar found", selPickAdd: "Add selection", selPickNone: "Nothing new found", selPickVocab: "Vocab", selPickGrammar: "Grammar",
     myExamples: "My examples", myExamplesInfo: "Found an example of this word in the wild? Add it yourself here", myExamplesAdd: "Add an example", myExamplesPh: "e.g. 오늘 날씨가 좋아요",
     topikNext: "Next question ▶",
     yourAnswer: "Your answer...", askQuestion: "Got a question? Ask here.", grammar: "Grammar", expression: "Expression",
@@ -1060,6 +1062,7 @@ const T = {
     directLoading: "뜻을 가져오는 중...",
     addToVocab: "어휘에 추가", addedToVocab: "라이브러리에 추가됨 ✓", alreadyInLib: "이미 라이브러리에 있어", selectionSource: "선택",
     vocabPreviewTitle: "이 단어 추가할까?", vocabPreviewLoading: "번역 중...", vocabPreviewAdd: "추가", vocabPreviewCancel: "취소", vocabPreviewContext: "문맥", vocabPreviewTag: "태그 (선택)",
+    selAnalyze: "분석하기", selAnalyzing: "분석 중...", selPickTitle: "어휘 & 문법 발견", selPickAdd: "선택 추가", selPickNone: "새로운 항목 없음", selPickVocab: "어휘", selPickGrammar: "문법",
     myExamples: "내 예문", myExamplesInfo: "이 단어의 예문을 발견하면 여기에 직접 추가해 봐", myExamplesAdd: "예문 추가", myExamplesPh: "예: 오늘 날씨가 좋아요",
     topikNext: "다음 문제 ▶",
     yourAnswer: "답을 입력해 봐...", askQuestion: "궁금한 게 있으면 여기에 물어봐!", grammar: "문법", expression: "표현",
@@ -6387,6 +6390,37 @@ function AppInner() {
   const addWordToVocab = async (text, context) => {
     const word = (text || "").trim();
     if (!word) return;
+    const isPhrase = word.includes(" ") || word.length > 8;
+    if (isPhrase) {
+      setSelAdd(null);
+      try { window.getSelection()?.removeAllRanges(); } catch {}
+      setSelPicks([]); setSelPicksSel(new Set()); setSelPicksCtx(context || "");
+      setVocabPreview({ word, loading: true, analyzing: true });
+      try {
+        const raw = await analyzeBulk(word, data.cards, lang, context, tl);
+        const items = dedupeExtracted(raw, data.cards);
+        if (!items.length) {
+          setVocabPreview(null);
+          setFlash(t.selPickNone); setTimeout(() => setFlash(null), 2000);
+          return;
+        }
+        if (items.length === 1) {
+          const it = items[0];
+          const k = it.korean || it.word;
+          const desc = lang === "fr" ? it.meaning_fr : (it.meaning_en || it.meaning_fr);
+          setVocabPreview({ word: k, baseForm: k, translation: desc, context: context || "", tags: it.category ? [it.category.toLowerCase().trim()] : [], loading: false, analyzing: false, analysisItem: it });
+          return;
+        }
+        setVocabPreview(null);
+        setSelPicks(items);
+        setSelPicksSel(new Set(items.map((_, i) => i)));
+      } catch (e) {
+        console.error("Selection analysis failed:", e);
+        setVocabPreview(null);
+        setFlash(e.message); setTimeout(() => setFlash(null), 2500);
+      }
+      return;
+    }
     const exWord = data.cards.find(c => c.korean === word);
     if (exWord && exWord.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
     if (exWord && exWord.status === "pending") {
@@ -6425,29 +6459,57 @@ function AppInner() {
 
   const confirmVocabAdd = () => {
     if (!vocabPreview) return;
-    const { baseForm, word, context, tags } = vocabPreview;
+    const { baseForm, word, context, tags, analysisItem } = vocabPreview;
     const korean = baseForm || word;
-    const card = {
-      id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
-      korean, type: "vocab",
-      description: "", description_fr: "", description_en: "",
-      example_kr: "", example_tr: "",
-      tags: tags || [],
-      status: "new", source: t.selectionSource, sourceContext: context || "", articleText: "", reviewCount: 0,
-      targetLang: tl || "ko",
-      date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
-    };
+    let card;
+    if (analysisItem) {
+      const it = analysisItem;
+      const tp = normType(it.type);
+      card = tp === "grammar" ? makeCard(it, "new") : makeVocabCard(it, "new");
+      card = { ...card, source: t.selectionSource, sourceContext: context || "", articleText: "" };
+    } else {
+      card = {
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
+        korean, type: "vocab",
+        description: "", description_fr: "", description_en: "",
+        example_kr: "", example_tr: "",
+        tags: tags || [],
+        status: "new", source: t.selectionSource, sourceContext: context || "", articleText: "", reviewCount: 0,
+        targetLang: tl || "ko",
+        date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
+      };
+    }
     save({ ...data, cards: [...data.cards, card] });
     trackEvent("card_add", { card_id: card.id, word: korean, source: "selection" });
     setVocabPreview(null);
     setFlash((korean !== word ? korean + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
   };
 
+  const confirmSelPicks = () => {
+    if (!selPicks || !selPicksSel.size) return;
+    const items = [...selPicksSel].sort((a, b) => a - b).map(i => selPicks[i]).filter(Boolean);
+    const newCards = [];
+    items.forEach(it => {
+      const k = it.korean || it.word;
+      if (data.cards.find(c => c.korean === k && c.status !== "pending")) return;
+      const tp = normType(it.type);
+      let card = tp === "grammar" ? makeCard(it, "new") : makeVocabCard(it, "new");
+      card = { ...card, source: t.selectionSource, sourceContext: selPicksCtx, articleText: "" };
+      newCards.push(card);
+    });
+    if (newCards.length) {
+      save({ ...data, cards: [...data.cards, ...newCards] });
+      newCards.forEach(c => trackEvent("card_add", { card_id: c.id, word: c.korean, source: "selection_bulk" }));
+      setFlash(newCards.length + " " + t.addedToVocab); setTimeout(() => setFlash(null), 2500);
+    }
+    setSelPicks(null); setSelPicksSel(new Set()); setSelPicksCtx("");
+  };
+
   useEffect(() => {
     const checkSel = () => {
       const sel = window.getSelection && window.getSelection();
       const text = sel ? sel.toString().trim() : "";
-      if (!text || text.length > 40 || !hasTargetScript(text, tl)) { setSelAdd(null); return; }
+      if (!text || text.length > 200 || !hasTargetScript(text, tl)) { setSelAdd(null); return; }
       try {
         const rect = sel.getRangeAt(0).getBoundingClientRect();
         if (!rect || (!rect.width && !rect.height)) { setSelAdd(null); return; }
@@ -8004,18 +8066,18 @@ function AppInner() {
         </div>
       )}
 
-      {selAdd && !vocabPreview && (winW < 700 ? (
+      {selAdd && !vocabPreview && !selPicks && (winW < 700 ? (
         <div data-sel-add style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 3000, padding: "10px 16px", background: C.acc, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, boxShadow: "0 -4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.15s ease-out" }}>
           <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.onAcc, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selAdd.text}</span>
           <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text, selAdd.context)}
             style={{ flexShrink: 0, padding: "7px 16px", borderRadius: 18, border: `2px solid ${C.onAcc}`, background: "transparent", color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-            + {t.addToVocab}
+            {(selAdd.text.includes(" ") || selAdd.text.length > 8) ? ("🔍 " + t.selAnalyze) : ("+ " + t.addToVocab)}
           </button>
         </div>
       ) : (
         <button data-sel-add onMouseDown={e => e.preventDefault()} onClick={() => addWordToVocab(selAdd.text, selAdd.context)}
           style={{ position: "fixed", left: selAdd.x, top: Math.max(8, selAdd.y - 8), transform: "translate(-50%, -100%)", zIndex: 3000, display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 18, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer", boxShadow: "0 4px 14px rgba(0,0,0,0.22)", whiteSpace: "nowrap" }}>
-          + {t.addToVocab}
+          {(selAdd.text.includes(" ") || selAdd.text.length > 8) ? ("🔍 " + t.selAnalyze) : ("+ " + t.addToVocab)}
         </button>
       ))}
 
@@ -8032,7 +8094,7 @@ function AppInner() {
               )}
             </div>
             {vocabPreview.loading ? (
-              <div style={{ fontSize: 13, color: C.txtS, padding: "12px 0" }}>{t.vocabPreviewLoading}</div>
+              <div style={{ fontSize: 13, color: C.txtS, padding: "12px 0" }}>{vocabPreview.analyzing ? t.selAnalyzing : t.vocabPreviewLoading}</div>
             ) : (
               <>
                 {vocabPreview.translation && (
@@ -8100,6 +8162,58 @@ function AppInner() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {selPicks && selPicks.length > 0 && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 4000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: winW < 700 ? "flex-end" : "center", justifyContent: "center" }}
+          onClick={() => { setSelPicks(null); setSelPicksSel(new Set()); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.s2, borderRadius: winW < 700 ? "16px 16px 0 0" : 16, padding: "20px 22px", width: winW < 700 ? "100%" : 420, maxWidth: "100%", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease-out" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 4 }}>{t.selPickTitle}</div>
+            <div style={{ fontSize: 11, color: C.txtM, marginBottom: 12 }}>
+              {selPicksSel.size}/{selPicks.length} {lang === "fr" ? "selectionnes" : lang === "ko" ? "선택됨" : "selected"}
+              <span style={{ marginLeft: 8, cursor: "pointer", color: C.acc, fontWeight: 500 }}
+                onClick={() => setSelPicksSel(selPicksSel.size === selPicks.length ? new Set() : new Set(selPicks.map((_, i) => i)))}>
+                {selPicksSel.size === selPicks.length ? (lang === "fr" ? "Tout deselectionner" : lang === "ko" ? "전체 해제" : "Deselect all") : (lang === "fr" ? "Tout selectionner" : lang === "ko" ? "전체 선택" : "Select all")}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+              {selPicks.map((it, i) => {
+                const k = it.korean || it.word;
+                const desc = lang === "fr" ? it.meaning_fr : (it.meaning_en || it.meaning_fr);
+                const tp = normType(it.type);
+                const checked = selPicksSel.has(i);
+                return (
+                  <div key={i} onClick={() => { const ns = new Set(selPicksSel); if (ns.has(i)) ns.delete(i); else ns.add(i); setSelPicksSel(ns); }}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", borderRadius: 10, background: checked ? C.accBg : C.s1, border: `1px solid ${checked ? C.acc : C.border}`, cursor: "pointer", transition: "all 0.15s" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, border: `2px solid ${checked ? C.acc : C.border}`, background: checked ? C.acc : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                      {checked && <span style={{ color: C.onAcc, fontSize: 12, fontWeight: 700 }}>&#10003;</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.txt }}>{k}</span>
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: tp === "grammar" ? "#E8F5E9" : "#E3F2FD", color: tp === "grammar" ? "#2E7D32" : "#1565C0" }}>
+                          {tp === "grammar" ? t.selPickGrammar : t.selPickVocab}
+                        </span>
+                      </div>
+                      {desc && <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.4 }}>{desc}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button onClick={() => { setSelPicks(null); setSelPicksSel(new Set()); }}
+                style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.vocabPreviewCancel}
+              </button>
+              <button onClick={confirmSelPicks} disabled={!selPicksSel.size}
+                style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: selPicksSel.size ? C.acc : C.border, color: selPicksSel.size ? C.onAcc : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: selPicksSel.size ? "pointer" : "default" }}>
+                {t.selPickAdd} ({selPicksSel.size})
+              </button>
+            </div>
           </div>
         </div>
       )}

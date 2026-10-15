@@ -6737,6 +6737,7 @@ function AppInner() {
       save({ ...data, cards: [...data.cards, card] });
     }
     setLCard(existing || card); setLArticle(text); setConv([]); setLLoad(true);
+    window.history.replaceState({ view: viewRef.current }, "");
     window.history.pushState({ view: "lesson" }, ""); setView("lesson");
     setLessonDone(false); setLessonSummary(null); setShowRecap(false); setRecapCard(null);
     try { const r = await startSocratic(card, text, lang, context, tl); setConv([{ role: "ai", content: r.message, options: r.options, selected: null }]); }
@@ -6757,8 +6758,10 @@ function AppInner() {
   // back gesture (and browser back button) returns to the previous view
   // instead of leaving the app entirely.
   const historyNavRef = useRef(false); // true when popstate is driving the navigation
+  const viewRef = useRef(view);
+  useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => {
-    window.history.replaceState({ view: "goals" }, "");
+    window.history.replaceState({ view: viewRef.current }, "");
     const onPop = (e) => {
       const st = e.state;
       if (st && st.view) {
@@ -6777,7 +6780,7 @@ function AppInner() {
         setGoalDeleteConfirm(null);
         setGoalCardPicker(false);
       } else {
-        window.history.pushState({ view }, "");
+        window.history.pushState({ view: viewRef.current }, "");
       }
     };
     window.addEventListener("popstate", onPop);
@@ -6824,7 +6827,9 @@ function AppInner() {
 
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
   const openCardFresh = (c) => {
-    setLessonOrigin(view === "goals" ? "goals" : "library");
+    const origin = view === "goals" ? "goals" : view;
+    setLessonOrigin(origin);
+    window.history.replaceState({ view: origin, goalView: view === "goals" ? goalView : undefined, goalEditId: view === "goals" ? goalEditId : undefined }, "");
     const effectiveStatus = migrateStatus(c.status);
     // An already-studied/acquired card always opens the recap MENU first (consistent, and
     // reviewing it saves nothing — only the recap conversation, for consultation). New or
@@ -6878,6 +6883,7 @@ function AppInner() {
     // Open the recap screen so the translation/summary is shown right away.
     setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp("");
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+    window.history.replaceState({ view: viewRef.current }, "");
     window.history.pushState({ view: "lesson" }, ""); setView("lesson");
   };
 

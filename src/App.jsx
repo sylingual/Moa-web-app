@@ -5508,6 +5508,9 @@ function AppInner() {
   // Select any target-language word anywhere → offer to add it to the vocab library.
   const [selAdd, setSelAdd] = useState(null); // { text, x, y, context } or null
   const [vocabPreview, setVocabPreview] = useState(null); // { word, baseForm, translation, context, tags, loading }
+  const [selPicks, setSelPicks] = useState(null); // [{ korean, type, meaning_fr, meaning_en, category }] for multi-item selection
+  const [selPicksSel, setSelPicksSel] = useState(new Set()); // selected indices in selPicks
+  const [selPicksCtx, setSelPicksCtx] = useState(""); // source context for selection picks
   const [flash, setFlash] = useState(null);   // brief confirmation toast text
   const [imgReplace, setImgReplace] = useState(null); // { korean, image } when a card already has 2 images
   const [studyChoice, setStudyChoice] = useState(null); // a vocab card awaiting "lesson vs direct translation"
@@ -9839,9 +9842,13 @@ function AppInner() {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                         <span style={{ fontSize: 12, color: C.txtM }}>{t.availableCards}</span>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <button onClick={() => { const next = exDueOnly === "off" ? "all" : exDueOnly === "all" ? "pending" : "off"; setExDueOnly(next); setExSel(new Set()); }}
-                            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${exDueOnly !== "off" ? C.acc : C.border}`, background: exDueOnly !== "off" ? C.accBg : C.s1, color: exDueOnly !== "off" ? C.acc : C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: exDueOnly !== "off" ? 500 : 400 }}>
-                            {"📅"} {exDueOnly === "pending" ? t.exDuePending : t.exDueAll}
+                          <button onClick={() => { setExDueOnly(exDueOnly === "all" ? "off" : "all"); setExSel(new Set()); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${exDueOnly === "all" ? C.acc : C.border}`, background: exDueOnly === "all" ? C.accBg : C.s1, color: exDueOnly === "all" ? C.acc : C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: exDueOnly === "all" ? 500 : 400 }}>
+                            {"📅"} {t.exDueAll}
+                          </button>
+                          <button onClick={() => { setExDueOnly(exDueOnly === "pending" ? "off" : "pending"); setExSel(new Set()); }}
+                            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${exDueOnly === "pending" ? C.acc : C.border}`, background: exDueOnly === "pending" ? C.accBg : C.s1, color: exDueOnly === "pending" ? C.acc : C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: exDueOnly === "pending" ? 500 : 400 }}>
+                            {"📅"} {t.exDuePending}
                           </button>
                           {visibleCards.length > 0 && (
                             <button onClick={() => { const n = Math.min(3 + Math.floor(Math.random() * 3), visibleCards.length); setExSel(new Set(shuffle(visibleCards).slice(0, n).map(c => c.id))); }}

@@ -9405,9 +9405,15 @@ function AppInner() {
                   </div>
                   )}
                   {recapCard.sourceContext && (
-                    <div style={{ background: C.s1, borderRadius: 8, padding: "9px 11px", marginTop: 6 }}>
-                      <div style={{ fontSize: 10, color: C.txtM, marginBottom: 3 }}>{t.vocabPreviewContext}</div>
-                      <div style={{ fontFamily: tFont, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>{recapCard.sourceContext}</div>
+                    <div style={{ background: C.s1, borderRadius: 8, overflow: "hidden", marginTop: 6 }}>
+                      <button onClick={() => setRecapCard(prev => prev ? { ...prev, _showCtx: !prev._showCtx } : prev)}
+                        style={{ width: "100%", padding: "8px 11px", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                        <span style={{ fontSize: 10, color: C.txtM }}>{t.vocabPreviewContext}</span>
+                        <span style={{ fontSize: 9, color: C.txtS, transform: recapCard._showCtx ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+                      </button>
+                      {recapCard._showCtx && (
+                        <div style={{ padding: "0 11px 9px", fontFamily: tFont, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>{recapCard.sourceContext}</div>
+                      )}
                     </div>
                   )}
                   {/* User examples */}

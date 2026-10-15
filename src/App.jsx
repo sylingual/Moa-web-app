@@ -2211,16 +2211,17 @@ RULES:
 - The blank must test the grammar point (a conjugation, a particle, a connector, etc.)
 - Vary the context: daily life, social media, work, friends, travel, food, etc.
 - Provide a ${L} translation for each sentence (with the answer visible in the translation)
+- IMPORTANT: Always include a "hint" field with the base/dictionary form of the word to conjugate (e.g. the verb infinitive like "가다", "먹다", the base adjective, or the noun before adding the particle). The student should only need to produce the correct ending/conjugation/particle form, NOT guess the vocabulary itself. The exercise tests grammar, not vocabulary.
 
 Return ONLY this JSON:
 {
   "message": "One-line intro in ${L}",
   "sentences": [
-    {"text": "sentence with ______ where the blank is", "answer": "the correct word/form", "translation": "${L} translation"},
-    {"text": "...", "answer": "...", "translation": "..."}
+    {"text": "sentence with ______ where the blank is", "answer": "the correct conjugated/inflected form", "hint": "dictionary/base form (e.g. 가다)", "translation": "${L} translation"},
+    {"text": "...", "answer": "...", "hint": "...", "translation": "..."}
   ]
 }
-CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank.`,
+CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank. "hint" is the dictionary/base form the student needs to conjugate.`,
 
     fixit: `TEACHER MODE: You are an expert ${TL} linguist and native-level speaker. Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
 
@@ -4678,7 +4679,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
-function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
+function DrillExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) {
   const sentences = data.sentences || [];
   const [idx, setIdx] = useState(0);
   const [input, setInput] = useState("");
@@ -4686,6 +4687,11 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
   const [correct, setCorrect] = useState(false);
   const [score, setScore] = useState(0);
   const [done, setDone] = useState(false);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatEndRef = useRef(null);
 
   const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").trim();
   const check = () => {
@@ -4703,7 +4709,47 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
       setInput("");
       setChecked(false);
       setCorrect(false);
+      setChatMsgs([]);
+      setChatInput("");
+      setChatOpen(false);
     }
+  };
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs]);
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+    const newMsgs = [...chatMsgs, { role: "user", text: msg }];
+    setChatMsgs(newMsgs);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const sent = sentences[idx];
+      const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+      const TL = getTargetLangName(tl, "en");
+      const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
+      const sys = `You are a ${TL} grammar teacher. The student is doing a conjugation/drill exercise. Write all explanations in ${L}.
+
+The sentence: "${sent.text}" (blank to fill)
+${sent.hint ? `Base/dictionary form given as hint: "${sent.hint}"` : ""}
+Expected answer: "${sent.answer}"
+The student wrote: "${input}"
+The app marked it as: ${correct ? "CORRECT" : "INCORRECT"}
+${sent.translation ? `Translation: "${sent.translation}"` : ""}
+
+IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if the student's answer is actually valid (even if the app marked it wrong), say so clearly. Multiple valid conjugations may exist depending on context.
+
+Answer concisely (2-4 sentences). Be helpful and encouraging but never hide errors.
+
+${history ? "Conversation so far:\n" + history : ""}`;
+      const { text: reply } = await callAI(sys, msg, 400, false, true);
+      setChatMsgs(prev => [...prev, { role: "ai", text: reply }]);
+    } catch (e) {
+      console.error("Drill chat error:", e);
+      setChatMsgs(prev => [...prev, { role: "ai", text: "Error: " + e.message }]);
+    }
+    setChatLoading(false);
   };
 
   if (done) {
@@ -4719,7 +4765,7 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
   const sent = sentences[idx];
   const parts = (sent?.text || "").split("______");
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16 }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: 16, gap: 16, overflowY: "auto" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: 12, fontWeight: 500, color: C.txtM }}>{t.drillSentence(idx + 1, sentences.length)}</span>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"←"} {t.back}</button>
@@ -4727,6 +4773,11 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
       {sent?.translation && <div style={{ fontSize: 12, color: C.txtS, fontStyle: "italic", lineHeight: 1.4 }}>{sent.translation}</div>}
       <div style={{ fontSize: 16, fontFamily: tFont, lineHeight: 1.6, color: C.txt, padding: 12, background: C.s2, borderRadius: 10 }}>
         {parts[0]}<span style={{ display: "inline-block", minWidth: 60, borderBottom: `2px solid ${checked ? (correct ? "#34C759" : "#FF3B30") : C.acc}`, textAlign: "center", fontWeight: 600, color: checked ? (correct ? "#34C759" : "#FF3B30") : C.acc }}>{checked ? (correct ? input : sent.answer) : "?"}</span>{parts[1] || ""}
+        {sent?.hint && !checked && (
+          <div style={{ fontSize: 11, color: C.txtS, marginTop: 6 }}>
+            {lang === "fr" ? "Forme de base" : lang === "ko" ? "기본형" : "Base form"}: <span style={{ fontWeight: 600, color: C.acc }}>{sent.hint}</span>
+          </div>
+        )}
       </div>
       {!checked && (
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && input.trim()) check(); }}
@@ -4740,7 +4791,47 @@ function DrillExercise({ data, cards, tFont, t, onComplete, onExit }) {
         </div>
       )}
       {checked && correct && <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.drillCorrect}</div>}
-      <div style={{ marginTop: "auto" }}>
+      {checked && (
+        <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, overflow: "hidden" }}>
+          <button onClick={() => setChatOpen(prev => !prev)}
+            style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.acc }}>💬 {t.reorderAsk}</span>
+            <span style={{ fontSize: 10, color: C.txtS, transform: chatOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▼</span>
+          </button>
+          {chatOpen && (
+            <div style={{ borderTop: `1px solid ${C.border}`, padding: 10 }}>
+              {chatMsgs.length > 0 && (
+                <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 10, paddingRight: 4 }}>
+                  {chatMsgs.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, fontSize: 12, lineHeight: 1.5, color: m.role === "user" ? C.onAcc : C.txt, background: m.role === "user" ? C.acc : C.s1, fontFamily: m.role === "ai" ? "'Plus Jakarta Sans'" : tFont, whiteSpace: "pre-wrap" }}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div className="pulse" style={{ padding: "8px 12px", borderRadius: 10, fontSize: 12, color: C.txtS, background: C.s1 }}>...</div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6 }}>
+                <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                  placeholder={t.reorderChatPlaceholder}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", outline: "none" }} />
+                <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: chatInput.trim() && !chatLoading ? C.acc : C.s1, color: chatInput.trim() && !chatLoading ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: chatInput.trim() && !chatLoading ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                  {t.reorderChatSend}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: "auto", flexShrink: 0 }}>
         {!checked ? (
           <button onClick={check} disabled={!input.trim()}
             style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: input.trim() ? "pointer" : "default" }}>
@@ -10184,7 +10275,7 @@ function AppInner() {
                 onComplete={(ids) => completeExercise("reorder", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "drill" && fillData ? (
-              <DrillExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t}
+              <DrillExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
                 onComplete={(ids) => completeExercise("drill", ids)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "fixit" && fillData ? (

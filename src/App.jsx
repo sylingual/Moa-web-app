@@ -294,6 +294,7 @@ const T = {
     goalDailyTarget: "Voilà comment on s'organise par rapport à ta date limite :",
     goalCardsPerDay: (n) => `~${n} carte${n > 1 ? "s" : ""} / jour`,
     goalDiscoverPerDay: (n) => `Tu découvriras ~${n} nouvelle${n > 1 ? "s" : ""} carte${n > 1 ? "s" : ""} par jour`,
+    goalAllDiscovered: "Tu as déjà découvert toutes les cartes, félicitations !",
     goalPracticePerDay: (n) => `et en fonction des jours, tu pourras avoir jusqu'à environ ${n} révision${n > 1 ? "s" : ""} à faire`,
     goalRecommendR: (r) => `Je te recommande de réviser chaque carte ${r} fois avant la date limite.`,
     goalTodayTitle: "Aujourd'hui",
@@ -734,6 +735,7 @@ const T = {
     goalDailyTarget: "Here's how we organize based on your deadline:",
     goalCardsPerDay: (n) => `~${n} card${n > 1 ? "s" : ""} / day`,
     goalDiscoverPerDay: (n) => `You'll discover ~${n} new card${n > 1 ? "s" : ""} per day`,
+    goalAllDiscovered: "You've already discovered all the cards, congrats!",
     goalPracticePerDay: (n) => `and depending on the day, you may have up to around ${n} review${n > 1 ? "s" : ""} to do`,
     goalRecommendR: (r) => `I recommend reviewing each card ${r} time${r > 1 ? "s" : ""} before the deadline.`,
     goalTodayTitle: "Today",
@@ -1172,6 +1174,7 @@ const T = {
     goalDailyTarget: "마감일에 맞춰서 이렇게 계획했어:",
     goalCardsPerDay: (n) => `하루 ~${n}장`,
     goalDiscoverPerDay: (n) => `하루에 ~${n}장의 새 카드를 발견해`,
+    goalAllDiscovered: "이미 모든 카드를 발견했어, 축하해!",
     goalPracticePerDay: (n) => `그리고 날에 따라 최대 약 ${n}회 복습이 있을 수 있어`,
     goalRecommendR: (r) => `마감일 전에 각 카드를 ${r}번 복습하는 걸 추천해.`,
     goalTodayTitle: "오늘",
@@ -10577,10 +10580,11 @@ function AppInner() {
                       </div>
                       <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 14px", flex: 1, minWidth: 140 }}>
                         <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.6 }}>
-                          {t.goalDailyTarget}{" "}
-                          {daily.discover > 0 && <>{t.goalDiscoverPerDay(daily.discover)}, </>}
-                          {daily.practice > 0 && <>{t.goalPracticePerDay(daily.practice)}. </>}
-                          {t.goalRecommendR(daily.R)}
+                          {daily.discover > 0 ? (
+                            <>{t.goalDailyTarget}{" "}{t.goalDiscoverPerDay(daily.discover)}, {daily.practice > 0 && <>{t.goalPracticePerDay(daily.practice)}. </>}{t.goalRecommendR(daily.R)}</>
+                          ) : (
+                            <>{t.goalAllDiscovered} {daily.practice > 0 && <>{t.goalRecommendR(daily.R)}</>}</>
+                          )}
                         </div>
                       </div>
                     </div>

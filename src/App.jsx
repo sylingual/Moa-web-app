@@ -158,7 +158,7 @@ const T = {
     reorderSentence: (n, total) => `Phrase ${n}/${total}`,
     reorderAsk: "Une question ?", reorderChatPlaceholder: "Pose ta question...", reorderChatSend: "Envoyer",
     exDrill: "Drill", exDrillDesc: "Conjugue ou complète le bon mot.",
-    drillPlaceholder: "Ta réponse...", drillCorrect: "Bonne réponse !", drillWrong: "Pas tout à fait...",
+    drillPlaceholder: "Ta réponse...", drillCorrect: "Bonne réponse !", drillWrong: "Pas tout à fait...", drillYouWrote: (w) => `Tu avais écrit « ${w} »`,
     drillSentence: (n, total) => `Phrase ${n}/${total}`,
     exFixit: "C'est toi le prof", exFixitDesc: "Trouve et corrige l'erreur.",
     fixitInstr: "Cette phrase contient une erreur. Écris la correction.",
@@ -600,7 +600,7 @@ const T = {
     reorderSentence: (n, total) => `Sentence ${n}/${total}`,
     reorderAsk: "Got a question?", reorderChatPlaceholder: "Ask your question...", reorderChatSend: "Send",
     exDrill: "Drill", exDrillDesc: "Conjugate or fill in the right word.",
-    drillPlaceholder: "Your answer...", drillCorrect: "Correct!", drillWrong: "Not quite...",
+    drillPlaceholder: "Your answer...", drillCorrect: "Correct!", drillWrong: "Not quite...", drillYouWrote: (w) => `You wrote "${w}"`,
     drillSentence: (n, total) => `Sentence ${n}/${total}`,
     exFixit: "Fix It!", exFixitDesc: "Find and correct the error.",
     fixitInstr: "This sentence has an error. Write the correction.",
@@ -1042,7 +1042,7 @@ const T = {
     reorderSentence: (n, total) => `문장 ${n}/${total}`,
     reorderAsk: "질문 있어?", reorderChatPlaceholder: "질문을 입력해...", reorderChatSend: "보내기",
     exDrill: "드릴", exDrillDesc: "올바른 형태를 써 봐.",
-    drillPlaceholder: "답을 입력해...", drillCorrect: "정답!", drillWrong: "아직...",
+    drillPlaceholder: "답을 입력해...", drillCorrect: "정답!", drillWrong: "아직...", drillYouWrote: (w) => `네가 쓴 건 "${w}"`,
     drillSentence: (n, total) => `문장 ${n}/${total}`,
     exFixit: "네가 선생님!", exFixitDesc: "오류를 찾아서 고쳐 봐.",
     fixitInstr: "이 문장에 오류가 있어. 고쳐서 써 봐.",
@@ -4786,8 +4786,9 @@ ${history ? "Conversation so far:\n" + history : ""}`;
           autoFocus />
       )}
       {checked && !correct && (
-        <div style={{ fontSize: 12, color: "#FF3B30", lineHeight: 1.4 }}>
-          {t.drillWrong} <span style={{ fontFamily: tFont, fontWeight: 500 }}>{sent.answer}</span>
+        <div style={{ fontSize: 12, color: "#FF3B30", lineHeight: 1.6 }}>
+          {t.drillWrong} <span style={{ fontFamily: tFont, fontWeight: 600 }}>{sent.answer}</span>
+          <br /><span style={{ fontSize: 11, color: C.txtS }}>{t.drillYouWrote(input)}</span>
         </div>
       )}
       {checked && correct && <div style={{ fontSize: 12, color: "#34C759", fontWeight: 600 }}>{t.drillCorrect}</div>}

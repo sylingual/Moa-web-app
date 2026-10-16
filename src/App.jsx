@@ -5766,7 +5766,7 @@ function AppInner() {
   // current target language, filtered by the Exercise tab's own vocab/grammar toggle.
   const exerciseCards = useMemo(() => {
     let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
-    base = base.filter(c => c.status === "studied" || c.status === "acquired");
+    base = base.filter(c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired" || s === "in_progress"; });
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
@@ -5775,8 +5775,9 @@ function AppInner() {
     if (exDueOnly === "all" || exDueOnly === "pending") {
       const today = dayKey();
       base = base.filter(c => {
+        if (isCardLongTermAcquired(c)) return false;
         const next = getCardNextReviewDate(c, Infinity);
-        return next && next <= today;
+        return !next || next <= today;
       });
       if (exDueOnly === "pending") {
         base = base.filter(c => {

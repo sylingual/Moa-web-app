@@ -9729,7 +9729,7 @@ function AppInner() {
                           {practicedToday && !acquired && (
                             <div style={{ fontSize: 11.5, fontWeight: 600, color: "#34C759", marginBottom: 8 }}>✅ {t.grammarProgressDone}</div>
                           )}
-                          <button onClick={() => launchCat("CE")}
+                          <button onClick={() => launchCat("GRAMMAR")}
                             style={{ width: "100%", padding: "10px 14px", borderRadius: 8, background: practicedToday ? C.s1 : C.acc, color: practicedToday ? C.txtM : C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                             ✏️ {t.moreExercises}
                           </button>

@@ -8353,14 +8353,14 @@ function AppInner() {
         )}
 
         {!welcomeMode && (
-          <div key="home" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+          <div key="home" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
             <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
               모<span style={{ color: "#d4a8ff" }}>아</span>
             </span>
-            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5, textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
               {t.welcomeTitle}
             </div>
-            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
+            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
               {t.welcomeSub}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>

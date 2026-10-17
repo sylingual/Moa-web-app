@@ -176,7 +176,8 @@ const T = {
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
-    imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer la mienne", imgPickSearch: "Chercher en ligne",
+    imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer", imgPickPaste: "Coller", imgPickSearch: "Chercher en ligne",
+    imgPickHint: "JPG, PNG, WebP",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     studyChooseTitle: "Comment veux-tu étudier ce mot ?",
     studyLesson: "Leçon complète", studyLessonDesc: "Découverte guidée, questions, exemples",
@@ -619,7 +620,8 @@ const T = {
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
-    imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload my own", imgPickSearch: "Search online",
+    imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload", imgPickPaste: "Paste", imgPickSearch: "Search online",
+    imgPickHint: "JPG, PNG, WebP",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     studyChooseTitle: "How do you want to study this word?",
     studyLesson: "Full lesson", studyLessonDesc: "Guided discovery, questions, examples",
@@ -1062,7 +1064,8 @@ const T = {
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
-    imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "내 이미지 올리기", imgPickSearch: "온라인 검색",
+    imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "올리기", imgPickPaste: "붙여넣기", imgPickSearch: "온라인 검색",
+    imgPickHint: "JPG, PNG, WebP",
     cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
     studyChooseTitle: "이 단어를 어떻게 공부할래?",
     studyLesson: "전체 레슨", studyLessonDesc: "가이드 학습, 질문, 예문",
@@ -7330,15 +7333,22 @@ function AppInner() {
     setFlash(t.imgAdded); setTimeout(() => setFlash(null), 1800);
   };
 
-  const onImgUpload = (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
+  const compressAndAttach = (file) => {
     const card = imgUploadCtxRef.current === "recap" ? recapCard : lCard;
     if (!card) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const maxDim = 480;
+      const scale = Math.min(1, maxDim / Math.max(width, height));
+      width = Math.max(1, Math.round(width * scale));
+      height = Math.max(1, Math.round(height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
       attachImage(card.korean, { thumb: dataUrl, url: dataUrl, link: "" });
       if (imgUploadCtxRef.current === "recap") {
         setRecapConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
@@ -7346,7 +7356,33 @@ function AppInner() {
         setConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
       }
     };
-    reader.readAsDataURL(file);
+    img.onerror = () => { URL.revokeObjectURL(url); setFlash("Image illisible"); setTimeout(() => setFlash(null), 2000); };
+    img.src = url;
+  };
+
+  const onImgUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    compressAndAttach(file);
+  };
+
+  const onImgPaste = async (ctx) => {
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imgType = item.types.find(t => t.startsWith("image/"));
+        if (imgType) {
+          const blob = await item.getType(imgType);
+          imgUploadCtxRef.current = ctx;
+          compressAndAttach(blob);
+          return;
+        }
+      }
+      setFlash(t.imageNone); setTimeout(() => setFlash(null), 2000);
+    } catch {
+      setFlash(t.imageNone); setTimeout(() => setFlash(null), 2000);
+    }
   };
 
   // "Other images" / refine, without any AI: cycle within the fetched pool (instant), or
@@ -9337,9 +9373,13 @@ function AppInner() {
                     <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose, added: t.imgChosen }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined} onAttachImage={m.images && recapCard?.type === "vocab" ? (im) => attachImage(recapCard.korean, im) : undefined}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                     {m.imgPick && !m.imgPickDone && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
-                        <button onClick={() => { imgUploadCtxRef.current = "recap"; imgUploadRef.current?.click(); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
-                        <button onClick={() => { setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); startRecapAction("imageSearch"); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                      <div style={{ marginTop: 6, marginLeft: 30 }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button onClick={() => { imgUploadCtxRef.current = "recap"; imgUploadRef.current?.click(); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
+                          <button onClick={() => onImgPaste("recap")} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📋 {t.imgPickPaste}</button>
+                          <button onClick={() => { setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); startRecapAction("imageSearch"); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                        </div>
+                        <div style={{ fontSize: 10, color: C.txtS, marginTop: 4 }}>{t.imgPickHint}</div>
                       </div>
                     )}
                   </div>
@@ -9927,9 +9967,13 @@ function AppInner() {
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
                       <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose, added: t.imgChosen }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                       {m.imgPick && !m.imgPickDone && (
-                        <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
-                          <button onClick={() => { imgUploadCtxRef.current = "lesson"; imgUploadRef.current?.click(); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
-                          <button onClick={() => { setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); quickAct("imageSearch"); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                        <div style={{ marginTop: 6, marginLeft: 30 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <button onClick={() => { imgUploadCtxRef.current = "lesson"; imgUploadRef.current?.click(); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
+                            <button onClick={() => onImgPaste("lesson")} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📋 {t.imgPickPaste}</button>
+                            <button onClick={() => { setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); quickAct("imageSearch"); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                          </div>
+                          <div style={{ fontSize: 10, color: C.txtS, marginTop: 4 }}>{t.imgPickHint}</div>
                         </div>
                       )}
                     </div>

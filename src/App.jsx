@@ -2337,7 +2337,12 @@ Return ONLY this JSON:
   ]
 }
 CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.
-VERIFICATION: Before returning, re-read each sentence pair as a ${TL} expert. If "text" is already grammatically correct in ${TL}, or if "text" and "corrected" are identical, DISCARD that sentence and generate a new one with a real error. Every "text" must be genuinely WRONG.`,
+VERIFICATION (MANDATORY, DO NOT SKIP):
+1. For EVERY sentence, re-read "text" as a ${TL} native speaker. Ask yourself: "Is this sentence grammatically correct as-is?" If YES, it has NO error and you MUST discard it and generate a replacement with a real, clear error.
+2. Compare "text" and "corrected" character by character. If they are identical or if the only difference is punctuation/spacing, DISCARD and regenerate.
+3. The error must be in the grammar point being practiced, not a random typo. A native speaker must be able to identify what is wrong.
+4. Double-check conjugations: if the grammar point is about tense or conjugation, make sure "text" uses the WRONG form (not the correct one). A common mistake is accidentally writing the correct conjugation in "text" — verify this did not happen.
+Every "text" must be genuinely WRONG in ${TL}. Every "corrected" must be genuinely RIGHT. No exceptions.`,
 
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
@@ -4963,6 +4968,40 @@ function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
   const [done, setDone] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMsgs]);
+
+  const sendChat = async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatLoading) return;
+    const newMsgs = [...chatMsgs, { role: "user", text: msg }];
+    setChatMsgs(newMsgs);
+    setChatInput("");
+    setChatLoading(true);
+    try {
+      const sent = sentences[idx];
+      const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+      const TL = getTargetLangName(tl, "en");
+      const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
+      const sys = `You are a ${TL} grammar teacher. The student is doing a "fix the error" exercise. Write all explanations in ${L}.
+
+The incorrect sentence: "${sent.text}"
+The correct version: "${sent.corrected}"
+The student wrote: "${input}"
+The app marked it as: ${correct ? "CORRECT" : "INCORRECT"}
+Explanation: "${sent.explanation}"
+
+IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if the student's answer is actually valid (even if the app marked it wrong), say so clearly. Answer concisely (2-3 sentences).`;
+      const r = await callAI(sys, `Chat history:\n${history}\n\nAnswer the student's latest question.`, 400, false, true);
+      setChatMsgs([...newMsgs, { role: "ai", text: r.text || "" }]);
+    } catch (e) { setChatMsgs([...newMsgs, { role: "ai", text: "..." }]); }
+    setChatLoading(false);
+  };
 
   const normalize = (s) => s.trim().toLowerCase().replace(/[.!?;,]+$/, "").replace(/\s+/g, " ").trim();
   const diffWords = (userStr, correctStr) => {
@@ -5006,6 +5045,9 @@ function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
       setChecked(false);
       setCorrect(false);
       setFeedback("");
+      setChatMsgs([]);
+      setChatInput("");
+      setChatOpen(false);
     }
   };
 
@@ -5066,7 +5108,48 @@ function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
         </div>
         );
       })()}
-      <div style={{ marginTop: "auto" }}>
+      {checked && (
+        <div style={{ borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, overflow: "hidden" }}>
+          <button onClick={() => setChatOpen(prev => !prev)}
+            style={{ width: "100%", padding: "8px 12px", background: "none", border: "none", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: C.acc }}>{"💬"} {t.reorderAsk}</span>
+            <span style={{ fontSize: 10, color: C.txtS, transform: chatOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>{"▼"}</span>
+          </button>
+          {chatOpen && (
+            <div style={{ borderTop: `1px solid ${C.border}`, padding: 10 }}>
+              {chatMsgs.length > 0 && (
+                <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 10, paddingRight: 4 }}>
+                  {chatMsgs.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ maxWidth: "85%", padding: "8px 12px", borderRadius: 10, fontSize: 12, lineHeight: 1.5, color: m.role === "user" ? C.onAcc : C.txt, background: m.role === "user" ? C.acc : C.s1, fontFamily: m.role === "ai" ? "'Plus Jakarta Sans'" : tFont, whiteSpace: "pre-wrap" }}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div className="pulse" style={{ padding: "8px 12px", borderRadius: 10, fontSize: 12, color: C.txtS, background: C.s1 }}>...</div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6 }}>
+                <input value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); } }}
+                  onFocus={e => { setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 350); }}
+                  placeholder={t.reorderChatPlaceholder}
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", outline: "none" }} />
+                <button onClick={sendChat} disabled={!chatInput.trim() || chatLoading}
+                  style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: chatInput.trim() && !chatLoading ? C.acc : C.s1, color: chatInput.trim() && !chatLoading ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: chatInput.trim() && !chatLoading ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                  {t.reorderChatSend}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: "auto", flexShrink: 0 }}>
         {!checked ? (
           <button onClick={check} disabled={!input.trim() || feedbackLoading}
             style={{ width: "100%", padding: "12px 0", borderRadius: 8, background: input.trim() ? C.acc : C.s1, color: input.trim() ? C.onAcc : C.txtM, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: input.trim() ? "pointer" : "default" }}>

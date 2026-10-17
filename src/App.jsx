@@ -3221,18 +3221,18 @@ function LanguagesTable({ value, onChange, t }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {rows.length > 0 && (
-        <div style={{ display: "flex", gap: 8, fontSize: 10.5, color: C.txtM, fontWeight: 600, padding: "0 2px" }}>
+        <div style={{ display: "flex", gap: 6, fontSize: 10.5, color: C.txtM, fontWeight: 600, padding: "0 2px" }}>
           <span style={{ flex: 1 }}>{t.langColLang}</span>
-          <span style={{ width: 150 }}>{t.langColLevel}</span>
+          <span style={{ flex: 1 }}>{t.langColLevel}</span>
           <span style={{ width: 24 }} />
         </div>
       )}
       {rows.map((r, i) => (
-        <div key={i} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input value={r.lang || ""} onChange={e => setRow(i, { lang: e.target.value })} placeholder={t.langPh}
             style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none" }} />
           <select value={r.level || ""} onChange={e => setRow(i, { level: e.target.value })}
-            style={{ width: 150, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: r.level ? C.txt : C.txtM, background: C.s1, outline: "none", cursor: "pointer", appearance: "auto" }}>
+            style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: r.level ? C.txt : C.txtM, background: C.s1, outline: "none", cursor: "pointer", appearance: "auto" }}>
             <option value="">{t.langLevelPick}</option>
             {LANG_LEVELS.map(lv => <option key={lv} value={lv}>{langLevelLabel(lv, t)}</option>)}
           </select>

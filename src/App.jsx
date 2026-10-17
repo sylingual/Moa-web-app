@@ -3219,16 +3219,16 @@ function LanguagesTable({ value, onChange, t }) {
   const addRow = () => onChange([...rows, { lang: "", level: "" }]);
   const delRow = (i) => onChange(rows.filter((_, j) => j !== i));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", minWidth: 0, boxSizing: "border-box" }}>
       {rows.length > 0 && (
         <div style={{ display: "flex", gap: 6, fontSize: 10.5, color: C.txtM, fontWeight: 600, padding: "0 2px" }}>
-          <span style={{ flex: 1 }}>{t.langColLang}</span>
-          <span style={{ flex: 1 }}>{t.langColLevel}</span>
-          <span style={{ width: 24 }} />
+          <span style={{ flex: 1, minWidth: 0 }}>{t.langColLang}</span>
+          <span style={{ flex: 1, minWidth: 0 }}>{t.langColLevel}</span>
+          <span style={{ width: 24, flexShrink: 0 }} />
         </div>
       )}
       {rows.map((r, i) => (
-        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "center", width: "100%", minWidth: 0 }}>
           <input value={r.lang || ""} onChange={e => setRow(i, { lang: e.target.value })} placeholder={t.langPh}
             style={{ flex: 1, minWidth: 0, border: `1px solid ${C.border}`, borderRadius: 6, padding: "8px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, background: C.s1, outline: "none" }} />
           <select value={r.level || ""} onChange={e => setRow(i, { level: e.target.value })}
@@ -8512,7 +8512,7 @@ function AppInner() {
     const onbBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
     const onbBgProfile = `url('/${isMobile ? "firstprofile-m" : "firstprofile-d"}.png') center/cover no-repeat, #5C3D2E`;
     const onbFull = (bg, extra) => ({ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", background: bg, alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.6s ease", ...extra });
-    const onbPanel = { width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, background: "rgba(255,248,230,0.92)", borderRadius: 18, padding: isMobile ? "28px 20px" : "32px 28px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
+    const onbPanel = { width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, background: "rgba(255,248,230,0.92)", borderRadius: 18, padding: isMobile ? "28px 20px" : "32px 28px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", boxSizing: "border-box", overflow: "hidden" };
     const onbInput = { width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: "#3a2a1a", background: "#fff", outline: "none", lineHeight: 1.6, resize: "vertical" };
     const onbNext = () => onbStep < onbTotal - 1 ? setOnbStep(onbStep + 1) : finishOnboarding(false);
     const onbPrev = () => onbStep > 0 && setOnbStep(onbStep - 1);

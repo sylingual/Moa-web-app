@@ -178,7 +178,7 @@ const T = {
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
     imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer", imgPickPaste: "Coller", imgPickSearch: "Chercher en ligne",
     imgPickHint: "Types de fichiers acceptes : JPG, PNG, WebP", imgPickMaxSize: "Taille max : 1 Mo",
-    imgPickBack: "Retour au recap", imgPickChange: "Changer l'image", imgPickAddMore: "Ajouter une image",
+    imgPickBack: "Retour au recap", imgPickContinue: "Continuer", imgPickChange: "Changer l'image", imgPickAddMore: "Ajouter une image",
     imgTooLarge: "Image trop lourde (max 1 Mo)",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     studyChooseTitle: "Comment veux-tu étudier ce mot ?",
@@ -624,7 +624,7 @@ const T = {
     imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
     imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload", imgPickPaste: "Paste", imgPickSearch: "Search online",
     imgPickHint: "Accepted file types: JPG, PNG, WebP", imgPickMaxSize: "Max size: 1 MB",
-    imgPickBack: "Back to recap", imgPickChange: "Change image", imgPickAddMore: "Add an image",
+    imgPickBack: "Back to recap", imgPickContinue: "Continue", imgPickChange: "Change image", imgPickAddMore: "Add an image",
     imgTooLarge: "Image too large (max 1 MB)",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     studyChooseTitle: "How do you want to study this word?",
@@ -1070,7 +1070,7 @@ const T = {
     imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
     imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "올리기", imgPickPaste: "붙여넣기", imgPickSearch: "온라인 검색",
     imgPickHint: "허용되는 파일 형식: JPG, PNG, WebP", imgPickMaxSize: "최대 크기: 1 MB",
-    imgPickBack: "복습으로 돌아가기", imgPickChange: "이미지 변경", imgPickAddMore: "이미지 추가",
+    imgPickBack: "복습으로 돌아가기", imgPickContinue: "계속하기", imgPickChange: "이미지 변경", imgPickAddMore: "이미지 추가",
     imgTooLarge: "이미지가 너무 커요 (최대 1 MB)",
     cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
     studyChooseTitle: "이 단어를 어떻게 공부할래?",
@@ -9403,7 +9403,7 @@ function AppInner() {
                           {recapCard && (recapCard.images || []).length < 2 && (
                             <button onClick={() => setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickAddMore}</button>
                           )}
-                          <button onClick={() => setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPick: false } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickBack}</button>
+                          <button onClick={() => { setRecapMode(null); setRecapConv([]); setRecapInp(""); setRecapDone(false); setRecapSummary(null); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickBack}</button>
                         </div>
                       </div>
                     )}
@@ -10013,7 +10013,7 @@ function AppInner() {
                             {lCard && (lCard.images || []).length < 2 && (
                               <button onClick={() => setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickAddMore}</button>
                             )}
-                            <button onClick={() => setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPick: false } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickBack}</button>
+                            <button onClick={() => setConv(prev => prev.filter((x, j) => j !== i))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickContinue}</button>
                           </div>
                         </div>
                       )}

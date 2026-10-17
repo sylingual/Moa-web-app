@@ -9661,7 +9661,7 @@ function AppInner() {
                   const today = new Date().toISOString().slice(0, 10);
                   const nextDate = getCardNextReviewDate(cardForReview, daysAvailable);
                   const practicedToday = cardForReview.reviewDates && cardForReview.reviewDates.includes(today);
-                  const justDiscovered = cardForReview.discoveredDate === today && reviewCount === 0;
+                  const justDiscovered = reviewCount === 0 && (migrateStatus(cardForReview.status) === "new" || cardForReview.discoveredDate === today);
                   let daysUntilNext = null;
                   if (nextDate && !acquired) {
                     const nd = new Date(nextDate + "T00:00:00");
@@ -9708,7 +9708,11 @@ function AppInner() {
                       {acquired ? (
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#34C759", marginBottom: 14 }}>{t.progressAcquired}</div>
                       ) : recapCard.type === "grammar" ? (
-                        <div style={{ marginBottom: 14 }} />
+                        <div style={{ marginBottom: 14 }}>
+                          {justDiscovered && (
+                            <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.4 }}>{t.progressJustDiscovered}</div>
+                          )}
+                        </div>
                       ) : (
                         <div style={{ marginBottom: 14 }}>
                           {daysUntilNext !== null && (

@@ -8940,13 +8940,12 @@ function AppInner() {
                                 </div>
                                 {today.length > 0 ? (
                                 <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${winW < 700 ? 100 : 112}px,1fr))`, gap: winW < 700 ? 6 : 8 }}>
-                                  {today.map(c => { const done = isDone(c); const isNew = (origSt[c.id] || "new") === "new"; const bg = done ? C.stAcqCard : isNew ? "rgba(255,255,255,0.65)" : C.stStudiedCard; const border = done ? C.stAcqB : isNew ? "rgba(230,180,40,0.3)" : C.stStudiedB; return (
+                                  {today.map(c => { const done = isDone(c); const isNew = (origSt[c.id] || "new") === "new"; const bg = done ? C.stAcqCard : isNew ? C.stNewCard : C.stStudiedCard; const border = done ? C.stAcqB : isNew ? C.stNewB : C.stStudiedB; return (
                                     <div key={c.id} onClick={() => reviewCard(c)} title={done ? t.todayDone : ""}
                                       style={{ background: bg, border: `1px solid ${border}`, borderRadius: winW < 700 ? 8 : 10, padding: winW < 700 ? "6px 8px" : 10, cursor: "pointer", transition: "transform 0.1s" }}
                                       onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
                                       onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
                                       {done && <div style={{ fontSize: winW < 700 ? 9 : 10, color: C.stAcq, marginBottom: winW < 700 ? 3 : 6, display: "flex", alignItems: "center", gap: 3 }}>✓ {t.todayDone}</div>}
-                                      {!done && !isNew && <div style={{ fontSize: winW < 700 ? 9 : 10, color: C.stStudied, marginBottom: winW < 700 ? 2 : 4 }}>↻</div>}
                                       <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: winW < 700 ? 12.5 : 14, color: C.txt }}>{c.korean}</div>
                                     </div>
                                   ); })}

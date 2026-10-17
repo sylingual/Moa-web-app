@@ -8235,15 +8235,21 @@ function AppInner() {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const wBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
-    const fullScreen = (bg) => ({ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", background: bg, alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.6s ease" });
-    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
+    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
+    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
+    const bgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease", opacity: visible ? 1 : 0 });
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
 
-    // Signup multi-step flow
-    if (welcomeMode === "create") {
-      return (
-        <div style={fullScreen(wBgIntro)}>
-          <div style={wPanel}>
+    const showIntro = welcomeMode === "create";
+
+    return (
+      <div style={fullScreen}>
+        <div style={bgLayer(wBgWelcome, !showIntro)} />
+        <div style={bgLayer(wBgIntro, showIntro)} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+
+        {welcomeMode === "create" && (
+          <div key="signup" style={wPanel}>
             {signupStep === 0 && (<>
               <div style={{ fontSize: 24, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupNameTitle}</div>
               <div style={{ fontSize: 15, color: "#5C3D2E", textAlign: "center" }}>{t.signupNameSub}</div>
@@ -8303,15 +8309,10 @@ function AppInner() {
               </button>
             </>)}
           </div>
-        </div>
-      );
-    }
+        )}
 
-    // Login flow
-    if (welcomeMode === "login") {
-      return (
-        <div style={fullScreen(wBgWelcome)}>
-          <div style={wPanel}>
+        {welcomeMode === "login" && (
+          <div key="login" style={wPanel}>
             <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
               모<span style={{ color: C.acc }}>아</span>
             </span>
@@ -8342,33 +8343,32 @@ function AppInner() {
               </button>
             </div>
           </div>
-        </div>
-      );
-    }
+        )}
 
-    // Main welcome screen (no mode selected)
-    return (
-      <div style={{ ...fullScreen(wBgWelcome), position: "fixed" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, maxWidth: 420, width: "100%", textAlign: "center" }}>
-          <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
-            모<span style={{ color: "#d4a8ff" }}>아</span>
-          </span>
-          <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5, textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>
-            {t.welcomeTitle}
+        {!welcomeMode && (
+          <div key="home" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+            <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+              모<span style={{ color: "#d4a8ff" }}>아</span>
+            </span>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5, textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>
+              {t.welcomeTitle}
+            </div>
+            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
+              {t.welcomeSub}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
+              <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); }}
+                style={{ ...wBtn(true), fontSize: 16, padding: "16px" }}>
+                {t.welcomeCreate}
+              </button>
+              <button onClick={() => setWelcomeMode("login")}
+                style={{ ...wBtn(false), fontSize: 16, padding: "16px" }}>
+                {t.welcomeLogin}
+              </button>
+            </div>
           </div>
-          <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
-            {t.welcomeSub}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
-            <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); }}
-              style={{ ...wBtn(true), fontSize: 16, padding: "16px" }}>
-              {t.welcomeCreate}
-            </button>
-            <button onClick={() => setWelcomeMode("login")}
-              style={{ ...wBtn(false), fontSize: 16, padding: "16px" }}>
-              {t.welcomeLogin}
-            </button>
-          </div>
+        )}
+
         </div>
       </div>
     );

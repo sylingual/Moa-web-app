@@ -6350,7 +6350,7 @@ function AppInner() {
       localStorage.setItem("moa-sync-id", id);
       setSyncId(id);
       let loadedData = result.data;
-      if (welcomeMode === "create" && (signupName || signupGender)) {
+      if (welcomeMode === "create") {
         loadedData = {
           ...loadedData,
           profile: {
@@ -6359,10 +6359,13 @@ function AppInner() {
             gender: signupGender || loadedData.profile?.gender || "",
           },
         };
-        save(loadedData);
+        if (!loadedData.targetLangs?.length) {
+          loadedData.targetLangs = ["ko"];
+          loadedData.lastTargetLang = "ko";
+        }
+        saveData(loadedData, id);
       }
       setData(loadedData);
-      // Set target lang from loaded data
       if (loadedData.lastTargetLang) setTargetLang(loadedData.lastTargetLang);
       else if (loadedData.targetLangs?.length) setTargetLang(loadedData.targetLangs[0]);
       else setTargetLang(null);

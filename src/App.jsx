@@ -8523,7 +8523,7 @@ function AppInner() {
     const showQuestionnaire = onbWelcomeDone;
 
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, overflowY: showQuestionnaire ? "auto" : "hidden" }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, overflowY: showQuestionnaire ? "auto" : "hidden", background: "#5C3D2E" }}>
         <div style={onbBgLayer(onbBgIntro, !showQuestionnaire)} />
         <div style={onbBgLayer(onbBgProfile, showQuestionnaire)} />
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", minHeight: showQuestionnaire ? "auto" : "100%" }}>

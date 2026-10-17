@@ -251,8 +251,9 @@ const T = {
     onbQ2ph: "ex: Débutant, Sogang niveau 2, TOPIK 1, 2 ans de licence...",
     onbQ3: "As-tu un cap ou défi particulier à atteindre dans les prochains mois ?",
     onbQ3ph: "ex: passer le TOPIK 5, comprendre des paroles de chanson, lire des livres d'enfant...",
-    onbQ4: "Quand es-tu arrivé dans ce monde ?",
+    onbQ4: (gender) => `Quand es-tu ${gender === "femme" ? "arrivée" : "arrivé"} dans ce monde ?`,
     onbQ4ph: "DATE DE NAISSANCE",
+    onbAge: (age) => `${age} ans, quel bel âge !`,
     onbQ5: "Quelles langues parles-tu déjà ?",
     onbQ6: (gender) => `Enfin, qu'est-ce que tu aimes faire dans ton temps libre ? Qu'est-ce qui te rend ${gender === "femme" ? "heureuse" : "heureux"} ?`,
     onbQ6ph: "Ex: Cuisiner, regarder des K-Drama, dessiner, écouter Sohyang...",
@@ -725,8 +726,9 @@ const T = {
     onbQ2ph: "e.g. Beginner, Sogang level 2, TOPIK 1, 2 years of university...",
     onbQ3: "Do you have a specific goal or challenge to reach in the coming months?",
     onbQ3ph: "e.g. pass TOPIK 5, understand song lyrics, read children's books...",
-    onbQ4: "When did you arrive in this world?",
+    onbQ4: () => "When did you arrive in this world?",
     onbQ4ph: "DATE OF BIRTH",
+    onbAge: (age) => `${age} years old, what a great age!`,
     onbQ5: "What languages do you already speak?",
     onbQ6: () => "Finally, what do you like to do in your free time? What makes you happy?",
     onbQ6ph: "e.g. Cooking, watching K-Dramas, drawing, listening to Sohyang...",
@@ -1199,8 +1201,9 @@ const T = {
     onbQ2ph: "예: 초급, 서강 2급, TOPIK 1, 대학 2년...",
     onbQ3: "앞으로 몇 달 안에 달성하고 싶은 목표나 도전이 있어?",
     onbQ3ph: "예: TOPIK 5급 합격, 노래 가사 이해하기, 동화책 읽기...",
-    onbQ4: "세상에 언제 왔어?",
+    onbQ4: () => "세상에 언제 왔어?",
     onbQ4ph: "생년월일",
+    onbAge: (age) => `${age}살, 멋진 나이네!`,
     onbQ5: "이미 할 줄 아는 언어가 뭐야?",
     onbQ6: () => "마지막으로, 여가 시간에 뭐 하는 걸 좋아해? 뭐가 행복해?",
     onbQ6ph: "예: 요리, K-드라마 보기, 그림 그리기, 소향 듣기...",
@@ -8237,7 +8240,7 @@ function AppInner() {
     const wBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
     const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
-    const bgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease", opacity: visible ? 1 : 0 });
+    const bgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease, transform 0.6s ease", opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(1.04)" });
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
 
     const showIntro = welcomeMode === "create";
@@ -8272,15 +8275,19 @@ function AppInner() {
             {signupStep === 1 && (<>
               <div style={{ fontSize: 22, fontWeight: 700, color: "#3a2a1a", textAlign: "center" }}>{t.signupGenderTitle}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-                <button onClick={() => { setSignupGender("femme"); setSignupStep(2); }}
-                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "femme" ? C.acc : "#e0d5c5"}`, background: signupGender === "femme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s" }}>
+                <button onClick={() => setSignupGender("femme")}
+                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "femme" ? C.acc : "#e0d5c5"}`, background: signupGender === "femme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s, background 0.15s" }}>
                   {t.signupGenderF}
                 </button>
-                <button onClick={() => { setSignupGender("homme"); setSignupStep(2); }}
-                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "homme" ? C.acc : "#e0d5c5"}`, background: signupGender === "homme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s" }}>
+                <button onClick={() => setSignupGender("homme")}
+                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "homme" ? C.acc : "#e0d5c5"}`, background: signupGender === "homme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s, background 0.15s" }}>
                   {t.signupGenderM}
                 </button>
               </div>
+              <button onClick={() => signupGender && setSignupStep(2)} disabled={!signupGender}
+                style={{ ...wBtn(true), opacity: signupGender ? 1 : 0.5, cursor: signupGender ? "pointer" : "default" }}>
+                {t.signupNext}
+              </button>
               <button onClick={() => setSignupStep(0)}
                 style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
                 {t.signupBack}
@@ -8374,41 +8381,12 @@ function AppInner() {
     );
   }
 
-  // Language selection screen if no target language chosen yet
+  // Auto-select Korean if no target language chosen yet (skip language selection screen)
+  useEffect(() => {
+    if (syncId && (!tl || enabledTLs.length === 0)) addTargetLang("ko");
+  }, [syncId, tl, enabledTLs.length]);
   if (!tl || enabledTLs.length === 0) {
-    const isMobile = winW < 700;
-    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 180, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
-    return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: isMobile ? 400 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 32 }}>
-          {mascotImg}
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
-            모<span style={{ color: C.acc }}>아</span>
-          </span>
-          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.chooseLang}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-            {Object.entries(TARGET_LANGS).map(([code, conf]) => {
-              const disabled = code !== "ko";
-              return (
-              <button key={code} onClick={() => { if (!disabled) addTargetLang(code); }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s2, cursor: disabled ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, color: C.txt, textAlign: "left", transition: "border-color 0.15s", opacity: disabled ? 0.45 : 1, position: "relative" }}
-                onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = C.acc; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: C.txtM, width: 40 }}>{code.toUpperCase()}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 500 }}>{conf.name[lang]}</div>
-                  <div style={{ fontSize: 12, color: C.txtM }}>{conf.nativeName}</div>
-                </div>
-                {disabled && <span style={{ fontSize: 10, color: C.txtM, fontStyle: "italic" }}>{lang === "fr" ? "bientôt" : lang === "ko" ? "공개 예정" : "coming soon"}</span>}
-              </button>
-              );
-            })}
-          </div>
-        </div>
-        </div>
-      </div>
-    );
+    return <div style={{ padding: 40, textAlign: "center", color: C.txtM }}>Loading...</div>;
   }
 
   // Per-language profile editor: step-by-step questions
@@ -8526,11 +8504,17 @@ function AppInner() {
     const userName = data.profile?.name || signupName || "";
     const userGender = data.profile?.gender || signupGender || "";
 
-    // Welcome sub-screen before the questionnaire
-    if (!onbWelcomeDone) {
-      return (
-        <div style={onbFull(onbBgIntro)}>
-          <div style={onbPanel}>
+    const onbBgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease, transform 0.6s ease", opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(1.04)" });
+    const showQuestionnaire = onbWelcomeDone;
+
+    return (
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, overflowY: showQuestionnaire ? "auto" : "hidden" }}>
+        <div style={onbBgLayer(onbBgIntro, !showQuestionnaire)} />
+        <div style={onbBgLayer(onbBgProfile, showQuestionnaire)} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", minHeight: showQuestionnaire ? "auto" : "100%" }}>
+
+        {!onbWelcomeDone && (
+          <div style={{ ...onbPanel, animation: "fadeIn 0.6s ease" }}>
             <div style={{ fontSize: 26, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.3 }}>
               {t.onbWelcomeTitle(userName)}
             </div>
@@ -8548,57 +8532,65 @@ function AppInner() {
               </button>
             </div>
           </div>
-        </div>
-      );
-    }
+        )}
 
-    // 6-step questionnaire
-    return (
-      <div style={onbFull(onbBgProfile, { overflowY: "auto" })}>
-        <img src="/mascot.webp" alt="" style={{ position: "absolute", top: isMobile ? 12 : 20, left: isMobile ? 12 : 20, width: isMobile ? 70 : 90, height: "auto", objectFit: "contain", opacity: 0.9 }} />
-        <div style={onbPanel}>
-          <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: 4, background: "#e0d5c5", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.3s" }} />
+        {onbWelcomeDone && (
+          <>
+          <img src="/mascot.webp" alt="" style={{ position: "absolute", top: isMobile ? -12 : -4, left: isMobile ? -4 : -4, width: isMobile ? 70 : 90, height: "auto", objectFit: "contain", opacity: 0.9 }} />
+          <div style={{ ...onbPanel, maxWidth: isMobile ? 440 : 520, animation: "fadeIn 0.5s ease" }}>
+            <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 4, background: "#e0d5c5", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.3s" }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: C.acc, background: "rgba(123,127,245,0.12)", padding: "3px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{onbStep + 1} / {onbTotal}</span>
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: C.acc, background: "rgba(123,127,245,0.12)", padding: "3px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{onbStep + 1} / {onbTotal}</span>
-          </div>
-          {onbStep === 0 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ1}</div>
-            <textarea value={onbDraft.dream} onChange={e => setOnbDraft({ ...onbDraft, dream: e.target.value })} placeholder={t.onbQ1ph} rows={3} style={onbInput} />
-          </>)}
-          {onbStep === 1 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ2}</div>
-            <textarea value={onbDraft.level} onChange={e => setOnbDraft({ ...onbDraft, level: e.target.value })} placeholder={t.onbQ2ph} rows={2} style={onbInput} />
-          </>)}
-          {onbStep === 2 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ3}</div>
-            <textarea value={onbDraft.goals} onChange={e => setOnbDraft({ ...onbDraft, goals: e.target.value })} placeholder={t.onbQ3ph} rows={2} style={onbInput} />
-          </>)}
-          {onbStep === 3 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ4}</div>
-            <input type="date" value={onbDraft.birthDate} onChange={e => setOnbDraft({ ...onbDraft, birthDate: e.target.value })} placeholder={t.onbQ4ph} style={{ ...onbInput, fontSize: 16 }} />
-          </>)}
-          {onbStep === 4 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ5}</div>
-            <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
-          </>)}
-          {onbStep === 5 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ6(userGender)}</div>
-            <textarea value={onbDraft.interests} onChange={e => setOnbDraft({ ...onbDraft, interests: e.target.value })} placeholder={t.onbQ6ph} rows={3} style={onbInput} />
-          </>)}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>
-            <button onClick={onbNext}
-              style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
-              {onbStep < onbTotal - 1 ? t.signupNext : t.onbFinishBtn}
-            </button>
-            {onbStep > 0 && (
-              <button onClick={onbPrev}
-                style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "rgba(0,0,0,0.05)", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, cursor: "pointer" }}>
-                {t.signupBack}
+            {onbStep === 0 && (<>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ1}</div>
+              <textarea value={onbDraft.dream} onChange={e => setOnbDraft({ ...onbDraft, dream: e.target.value })} placeholder={t.onbQ1ph} rows={3} style={onbInput} />
+            </>)}
+            {onbStep === 1 && (<>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ2}</div>
+              <textarea value={onbDraft.level} onChange={e => setOnbDraft({ ...onbDraft, level: e.target.value })} placeholder={t.onbQ2ph} rows={2} style={onbInput} />
+            </>)}
+            {onbStep === 2 && (<>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ3}</div>
+              <textarea value={onbDraft.goals} onChange={e => setOnbDraft({ ...onbDraft, goals: e.target.value })} placeholder={t.onbQ3ph} rows={2} style={onbInput} />
+            </>)}
+            {onbStep === 3 && (<>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ4(userGender)}</div>
+              <input type="date" value={onbDraft.birthDate} onChange={e => setOnbDraft({ ...onbDraft, birthDate: e.target.value })} placeholder={t.onbQ4ph} style={{ ...onbInput, fontSize: 16 }} />
+            </>)}
+            {onbStep === 4 && (() => {
+              const bd = onbDraft.birthDate;
+              let age = null;
+              if (bd) { const d = new Date(bd); const now = new Date(); age = now.getFullYear() - d.getFullYear() - (now < new Date(now.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0); }
+              if (onbDraft.languages.length === 0) { setTimeout(() => setOnbDraft(prev => prev.languages.length === 0 ? { ...prev, languages: [{ lang: "", level: "" }] } : prev), 0); }
+              return (<>
+                {age !== null && age > 0 && <div style={{ fontSize: 18, fontWeight: 700, color: C.acc, textAlign: "center", marginTop: 8 }}>{t.onbAge(age)}</div>}
+                <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: age ? 4 : 8 }}>{t.onbQ5}</div>
+                <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
+              </>);
+            })()}
+            {onbStep === 5 && (<>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ6(userGender)}</div>
+              <textarea value={onbDraft.interests} onChange={e => setOnbDraft({ ...onbDraft, interests: e.target.value })} placeholder={t.onbQ6ph} rows={3} style={onbInput} />
+            </>)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>
+              <button onClick={onbNext}
+                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+                {onbStep < onbTotal - 1 ? t.signupNext : t.onbFinishBtn}
               </button>
-            )}
+              {onbStep > 0 && (
+                <button onClick={onbPrev}
+                  style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "rgba(0,0,0,0.05)", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, cursor: "pointer" }}>
+                  {t.signupBack}
+                </button>
+              )}
+            </div>
           </div>
+          </>
+        )}
+
         </div>
       </div>
     );

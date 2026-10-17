@@ -11690,7 +11690,7 @@ function AppInner() {
         {/* PROFILE */}
         {view === "profile" && profileDraft && (
           <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
-            <div style={{ width: "100%", maxWidth: 520, padding: "28px 24px 60px", display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ width: "100%", maxWidth: 520, padding: "28px 24px 100px", display: "flex", flexDirection: "column", gap: 20 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, marginBottom: 4 }}>{t.profileTitle}</div>
                 <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6 }}>{t.profileSub}</div>

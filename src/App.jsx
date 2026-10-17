@@ -66,7 +66,7 @@ const T = {
     vocab: "Vocabulaire",
     importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeBulk: "Import en masse",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
-    bulkPickTitle: "Contenu extrait", bulkPickSub: "Deselecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter a la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutee${n > 1 ? "s" : ""} !`, bulkNone: "Selectionne au moins un element.",
+    bulkPickTitle: "Contenu extrait", bulkPickSub: "Désélecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter à la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} !`, bulkNone: "Sélectionne au moins un élément.",
     bulkTagBtn: "Tagger", bulkTagTitle: "Tagger en masse", bulkTagApply: "Appliquer", bulkTagDone: "Terminer", bulkTagSelectAll: "Tout", bulkTagNone: "Aucun",
     compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
     compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
@@ -177,7 +177,7 @@ const T = {
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
     imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer", imgPickPaste: "Coller", imgPickSearch: "Chercher en ligne",
-    imgPickHint: "Types de fichiers acceptes : JPG, PNG, WebP", imgPickMaxSize: "Taille max : 1 Mo",
+    imgPickHint: "Types de fichiers acceptés : JPG, PNG, WebP", imgPickMaxSize: "Taille max : 1 Mo",
     imgPickBack: "Retour au recap", imgPickContinue: "Continuer", imgPickChange: "Changer l'image", imgPickAddMore: "Ajouter une image",
     imgTooLarge: "Image trop lourde (max 1 Mo)",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
@@ -187,7 +187,7 @@ const T = {
     directLoading: "Récupération du sens…",
     addToVocab: "Ajouter au vocab", addedToVocab: "Ajouté à ta bibliothèque ✓", alreadyInLib: "Déjà dans ta bibliothèque", selectionSource: "Sélection",
     vocabPreviewTitle: "Ajouter ce mot ?", vocabPreviewLoading: "Traduction en cours...", vocabPreviewAdd: "Ajouter", vocabPreviewCancel: "Annuler", vocabPreviewContext: "Contexte", vocabPreviewTag: "Tag (optionnel)",
-    selAnalyze: "Analyser", selAnalyzing: "Analyse en cours...", selPickTitle: "Vocab et grammaire trouves", selPickAdd: "Ajouter la selection", selPickNone: "Rien de nouveau trouve", selPickVocab: "Vocab", selPickGrammar: "Grammaire",
+    selAnalyze: "Analyser", selAnalyzing: "Analyse en cours...", selPickTitle: "Vocab et grammaire trouvés", selPickAdd: "Ajouter la sélection", selPickNone: "Rien de nouveau trouvé", selPickVocab: "Vocab", selPickGrammar: "Grammaire",
     myExamples: "Mes exemples", myExamplesInfo: "Si tu trouves des exemples d’utilisation de ce mot, ajoute-les par toi-même ici", myExamplesAdd: "Ajouter un exemple", myExamplesPh: "Ex : 오늘 날씨가 좋아요",
     topikNext: "Question suivante ▶",
     yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
@@ -213,49 +213,49 @@ const T = {
     syncError: "Erreur de connexion. Vérifie ta configuration Supabase.",
     syncSuccess: "Données synchronisées !",
     welcomeTitle: "Bienvenue dans ta retraite de 선비",
-    welcomeSub: "Un lieu paisible pour te plonger dans le coreen.",
+    welcomeSub: "Un lieu paisible pour te plonger dans le coréen.",
     welcomeLoginTitle: "Content de te revoir !",
-    welcomeLoginSub: "Entre ta cle personnelle pour retrouver tes donnees.",
+    welcomeLoginSub: "Entre ta clé personnelle pour retrouver tes données.",
     welcomeCreateTitle: "Bienvenue !",
     welcomeCreateSub: "",
     welcomeLogin: "안녕하세요, je suis de retour",
     welcomeCreate: "반갑습니다! Je suis nouveau",
-    welcomeCode: "Cle personnelle",
-    welcomeCodePlaceholder: "ta cle personnelle...",
-    welcomeNoAccount: "Aucun compte trouve avec ce code.",
+    welcomeCode: "Clé personnelle",
+    welcomeCodePlaceholder: "ta clé personnelle...",
+    welcomeNoAccount: "Aucun compte trouvé avec ce code.",
     welcomeCreateHint: "Mot, chiffres ou petite phrase : tout fonctionne !",
-    welcomeLoginHint: "Entre ta cle personnelle pour retrouver tes donnees.",
+    welcomeLoginHint: "Entre ta clé personnelle pour retrouver tes données.",
     welcomeLoginAction: "Me connecter",
-    welcomeCreateAction: "Activer ma cle et continuer",
-    welcomeSwitchToLogin: "Se connecter plutot",
-    welcomeSwitchToCreate: "Creer un compte plutot",
+    welcomeCreateAction: "Activer ma clé et continuer",
+    welcomeSwitchToLogin: "Se connecter plutôt",
+    welcomeSwitchToCreate: "Créer un compte plutôt",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
-    signupNamePlaceholder: "Ton prenom...",
-    signupGenderTitle: "Comment m'adresser a toi ?",
+    signupNamePlaceholder: "Ton prénom...",
+    signupGenderTitle: "Comment m'adresser à toi ?",
     signupGenderF: "Comme une femme",
     signupGenderM: "Comme un homme",
     signupKeyTitle: (name) => `좋아요, ${name}.`,
-    signupKeySub: "Pour creer ton espace prive de connaissance, choisis une cle personnelle.",
+    signupKeySub: "Pour créer ton espace privé de connaissance, choisis une clé personnelle.",
     signupKeyHint: "Mot, chiffres ou petite phrase : tout fonctionne !",
     signupKeyAction: "C'est parti !",
     signupNext: "Suivant",
     signupBack: "Retour",
     onbWelcomeTitle: (name) => `Super, ${name}.`,
-    onbWelcomeSub: "Ici, tu auras un environnement ideal pour rendre ton apprentissage du coreen efficace, agreable et memorable dans la duree.\n\nPour cela, j'ai quelques petites questions a te poser.",
-    onbWelcomeReady: (gender) => gender === "femme" ? "Je suis prete !" : "Je suis pret !",
+    onbWelcomeSub: "Ici, tu auras un environnement idéal pour rendre ton apprentissage du coréen efficace, agréable et mémorable dans la durée.\n\nPour cela, j'ai quelques petites questions à te poser.",
+    onbWelcomeReady: (gender) => gender === "femme" ? "Je suis prête !" : "Je suis prêt !",
     onbWelcomeReadyKo: "가자!!",
-    onbQ1: "Raconte-moi ton reve le plus fou ✨ Qu'est-ce qui te donnerait des frissons si tu le realisais en coreen ?",
-    onbQ1ph: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coreen, draguer BTS...",
-    onbQ2: "Super. Et ou en es-tu aujourd'hui ?",
-    onbQ2ph: "ex: Debutant, Sogang niveau 2, TOPIK 1, 2 ans de licence...",
-    onbQ3: "As-tu un cap ou defi particulier a atteindre dans les prochains mois ?",
+    onbQ1: "Raconte-moi ton rêve le plus fou ✨ Qu'est-ce qui te donnerait des frissons si tu le réalisais en coréen ?",
+    onbQ1ph: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coréen, draguer BTS...",
+    onbQ2: "Super. Et où en es-tu aujourd'hui ?",
+    onbQ2ph: "ex: Débutant, Sogang niveau 2, TOPIK 1, 2 ans de licence...",
+    onbQ3: "As-tu un cap ou défi particulier à atteindre dans les prochains mois ?",
     onbQ3ph: "ex: passer le TOPIK 5, comprendre des paroles de chanson, lire des livres d'enfant...",
-    onbQ4: "Quand es-tu arrive dans ce monde ?",
+    onbQ4: "Quand es-tu arrivé dans ce monde ?",
     onbQ4ph: "DATE DE NAISSANCE",
-    onbQ5: "Quelles langues parles-tu deja ?",
-    onbQ6: "Enfin, qu'est-ce que tu aimes faire dans ton temps libre ? Qu'est-ce qui te rend heureux/se ?",
-    onbQ6ph: "Ex: Cuisiner, regarder des K-Drama, dessiner, ecouter Sohyang...",
+    onbQ5: "Quelles langues parles-tu déjà ?",
+    onbQ6: (gender) => `Enfin, qu'est-ce que tu aimes faire dans ton temps libre ? Qu'est-ce qui te rend ${gender === "femme" ? "heureuse" : "heureux"} ?`,
+    onbQ6ph: "Ex: Cuisiner, regarder des K-Drama, dessiner, écouter Sohyang...",
     onbFinishBtn: "Finir",
     // Profile
     profileTitle: "Mon profil",
@@ -728,7 +728,7 @@ const T = {
     onbQ4: "When did you arrive in this world?",
     onbQ4ph: "DATE OF BIRTH",
     onbQ5: "What languages do you already speak?",
-    onbQ6: "Finally, what do you like to do in your free time? What makes you happy?",
+    onbQ6: () => "Finally, what do you like to do in your free time? What makes you happy?",
     onbQ6ph: "e.g. Cooking, watching K-Dramas, drawing, listening to Sohyang...",
     onbFinishBtn: "Finish",
     // Profile
@@ -1202,7 +1202,7 @@ const T = {
     onbQ4: "세상에 언제 왔어?",
     onbQ4ph: "생년월일",
     onbQ5: "이미 할 줄 아는 언어가 뭐야?",
-    onbQ6: "마지막으로, 여가 시간에 뭐 하는 걸 좋아해? 뭐가 행복해?",
+    onbQ6: () => "마지막으로, 여가 시간에 뭐 하는 걸 좋아해? 뭐가 행복해?",
     onbQ6ph: "예: 요리, K-드라마 보기, 그림 그리기, 소향 듣기...",
     onbFinishBtn: "완료",
     profileTitle: "내 프로필",
@@ -6020,6 +6020,12 @@ function AppInner() {
   useEffect(() => { if (loaded) trackEvent("tab_view", { tab: view }); }, [view]);
   useEffect(() => { if (loaded && lang) updateSessionLangs(lang, tl); }, [lang, tl]);
 
+  useEffect(() => {
+    if (syncId) return;
+    const suffix = window.innerWidth < 700 ? "-m" : "-d";
+    ["welcome", "intro", "firstprofile"].forEach(name => { const img = new Image(); img.src = `/${name}${suffix}.png`; });
+  }, [syncId]);
+
   // Restore an in-progress lesson into memory on first load — but stay on the Library
   // (default) view, so the user lands there and chooses to resume (via the card or the
   // Leçon tab) rather than being dropped straight into the lesson.
@@ -8578,7 +8584,7 @@ function AppInner() {
             <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
           </>)}
           {onbStep === 5 && (<>
-            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ6}</div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ6(userGender)}</div>
             <textarea value={onbDraft.interests} onChange={e => setOnbDraft({ ...onbDraft, interests: e.target.value })} placeholder={t.onbQ6ph} rows={3} style={onbInput} />
           </>)}
           <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>

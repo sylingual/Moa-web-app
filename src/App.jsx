@@ -7341,7 +7341,7 @@ function AppInner() {
     img.onload = () => {
       URL.revokeObjectURL(url);
       let { width, height } = img;
-      const maxDim = 480;
+      const maxDim = 300;
       const scale = Math.min(1, maxDim / Math.max(width, height));
       width = Math.max(1, Math.round(width * scale));
       height = Math.max(1, Math.round(height * scale));

@@ -176,6 +176,7 @@ const T = {
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
+    imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer la mienne", imgPickSearch: "Chercher en ligne",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     studyChooseTitle: "Comment veux-tu étudier ce mot ?",
     studyLesson: "Leçon complète", studyLessonDesc: "Découverte guidée, questions, exemples",
@@ -618,6 +619,7 @@ const T = {
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
+    imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload my own", imgPickSearch: "Search online",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     studyChooseTitle: "How do you want to study this word?",
     studyLesson: "Full lesson", studyLessonDesc: "Guided discovery, questions, examples",
@@ -1060,6 +1062,7 @@ const T = {
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
+    imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "내 이미지 올리기", imgPickSearch: "온라인 검색",
     cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
     studyChooseTitle: "이 단어를 어떻게 공부할래?",
     studyLesson: "전체 레슨", studyLessonDesc: "가이드 학습, 질문, 예문",
@@ -6760,6 +6763,8 @@ function AppInner() {
   // instead of leaving the app entirely.
   const historyNavRef = useRef(false); // true when popstate is driving the navigation
   const viewRef = useRef(view);
+  const imgUploadRef = useRef(null);
+  const imgUploadCtxRef = useRef(null);
   useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => {
     window.history.replaceState({ view: viewRef.current }, "");
@@ -6974,11 +6979,15 @@ function AppInner() {
     setRecapConv([]);
     setRecapDone(false); setRecapSummary(null);
     setRecapLoad(true);
-    const labels = { examples: t.askExamples, realExamples: t.realExamplesAsk, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk, lyrics: t.lyricsAsk };
+    const labels = { examples: t.askExamples, realExamples: t.realExamplesAsk, resources: t.resourcesAsk, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, imageSearch: t.imgPickSearch, register: t.registerExamplesAsk, rootWords: t.rootWordsAsk, lyrics: t.lyricsAsk };
     const u = [{ role: "user", content: labels[action] || action }];
     setRecapConv(u);
     try {
       if (action === "image") {
+        setRecapConv([...u, { role: "ai", content: `📷 ${t.imgPickTitle}`, imgPick: true, options: null, selected: null }]);
+        setRecapLoad(false);
+        return;
+      } else if (action === "imageSearch") {
         setSearching(true);
         const imgRes = await fetchImages(recapCard.korean, 8);
         setSearching(false);
@@ -7314,6 +7323,25 @@ function AppInner() {
     setFlash(t.imgAdded); setTimeout(() => setFlash(null), 1800);
   };
 
+  const onImgUpload = (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const card = imgUploadCtxRef.current === "recap" ? recapCard : lCard;
+    if (!card) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      attachImage(card.korean, { thumb: dataUrl, url: dataUrl, link: "" });
+      if (imgUploadCtxRef.current === "recap") {
+        setRecapConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
+      } else {
+        setConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // "Other images" / refine, without any AI: cycle within the fetched pool (instant), or
   // re-query Brave when the learner refines the search. scope picks lesson vs recap conv.
   const moreImages = async (scope, idx, refine, word) => {
@@ -7342,10 +7370,14 @@ function AppInner() {
     if (lLoad) return;
     recordPracticeReview(lCard);
     setTray(false); setLLoad(true);
-    const labels = { resources: t.resourcesAsk, realExamples: t.realExamplesAsk, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, lyrics: t.lyricsAsk };
+    const labels = { resources: t.resourcesAsk, realExamples: t.realExamplesAsk, examples: t.askExamples, exercise: t.askExercise, explain: t.askExplain, image: t.askImage, imageSearch: t.imgPickSearch, lyrics: t.lyricsAsk };
     const u = [...conv, { role: "user", content: labels[a] || a }]; setConv(u);
     try {
       if (a === "image") {
+        setConv([...u, { role: "ai", content: `📷 ${t.imgPickTitle}`, imgPick: true, options: null, selected: null }]);
+        setLLoad(false);
+        return;
+      } else if (a === "imageSearch") {
         setSearching(true);
         const imgRes = await fetchImages(lCard.korean, 8);
         setSearching(false);
@@ -8492,6 +8524,8 @@ function AppInner() {
         );
       })()}
 
+      <input ref={imgUploadRef} type="file" accept="image/*" onChange={onImgUpload} style={{ display: "none" }} />
+
       {/* STUDIED <-> ACQUIRED CONFIRMATION */}
       {confirmToggle && (() => { const toAcq = migrateStatus(confirmToggle.status) !== "acquired"; return (
         <div onClick={() => setConfirmToggle(null)}
@@ -9295,6 +9329,12 @@ function AppInner() {
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
                     <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined} onAttachImage={m.images && recapCard?.type === "vocab" ? (im) => attachImage(recapCard.korean, im) : undefined}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
+                    {m.imgPick && !m.imgPickDone && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
+                        <button onClick={() => { imgUploadCtxRef.current = "recap"; imgUploadRef.current?.click(); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
+                        <button onClick={() => { setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); startRecapAction("imageSearch"); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {recapLoad && !recapDone && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}
@@ -9881,6 +9921,12 @@ function AppInner() {
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
                       <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
+                      {m.imgPick && !m.imgPickDone && (
+                        <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
+                          <button onClick={() => { imgUploadCtxRef.current = "lesson"; imgUploadRef.current?.click(); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>
+                          <button onClick={() => { setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); quickAct("imageSearch"); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {lLoad && !lessonDone && <div className="pulse" style={{ fontSize: 12, color: C.txtM, padding: 8 }}>{searching ? t.searching : t.thinking}</div>}

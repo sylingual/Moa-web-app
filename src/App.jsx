@@ -8534,9 +8534,7 @@ function AppInner() {
         )}
 
         {onbWelcomeDone && (
-          <>
-          <img src="/mascot.webp" alt="" style={{ position: "absolute", top: isMobile ? -12 : -4, left: isMobile ? -4 : -4, width: isMobile ? 70 : 90, height: "auto", objectFit: "contain", opacity: 0.9 }} />
-          <div style={{ ...onbPanel, maxWidth: isMobile ? 440 : 520, animation: "fadeIn 0.5s ease" }}>
+          <div style={{ ...onbPanel, maxWidth: isMobile ? 440 : 520, marginLeft: isMobile ? 0 : 150, animation: "fadeIn 0.5s ease" }}>
             <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ flex: 1, height: 4, background: "#e0d5c5", borderRadius: 2, overflow: "hidden" }}>
                 <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.3s" }} />
@@ -8587,7 +8585,6 @@ function AppInner() {
               )}
             </div>
           </div>
-          </>
         )}
 
         </div>
@@ -8596,7 +8593,7 @@ function AppInner() {
   }
 
   return (
-    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
       <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
 
       {/* POINTS TOAST */}

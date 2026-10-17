@@ -2205,7 +2205,7 @@ async function genExercise(cards, mode, lang, context, tlCode, theme, vocabWords
 
 IDENTITY: You are a native ${TL} novelist. Think and write directly in ${TL}. Every sentence must sound originally written in ${TL}, with native word order, idioms, and culturally authentic details.
 
-THEME: ${theme ? `"${theme}". Strictly respect this theme as the setting. "Daily life" means ordinary moments (cooking, commuting, shopping, a cafe, studying). Do NOT default to K-drama plots, entertainment industry, or celebrity stories.` : "Pick from the student's interests (see LEARNER PROFILE). Rotate between: daily routine, friendship, work, travel, food, hobbies, campus life, family, etc."}
+THEME: ${theme ? `"${theme}". Strictly respect this theme as the setting. Do NOT use the student's dream, goals, interests, or favorites to influence the theme — use ONLY "${theme}". "Daily life" means ordinary moments (cooking, commuting, shopping, a cafe, studying). Do NOT default to K-drama plots, entertainment industry, or celebrity stories.` : "Pick from the student's interests (see LEARNER PROFILE). Rotate between: daily routine, friendship, work, travel, food, hobbies, campus life, family, etc."}
 
 YOUR PRIMARY OBJECTIVE IS CONTINUATION DESIRE: after reading your passage, the learner must immediately have ideas about what could happen next and WANT to write them. Do not resolve the central tension. Give narrative possibilities, not a completed mini-story.
 
@@ -2264,7 +2264,7 @@ IMPORTANT:
     fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story STRICTLY in this specific context. Do NOT mix in their dream, goals, or other profile topics — use ONLY the chosen theme as the setting.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the story STRICTLY in this specific context. Do NOT use their dream, goals, interests, favorites, or any profile data to influence the setting — use ONLY "${theme}".` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - The story should feel natural and immersive, not like a textbook exercise
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
@@ -2347,7 +2347,7 @@ Every "text" must be genuinely WRONG in ${TL}. Every "corrected" must be genuine
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
-- THEME: ${theme ? `The student chose this theme: "${theme}". Set the dialogue in this specific context.` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
+- THEME: ${theme ? `The student chose this theme: "${theme}". Set the dialogue STRICTLY in this specific context. Do NOT use their dream, goals, interests, favorites, or any profile data to influence the setting — use ONLY "${theme}".` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
 - Give the characters names and a realistic situation
 - Each dialogue line MUST start with "CharacterName: " (name followed by colon and space)
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
@@ -2373,10 +2373,12 @@ CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary f
 
   const vocabSection = (vocabWords && vocabWords.length > 0) ? `\nVocabulary to integrate into the sentences (use as many as possible naturally):\n${vocabWords.map(w => `- ${w}`).join("\n")}\n` : "";
 
+  const ctxForExercise = (theme && mode !== "topik") ? context.replace(/Their dream in this language:.*\n/g, "").replace(/FAVORITES \(use these to build examples that resonate\):.*\n/g, "").replace(/Other interests:.*\n/g, "").replace(/Goals:.*\n/g, "").replace(/Teacher notes:.*\n/g, "").replace(/Learner's own notes:.*\n/g, "") : context;
   const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
 ${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
 
-${mode === "topik" ? "" : context}
+${mode === "topik" ? "" : ctxForExercise}
+${theme ? `IMPORTANT: The student explicitly chose the theme "${theme}". Use ONLY this theme as the setting for the exercise. Do NOT use their personal interests, dream, goals, or favorites to influence the theme. Respect their choice exactly.` : ""}
 ${modes[mode]}
 
 Structures to practice:

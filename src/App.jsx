@@ -8227,14 +8227,15 @@ function AppInner() {
   // Welcome / login / signup screen if no sync code
   if (!syncId) {
     const isMobile = winW < 700;
-    const wBg = "#5C3D2E";
+    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const wBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
     const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
 
     // Signup multi-step flow
     if (welcomeMode === "create") {
       return (
-        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBgIntro, alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.6s ease" }}>
           <div style={wPanel}>
             {signupStep === 0 && (<>
               <div style={{ fontSize: 24, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupNameTitle}</div>
@@ -8302,7 +8303,7 @@ function AppInner() {
     // Login flow
     if (welcomeMode === "login") {
       return (
-        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBgWelcome, alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.6s ease" }}>
           <div style={wPanel}>
             <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
               모<span style={{ color: C.acc }}>아</span>
@@ -8340,7 +8341,7 @@ function AppInner() {
 
     // Main welcome screen (no mode selected)
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24, position: "relative" }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBgWelcome, alignItems: "center", justifyContent: "center", padding: 24, position: "relative", animation: "fadeIn 0.6s ease" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, maxWidth: 420, width: "100%", textAlign: "center" }}>
           <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
             모<span style={{ color: "#d4a8ff" }}>아</span>
@@ -8508,7 +8509,8 @@ function AppInner() {
   if (!data.profile?.onboarded) {
     const onbTotal = 6;
     const isMobile = winW < 700;
-    const onbBg = "#5C3D2E";
+    const onbBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const onbBgProfile = `url('/${isMobile ? "firstprofile-m" : "firstprofile-d"}.png') center/cover no-repeat, #5C3D2E`;
     const onbPanel = { width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, background: "rgba(255,248,230,0.92)", borderRadius: 18, padding: isMobile ? "28px 20px" : "32px 28px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
     const onbInput = { width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: "#3a2a1a", background: "#fff", outline: "none", lineHeight: 1.6, resize: "vertical" };
     const onbNext = () => onbStep < onbTotal - 1 ? setOnbStep(onbStep + 1) : finishOnboarding(false);
@@ -8519,7 +8521,7 @@ function AppInner() {
     // Welcome sub-screen before the questionnaire
     if (!onbWelcomeDone) {
       return (
-        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBgIntro, alignItems: "center", justifyContent: "center", padding: 24, animation: "fadeIn 0.6s ease" }}>
           <div style={onbPanel}>
             <div style={{ fontSize: 26, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.3 }}>
               {t.onbWelcomeTitle(userName)}
@@ -8544,7 +8546,7 @@ function AppInner() {
 
     // 6-step questionnaire
     return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBg, alignItems: "center", justifyContent: "center", padding: 24, position: "relative", overflowY: "auto" }}>
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBgProfile, alignItems: "center", justifyContent: "center", padding: 24, position: "relative", overflowY: "auto", animation: "fadeIn 0.6s ease" }}>
         <img src="/mascot.webp" alt="" style={{ position: "absolute", top: isMobile ? 12 : 20, left: isMobile ? 12 : 20, width: isMobile ? 70 : 90, height: "auto", objectFit: "contain", opacity: 0.9 }} />
         <div style={onbPanel}>
           <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>

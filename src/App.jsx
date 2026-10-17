@@ -175,7 +175,7 @@ const T = {
     lyricsAsk: "Est-ce qu’il y a une chanson qui contient ce mot ? 🎵",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
-    imgChoose: "Choisir", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
+    imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
     imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer la mienne", imgPickSearch: "Chercher en ligne",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     studyChooseTitle: "Comment veux-tu étudier ce mot ?",
@@ -618,7 +618,7 @@ const T = {
     lyricsAsk: "Is there a song that contains this word? 🎵",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
-    imgChoose: "Choose", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
+    imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
     imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload my own", imgPickSearch: "Search online",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     studyChooseTitle: "How do you want to study this word?",
@@ -1061,7 +1061,7 @@ const T = {
     lyricsAsk: "이 단어가 들어간 노래가 있어? 🎵",
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
-    imgChoose: "선택", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
+    imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
     imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "내 이미지 올리기", imgPickSearch: "온라인 검색",
     cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
     studyChooseTitle: "이 단어를 어떻게 공부할래?",
@@ -2903,10 +2903,11 @@ function renderMarkdown(text, revealAll) {
   return parts.length > 0 ? parts : clean;
 }
 
-function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, imgLabels = { other: "Other images", refine: "Refine…", choose: "Choose" } }) {
+function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, imgLabels = { other: "Other images", refine: "Refine…", choose: "Choose", added: "Added ✓" } }) {
   const ai = msg.role === "ai";
   const [preSel, setPreSel] = useState(null);
   const [imgRefine, setImgRefine] = useState("");
+  const [attachedImgs, setAttachedImgs] = useState(() => new Set());
   const [clickedLinks, setClickedLinks] = useState(() => new Set());
   const confirmed = !!msg.selected;
   const canPick = ai && !confirmed && msg.options && msg.onSelect;
@@ -2933,10 +2934,16 @@ function Bubble({ msg, revealAll, onResourceClick, onMoreImages, onAttachImage, 
                       style={{ width: 148, height: 148, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1 }} />
                   </a>
                   {onAttachImage && (
-                    <button onClick={() => onAttachImage(im)} title={imgLabels.choose}
+                    attachedImgs.has(i) ? (
+                      <span style={{ position: "absolute", right: 6, bottom: 6, display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 14, background: "rgba(52,199,89,0.85)", color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500 }}>
+                        ✓ {imgLabels.added}
+                      </span>
+                    ) : (
+                    <button onClick={() => { onAttachImage(im); setAttachedImgs(prev => new Set(prev).add(i)); }} title={imgLabels.choose}
                       style={{ position: "absolute", right: 6, bottom: 6, display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 14, border: "none", background: "rgba(0,0,0,0.62)", color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
                       ＋ {imgLabels.choose}
                     </button>
+                    )
                   )}
                 </div>
               ))}
@@ -9327,7 +9334,7 @@ function AppInner() {
               <div ref={recapR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {recapConv.map((m, i) => (
                   <div key={i} ref={i === recapConv.length - 1 ? lastRecapMsgRef : null}>
-                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined} onAttachImage={m.images && recapCard?.type === "vocab" ? (im) => attachImage(recapCard.korean, im) : undefined}
+                    <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose, added: t.imgChosen }} onMoreImages={m.images ? (refine) => moreImages("recap", i, refine, m.imageWord || recapCard?.korean) : undefined} onAttachImage={m.images && recapCard?.type === "vocab" ? (im) => attachImage(recapCard.korean, im) : undefined}
                       msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => recapPickOpt(i, o) : null }} />
                     {m.imgPick && !m.imgPickDone && (
                       <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
@@ -9531,12 +9538,10 @@ function AppInner() {
                       </span>
                       )
                     ))}
-                    {(recapCard.tags || []).length < 3 && (
-                      <button onClick={() => setTagEditCard(tagEditCard === recapCard.id ? null : recapCard.id)}
-                        style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                        + {t.addTag}
-                      </button>
-                    )}
+                    <button onClick={() => setTagEditCard(tagEditCard === recapCard.id ? null : recapCard.id)}
+                      style={{ padding: "2px 7px", borderRadius: 10, border: `1px dashed ${C.borderS}`, background: tagEditCard === recapCard.id ? C.accBg : "none", color: tagEditCard === recapCard.id ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                      {tagEditCard === recapCard.id ? "✓" : (recapCard.tags || []).length < 3 ? `+ ${t.addTag}` : "✎"}
+                    </button>
                   </div>
                   {tagEditCard === recapCard.id && (
                     <div style={{ marginTop: 6 }}>
@@ -9920,7 +9925,7 @@ function AppInner() {
                 <div ref={msgsR} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   {conv.map((m, i) => (
                     <div key={i} ref={i === conv.length - 1 ? lastMsgRef : null}>
-                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
+                      <Bubble revealAll={revealTr} onResourceClick={awardResourcePoint} imgLabels={{ other: t.otherImages, refine: t.refineImage, choose: t.imgChoose, added: t.imgChosen }} onMoreImages={m.images ? (refine) => moreImages("lesson", i, refine, m.imageWord || lCard?.korean) : undefined} onAttachImage={m.images && lCard?.type === "vocab" ? (im) => attachImage(lCard.korean, im) : undefined} msg={{ ...m, onSelect: m.role === "ai" && !m.selected && m.options ? (o) => pickOpt(i, o) : null }} />
                       {m.imgPick && !m.imgPickDone && (
                         <div style={{ display: "flex", gap: 8, marginTop: 6, marginLeft: 30 }}>
                           <button onClick={() => { imgUploadCtxRef.current = "lesson"; imgUploadRef.current?.click(); }} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>📁 {t.imgPickUpload}</button>

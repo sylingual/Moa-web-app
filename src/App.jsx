@@ -5769,6 +5769,7 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
 function AppInner() {
   const [data, setData] = useState(DEFAULT_DATA);
   const [loaded, setLoaded] = useState(false);
+  const [bgReady, setBgReady] = useState(false);
   const [view, setView] = useState("goals");
   const [libView, setLibView] = useState("grid");
   const [libFilter, setLibFilter] = useState("all"); // "all" | "grammar" | "vocab" (library)
@@ -6025,9 +6026,13 @@ function AppInner() {
   useEffect(() => { if (loaded && lang) updateSessionLangs(lang, tl); }, [lang, tl]);
 
   useEffect(() => {
-    if (syncId) return;
+    if (syncId) { setBgReady(true); return; }
     const suffix = window.innerWidth < 700 ? "-m" : "-d";
-    ["welcome", "intro", "firstprofile"].forEach(name => { const img = new Image(); img.src = `/${name}${suffix}.png`; });
+    const first = new Image();
+    first.onload = () => setBgReady(true);
+    first.onerror = () => setBgReady(true);
+    first.src = `/welcome${suffix}.png`;
+    ["intro", "firstprofile"].forEach(name => { const img = new Image(); img.src = `/${name}${suffix}.png`; });
   }, [syncId]);
 
   // Restore an in-progress lesson into memory on first load — but stay on the Library
@@ -8232,7 +8237,15 @@ function AppInner() {
     outline: "none", resize: "vertical", lineHeight: 1.6,
   };
 
-  if (!loaded) return <div style={{ padding: 40, textAlign: "center", color: C.txtM }}>Loading...</div>;
+  if (!loaded || (!syncId && !bgReady)) return (
+    <div style={{ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#5C3D2E", gap: 20 }}>
+      <span style={{ fontSize: 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", animation: "moaPulse 1.8s ease-in-out infinite" }}>
+        모<span style={{ color: "#d4a8ff" }}>아</span>
+      </span>
+      <div style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>Loading...</div>
+      <style>{`@keyframes moaPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.04)}}`}</style>
+    </div>
+  );
 
   // Welcome / login / signup screen if no sync code
   if (!syncId) {

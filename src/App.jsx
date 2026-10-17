@@ -240,6 +240,18 @@ const T = {
     onbWelcomeSub: "Ici, tu auras un environnement ideal pour rendre ton apprentissage du coreen efficace, agreable et memorable dans la duree.\n\nPour cela, j'ai quelques petites questions a te poser.",
     onbWelcomeReady: (gender) => gender === "femme" ? "Je suis prete !" : "Je suis pret !",
     onbWelcomeReadyKo: "가자!!",
+    onbQ1: "Raconte-moi ton reve le plus fou ✨ Qu'est-ce qui te donnerait des frissons si tu le realisais en coreen ?",
+    onbQ1ph: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coreen, draguer BTS...",
+    onbQ2: "Super. Et ou en es-tu aujourd'hui ?",
+    onbQ2ph: "ex: Debutant, Sogang niveau 2, TOPIK 1, 2 ans de licence...",
+    onbQ3: "As-tu un cap ou defi particulier a atteindre dans les prochains mois ?",
+    onbQ3ph: "ex: passer le TOPIK 5, comprendre des paroles de chanson, lire des livres d'enfant...",
+    onbQ4: "Quand es-tu arrive dans ce monde ?",
+    onbQ4ph: "DATE DE NAISSANCE",
+    onbQ5: "Quelles langues parles-tu deja ?",
+    onbQ6: "Enfin, qu'est-ce que tu aimes faire dans ton temps libre ? Qu'est-ce qui te rend heureux/se ?",
+    onbQ6ph: "Ex: Cuisiner, regarder des K-Drama, dessiner, ecouter Sohyang...",
+    onbFinishBtn: "Finir",
     // Profile
     profileTitle: "Mon profil",
     profileSub: "Ces informations permettent à l'IA d'adapter les leçons, les exemples et les exercices à tes centres d'intérêt et à ton niveau.",
@@ -696,6 +708,18 @@ const T = {
     onbWelcomeSub: "Here, you'll have the ideal environment to make your Korean learning effective, enjoyable, and memorable over time.\n\nFor that, I have a few questions for you.",
     onbWelcomeReady: (gender) => gender === "femme" ? "I'm ready!" : "I'm ready!",
     onbWelcomeReadyKo: "가자!!",
+    onbQ1: "Tell me your wildest dream ✨ What would give you chills if you could do it in Korean?",
+    onbQ1ph: "e.g. Chat for hours with my in-laws without a translator. Read Han Kang in the original. Do stand-up in Korean, flirt with BTS...",
+    onbQ2: "Great. Where are you at today?",
+    onbQ2ph: "e.g. Beginner, Sogang level 2, TOPIK 1, 2 years of university...",
+    onbQ3: "Do you have a specific goal or challenge to reach in the coming months?",
+    onbQ3ph: "e.g. pass TOPIK 5, understand song lyrics, read children's books...",
+    onbQ4: "When did you arrive in this world?",
+    onbQ4ph: "DATE OF BIRTH",
+    onbQ5: "What languages do you already speak?",
+    onbQ6: "Finally, what do you like to do in your free time? What makes you happy?",
+    onbQ6ph: "e.g. Cooking, watching K-Dramas, drawing, listening to Sohyang...",
+    onbFinishBtn: "Finish",
     // Profile
     profileTitle: "My profile",
     profileSub: "This information helps the AI tailor lessons, examples, and exercises to your interests and level.",
@@ -1152,6 +1176,18 @@ const T = {
     onbWelcomeSub: "여기서 한국어 학습을 효과적이고, 즐겁고, 오래 기억에 남도록 만들어 줄 이상적인 환경이 준비되어 있어.\n\n그러기 위해 몇 가지 질문이 있어.",
     onbWelcomeReady: () => "준비됐어!",
     onbWelcomeReadyKo: "가자!!",
+    onbQ1: "가장 멋진 꿈을 들려줘 ✨ 한국어로 이룬다면 소름 돋을 것 같은 게 뭐야?",
+    onbQ1ph: "예: 시부모님과 통역 없이 몇 시간이고 이야기하기. 한강 작가의 원서 읽기. 한국어로 스탠드업 하기, BTS한테 작업 걸기...",
+    onbQ2: "좋아. 지금 어느 정도야?",
+    onbQ2ph: "예: 초급, 서강 2급, TOPIK 1, 대학 2년...",
+    onbQ3: "앞으로 몇 달 안에 달성하고 싶은 목표나 도전이 있어?",
+    onbQ3ph: "예: TOPIK 5급 합격, 노래 가사 이해하기, 동화책 읽기...",
+    onbQ4: "세상에 언제 왔어?",
+    onbQ4ph: "생년월일",
+    onbQ5: "이미 할 줄 아는 언어가 뭐야?",
+    onbQ6: "마지막으로, 여가 시간에 뭐 하는 걸 좋아해? 뭐가 행복해?",
+    onbQ6ph: "예: 요리, K-드라마 보기, 그림 그리기, 소향 듣기...",
+    onbFinishBtn: "완료",
     profileTitle: "내 프로필",
     profileSub: "이 정보를 바탕으로 AI가 네 관심사와 수준에 맞게 레슨, 예문, 연습을 맞춤 제작해 줘.",
     levelLabel: "수준",
@@ -5552,7 +5588,8 @@ function AppInner() {
   const [profileSavedMsg, setProfileSavedMsg] = useState(false);
   const [savedFieldKey, setSavedFieldKey] = useState(null); // which profile field just auto-saved
   const [onbStep, setOnbStep] = useState(0);
-  const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "" });
+  const [onbWelcomeDone, setOnbWelcomeDone] = useState(false);
+  const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -6008,12 +6045,25 @@ function AppInner() {
       // Save the id and load the data
       localStorage.setItem("moa-sync-id", id);
       setSyncId(id);
-      setData(result.data);
+      let loadedData = result.data;
+      if (welcomeMode === "create" && (signupName || signupGender)) {
+        loadedData = {
+          ...loadedData,
+          profile: {
+            ...(loadedData.profile || {}),
+            name: signupName || loadedData.profile?.name || "",
+            gender: signupGender || loadedData.profile?.gender || "",
+          },
+        };
+        save(loadedData);
+      }
+      setData(loadedData);
       // Set target lang from loaded data
-      if (result.data.lastTargetLang) setTargetLang(result.data.lastTargetLang);
-      else if (result.data.targetLangs?.length) setTargetLang(result.data.targetLangs[0]);
+      if (loadedData.lastTargetLang) setTargetLang(loadedData.lastTargetLang);
+      else if (loadedData.targetLangs?.length) setTargetLang(loadedData.targetLangs[0]);
       else setTargetLang(null);
       setSyncStatus("success");
+      setSignupStep(0); setSignupName(""); setSignupGender("");
       setTimeout(() => { setSyncStatus(null); setShowSync(false); }, 1500);
     } catch (e) {
       console.error("Sync error:", e);
@@ -6059,7 +6109,7 @@ function AppInner() {
     save(nd);
     setTlOpen(false);
     const existing = (nd.langProfiles || {})[code];
-    if (!existing) {
+    if (!existing && nd.profile?.onboarded) {
       const base = nd.profile || {};
       setLangProfileDraft({
         dream: base.dream || '',
@@ -6067,7 +6117,6 @@ function AppInner() {
         goals: base.goals || '',
         notes: base.notes || '',
         learnerNotes: base.learnerNotes || '',
-        otherTools: base.otherTools || '',
         dailyCount: base.dailyCount ?? 5,
       });
       setLangProfileEdit(code);
@@ -6206,17 +6255,33 @@ function AppInner() {
 
   // ---- ONBOARDING ----
   const finishOnboarding = (skip) => {
+    const draft = skip ? {} : onbDraft;
     let nd = {
       ...data,
       profile: {
         ...(data.profile || DEFAULT_PROFILE),
-        ...(skip ? {} : onbDraft),
+        gender: draft.gender || data.profile?.gender || "",
+        age: draft.birthDate || draft.age || data.profile?.age || "",
+        nationality: draft.nationality || data.profile?.nationality || "",
+        interests: draft.interests || data.profile?.interests || "",
+        languages: (draft.languages && draft.languages.length) ? draft.languages : (data.profile?.languages || []),
         onboarded: true,
       },
     };
+    if (!skip && tl) {
+      const lp = { ...(nd.langProfiles || {}) };
+      lp[tl] = {
+        ...(lp[tl] || {}),
+        dream: draft.dream || "",
+        level: draft.level || "",
+        goals: draft.goals || "",
+      };
+      nd.langProfiles = lp;
+    }
     if (!skip) nd = awardPoints(50, nd);
     save(nd);
     setOnbStep(0);
+    setOnbWelcomeDone(false);
   };
 
   // ---- PROFILE ----
@@ -7799,70 +7864,143 @@ function AppInner() {
 
   if (!loaded) return <div style={{ padding: 40, textAlign: "center", color: C.txtM }}>Loading...</div>;
 
-  // Welcome / login screen if no sync code
+  // Welcome / login / signup screen if no sync code
   if (!syncId) {
     const isMobile = winW < 700;
-    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 200, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
-    return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <div style={{ width: "100%", maxWidth: isMobile ? 400 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: "center", gap: isMobile ? 16 : 32 }}>
-          {mascotImg}
-        <div style={{ width: "100%", maxWidth: 400, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "26px 22px" }}>
-          <span style={{ fontSize: 40, fontWeight: 700, color: C.txt, letterSpacing: -1, textShadow: "var(--wall-text-shadow)" }}>
-            모<span style={{ color: C.acc }}>아</span>
-          </span>
-          <div style={{ fontSize: 16, fontWeight: 500, color: C.txt, textAlign: "center", textShadow: "var(--wall-text-shadow)" }}>
-            {welcomeMode === "login" ? t.welcomeLoginTitle : welcomeMode === "create" ? t.welcomeCreateTitle : t.welcomeTitle}
-          </div>
-          <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", lineHeight: 1.7, textShadow: "var(--wall-text-shadow)" }}>
-            {welcomeMode === "login" ? t.welcomeLoginSub : welcomeMode === "create" ? t.welcomeCreateSub : t.welcomeSub}
-          </div>
-          {!welcomeMode ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-              <button onClick={() => setWelcomeMode("create")}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-                {t.welcomeCreate}
+    const wBg = "#5C3D2E";
+    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
+    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+
+    // Signup multi-step flow
+    if (welcomeMode === "create") {
+      return (
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={wPanel}>
+            {signupStep === 0 && (<>
+              <div style={{ fontSize: 24, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupNameTitle}</div>
+              <div style={{ fontSize: 15, color: "#5C3D2E", textAlign: "center" }}>{t.signupNameSub}</div>
+              <input autoFocus value={signupName} onChange={e => setSignupName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && signupName.trim() && setSignupStep(1)}
+                placeholder={t.signupNamePlaceholder}
+                style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
+                onFocus={e => { e.target.style.borderColor = C.acc; }}
+                onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
+              />
+              <button onClick={() => signupName.trim() && setSignupStep(1)} disabled={!signupName.trim()}
+                style={{ ...wBtn(true), opacity: signupName.trim() ? 1 : 0.5, cursor: signupName.trim() ? "pointer" : "default" }}>
+                {t.signupNext}
               </button>
-              <button onClick={() => setWelcomeMode("login")}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.s1, color: C.txt, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" }}>
-                {t.welcomeLogin}
+              <button onClick={() => { setWelcomeMode(null); setSignupStep(0); setSignupName(""); setSignupGender(""); setSyncInput(""); setSyncStatus(null); }}
+                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.signupBack}
               </button>
-            </div>
-          ) : (
-            <>
-              <div style={{ width: "100%", fontSize: 12, color: C.txtS, textAlign: "center" }}>
-                {welcomeMode === "login" ? t.welcomeLoginHint : t.welcomeCreateHint}
+            </>)}
+            {signupStep === 1 && (<>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#3a2a1a", textAlign: "center" }}>{t.signupGenderTitle}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                <button onClick={() => { setSignupGender("femme"); setSignupStep(2); }}
+                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "femme" ? C.acc : "#e0d5c5"}`, background: signupGender === "femme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s" }}>
+                  {t.signupGenderF}
+                </button>
+                <button onClick={() => { setSignupGender("homme"); setSignupStep(2); }}
+                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "homme" ? C.acc : "#e0d5c5"}`, background: signupGender === "homme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s" }}>
+                  {t.signupGenderM}
+                </button>
               </div>
-              <label style={{ width: "100%", fontSize: 12, fontWeight: 500, color: C.txt }}>{t.welcomeCode}</label>
-              <input
-                autoFocus
-                value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
-                onKeyDown={e => e.key === "Enter" && handleSync()}
+              <button onClick={() => setSignupStep(0)}
+                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.signupBack}
+              </button>
+            </>)}
+            {signupStep === 2 && (<>
+              <div style={{ fontSize: 22, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupKeyTitle(signupName)}</div>
+              <div style={{ fontSize: 14, color: "#5C3D2E", textAlign: "center", lineHeight: 1.6 }}>{t.signupKeySub}</div>
+              <div style={{ fontSize: 12, color: "#8B7355", textAlign: "center" }}>{t.signupKeyHint}</div>
+              <input autoFocus value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
+                onKeyDown={e => e.key === "Enter" && syncInput.trim() && handleSync()}
                 placeholder={t.welcomeCodePlaceholder}
                 disabled={syncStatus === "loading"}
-                style={{ width: "100%", boxSizing: "border-box", border: `2px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontSize: 14, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s1, outline: "none", textAlign: "center" }}
+                style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
                 onFocus={e => { e.target.style.borderColor = C.acc; }}
-                onBlur={e => { e.target.style.borderColor = C.border; }}
+                onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
               />
               <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
-                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: syncInput.trim() && syncStatus !== "loading" ? C.acc : C.s1, color: syncInput.trim() && syncStatus !== "loading" ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
-                {syncStatus === "loading" ? t.syncLoading : welcomeMode === "login" ? t.welcomeLoginAction : t.welcomeCreateAction}
+                style={{ ...wBtn(true), opacity: syncInput.trim() && syncStatus !== "loading" ? 1 : 0.5, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
+                {syncStatus === "loading" ? t.syncLoading : t.signupKeyAction}
               </button>
-              {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{welcomeMode === "login" ? t.welcomeNoAccount : t.syncError}</div>}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-                <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
-                  style={{ padding: "4px 10px", border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                  {t.back}
-                </button>
-                <span style={{ color: C.border }}>|</span>
-                <button onClick={() => { setWelcomeMode(welcomeMode === "login" ? "create" : "login"); setSyncInput(""); setSyncStatus(null); }}
-                  style={{ padding: "4px 10px", border: "none", background: "none", color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                  {welcomeMode === "login" ? t.welcomeSwitchToCreate : t.welcomeSwitchToLogin}
-                </button>
-              </div>
-            </>
-          )}
+              {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{t.syncError}</div>}
+              <button onClick={() => setSignupStep(1)}
+                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.signupBack}
+              </button>
+            </>)}
+          </div>
         </div>
+      );
+    }
+
+    // Login flow
+    if (welcomeMode === "login") {
+      return (
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={wPanel}>
+            <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
+              모<span style={{ color: C.acc }}>아</span>
+            </span>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.welcomeLoginTitle}</div>
+            <div style={{ fontSize: 13, color: "#8B7355", textAlign: "center", lineHeight: 1.6 }}>{t.welcomeLoginSub}</div>
+            <input autoFocus value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
+              onKeyDown={e => e.key === "Enter" && handleSync()}
+              placeholder={t.welcomeCodePlaceholder}
+              disabled={syncStatus === "loading"}
+              style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
+              onFocus={e => { e.target.style.borderColor = C.acc; }}
+              onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
+            />
+            <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
+              style={{ ...wBtn(true), opacity: syncInput.trim() && syncStatus !== "loading" ? 1 : 0.5, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
+              {syncStatus === "loading" ? t.syncLoading : t.welcomeLoginAction}
+            </button>
+            {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{t.welcomeNoAccount}</div>}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
+                style={{ padding: "4px 10px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                {t.back}
+              </button>
+              <span style={{ color: "#d4c4a8" }}>|</span>
+              <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); setSyncInput(""); setSyncStatus(null); }}
+                style={{ padding: "4px 10px", border: "none", background: "none", color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                {t.welcomeSwitchToCreate}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Main welcome screen (no mode selected)
+    return (
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: wBg, alignItems: "center", justifyContent: "center", padding: 24, position: "relative" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, maxWidth: 420, width: "100%", textAlign: "center" }}>
+          <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+            모<span style={{ color: "#d4a8ff" }}>아</span>
+          </span>
+          <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5, textShadow: "0 1px 8px rgba(0,0,0,0.3)" }}>
+            {t.welcomeTitle}
+          </div>
+          <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, textShadow: "0 1px 4px rgba(0,0,0,0.2)" }}>
+            {t.welcomeSub}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
+            <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); }}
+              style={{ ...wBtn(true), fontSize: 16, padding: "16px" }}>
+              {t.welcomeCreate}
+            </button>
+            <button onClick={() => setWelcomeMode("login")}
+              style={{ ...wBtn(false), fontSize: 16, padding: "16px" }}>
+              {t.welcomeLogin}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -7913,7 +8051,7 @@ function AppInner() {
     const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
     const lpLabel = { fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 8 };
     const lpSub = { fontSize: 13.5, color: C.txtS, lineHeight: 1.5, marginBottom: 12 };
-    const lpTotal = 5;
+    const lpTotal = 4;
     const lpS = langProfileStep;
     const saveLangProfile = () => {
       const lps = { ...(data.langProfiles || {}), [lpCode]: { ...langProfileDraft } };
@@ -7984,13 +8122,6 @@ function AppInner() {
               <textarea value={langProfileDraft.goals || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, goals: e.target.value })} placeholder={lpPh.goals || t.goalsPlaceholder} rows={3} style={box} />
             </div>
           )}
-          {lpS === 4 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={lpLabel}>{t.langToolsLabel}</div>
-              <div style={lpSub}>{t.langToolsSub}</div>
-              <textarea value={langProfileDraft.otherTools || ""} onChange={e => setLangProfileDraft({ ...langProfileDraft, otherTools: e.target.value })} placeholder={t.otherToolsPh} rows={3} style={box} />
-            </div>
-          )}
           {lpS > 0 && (
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
               <button onClick={lpPrev}
@@ -8013,78 +8144,90 @@ function AppInner() {
     );
   }
 
-  // Onboarding: step-by-step questions for new learners
+  // Onboarding: welcome + 6-step questionnaire for new learners
   if (!data.profile?.onboarded) {
-    const onbTotal = 4;
-    const box = { width: "100%", border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: C.txt, background: C.s1, outline: "none", lineHeight: 1.6, resize: "vertical" };
-    const onbLabel = { fontSize: 20, fontWeight: 600, color: C.txt, marginBottom: 12 };
-    const onbSub = { fontSize: 13.5, color: C.txtS, lineHeight: 1.5, marginBottom: 8 };
+    const onbTotal = 6;
+    const isMobile = winW < 700;
+    const onbBg = "#5C3D2E";
+    const onbPanel = { width: "100%", maxWidth: 440, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, background: "rgba(255,248,230,0.92)", borderRadius: 18, padding: isMobile ? "28px 20px" : "32px 28px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" };
+    const onbInput = { width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: "#3a2a1a", background: "#fff", outline: "none", lineHeight: 1.6, resize: "vertical" };
     const onbNext = () => onbStep < onbTotal - 1 ? setOnbStep(onbStep + 1) : finishOnboarding(false);
     const onbPrev = () => onbStep > 0 && setOnbStep(onbStep - 1);
-    const genderCard = (val, label) => (
-      <button key={val} onClick={() => { setOnbDraft({ ...onbDraft, gender: val }); setOnbStep(1); }}
-        style={{ flex: 1, padding: "16px 12px", borderRadius: 12, border: `2px solid ${onbDraft.gender === val ? C.acc : C.border}`, background: onbDraft.gender === val ? C.accBg : C.s2, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, color: C.txt, textAlign: "center", transition: "border-color 0.15s" }}>
-        {label}
-      </button>
-    );
-    const isMobile = winW < 700;
-    const mascotImg = <img src="/mascot.webp" alt="" style={{ width: isMobile ? 120 : 180, height: "auto", objectFit: "contain", flexShrink: 0 }} />;
-    return (
-      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: "var(--entry-bg)", alignItems: "center", justifyContent: "center", padding: 24, overflowY: "auto" }}>
-        <div style={{ width: "100%", maxWidth: isMobile ? 420 : 680, display: "flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "center" : "center", gap: isMobile ? 16 : 32 }}>
-          {mascotImg}
-          <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 18, background: "var(--entry-panel-bg)", boxShadow: "var(--entry-panel-shadow)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", borderRadius: 20, padding: "30px 22px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: 3, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.25s" }} />
+    const userName = data.profile?.name || signupName || "";
+    const userGender = data.profile?.gender || signupGender || "";
+
+    // Welcome sub-screen before the questionnaire
+    if (!onbWelcomeDone) {
+      return (
+        <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={onbPanel}>
+            <div style={{ fontSize: 26, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.3 }}>
+              {t.onbWelcomeTitle(userName)}
             </div>
-            <span style={{ fontSize: 11, color: C.txtM }}>{t.onbStep(onbStep + 1, onbTotal)}</span>
+            <div style={{ fontSize: 14, color: "#5C3D2E", textAlign: "center", lineHeight: 1.8, whiteSpace: "pre-line" }}>
+              {t.onbWelcomeSub}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
+              <button onClick={() => { setOnbDraft({ ...onbDraft, gender: userGender }); setOnbWelcomeDone(true); }}
+                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>
+                {t.onbWelcomeReady(userGender)}
+              </button>
+              <button onClick={() => { setOnbDraft({ ...onbDraft, gender: userGender }); setOnbWelcomeDone(true); }}
+                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "2px solid #e0d5c5", background: "#fff", color: "#3a2a1a", fontFamily: "'Noto Sans KR'", fontSize: 16, fontWeight: 600, cursor: "pointer" }}>
+                {t.onbWelcomeReadyKo}
+              </button>
+            </div>
           </div>
-          {onbStep === 0 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={onbLabel}>{t.genderLabel}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {genderCard("homme", t.genderM)}
-                {genderCard("femme", t.genderF)}
-                {genderCard("", t.genderNone)}
-              </div>
+        </div>
+      );
+    }
+
+    // 6-step questionnaire
+    return (
+      <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", background: onbBg, alignItems: "center", justifyContent: "center", padding: 24, position: "relative", overflowY: "auto" }}>
+        <img src="/mascot.webp" alt="" style={{ position: "absolute", top: isMobile ? 12 : 20, left: isMobile ? 12 : 20, width: isMobile ? 70 : 90, height: "auto", objectFit: "contain", opacity: 0.9 }} />
+        <div style={onbPanel}>
+          <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ flex: 1, height: 4, background: "#e0d5c5", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${((onbStep + 1) / onbTotal) * 100}%`, height: "100%", background: C.acc, transition: "width 0.3s" }} />
             </div>
-          )}
-          {onbStep === 1 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={onbLabel}>{t.ageLabel}</div>
-              <input type="number" min="1" max="120" value={onbDraft.age} onChange={e => setOnbDraft({ ...onbDraft, age: e.target.value })} placeholder={t.agePlaceholder} style={{ ...box, fontSize: 18 }} />
-            </div>
-          )}
-          {onbStep === 2 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={onbLabel}>{t.nationalityLabel}</div>
-              <input value={onbDraft.nationality} onChange={e => setOnbDraft({ ...onbDraft, nationality: e.target.value })} placeholder={t.nationalityPlaceholder} style={box} />
-            </div>
-          )}
-          {onbStep === 3 && (
-            <div style={{ marginTop: 12 }}>
-              <div style={onbLabel}>{t.spokenLangsLabel}</div>
-              <div style={onbSub}>{t.spokenLangsSub}</div>
-              <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.acc, background: "rgba(123,127,245,0.12)", padding: "3px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{onbStep + 1} / {onbTotal}</span>
+          </div>
+          {onbStep === 0 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ1}</div>
+            <textarea value={onbDraft.dream} onChange={e => setOnbDraft({ ...onbDraft, dream: e.target.value })} placeholder={t.onbQ1ph} rows={3} style={onbInput} />
+          </>)}
+          {onbStep === 1 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ2}</div>
+            <textarea value={onbDraft.level} onChange={e => setOnbDraft({ ...onbDraft, level: e.target.value })} placeholder={t.onbQ2ph} rows={2} style={onbInput} />
+          </>)}
+          {onbStep === 2 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ3}</div>
+            <textarea value={onbDraft.goals} onChange={e => setOnbDraft({ ...onbDraft, goals: e.target.value })} placeholder={t.onbQ3ph} rows={2} style={onbInput} />
+          </>)}
+          {onbStep === 3 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ4}</div>
+            <input type="date" value={onbDraft.birthDate} onChange={e => setOnbDraft({ ...onbDraft, birthDate: e.target.value })} placeholder={t.onbQ4ph} style={{ ...onbInput, fontSize: 16 }} />
+          </>)}
+          {onbStep === 4 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ5}</div>
+            <LanguagesTable value={onbDraft.languages} onChange={rows => setOnbDraft({ ...onbDraft, languages: rows })} t={t} />
+          </>)}
+          {onbStep === 5 && (<>
+            <div style={{ fontSize: 17, fontWeight: 600, color: "#3a2a1a", textAlign: "center", lineHeight: 1.5, marginTop: 8 }}>{t.onbQ6}</div>
+            <textarea value={onbDraft.interests} onChange={e => setOnbDraft({ ...onbDraft, interests: e.target.value })} placeholder={t.onbQ6ph} rows={3} style={onbInput} />
+          </>)}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", marginTop: 4 }}>
+            <button onClick={onbNext}
+              style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer" }}>
+              {onbStep < onbTotal - 1 ? t.signupNext : t.onbFinishBtn}
+            </button>
             {onbStep > 0 && (
               <button onClick={onbPrev}
-                style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                {"←"}
+                style={{ width: "100%", padding: "10px", borderRadius: 12, border: "none", background: "rgba(0,0,0,0.05)", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, cursor: "pointer" }}>
+                {t.signupBack}
               </button>
             )}
-            <button onClick={onbNext}
-              style={{ flex: 1, padding: "13px", borderRadius: 10, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, cursor: "pointer" }}>
-              {onbStep < onbTotal - 1 ? t.onbNext : t.onbFinish}
-            </button>
-            <button onClick={() => finishOnboarding(true)}
-              style={{ padding: "12px 16px", borderRadius: 10, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-              {t.onbSkip}
-            </button>
-          </div>
           </div>
         </div>
       </div>

@@ -28,11 +28,11 @@ export default async function handler(req, res) {
 
     // resources: pedagogical explanation pages. examples: real occurrences of the exact
     // structure (quoted phrase) as used by native speakers. lyrics: song lyrics containing the word.
-    var lyricsKeyword = targetLang === 'Korean' ? '가사' : targetLang === 'Japanese' ? '歌詞' : 'lyrics'
+    var lyricsKeyword = targetLang === 'Korean' ? '가사 노래' : targetLang === 'Japanese' ? '歌詞 曲' : 'lyrics song'
     var exampleContext = targetLang === 'Korean' ? '네이버 블로그 지식인 커뮤니티' : 'blog forum community'
     var exampleExclude = '-site:dict.naver.com -site:ko.dict.naver.com -site:papago.naver.com -site:translate.google.com -site:wordreference.com -site:reverso.net -site:linguee.com -site:glosbe.com -site:wiktionary.org -site:dict.cc -site:krdict.korean.go.kr -site:krdic.naver.com'
     var query = isLyrics
-      ? '"' + structure + '" ' + lyricsKeyword
+      ? structure + ' ' + lyricsKeyword
       : isExamples
       ? '"' + structure + '" ' + exampleContext + ' ' + exampleExclude
       : structure + ' ' + targetLang + ' grammar meaning usage explanation'
@@ -77,8 +77,9 @@ export default async function handler(req, res) {
 
     var results
     if (isLyrics) {
-      var lyricsSites = mapped.filter(function (it) { return /lyrics|genius|musixmatch|azlyrics|colorcodedlyrics|klyrics|가사/i.test(it.uri + ' ' + it.title + ' ' + it.snippet) })
-      results = (lyricsSites.length ? lyricsSites : mapped).slice(0, 6)
+      var lyricsPattern = /lyrics|genius\.com|musixmatch|azlyrics|colorcodedlyrics|klyrics|가사|노래|song|music|album|MV|뮤직비디오|youtube\.com/i
+      var lyricsSites = mapped.filter(function (it) { return lyricsPattern.test(it.uri + ' ' + it.title + ' ' + it.snippet) })
+      results = lyricsSites.slice(0, 6)
     } else if (isExamples) {
       // Filter out dictionary / translation sites that aren't native usage.
       var dictPattern = /dict\.naver|papago|translate\.google|wordreference|reverso\.net|linguee|glosbe|wiktionary|dict\.cc|krdict|krdic|endic\.naver|jisho\.org|tangorin/i

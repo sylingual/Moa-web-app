@@ -2078,7 +2078,7 @@ async function findRealExamples(card, lang, tlCode) {
 async function findSongLyrics(card, lang, tlCode) {
   const structure = card.korean.trim();
   const TL = getTargetLangName(tlCode, "en");
-  const lyricsWord = tlCode === "ko" ? "가사" : "lyrics";
+  const lyricsWord = tlCode === "ko" ? "가사 노래" : "lyrics song";
 
   const curatedFallback = () => {
     const q = encodeURIComponent(structure + " " + lyricsWord);

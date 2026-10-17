@@ -11926,7 +11926,7 @@ function AppInner() {
                 </>;
               })()}
 
-              <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic" }}>
+              <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic", paddingBottom: 60 }}>
                 💡 {t.profileAutoUpdate}
               </div>
 

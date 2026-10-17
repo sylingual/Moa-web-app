@@ -177,7 +177,9 @@ const T = {
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
     imgPickTitle: "Comment veux-tu ajouter une image ?", imgPickUpload: "Importer", imgPickPaste: "Coller", imgPickSearch: "Chercher en ligne",
-    imgPickHint: "JPG, PNG, WebP",
+    imgPickHint: "Types de fichiers acceptes : JPG, PNG, WebP", imgPickMaxSize: "Taille max : 1 Mo",
+    imgPickBack: "Retour au recap", imgPickChange: "Changer l'image", imgPickAddMore: "Ajouter une image",
+    imgTooLarge: "Image trop lourde (max 1 Mo)",
     cardImages: "Images de la carte", imgReplaceTitle: "2 images déjà — laquelle remplacer ?", imgMain: "Principale", imgSwap: "Changer l'ordre", imgRemove: "Retirer l'image", imgReplaceCancel: "Annuler",
     studyChooseTitle: "Comment veux-tu étudier ce mot ?",
     studyLesson: "Leçon complète", studyLessonDesc: "Découverte guidée, questions, exemples",
@@ -621,7 +623,9 @@ const T = {
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
     imgPickTitle: "How do you want to add an image?", imgPickUpload: "Upload", imgPickPaste: "Paste", imgPickSearch: "Search online",
-    imgPickHint: "JPG, PNG, WebP",
+    imgPickHint: "Accepted file types: JPG, PNG, WebP", imgPickMaxSize: "Max size: 1 MB",
+    imgPickBack: "Back to recap", imgPickChange: "Change image", imgPickAddMore: "Add an image",
+    imgTooLarge: "Image too large (max 1 MB)",
     cardImages: "Card images", imgReplaceTitle: "2 images already — which one to replace?", imgMain: "Main", imgSwap: "Reorder", imgRemove: "Remove image", imgReplaceCancel: "Cancel",
     studyChooseTitle: "How do you want to study this word?",
     studyLesson: "Full lesson", studyLessonDesc: "Guided discovery, questions, examples",
@@ -1065,7 +1069,9 @@ const T = {
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
     imgPickTitle: "이미지를 어떻게 추가할래?", imgPickUpload: "올리기", imgPickPaste: "붙여넣기", imgPickSearch: "온라인 검색",
-    imgPickHint: "JPG, PNG, WebP",
+    imgPickHint: "허용되는 파일 형식: JPG, PNG, WebP", imgPickMaxSize: "최대 크기: 1 MB",
+    imgPickBack: "복습으로 돌아가기", imgPickChange: "이미지 변경", imgPickAddMore: "이미지 추가",
+    imgTooLarge: "이미지가 너무 커요 (최대 1 MB)",
     cardImages: "카드 이미지", imgReplaceTitle: "이미지가 이미 2개야, 어떤 걸 바꿀래?", imgMain: "메인", imgSwap: "순서 바꾸기", imgRemove: "이미지 제거", imgReplaceCancel: "취소",
     studyChooseTitle: "이 단어를 어떻게 공부할래?",
     studyLesson: "전체 레슨", studyLessonDesc: "가이드 학습, 질문, 예문",
@@ -7334,6 +7340,9 @@ function AppInner() {
   };
 
   const compressAndAttach = (file) => {
+    if (file.size > 1024 * 1024) {
+      setFlash(t.imgTooLarge); setTimeout(() => setFlash(null), 2500); return;
+    }
     const card = imgUploadCtxRef.current === "recap" ? recapCard : lCard;
     if (!card) return;
     const img = new Image();
@@ -7351,9 +7360,9 @@ function AppInner() {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
       attachImage(card.korean, { thumb: dataUrl, url: dataUrl, link: "" });
       if (imgUploadCtxRef.current === "recap") {
-        setRecapConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
+        setRecapConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true, imgPickThumb: dataUrl } : x));
       } else {
-        setConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true } : x));
+        setConv(prev => prev.map(x => x.imgPick ? { ...x, imgPickDone: true, imgPickThumb: dataUrl } : x));
       }
     };
     img.onerror = () => { URL.revokeObjectURL(url); setFlash("Image illisible"); setTimeout(() => setFlash(null), 2000); };
@@ -9380,6 +9389,22 @@ function AppInner() {
                           <button onClick={() => { setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); startRecapAction("imageSearch"); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
                         </div>
                         <div style={{ fontSize: 10, color: C.txtS, marginTop: 4 }}>{t.imgPickHint}</div>
+                        <div style={{ fontSize: 10, color: C.txtS, marginTop: 2 }}>{t.imgPickMaxSize}</div>
+                      </div>
+                    )}
+                    {m.imgPick && m.imgPickDone && m.imgPickThumb && (
+                      <div style={{ marginTop: 6, marginLeft: 30 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                          <img src={m.imgPickThumb} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}` }} />
+                          <span style={{ fontSize: 12, color: C.ok, fontFamily: "'Plus Jakarta Sans'" }}>✓ {t.imgAdded}</span>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button onClick={() => setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickChange}</button>
+                          {recapCard && (recapCard.images || []).length < 2 && (
+                            <button onClick={() => setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickAddMore}</button>
+                          )}
+                          <button onClick={() => setRecapConv(prev => prev.map((x, j) => j === i ? { ...x, imgPick: false } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickBack}</button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -9974,6 +9999,22 @@ function AppInner() {
                             <button onClick={() => { setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: true } : x)); quickAct("imageSearch"); }} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>🔍 {t.imgPickSearch}</button>
                           </div>
                           <div style={{ fontSize: 10, color: C.txtS, marginTop: 4 }}>{t.imgPickHint}</div>
+                          <div style={{ fontSize: 10, color: C.txtS, marginTop: 2 }}>{t.imgPickMaxSize}</div>
+                        </div>
+                      )}
+                      {m.imgPick && m.imgPickDone && m.imgPickThumb && (
+                        <div style={{ marginTop: 6, marginLeft: 30 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                            <img src={m.imgPickThumb} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}` }} />
+                            <span style={{ fontSize: 12, color: C.ok, fontFamily: "'Plus Jakarta Sans'" }}>✓ {t.imgAdded}</span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <button onClick={() => setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickChange}</button>
+                            {lCard && (lCard.images || []).length < 2 && (
+                              <button onClick={() => setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPickDone: false, imgPickThumb: null } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt }}>{t.imgPickAddMore}</button>
+                            )}
+                            <button onClick={() => setConv(prev => prev.map((x, j) => j === i ? { ...x, imgPick: false } : x))} style={{ padding: "7px 12px", borderRadius: 8, border: `1px solid ${C.acc}`, background: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.onAcc }}>{t.imgPickBack}</button>
+                          </div>
                         </div>
                       )}
                     </div>

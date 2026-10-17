@@ -5873,6 +5873,7 @@ function AppInner() {
   const [exGrammarVocabTag, setExGrammarVocabTag] = useState(null);
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
+  const autoSelectedKo = useRef(false);
 
   // Profile
   const [profileDraft, setProfileDraft] = useState(null);
@@ -8382,10 +8383,8 @@ function AppInner() {
   }
 
   // Auto-select Korean if no target language chosen yet (skip language selection screen)
-  useEffect(() => {
-    if (syncId && (!tl || enabledTLs.length === 0)) addTargetLang("ko");
-  }, [syncId, tl, enabledTLs.length]);
   if (!tl || enabledTLs.length === 0) {
+    if (syncId && !autoSelectedKo.current) { autoSelectedKo.current = true; setTimeout(() => addTargetLang("ko"), 0); }
     return <div style={{ padding: 40, textAlign: "center", color: C.txtM }}>Loading...</div>;
   }
 

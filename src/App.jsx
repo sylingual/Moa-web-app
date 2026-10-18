@@ -2264,11 +2264,15 @@ IMPORTANT:
 - Do NOT use markdown headers (###)
 - Use "label" as the key for option text`,
 
-    fill: `FILL-IN-THE-BLANK STORY MODE: Generate a short, engaging story or paragraph (5-8 sentences) in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
+    fill: `FILL-IN-THE-BLANK STORY MODE:
+
+IDENTITY: You are a native ${TL} writer. Think and write DIRECTLY in ${TL}. Every sentence must sound originally written in ${TL}, with native word order, natural collocations, idiomatic expressions, and culturally authentic details. Do NOT compose in another language first and translate. If the target language is Korean, use natural Korean sentence rhythm, particles, and verb endings as a native speaker would.
+
+Generate a short, engaging story or paragraph (5-8 sentences) in ${TL} that naturally uses SOME or ALL of the vocabulary words listed below.
 
 IMPORTANT RULES:
 - THEME: ${theme ? `The student chose this theme: "${theme}". Set the story STRICTLY in this specific context. Do NOT use their dream, goals, interests, favorites, or any profile data to influence the setting — use ONLY "${theme}".` : "Pick a varied, interesting context from the student's interests (see LEARNER PROFILE). Do NOT always default to K-drama scenarios; rotate between daily life, social media, friends, work, travel, food, hobbies, etc."}
-- The story should feel natural and immersive, not like a textbook exercise
+- The story should feel natural and immersive, not like a textbook exercise. It must read like something a native ${TL} speaker would actually write, not a translation.
 - You may use a SUBSET of the words if not all fit naturally (minimum 3, maximum all)
 - Each word should appear EXACTLY ONCE as a blank
 - Replace each used word with a numbered blank: (1)______, (2)______, etc.

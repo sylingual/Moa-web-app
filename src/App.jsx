@@ -5845,6 +5845,7 @@ function AppInner() {
   // Lesson
   const [lCard, setLCard] = useState(null);
   const [lessonOrigin, setLessonOrigin] = useState(null);
+  const goalReturnIdRef = useRef(null);
   const [lArticle, setLArticle] = useState(null);
   const [conv, setConv] = useState([]);
   const [lLoad, setLLoad] = useState(false);
@@ -7070,7 +7071,16 @@ function AppInner() {
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
-    if (target === "goals") { setGoalView("list"); setGoalEditId(null); setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false); }
+    if (target === "goals") {
+      const returnId = goalReturnIdRef.current;
+      if (returnId && (view === "lesson" || view === "exercise")) {
+        goalReturnIdRef.current = null;
+        setGoalEditId(returnId); setGoalView("detail");
+      } else {
+        setGoalView("list"); setGoalEditId(null);
+      }
+      setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false);
+    }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
     if (!historyNavRef.current) {
@@ -7080,10 +7090,20 @@ function AppInner() {
     setView(target);
   };
 
+  const returnToOrigin = () => {
+    const dest = lessonOrigin || "library";
+    if (dest === "goals" && goalReturnIdRef.current) {
+      setGoalEditId(goalReturnIdRef.current); setGoalView("detail");
+      goalReturnIdRef.current = null;
+    }
+    setView(dest);
+  };
+
   // Open a card the normal way: recap screen when it has past summaries, else a fresh lesson.
   const openCardFresh = (c) => {
     const origin = view === "goals" ? "goals" : view;
     setLessonOrigin(origin);
+    goalReturnIdRef.current = (view === "goals" && goalView === "detail") ? goalEditId : null;
     window.history.replaceState({ view: origin, goalView: view === "goals" ? goalView : undefined, goalEditId: view === "goals" ? goalEditId : undefined }, "");
     const effectiveStatus = migrateStatus(c.status);
     // An already-studied/acquired card always opens the recap MENU first (consistent, and
@@ -7757,7 +7777,20 @@ function AppInner() {
   const goals = data.goals || [];
   const todayKey = dayKey();
   const scheduledGoals = goals.filter(g => !g.trophyDate && g.startDate && g.startDate > todayKey);
-  const activeGoals = goals.filter(g => !g.trophyDate && !(g.startDate && g.startDate > todayKey));
+  const activeGoals = goals.filter(g => !g.trophyDate && !(g.startDate && g.startDate > todayKey)).sort((a, b) => {
+    const isDone = (goal) => {
+      const ts = (data.goalToday || {})[goal.id];
+      if (!ts) return false;
+      const disc = (ts.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+      const prac = (ts.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+      if (disc.length + prac.length === 0) return false;
+      const td = todayKey;
+      const dD = disc.filter(c => { const s = migrateStatus(c.status); if (s === "studied" || s === "acquired") return true; const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(td)); }).length;
+      const pD = prac.filter(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(td)) || (c.reviewDates || []).includes(td); }).length;
+      return dD >= disc.length && pD >= prac.length;
+    };
+    return (isDone(a) ? 1 : 0) - (isDone(b) ? 1 : 0);
+  });
   const trophyGoals = goals.filter(g => g.trophyDate);
 
   const goalProgress = (goal) => {
@@ -10386,7 +10419,7 @@ function AppInner() {
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                               🔄 {lang === "fr" ? "Réessayer" : lang === "ko" ? "다시 시도" : "Retry"}
                             </button>
-                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setView(lessonOrigin || "library"); }}
+                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); returnToOrigin(); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
                               ← {lang === "fr" ? "Quitter" : lang === "ko" ? "닫기" : "Close"}
                             </button>
@@ -10445,7 +10478,7 @@ function AppInner() {
                               style={{ padding: "6px 16px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                               ✏️ {t.moreExercises}
                             </button>
-                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set()); setView(lessonOrigin || "library"); }}
+                            <button onClick={() => { setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); setPendingDerived([]); setDerivedSel(new Set()); returnToOrigin(); }}
                               style={{ padding: "6px 16px", borderRadius: 6, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
                               ← {lessonOrigin === "goals" ? t.backToGoals : t.backToLibrary}
                             </button>
@@ -10842,7 +10875,7 @@ function AppInner() {
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ▶ {t.newExercise}
                         </button>
-                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); setView(lessonOrigin || "library"); }}
+                        <button onClick={() => { setExOn(false); setExConv([]); setExDone(false); setExStep("category"); setExCategory(null); returnToOrigin(); }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.borderS}`, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, cursor: "pointer" }}>
                           {lessonOrigin === "goals" ? t.backToGoals : ("📚 " + t.backToLibrary)}
                         </button>

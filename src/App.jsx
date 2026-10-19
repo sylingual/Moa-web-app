@@ -6139,7 +6139,6 @@ function AppInner() {
       save({ ...data, profile: { ...profileDraft } });
       setSavedFieldKey(changedKey);
       setProfileSavedMsg(true);
-      setTimeout(() => setProfileSavedMsg(false), 2000);
     }, 700);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6154,7 +6153,6 @@ function AppInner() {
       save({ ...data, langProfiles: { ...(data.langProfiles || {}), [tl]: { ...langProfDraft } } });
       setSavedFieldKey(changedKey ? `lp_${changedKey}` : null);
       setProfileSavedMsg(true);
-      setTimeout(() => setProfileSavedMsg(false), 2000);
     }, 700);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6611,7 +6609,6 @@ function AppInner() {
     if (!profileDraft) return;
     save({ ...data, profile: { ...profileDraft } });
     setProfileSavedMsg(true);
-    setTimeout(() => setProfileSavedMsg(false), 2600);
   };
 
   // ---- IMPORT ----
@@ -7068,6 +7065,7 @@ function AppInner() {
         }
       }
       if (nd !== data) save(nd);
+      setProfileSavedMsg(false); setSavedFieldKey(null);
     }
     if (target === "import") setImpStep("input");
     if (target === "exercise" && !skipExResetRef.current) { setExStep("category"); setExCategory(null); setExOn(false); }
@@ -12159,7 +12157,6 @@ function AppInner() {
                     save(nd);
                     setShowDetailed(false);
                     setProfileSavedMsg(true);
-                    setTimeout(() => setProfileSavedMsg(false), 2000);
                   }}
                     style={{ padding: "10px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
                     {data.profile?.detailedDone ? t.saveProfile : t.saveAndEarn}

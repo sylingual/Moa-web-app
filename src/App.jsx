@@ -284,7 +284,7 @@ const T = {
     langDreamLabel: "Raconte-moi ton rêve le plus fou ✨",
     langDreamSub: "Qu'est-ce qui te donnerait des frissons si tu le réalisais en coréen ?",
     langDreamBtn: "대박 (Daebak) ! Enregistre mon rêve",
-    langLevelLabel: "Où en es-tu aujourd'hui ? 🧗",
+    langLevelLabel: "Ton niveau actuel en coréen 🧗",
     langLevelSub: "Génial, ensemble on va accomplir de grandes choses ! As-tu déjà fait tes premiers pas en coréen ?",
     langGoalsLabel: "Tes grands défis du moment 🎯",
     langGoalsSub: "Un cap ou un défi particulier à franchir dans les prochains mois ?",
@@ -762,7 +762,7 @@ const T = {
     langDreamLabel: "Tell me your wildest dream ✨",
     langDreamSub: "What would give you chills if you could do it in Korean?",
     langDreamBtn: "Daebak! Save my dream",
-    langLevelLabel: "Where are you today? 🧗",
+    langLevelLabel: "Your current Korean level 🧗",
     langLevelSub: "Amazing, together we'll accomplish great things! Have you already taken your first steps in Korean?",
     langGoalsLabel: "Your big challenges right now 🎯",
     langGoalsSub: "Any particular milestone to reach in the coming months?",
@@ -1239,7 +1239,7 @@ const T = {
     langDreamLabel: "한국어로 이루고 싶은 가장 큰 꿈은 무엇인가요? ✨",
     langDreamSub: "생각만 해도 가슴 뛰는 꿈을 들려주세요!",
     langDreamBtn: "대박! 내 꿈 저장하기",
-    langLevelLabel: "현재 한국어 실력은 어느 정도인가요? 🧗",
+    langLevelLabel: "현재 한국어 레벨 🧗",
     langLevelSub: "좋아요, 함께라면 할 수 있어요! 이전에도 한국어를 공부한 적이 있나요?",
     langGoalsLabel: "특별히 이루고 싶은 목표가 있나요? 🎯",
     langGoalsSub: "앞으로 몇 달 동안 달성하고 싶은 목표를 알려주세요.",
@@ -7391,15 +7391,12 @@ function AppInner() {
           ? currentProfile.interests + "\n" + insights.interests
           : insights.interests;
       }
-      if (insights.level) {
-        currentLp.level = currentLp.level
-          ? currentLp.level + " | " + summary.date + ": " + insights.level
-          : insights.level;
-      }
-      if (insights.notes) {
+      if (insights.level || insights.notes) {
+        const parts = [insights.level, insights.notes].filter(Boolean).join(" ");
+        const entry = summary.date + ": " + parts;
         currentLp.notes = currentLp.notes
-          ? currentLp.notes + "\n" + insights.notes
-          : insights.notes;
+          ? currentLp.notes + "\n" + entry
+          : entry;
       }
       currentLangProfiles[tl] = currentLp;
       // Create derived cards with parent link
@@ -12307,13 +12304,6 @@ function AppInner() {
                     <textarea value={langProfDraft.goals || ""} onChange={e => setLangProfDraft({ ...langProfDraft, goals: e.target.value })}
                       placeholder={tlPh.goals || t.goalsPlaceholder} rows={2} style={fieldStyle} />
                     {savedTag("lp_goals")}
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: C.txt, display: "block", marginBottom: 5 }}>{t.langToolsLabel}</label>
-                    <textarea value={langProfDraft.otherTools || ""} onChange={e => setLangProfDraft({ ...langProfDraft, otherTools: e.target.value })}
-                      placeholder={t.otherToolsPh} rows={2} style={fieldStyle} />
-                    {savedTag("lp_otherTools")}
                   </div>
 
                   <div>

@@ -7737,6 +7737,7 @@ function AppInner() {
   const [goalImpProgress, setGoalImpProgress] = useState(null);
   const goalCardListRef = useRef(null);
   const goalScrollRef = useRef(null);
+  const goalPicksRef = useRef(null);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -8058,10 +8059,13 @@ function AppInner() {
   }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (goalImpStep === "picks" && goalScrollRef.current) {
-      setTimeout(() => { const el = goalScrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, 100);
+    if (goalImpStep === "picks" && goalImpFound.length > 0) {
+      setTimeout(() => {
+        if (goalPicksRef.current) goalPicksRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        else if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;
+      }, 250);
     }
-  }, [goalImpStep]);
+  }, [goalImpStep, goalImpFound.length]);
 
   const markGoalImpKnown = (i) => {
     const v = goalImpFound[i], nk = new Set(goalImpKnown);
@@ -11069,7 +11073,7 @@ function AppInner() {
                       </div>
                     )}
                     {goalImpStep === "picks" && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div ref={goalPicksRef} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
                         <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1 }}>
                           {goalImpFound.map((v, i) => {
@@ -11398,7 +11402,7 @@ function AppInner() {
                           {goalImpStep === "ocr" && <div className="pulse" style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 10 }}>{t.goalImportOcr}</div>}
                           {goalImpStep === "scanning" && <div className="pulse" style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 10 }}>{t.goalImportScanning}{goalImpProgress ? ` (${goalImpProgress.current}/${goalImpProgress.total})` : ""}</div>}
                           {goalImpStep === "picks" && goalImpFound.length > 0 && (
-                            <div>
+                            <div ref={goalPicksRef}>
                               <div style={{ fontSize: 12, fontWeight: 500, color: C.txt, marginBottom: 6 }}>{t.bulkPickTitle} ({goalImpFound.length})</div>
                               <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto", marginBottom: 8 }}>
                                 {goalImpFound.map((v, i) => { const on = goalImpSel.has(i); return (

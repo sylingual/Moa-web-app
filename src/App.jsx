@@ -377,10 +377,12 @@ const T = {
     goalPickSub: "Choisis les cartes à associer à cet objectif.",
     goalImportScreenshots: "Importer des screenshots",
     goalImportPaste: "ou coller une image (Ctrl+V)",
+    goalImportTextPh: "Colle un texte en langue cible ici...",
     goalImportOcr: "Lecture des images...",
     goalImportScanning: "Analyse en cours...",
     goalImportConfirm: "Ajouter à l'objectif",
     goalImportCancel: "Annuler l'import",
+    or: "ou",
     goalOverdue: "En retard",
     goalActive: "En cours",
     generating: "Génération du résumé...",
@@ -852,10 +854,12 @@ const T = {
     goalPickSub: "Choose cards to associate with this goal.",
     goalImportScreenshots: "Import screenshots",
     goalImportPaste: "or paste an image (Ctrl+V)",
+    goalImportTextPh: "Paste target language text here...",
     goalImportOcr: "Reading images...",
     goalImportScanning: "Analyzing...",
     goalImportConfirm: "Add to goal",
     goalImportCancel: "Cancel import",
+    or: "or",
     goalOverdue: "Overdue",
     goalActive: "Active",
     generating: "Generating summary...",
@@ -1325,10 +1329,12 @@ const T = {
     goalPickSub: "이 목표에 연결할 카드를 골라 봐.",
     goalImportScreenshots: "스크린샷 가져오기",
     goalImportPaste: "또는 이미지 붙여넣기 (Ctrl+V)",
+    goalImportTextPh: "학습 언어 텍스트를 여기에 붙여넣어...",
     goalImportOcr: "이미지 읽는 중...",
     goalImportScanning: "분석 중...",
     goalImportConfirm: "목표에 추가",
     goalImportCancel: "가져오기 취소",
+    or: "또는",
     goalOverdue: "기한 초과",
     goalActive: "진행 중",
     generating: "요약 생성 중...",
@@ -7735,6 +7741,7 @@ function AppInner() {
   const [goalEditingStartDate, setGoalEditingStartDate] = useState(false);
   const [goalDeadlinePopup, setGoalDeadlinePopup] = useState(null);
   const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
+  const [goalImpText, setGoalImpText] = useState("");
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
   const [goalImpFound, setGoalImpFound] = useState([]);
   const [goalImpSel, setGoalImpSel] = useState(new Set());
@@ -8033,6 +8040,31 @@ function AppInner() {
       setGoalImpStep("picks");
     } catch (err) {
       console.error("Goal import error:", err);
+      alert(err.message);
+      setGoalImpStep(null);
+    }
+  };
+
+  const processGoalText = async () => {
+    const text = goalImpText.trim();
+    if (!text) return;
+    setGoalImpStep("scanning");
+    setGoalImpProgress(null);
+    try {
+      const items = dedupeExtracted(
+        await analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
+        data.cards
+      );
+      setGoalImpProgress(null);
+      const merged = [...goalImpFound];
+      for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
+      setGoalImpFound(merged);
+      setGoalImpSel(new Set(merged.map((_, i) => i)));
+      setGoalImpKnown(new Set());
+      setGoalImpStep("picks");
+      setGoalImpText("");
+    } catch (err) {
+      console.error("Goal text import error:", err);
       alert(err.message);
       setGoalImpStep(null);
     }
@@ -11058,15 +11090,28 @@ function AppInner() {
                     )}
                   </div>
 
-                  {/* Screenshot import */}
+                  {/* Text + screenshot import */}
                   <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
                     {!goalImpStep && (
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <textarea value={goalImpText} onChange={e => setGoalImpText(e.target.value)} placeholder={t.goalImportTextPh}
+                          style={{ width: "100%", height: 100, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
+                          onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
+                          onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                        <button onClick={processGoalText} disabled={!goalImpText.trim()}
+                          style={{ padding: "7px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
+                          ✨ {t.goalImportText}
+                        </button>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ flex: 1, height: 1, background: C.border }} />
+                          <span style={{ fontSize: 10.5, color: C.txtM }}>{t.or || "ou"}</span>
+                          <div style={{ flex: 1, height: 1, background: C.border }} />
+                        </div>
                         <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 8, border: `2px dashed ${C.borderS}`, background: C.s1, color: C.txtS, fontSize: 12.5, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", width: "100%", justifyContent: "center" }}>
                           📷 {t.goalImportScreenshots}
                           <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
                         </label>
-                        <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
+                        <div style={{ fontSize: 11, color: C.txtM, textAlign: "center" }}>{t.goalImportPaste}</div>
                       </div>
                     )}
                     {goalImpStep === "ocr" && (
@@ -11398,12 +11443,25 @@ function AppInner() {
                         </div>
                         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>
                           {!goalImpStep && (
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              <textarea value={goalImpText} onChange={e => setGoalImpText(e.target.value)} placeholder={t.goalImportTextPh}
+                                style={{ width: "100%", height: 80, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
+                                onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
+                                onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                              <button onClick={processGoalText} disabled={!goalImpText.trim()}
+                                style={{ padding: "6px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
+                                ✨ {t.goalImportText}
+                              </button>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ flex: 1, height: 1, background: C.border }} />
+                                <span style={{ fontSize: 10.5, color: C.txtM }}>{t.or}</span>
+                                <div style={{ flex: 1, height: 1, background: C.border }} />
+                              </div>
+                              <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", justifyContent: "center" }}>
                                 📷 {t.goalImportScreenshots}
                                 <input type="file" accept="image/*" multiple onChange={onGoalImagePick} style={{ display: "none" }} />
                               </label>
-                              <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
+                              <div style={{ fontSize: 11, color: C.txtM, textAlign: "center" }}>{t.goalImportPaste}</div>
                             </div>
                           )}
                           {goalImpStep === "ocr" && <div className="pulse" style={{ fontSize: 12, color: C.txtM, textAlign: "center", padding: 10 }}>{t.goalImportOcr}</div>}

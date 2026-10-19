@@ -245,6 +245,7 @@ const T = {
     onbWelcomeSub: "Ici, tu auras un environnement idéal pour rendre ton apprentissage du coréen efficace, agréable et mémorable dans la durée.\n\nPour cela, j'ai quelques petites questions à te poser.",
     onbWelcomeReady: (gender) => gender === "femme" ? "Je suis prête !" : "Je suis prêt !",
     onbWelcomeReadyKo: "가자!!",
+    onbSkipToMenu: "Revenir au menu principal",
     onbQ1: "Raconte-moi ton rêve le plus fou ✨ Qu'est-ce qui te donnerait des frissons si tu le réalisais en coréen ?",
     onbQ1ph: "ex: Discuter des heures avec mes beaux-parents sans traducteur. Lire Han Kang en version originale. Faire un stand-up en coréen, draguer BTS...",
     onbQ2: "Super. Et où en es-tu aujourd'hui ?",
@@ -720,6 +721,7 @@ const T = {
     onbWelcomeSub: "Here, you'll have the ideal environment to make your Korean learning effective, enjoyable, and memorable over time.\n\nFor that, I have a few questions for you.",
     onbWelcomeReady: (gender) => gender === "femme" ? "I'm ready!" : "I'm ready!",
     onbWelcomeReadyKo: "가자!!",
+    onbSkipToMenu: "Back to main menu",
     onbQ1: "Tell me your wildest dream ✨ What would give you chills if you could do it in Korean?",
     onbQ1ph: "e.g. Chat for hours with my in-laws without a translator. Read Han Kang in the original. Do stand-up in Korean, flirt with BTS...",
     onbQ2: "Great. Where are you at today?",
@@ -1195,6 +1197,7 @@ const T = {
     onbWelcomeSub: "여기서 한국어 학습을 효과적이고, 즐겁고, 오래 기억에 남도록 만들어 줄 이상적인 환경이 준비되어 있어.\n\n그러기 위해 몇 가지 질문이 있어.",
     onbWelcomeReady: () => "준비됐어!",
     onbWelcomeReadyKo: "가자!!",
+    onbSkipToMenu: "메인 메뉴로 돌아가기",
     onbQ1: "가장 멋진 꿈을 들려줘 ✨ 한국어로 이룬다면 소름 돋을 것 같은 게 뭐야?",
     onbQ1ph: "예: 시부모님과 통역 없이 몇 시간이고 이야기하기. 한강 작가의 원서 읽기. 한국어로 스탠드업 하기, BTS한테 작업 걸기...",
     onbQ2: "좋아. 지금 어느 정도야?",
@@ -8550,6 +8553,10 @@ function AppInner() {
                 {t.onbWelcomeReadyKo}
               </button>
             </div>
+            <button onClick={() => finishOnboarding(true)}
+              style={{ marginTop: 8, padding: "8px 16px", background: "none", border: "none", color: "#9a8a7a", fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+              {t.onbSkipToMenu}
+            </button>
           </div>
         )}
 

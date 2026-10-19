@@ -4067,7 +4067,7 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
   const [awarded, setAwarded] = useState(false);
   const done = pairs.length > 0 && matched.size === pairs.length;
 
-  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(pairs.map(p => p.id)); } }, [done, awarded, onComplete, pairs]);
 
   const pick = (id, side) => {
     if (matched.has(id)) return;
@@ -4139,7 +4139,7 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
   const [awarded, setAwarded] = useState(false);
   const done = initial.length > 0 && queue.length === 0;
 
-  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(initial.map(i => i.id)); } }, [done, awarded, onComplete, initial]);
 
   const answer = (isKnown) => {
     const current = queue[0];
@@ -4254,7 +4254,7 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
   const [awarded, setAwarded] = useState(false);
   const done = initial.length > 0 && queue.length === 0;
 
-  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(initial.map(i => i.id)); } }, [done, awarded, onComplete, initial]);
 
   const check = () => {
     if (!input.trim()) return;
@@ -4349,7 +4349,7 @@ function GenderExercise({ cards, tFont, t, lang, onComplete, onExit }) {
   }, []);
 
   const done = items && idx >= items.length;
-  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [done, awarded, onComplete]);
+  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(items.map(i => i.id)); } }, [done, awarded, onComplete, items]);
 
   const answer = (picked) => {
     const item = items[idx];
@@ -4676,7 +4676,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
 
   const allCorrect = cw.placed.length > 0 && Object.keys(cw.sol).every(k => (vals[k] || "") === cw.sol[k]);
   const solved = checked && allCorrect;
-  useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(); } }, [solved, awarded, onComplete]);
+  useEffect(() => { if (solved && !awarded) { setAwarded(true); onComplete && onComplete(cw.placed.map(p => p.id)); } }, [solved, awarded, onComplete, cw.placed]);
 
   useEffect(() => {
     const scrollToFocused = () => {
@@ -5867,6 +5867,7 @@ function AppInner() {
   const [exCategory, setExCategory] = useState(null);
   const [exStep, setExStep] = useState("category");
   const [exSel, setExSel] = useState(new Set());
+  const exActiveIdsRef = useRef([]);
   const [exConv, setExConv] = useState([]);
   const [exLoad, setExLoad] = useState(false);
   const [exInp, setExInp] = useState("");
@@ -8146,13 +8147,17 @@ function AppInner() {
   const launchEx = async (theme) => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
     trackEvent("exercise_start", { exercise_type: exMode, card_count: sel.length, category: exCategory, due_filter: exDueOnly, theme: theme || null });
-    // Non-AI exercises render their own component; no generation call.
-    if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
+    // Non-AI exercises render their own component; components report actually-used ids via onComplete.
+    if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { exActiveIdsRef.current = []; setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
+    // Limit cards sent to AI so only practised cards are credited.
+    const aiMax = (exMode === "qcm" || exMode === "topik") ? 6 : (exMode === "story") ? 8 : 10;
+    const aiSel = sel.length > aiMax ? shuffle([...sel]).slice(0, aiMax) : sel;
+    exActiveIdsRef.current = aiSel.map(c => c.id);
     // Sentence-based grammar exercises use their own UI
     if (exMode === "reorder" || exMode === "drill" || exMode === "fixit") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
       const vocabWords = exGrammarVocab.length > 0 ? allCards.filter(c => exGrammarVocab.includes(c.id)).map(c => c.korean) : [];
-      try { const r = await genExercise(sel, exMode, lang, context, tl, theme, vocabWords); setFillData(r); }
+      try { const r = await genExercise(aiSel, exMode, lang, context, tl, theme, vocabWords); setFillData(r); }
       catch (e) { console.error("launchEx " + exMode + " error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
       setExLoad(false); setExTheme(null); setExGrammarVocab([]); setExGrammarVocabTag(null);
       return;
@@ -8160,13 +8165,13 @@ function AppInner() {
     // Fill modes use interactive word-bank UI
     if (exMode === "fill" || exMode === "dialoguefill") {
       setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-      try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setFillData(r); }
+      try { const r = await genExercise(aiSel, exMode, lang, context, tl, theme); setFillData(r); }
       catch (e) { console.error("launchEx fill error:", e); setFillData(null); setExConv([aiError(e, () => launchEx(theme))]); }
       setExLoad(false); setExTheme(null);
       return;
     }
     setExOn(true); setExLoad(true); setExDone(false); setFillData(null);
-    try { const r = await genExercise(sel, exMode, lang, context, tl, theme); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
+    try { const r = await genExercise(aiSel, exMode, lang, context, tl, theme); setExConv([{ role: "ai", content: r.message, options: r.options || null, selected: null }]); }
     catch (e) { console.error("launchEx error:", e); setExConv([aiError(e, () => launchEx(theme))]); }
     setExLoad(false);
   };
@@ -8177,14 +8182,15 @@ function AppInner() {
     const nc = [...exConv]; nc[i] = { ...nc[i], selected: opt.label };
     const u = [...nc, { role: "user", content: opt.label }]; setExConv(u); setExLoad(true);
     try {
-      const sel = exerciseCards.filter(c => exSel.has(c.id));
+      const activeIds = exActiveIdsRef.current;
+      const sel = exerciseCards.filter(c => activeIds.includes(c.id));
       const questionCount = exMode === "topik"
         ? u.filter(m => m.role === "ai" && m.options && m.options.length > 0).length
         : u.filter(m => m.role === "ai").length;
       const wasLast = questionCount >= 3;
       const r = await continueExercise(sel, exMode, lang, u, isRight, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
-      if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
+      if (wasLast) { setExDone(true); completeExercise(exMode, activeIds); }
     }
     catch (e) { console.error("exOpt error:", e); setExConv([...u, aiError(e)]); }
     setExLoad(false);
@@ -8193,7 +8199,7 @@ function AppInner() {
   const topikNextQuestion = async () => {
     setExLoad(true);
     try {
-      const sel = exerciseCards.filter(c => exSel.has(c.id));
+      const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
       const r = await continueExercise(sel, exMode, lang, exConv, null, tl, true);
       setExConv([...exConv, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
     } catch (e) { console.error("topikNext error:", e); setExConv([...exConv, aiError(e)]); }
@@ -8204,14 +8210,15 @@ function AppInner() {
     if (!exInp.trim()) return; const m = exInp.trim(); setExInp(""); setExLoad(true);
     const u = [...exConv, { role: "user", content: m }]; setExConv(u);
     try {
-      const sel = exerciseCards.filter(c => exSel.has(c.id));
+      const activeIds = exActiveIdsRef.current;
+      const sel = exerciseCards.filter(c => activeIds.includes(c.id));
       const isFill = exMode === "fill" || exMode === "dialoguefill";
       const wasLast = exMode === "topik" ? false
         : isFill ? u.filter(msg => msg.role === "user").length >= 1
         : u.filter(msg => msg.role === "ai").length >= 3;
       const r = await continueExercise(sel, exMode, lang, u, null, tl);
       setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
-      if (wasLast) { setExDone(true); completeExercise(exMode, sel.map(c => c.id)); }
+      if (wasLast) { setExDone(true); completeExercise(exMode, activeIds); }
     } catch (e) { console.error("exSend error:", e); setExConv([...u, aiError(e)]); }
     setExLoad(false);
   };
@@ -10712,28 +10719,28 @@ function AppInner() {
                 })()}
               </div>
             ) : exMode === "match" ? (
-              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("match", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <MatchExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("match", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "cross" ? (
-              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("cross", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
+              <div style={{ flex: 1, position: "relative" }}><CrosswordExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("cross", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} /></div>
             ) : exMode === "gender" ? (
               <GenderExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang}
-                onComplete={() => completeExercise("gender", [...exSel])}
+                onComplete={(ids) => completeExercise("gender", ids)}
                 onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "flash" ? (
-              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("flash", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("flash", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
-              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={() => completeExercise("imgwrite", [...exSel])} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("imgwrite", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "reorder" && fillData ? (
               <ReorderExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
-                onComplete={(ids) => completeExercise("reorder", ids)}
+                onComplete={() => completeExercise("reorder", exActiveIdsRef.current)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "drill" && fillData ? (
               <DrillExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
-                onComplete={(ids) => completeExercise("drill", ids)}
+                onComplete={() => completeExercise("drill", exActiveIdsRef.current)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "fixit" && fillData ? (
               <FixItExercise data={fillData} cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} lang={lang} tl={tl}
-                onComplete={(ids) => completeExercise("fixit", ids)}
+                onComplete={() => completeExercise("fixit", exActiveIdsRef.current)}
                 onExit={() => { setExOn(false); setFillData(null); setExStep("category"); setExCategory(null); }} />
             ) : (exMode === "reorder" || exMode === "drill" || exMode === "fixit") && exLoad ? (
               <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>

@@ -7082,7 +7082,9 @@ function AppInner() {
       save({ ...data, cards: [...data.cards, card] });
     }
     setLCard(existing || card); setLArticle(text); setConv([]); setLLoad(true);
-    window.history.replaceState({ view: viewRef.current }, "");
+    const gv = goalReturnIdRef.current ? "detail" : undefined;
+    const ge = goalReturnIdRef.current || undefined;
+    window.history.replaceState({ view: viewRef.current, goalView: gv, goalEditId: ge }, "");
     window.history.pushState({ view: "lesson" }, ""); setView("lesson");
     setLessonDone(false); setLessonSummary(null); setShowRecap(false); setRecapCard(null);
     try { const r = await startSocratic(card, text, lang, context, tl); setConv([{ role: "ai", content: r.message, options: r.options, selected: null }]); }
@@ -7250,7 +7252,9 @@ function AppInner() {
     // Open the recap screen so the translation/summary is shown right away.
     setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp("");
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
-    window.history.replaceState({ view: viewRef.current }, "");
+    const gv = goalReturnIdRef.current ? "detail" : undefined;
+    const ge = goalReturnIdRef.current || undefined;
+    window.history.replaceState({ view: viewRef.current, goalView: gv, goalEditId: ge }, "");
     window.history.pushState({ view: "lesson" }, ""); setView("lesson");
   };
 

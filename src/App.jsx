@@ -1932,16 +1932,37 @@ Return JSON:
   return parseJSON((await callAI(sys, `Original excerpt:\n${excerpt}\n\nStudent's reformulation:\n${userText}`, 1000)).text);
 }
 
-async function startSocratic(card, article, lang, context, tlCode) {
+function collectInterests(data, tlCode) {
+  const p = tlCode ? getEffectiveProfile(data, tlCode) : (data.profile || {});
+  const items = [];
+  if (p.favFilms) items.push(p.favFilms);
+  if (p.favMusic) items.push(p.favMusic);
+  if (p.favSports) items.push(p.favSports);
+  if (p.favFood) items.push(p.favFood);
+  if (p.favBooks) items.push(p.favBooks);
+  if (p.favHobbies) items.push(p.favHobbies);
+  if (p.dreamJobs) items.push(p.dreamJobs);
+  if (p.interests) p.interests.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(s => items.push(s));
+  if (p.dream) items.push(p.dream);
+  return items;
+}
+
+async function startSocratic(card, article, lang, context, tlCode, interestPool) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const d = lang === "fr" ? card.description_fr : (card.description_en || card.description_fr);
+  const picks = (interestPool && interestPool.length > 0)
+    ? shuffle([...interestPool]).slice(0, 2)
+    : [];
+  const themeDirective = picks.length > 0
+    ? `\nTHEME FOR THIS LESSON: Base your 2 example sentences on these specific topics: ${picks.join(", ")}. Do NOT default to movies/cinema/drama unless it is one of the listed topics. Be creative and varied.`
+    : "";
   const sys = `You are a warm, encouraging ${TL} language teacher who uses the Socratic method. You NEVER explain a rule directly. Instead, you guide the student to discover it themselves through observation and pattern recognition.
 
 ${context}
 METHODOLOGY:
 1. Start by showing the target structure highlighted in a sentence from the article. Briefly set the scene so the student understands the context.
-2. Then show 2 NEW example sentences (not from the article) that use the same structure in different contexts. If you know the student's interests (see LEARNER PROFILE above), draw examples from those topics. Choose examples where the meaning of the structure becomes obvious from context.
+2. Then show 2 NEW example sentences (not from the article) that use the same structure in different contexts. Each example MUST be set in a different topic from the student's interests. Do NOT reuse the same theme for both examples. Choose examples where the meaning of the structure becomes obvious from context.${themeDirective}
 3. Ask ONE multiple-choice question that tests whether the student has grasped the core meaning or nuance. The question should be about what the structure conveys emotionally or functionally, not about grammar terminology.
 
 PERSONALIZATION:
@@ -2019,7 +2040,7 @@ async function continueChat(card, conv, action, lang) {
   };
 
   const acts = {
-    examples: `The student wants more examples. Give 2-3 NEW example sentences using the structure "${card.korean}" in varied, real-life contexts. If you know their interests from the conversation or profile, tailor examples to those topics. For each example, write the sentence, then the ${L} translation on the next line. After the examples, ask a new question to check understanding. Include MCQ options if appropriate.`,
+    examples: `The student wants more examples. Give 2-3 NEW example sentences using the structure "${card.korean}" in varied, real-life contexts. Each example MUST use a DIFFERENT topic from the student's interests (see LEARNER PROFILE). Do NOT reuse the same theme across examples, and do NOT default to movies/cinema unless it was specifically listed. For each example, write the sentence, then the ${L} translation on the next line. After the examples, ask a new question to check understanding. Include MCQ options if appropriate.`,
     
     exercise: `The student wants a practice exercise. Create a fill-in-the-blank or sentence-building exercise that requires using "${card.korean}". Give a context sentence in ${L}, then ask the student to complete or translate it into Korean using the structure. If you include MCQ options, use "label" as the key name.`,
     
@@ -7087,7 +7108,8 @@ function AppInner() {
     window.history.replaceState({ view: viewRef.current, goalView: gv, goalEditId: ge }, "");
     window.history.pushState({ view: "lesson" }, ""); setView("lesson");
     setLessonDone(false); setLessonSummary(null); setShowRecap(false); setRecapCard(null);
-    try { const r = await startSocratic(card, text, lang, context, tl); setConv([{ role: "ai", content: r.message, options: r.options, selected: null }]); }
+    const interests = collectInterests(data, tl);
+    try { const r = await startSocratic(card, text, lang, context, tl, interests); setConv([{ role: "ai", content: r.message, options: r.options, selected: null }]); }
     catch (e) {
       console.error("startSocratic error:", e);
       setConv([{

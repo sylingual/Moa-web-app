@@ -113,6 +113,13 @@ const T = {
     exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
+    flashSetupTitle: "Options d'entraînement",
+    flashDirLabel: "Direction", flashDirRecto: "Recto", flashDirRectoDesc: "Coréen → sens",
+    flashDirVerso: "Verso", flashDirVersoDesc: "Sens → coréen",
+    flashDirBoth: "Recto / Verso", flashDirBothDesc: "Les deux directions",
+    flashInputLabel: "Mode de réponse", flashInputRecog: "Reconnaissance", flashInputRecogDesc: "Retourne la carte",
+    flashInputWrite: "Écrire", flashInputWriteDesc: "Tape la réponse",
+    flashBonusPoints: "bonus", flashTypeAnswer: "Tape ta réponse", flashWrong: (w) => `C'était : ${w}`,
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
     imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
     exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
@@ -591,6 +598,13 @@ const T = {
     exDialogueFill: "Dialogue fill-in", exDialogueFillDesc: "Complete a generated dialogue with chosen words.",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
+    flashSetupTitle: "Training options",
+    flashDirLabel: "Direction", flashDirRecto: "Front", flashDirRectoDesc: "Korean → meaning",
+    flashDirVerso: "Back", flashDirVersoDesc: "Meaning → Korean",
+    flashDirBoth: "Front / Back", flashDirBothDesc: "Both directions",
+    flashInputLabel: "Answer mode", flashInputRecog: "Recognition", flashInputRecogDesc: "Flip the card",
+    flashInputWrite: "Write", flashInputWriteDesc: "Type the answer",
+    flashBonusPoints: "bonus", flashTypeAnswer: "Type your answer", flashWrong: (w) => `It was: ${w}`,
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
     imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
     exNeedImages: "Not enough words with images for this exercise (pick some others).",
@@ -1070,6 +1084,13 @@ const T = {
     exDialogueFill: "대화 빈칸 채우기", exDialogueFillDesc: "생성된 대화의 빈칸을 선택한 단어로 채워 봐.",
     flashKnow: "알아", flashReview: "복습", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k}개 알고 있고, ${r}개 복습 필요`,
     flashDone: "복습 수고했어!", flashRemaining: (n) => `${n}개 남았어`,
+    flashSetupTitle: "연습 옵션",
+    flashDirLabel: "방향", flashDirRecto: "앞면", flashDirRectoDesc: "한국어 → 뜻",
+    flashDirVerso: "뒷면", flashDirVersoDesc: "뜻 → 한국어",
+    flashDirBoth: "앞/뒷면", flashDirBothDesc: "양방향",
+    flashInputLabel: "답변 방식", flashInputRecog: "인식", flashInputRecogDesc: "카드 뒤집기",
+    flashInputWrite: "쓰기", flashInputWriteDesc: "답 입력하기",
+    flashBonusPoints: "보너스", flashTypeAnswer: "답을 입력해", flashWrong: (w) => `정답은: ${w}`,
     exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
     imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
     exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
@@ -4132,29 +4153,44 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 }
 
-// #69 — Flashcard (Quizlet-style): show Korean front, flip to reveal definition + example.
-function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
+// #69 — Flashcard: supports recto (KR→meaning), verso (meaning→KR), both; recognition or write mode.
+function FlashcardExercise({ cards, tFont, t, direction = "recto", inputMethod = "recognition", onComplete, onExit }) {
   const initial = useMemo(() => {
     const d = cards.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
       id: c.id, kr: c.korean, def: (c.description || "").trim(),
       ex: (c.example || "").trim(), exTr: (c.exampleTranslation || c.exTranslation || "").trim(),
       img: (c.images && c.images[0]) ? (c.images[0].thumb || c.images[0].url) : null,
     }));
-    return shuffle(d);
-  }, [cards]);
+    if (direction === "both") {
+      const items = [];
+      d.forEach(c => { items.push({ ...c, side: "recto" }); items.push({ ...c, side: "verso" }); });
+      return shuffle(items);
+    }
+    return shuffle(d.map(c => ({ ...c, side: direction })));
+  }, [cards, direction]);
+
   const [queue, setQueue] = useState(() => [...initial]);
   const [flipped, setFlipped] = useState(false);
   const [knownSet, setKnownSet] = useState(() => new Set());
   const [awarded, setAwarded] = useState(false);
+  const [typedInput, setTypedInput] = useState("");
+  const [writeResult, setWriteResult] = useState(null);
   const done = initial.length > 0 && queue.length === 0;
 
-  useEffect(() => { if (done && !awarded) { setAwarded(true); onComplete && onComplete(initial.map(i => i.id)); } }, [done, awarded, onComplete, initial]);
+  useEffect(() => {
+    if (done && !awarded) {
+      setAwarded(true);
+      const uniqueIds = [...new Set(initial.map(i => i.id))];
+      onComplete && onComplete(uniqueIds);
+    }
+  }, [done, awarded, onComplete, initial]);
 
-  const answer = (isKnown) => {
+  const advance = (isKnown) => {
     const current = queue[0];
-    setFlipped(false);
+    const key = current.id + "_" + current.side;
+    setFlipped(false); setTypedInput(""); setWriteResult(null);
     if (isKnown) {
-      setKnownSet(s => { const n = new Set(s); n.add(current.id); return n; });
+      setKnownSet(s => { const n = new Set(s); n.add(key); return n; });
       setQueue(q => q.slice(1));
     } else {
       setQueue(q => {
@@ -4165,7 +4201,16 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
       });
     }
   };
-  const restart = () => { setQueue(shuffle([...initial])); setFlipped(false); setKnownSet(new Set()); setAwarded(false); };
+
+  const checkWrite = () => {
+    if (!typedInput.trim()) return;
+    const card = queue[0];
+    const expected = card.side === "recto" ? card.def : card.kr;
+    const correct = typedInput.trim() === expected.trim();
+    setWriteResult(correct ? "ok" : "wrong");
+  };
+
+  const restart = () => { setQueue(shuffle([...initial])); setFlipped(false); setKnownSet(new Set()); setAwarded(false); setTypedInput(""); setWriteResult(null); };
 
   if (!initial.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
@@ -4186,56 +4231,103 @@ function FlashcardExercise({ cards, tFont, t, onComplete, onExit }) {
   );
 
   const card = queue[0];
+  const isRecto = card.side === "recto";
+  const front = isRecto ? card.kr : card.def;
+  const back = isRecto ? card.def : card.kr;
+  const frontFont = isRecto ? tFont : "'Plus Jakarta Sans'";
+  const backFont = isRecto ? "'Plus Jakarta Sans'" : tFont;
   const remaining = queue.length;
+  const totalItems = initial.length;
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🃏 {t.exFlash} · {t.flashProgress(knownSet.size, initial.length)}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: C.txt }}>🃏 {t.exFlash} · {t.flashProgress(knownSet.size, totalItems)}</span>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 20 }}>
-        <div onClick={() => setFlipped(f => !f)} style={{
-          width: "100%", maxWidth: 380, minHeight: 220, borderRadius: 16, cursor: "pointer", perspective: 800,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{
-            width: "100%", minHeight: 220, position: "relative", transformStyle: "preserve-3d",
-            transition: "transform 0.45s ease", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        {inputMethod === "recognition" ? (<>
+          <div onClick={() => setFlipped(f => !f)} style={{
+            width: "100%", maxWidth: 380, minHeight: 220, borderRadius: 16, cursor: "pointer", perspective: 800,
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <div style={{
-              position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
-              borderRadius: 16, border: `2px solid ${C.border}`, background: C.s1, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              width: "100%", minHeight: 220, position: "relative", transformStyle: "preserve-3d",
+              transition: "transform 0.45s ease", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
             }}>
-              <div style={{ fontSize: 32, fontFamily: tFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{card.kr}</div>
-              <div style={{ fontSize: 12, color: C.txtM, marginTop: 8 }}>tap to flip</div>
-            </div>
-            <div style={{
-              position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
-              borderRadius: 16, border: `2px solid ${C.acc}`, background: C.accBg, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
-            }}>
-              {card.img && <img src={card.img} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10, marginBottom: 4 }} />}
-              <div style={{ fontSize: 24, fontFamily: tFont, fontWeight: 600, color: C.txt }}>{card.kr}</div>
-              <div style={{ fontSize: 14, color: C.txt, textAlign: "center", lineHeight: 1.6 }}>{card.def}</div>
-              {card.ex && <div style={{ fontSize: 13, color: C.txtM, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>{card.ex}</div>}
-              {card.exTr && <div style={{ fontSize: 12, color: C.txtS, textAlign: "center", lineHeight: 1.4 }}>{card.exTr}</div>}
+              <div style={{
+                position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
+                borderRadius: 16, border: `2px solid ${C.border}`, background: C.s1, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              }}>
+                <div style={{ fontSize: 11, color: C.txtS, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1 }}>{isRecto ? "한국어" : t.flashDirVersoDesc}</div>
+                <div style={{ fontSize: 32, fontFamily: frontFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{front}</div>
+                <div style={{ fontSize: 12, color: C.txtM, marginTop: 8 }}>tap to flip</div>
+              </div>
+              <div style={{
+                position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
+                transform: "rotateY(180deg)",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+                borderRadius: 16, border: `2px solid ${C.acc}`, background: C.accBg, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              }}>
+                {isRecto && card.img && <img src={card.img} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10, marginBottom: 4 }} />}
+                <div style={{ fontSize: 24, fontFamily: backFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{back}</div>
+                {isRecto && card.ex && <div style={{ fontSize: 13, color: C.txtM, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>{card.ex}</div>}
+                {isRecto && card.exTr && <div style={{ fontSize: 12, color: C.txtS, textAlign: "center", lineHeight: 1.4 }}>{card.exTr}</div>}
+                {!isRecto && card.ex && <div style={{ fontSize: 13, color: C.txtM, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>{card.ex}</div>}
+              </div>
             </div>
           </div>
-        </div>
-        {flipped && (
-          <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-            <button onClick={() => answer(false)} style={{
-              padding: "10px 28px", borderRadius: 10, border: `1px solid ${C.warn}`, background: C.warnBg,
-              color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
-            }}>{t.flashReview}</button>
-            <button onClick={() => answer(true)} style={{
-              padding: "10px 28px", borderRadius: 10, border: "none", background: C.ok,
-              color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
-            }}>{t.flashKnow}</button>
+          {flipped && (
+            <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+              <button onClick={() => advance(false)} style={{
+                padding: "10px 28px", borderRadius: 10, border: `1px solid ${C.warn}`, background: C.warnBg,
+                color: C.warn, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
+              }}>{t.flashReview}</button>
+              <button onClick={() => advance(true)} style={{
+                padding: "10px 28px", borderRadius: 10, border: "none", background: C.ok,
+                color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
+              }}>{t.flashKnow}</button>
+            </div>
+          )}
+        </>) : (<>
+          <div style={{
+            width: "100%", maxWidth: 380, minHeight: 160, borderRadius: 16,
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
+            border: `2px solid ${C.border}`, background: C.s1, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+          }}>
+            <div style={{ fontSize: 11, color: C.txtS, fontWeight: 500, textTransform: "uppercase", letterSpacing: 1 }}>{isRecto ? "한국어" : t.flashDirVersoDesc}</div>
+            <div style={{ fontSize: 32, fontFamily: frontFont, fontWeight: 600, color: C.txt, textAlign: "center" }}>{front}</div>
           </div>
-        )}
+          <div style={{ fontSize: 12, color: C.txtS }}>{t.flashTypeAnswer}</div>
+          <input
+            value={typedInput}
+            onChange={e => setTypedInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { writeResult ? advance(writeResult === "ok") : checkWrite(); } }}
+            disabled={!!writeResult}
+            autoFocus
+            style={{
+              width: "100%", maxWidth: 300, padding: "10px 14px", borderRadius: 10,
+              border: `2px solid ${writeResult === "ok" ? C.ok : writeResult === "wrong" ? C.warn : C.border}`,
+              fontFamily: isRecto ? "'Plus Jakarta Sans'" : tFont, fontSize: 18, textAlign: "center",
+              outline: "none", background: writeResult === "ok" ? C.okBg : writeResult === "wrong" ? C.warnBg : "#fff", color: C.txt,
+            }}
+          />
+          {writeResult === "ok" && <div style={{ fontSize: 14, color: C.ok, fontWeight: 600 }}>✓ {t.imgWriteCorrect}</div>}
+          {writeResult === "wrong" && <div style={{ fontSize: 14, color: C.warn, fontWeight: 500 }}>{t.flashWrong(back)}</div>}
+          {!writeResult ? (
+            <button onClick={checkWrite} disabled={!typedInput.trim()} style={{
+              padding: "8px 22px", borderRadius: 8, border: "none",
+              background: typedInput.trim() ? C.acc : C.s1, color: typedInput.trim() ? C.onAcc : C.txtM,
+              fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: typedInput.trim() ? "pointer" : "default",
+            }}>{t.imgWriteCheck}</button>
+          ) : (
+            <button onClick={() => advance(writeResult === "ok")} style={{
+              padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc,
+              fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            }}>{t.imgWriteNext}</button>
+          )}
+        </>)}
       </div>
       <div style={{ padding: "6px 14px", borderTop: `1px solid ${C.border}`, display: "flex", justifyContent: "center", gap: 16, fontSize: 11, color: C.txtM, flexShrink: 0 }}>
         <span style={{ color: C.ok }}>✓ {knownSet.size}</span>
@@ -5887,6 +5979,8 @@ function AppInner() {
   const [exTheme, setExTheme] = useState(null);
   const [exGrammarVocab, setExGrammarVocab] = useState([]);
   const [exGrammarVocabTag, setExGrammarVocabTag] = useState(null);
+  const [flashDir, setFlashDir] = useState("recto");
+  const [flashInput, setFlashInput] = useState("recognition");
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
   const autoSelectedKo = useRef(false);
@@ -8198,7 +8292,13 @@ function AppInner() {
   const completeExercise = (mode, cardIds) => {
     trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
     const result = recordExerciseProgress(data, cardIds, mode);
-    let nd = awardPoints(15, result.data);
+    let pts = 15;
+    if (mode === "flash") {
+      const dirMul = flashDir === "both" ? 1.5 : 1;
+      const inputMul = flashInput === "write" ? 2 : 1;
+      pts = Math.round(15 * dirMul * inputMul);
+    }
+    let nd = awardPoints(pts, result.data);
     if (result.autoAcquiredIds.length > 0) {
       setProgressToast(t.progressAutoAcquired);
       setTimeout(() => setProgressToast(null), 4000);
@@ -10720,6 +10820,7 @@ function AppInner() {
                         if (exSel.size === 0) return;
                         if (exMode === "topik") { setExTheme(null); setExGrammarVocab([]); launchEx(null); }
                         else if (exMode === "fill" || exMode === "dialoguefill" || exMode === "story" || exMode === "reorder" || exMode === "drill" || exMode === "fixit") { setExTheme(null); setExGrammarVocab([]); setExStep("theme"); }
+                        else if (exMode === "flash") { setExStep("flashSetup"); }
                         else launchEx();
                       }} disabled={exSel.size === 0}
                         style={{ padding: "8px 22px", borderRadius: 6, border: "none", alignSelf: "flex-end", background: exSel.size > 0 ? C.acc : C.s1, color: exSel.size > 0 ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: exSel.size > 0 ? "pointer" : "default" }}>
@@ -10727,6 +10828,67 @@ function AppInner() {
                       </button>
                     )}
                   </>); })()}
+                </>)}
+                {exStep === "flashSetup" && (<>
+                  <button onClick={() => setExStep("cards")}
+                    style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                    ← {t.back}
+                  </button>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginTop: 8, textAlign: "center" }}>🃏 {t.flashSetupTitle}</div>
+                  <div style={{ marginTop: 16, width: "100%", maxWidth: 340 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txtM, marginBottom: 8 }}>{t.flashDirLabel}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {[
+                        { k: "recto", label: t.flashDirRecto, desc: t.flashDirRectoDesc, bonus: false },
+                        { k: "verso", label: t.flashDirVerso, desc: t.flashDirVersoDesc, bonus: false },
+                        { k: "both", label: t.flashDirBoth, desc: t.flashDirBothDesc, bonus: true },
+                      ].map(o => (
+                        <button key={o.k} onClick={() => setFlashDir(o.k)} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "10px 14px", borderRadius: 10,
+                          border: `2px solid ${flashDir === o.k ? C.acc : C.border}`,
+                          background: flashDir === o.k ? C.accBg : C.s2,
+                          cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", textAlign: "left",
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{o.label}</div>
+                            <div style={{ fontSize: 11, color: C.txtM }}>{o.desc}</div>
+                          </div>
+                          {o.bonus && <span style={{ fontSize: 10, fontWeight: 600, color: C.acc, background: C.accBg, padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>+50% {t.flashBonusPoints}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 16, width: "100%", maxWidth: 340 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txtM, marginBottom: 8 }}>{t.flashInputLabel}</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {[
+                        { k: "recognition", label: t.flashInputRecog, desc: t.flashInputRecogDesc, bonus: false },
+                        { k: "write", label: t.flashInputWrite, desc: t.flashInputWriteDesc, bonus: true },
+                      ].map(o => (
+                        <button key={o.k} onClick={() => setFlashInput(o.k)} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "10px 14px", borderRadius: 10,
+                          border: `2px solid ${flashInput === o.k ? C.acc : C.border}`,
+                          background: flashInput === o.k ? C.accBg : C.s2,
+                          cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", textAlign: "left",
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{o.label}</div>
+                            <div style={{ fontSize: 11, color: C.txtM }}>{o.desc}</div>
+                          </div>
+                          {o.bonus && <span style={{ fontSize: 10, fontWeight: 600, color: C.acc, background: C.accBg, padding: "2px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>x2 {t.flashBonusPoints}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button onClick={() => launchEx()} style={{
+                    marginTop: 20, padding: "10px 28px", borderRadius: 10, border: "none",
+                    background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'",
+                    fontSize: 14, fontWeight: 600, cursor: "pointer",
+                  }}>
+                    ▶ {t.launchEx}
+                  </button>
                 </>)}
                 {exStep === "theme" && (() => {
                   const allThemes = t.fillThemes || [];
@@ -10798,7 +10960,7 @@ function AppInner() {
                 onComplete={(ids) => completeExercise("gender", ids)}
                 onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "flash" ? (
-              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("flash", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
+              <FlashcardExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} direction={flashDir} inputMethod={flashInput} onComplete={(ids) => completeExercise("flash", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "imgwrite" ? (
               <ImageWriteExercise cards={exerciseCards.filter(c => exSel.has(c.id))} tFont={tFont} t={t} onComplete={(ids) => completeExercise("imgwrite", ids)} onExit={() => { setExOn(false); setExStep("category"); setExCategory(null); }} />
             ) : exMode === "reorder" && fillData ? (

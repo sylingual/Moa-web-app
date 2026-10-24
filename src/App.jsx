@@ -9511,41 +9511,6 @@ function AppInner() {
                     🏷 {bulkTagMode ? t.bulkTagDone : t.bulkTagBtn}
                   </button>
                 )}
-                {filteredCards.some(c => c.type === "vocab" && !c.pos) && !batchPosRunning && (
-                  <button onClick={async () => {
-                    setBatchPosRunning(true);
-                    const vocabCards = filteredCards.filter(c => c.type === "vocab" && !c.pos);
-                    let detected = 0;
-                    for (let i = 0; i < vocabCards.length; i += 10) {
-                      const batch = vocabCards.slice(i, i + 10);
-                      setBatchPosProgress({ current: i, total: vocabCards.length });
-                      try {
-                        const results = await detectPartOfSpeech(batch, tl);
-                        if (results && Array.isArray(results)) {
-                          setData(prev => {
-                            const nd = { ...prev, cards: prev.cards.map(c => {
-                              const r = results.find(r => r.word === c.korean);
-                              if (!r || !r.pos) return c;
-                              return { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) };
-                            })};
-                            saveData(nd, syncId);
-                            return nd;
-                          });
-                          detected += results.filter(r => r.pos === "verb" || r.pos === "adjective").length;
-                        }
-                      } catch (e) { console.error("Batch POS error:", e); }
-                    }
-                    setBatchPosProgress(null);
-                    setBatchPosRunning(false);
-                    alert(t.batchPosDone(detected));
-                  }}
-                    style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                    🔍 {t.batchPosDetect}
-                  </button>
-                )}
-                {batchPosRunning && batchPosProgress && (
-                  <span style={{ fontSize: 11, color: C.acc, fontFamily: "'Plus Jakarta Sans'" }}>{t.batchPosProgress(batchPosProgress.current, batchPosProgress.total)}</span>
-                )}
               </div>
             </div>
             {filteredCards.length === 0

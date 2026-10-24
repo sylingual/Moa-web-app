@@ -111,7 +111,8 @@ const T = {
     exDictation: "Dictée", exDictationDesc: "Écoute le mot ou la phrase et écris-le.",
     exYouglish: "Vidéo en contexte", exYouglishDesc: "Voir le mot utilisé dans une vraie vidéo.",
     exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
-    exMakeSentence: "Fais une phrase", exMakeSentenceDesc: "Construis une phrase avec 1 ou 2 mots. L'IA t'aide à t'auto-corriger.",
+    exMakeSentence: "Fais une phrase", exMakeSentenceDesc: "Construis une phrase avec 1 ou 2 mots. L'IA t'aide a t'auto-corriger.",
+    makeSentencePrompt: (words) => `Ecris une phrase en utilisant ${words.length > 1 ? "les mots" : "le mot"} : ${words.join(", ")}`,
     makeSentenceAnother: "Encore une phrase", makeSentenceFinish: "Finir l'exercice", makeSentenceMax: "2 cartes maximum",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
@@ -154,10 +155,10 @@ const T = {
     progressReviews: (n, r) => `${n}/${r} révision${n > 1 ? "s" : ""}`,
     progressNextReview: "Prochaine révision recommandée",
     progressNextDays: (n) => n === 0 ? "aujourd'hui" : n === 1 ? "demain" : `dans ${n} jour${n > 1 ? "s" : ""}`,
-    progressCanPractice: "Vous pouvez néanmoins vous entraîner aujourd'hui.",
-    progressJustDiscovered: "Tu viens de découvrir cette carte. Je te conseille d'attendre un peu avant de la réviser, mais tu peux déjà t'exercer si tu veux.",
-    progressAlreadyDone: "Vous vous êtes déjà entraîné aujourd'hui, mais vous pouvez réviser encore si vous voulez.",
-    progressRestAdvised: "Vous vous êtes déjà entraîné récemment, alors je vous conseille d'attendre et de vous reposer l'esprit. Mais vous pouvez réviser quand même si vous voulez.",
+    progressCanPractice: "Tu peux quand meme t'entrainer aujourd'hui.",
+    progressJustDiscovered: "Tu viens de decouvrir cette carte. Je te conseille d'attendre un peu avant de la reviser, mais tu peux deja t'exercer si tu veux.",
+    progressAlreadyDone: "Tu t'es deja entraine aujourd'hui, mais tu peux reviser encore si tu veux.",
+    progressRestAdvised: "Tu t'es deja entraine recemment, alors je te conseille d'attendre et de te reposer l'esprit. Mais tu peux reviser quand meme si tu veux.",
     progressNextPast: "En retard",
     progressAcquired: "Acquise !",
     progressAutoAcquired: "Carte acquise ! Répétition espacée terminée.",
@@ -205,7 +206,7 @@ const T = {
     selAnalyze: "Analyser", selAnalyzing: "Analyse en cours...", selPickTitle: "Vocab et grammaire trouvés", selPickAdd: "Ajouter la sélection", selPickNone: "Rien de nouveau trouvé", selPickVocab: "Vocab", selPickGrammar: "Grammaire",
     myExamples: "Mes exemples", myExamplesInfo: "Si tu trouves des exemples d’utilisation de ce mot, ajoute-les par toi-même ici", myExamplesAdd: "Ajouter un exemple", myExamplesPh: "Ex : 오늘 날씨가 좋아요",
     topikNext: "Question suivante ▶",
-    yourAnswer: "Votre réponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
+    yourAnswer: "Ta reponse...", askQuestion: "Une question ? Pose-la ici.", grammar: "Grammaire", expression: "Expression",
     points: "points", toReview: "à revoir", acq: "acquis",
     noCards: "Aucune carte pour le moment. Importe un texte pour commencer !",
     placeholder: "큰아이는 요즘 자기가 원하는 게 생기면\n\"엄마, 나 이거 사도 돼요?\"라고 꼭 허락을 구한다...",
@@ -605,6 +606,7 @@ const T = {
     exYouglish: "Video in context", exYouglishDesc: "See the word used in a real video.",
     exDialogueFill: "Dialogue fill-in", exDialogueFillDesc: "Complete a generated dialogue with chosen words.",
     exMakeSentence: "Make a sentence", exMakeSentenceDesc: "Build a sentence with 1 or 2 words. The AI helps you self-correct.",
+    makeSentencePrompt: (words) => `Write a sentence using ${words.length > 1 ? "the words" : "the word"}: ${words.join(", ")}`,
     makeSentenceAnother: "Another sentence", makeSentenceFinish: "Finish exercise", makeSentenceMax: "2 cards max",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
@@ -1099,6 +1101,7 @@ const T = {
     exYouglish: "영상 속 단어", exYouglishDesc: "실제 영상에서 단어가 쓰이는 걸 봐.",
     exDialogueFill: "대화 빈칸 채우기", exDialogueFillDesc: "생성된 대화의 빈칸을 선택한 단어로 채워 봐.",
     exMakeSentence: "문장 만들기", exMakeSentenceDesc: "단어 1~2개로 문장을 만들어 봐. AI가 스스로 고치게 도와줘.",
+    makeSentencePrompt: (words) => `${words.join(", ")} ${words.length > 1 ? "단어들을" : "단어를"} 사용해서 문장을 써 봐`,
     makeSentenceAnother: "한 문장 더", makeSentenceFinish: "연습 끝내기", makeSentenceMax: "카드 최대 2장",
     flashKnow: "알아", flashReview: "복습", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k}개 알고 있고, ${r}개 복습 필요`,
     flashDone: "복습 수고했어!", flashRemaining: (n) => `${n}개 남았어`,
@@ -1882,7 +1885,7 @@ Extract ALL items. No limit.`;
 async function studyVocabWord(word, exampleSentence, lang, context, tlCode) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are an expert ${TL} vocabulary teacher creating a rich, memorable study of ONE word. Write all explanatory text in ${L}. Be concise but insightful.
+  const sys = `You are an expert ${TL} vocabulary teacher creating a rich, memorable study of ONE word. Write all explanatory text in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Be concise but insightful.
 
 ${context}
 The word to study: "${word}"
@@ -1904,7 +1907,7 @@ async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lan
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
   const qLang = inTargetLang ? TL : L;
-  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
+  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
 
 ${context}
 The student is reading a ${TL} text. They do NOT need to understand every word. Focus on the GLOBAL MEANING.
@@ -1934,7 +1937,7 @@ Return JSON:
 async function evaluateReformulation(excerpt, userText, lang, context, tlCode) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor evaluating a student's reformulation.
+  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor evaluating a student's reformulation. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""}
 
 ${context}
 The student read a ${TL} text excerpt and tried to reformulate/summarize it in ${TL} in their own words (1-2 sentences).
@@ -2042,7 +2045,7 @@ PERSONALIZATION:
 - Adapt vocabulary complexity to the stated level
 
 TONE:
-- Speak in ${L}
+- Speak in ${L}${L === "French" ? ". IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student" : ""}
 - Be warm and conversational, like a patient tutor who genuinely knows the student
 - Use short paragraphs with line breaks for readability
 - Write ${TL} examples on their own lines
@@ -2147,7 +2150,7 @@ CURRENT LESSON PHASE: ${phase} (AI turn ${aiTurns + 1})
 - DEEPENING (turns 3-5): Reveal the name, show nuances, edge cases, derived expressions.
 - CONSOLIDATION (turns 6+): Mini production exercise, then wrap up and suggest ending the lesson.`;
 
-  const sys = `You are a Socratic language teacher having an ongoing lesson about the structure "${card.korean}". Speak in ${L}. Be warm, patient, and encouraging. Write target-language text on its own lines followed by translations.
+  const sys = `You are a Socratic language teacher having an ongoing lesson about the structure "${card.korean}". Speak in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""} Be warm, patient, and encouraging. Write target-language text on its own lines followed by translations.
 ${TRANSLATION_RULE}
 ${phaseGuide}
 
@@ -2541,7 +2544,7 @@ IMPORTANT: Keep your prompt short (2-3 sentences max). Be encouraging. The stude
   const vocabSection = (vocabWords && vocabWords.length > 0) ? `\nVocabulary to integrate into the sentences (use as many as possible naturally):\n${vocabWords.map(w => `- ${w}`).join("\n")}\n` : "";
 
   const ctxForExercise = (theme && mode !== "topik") ? context.replace(/Their dream in this language:.*\n/g, "").replace(/FAVORITES \(use these to build examples that resonate\):.*\n/g, "").replace(/Other interests:.*\n/g, "").replace(/Goals:.*\n/g, "").replace(/Teacher notes:.*\n/g, "").replace(/Learner's own notes:.*\n/g, "") : context;
-  const sys = `You are a ${TL} language exercise designer. Speak in ${L}. Be clear and encouraging.
+  const sys = `You are a ${TL} language exercise designer. Speak in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""} Be clear and encouraging.
 ${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
 
 ${mode === "topik" ? "" : ctxForExercise}
@@ -2598,7 +2601,7 @@ async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode, nex
   if (mode === "makesentence") {
     const userMsgs = conv.filter(m => m.role === "user");
     const attempts = userMsgs.length;
-    const msSys = `You are a ${TL} language tutor helping a student practice writing sentences. Speak in ${L}. Be warm and concise.
+    const msSys = `You are a ${TL} language tutor helping a student practice writing sentences. Speak in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""} Be warm and concise.
 ${TRANSLATION_RULE}
 
 Words being practiced:
@@ -2620,7 +2623,7 @@ Do NOT use markdown headers (###). Return JSON: {"message": "your text"}`;
     return parseJSON((await callAI(msSys, `Evaluate the student's latest attempt.`, 800)).text);
   }
 
-  const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. Be warm and concise.
+  const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""} Be warm and concise.
 ${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
 
 Structures being practiced:
@@ -5104,7 +5107,7 @@ function DrillExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
       const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
       const TL = getTargetLangName(tl, "en");
       const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
-      const sys = `You are a ${TL} grammar teacher. The student is doing a conjugation/drill exercise. Write all explanations in ${L}.
+      const sys = `You are a ${TL} grammar teacher. The student is doing a conjugation/drill exercise. Write all explanations in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\")." : ""}
 
 The sentence: "${sent.text}" (blank to fill)
 ${sent.hint ? `Base/dictionary form given as hint: "${sent.hint}"` : ""}
@@ -5255,7 +5258,7 @@ function FixItExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }) 
       const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
       const TL = getTargetLangName(tl, "en");
       const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
-      const sys = `You are a ${TL} grammar teacher. The student is doing a "fix the error" exercise. Write all explanations in ${L}.
+      const sys = `You are a ${TL} grammar teacher. The student is doing a "fix the error" exercise. Write all explanations in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\")." : ""}
 
 The incorrect sentence: "${sent.text}"
 The correct version: "${sent.corrected}"
@@ -5506,7 +5509,7 @@ function ReorderExercise({ data, cards, tFont, t, lang, tl, onComplete, onExit }
       const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
       const TL = getTargetLangName(tl, "en");
       const history = newMsgs.map(m => `${m.role === "user" ? "Student" : "Teacher"}: ${m.text}`).join("\n");
-      const sys = `You are a ${TL} grammar teacher. The student is doing a word-ordering exercise. Write all explanations in ${L}.
+      const sys = `You are a ${TL} grammar teacher. The student is doing a word-ordering exercise. Write all explanations in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\")." : ""}
 
 The sentence to reconstruct: "${sent.text}"
 ${sent.translation ? `Translation: "${sent.translation}"` : ""}
@@ -8519,10 +8522,9 @@ function AppInner() {
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { exActiveIdsRef.current = []; setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
     if (exMode === "makesentence") {
       exActiveIdsRef.current = sel.map(c => c.id);
-      setExOn(true); setExLoad(true); setExDone(false); setFillData(null); setExConv([]); setMsSentenceOk(false); setMsPhraseCount(0);
-      try { const r = await genExercise(sel, "makesentence", lang, context, tl); setExConv([{ role: "ai", content: r.message, options: null, selected: null }]); }
-      catch (e) { console.error("launchEx makesentence error:", e); setExConv([aiError(e, () => launchEx(theme))]); }
-      setExLoad(false);
+      const words = sel.map(c => c.korean);
+      setExOn(true); setExLoad(false); setExDone(false); setFillData(null); setMsSentenceOk(false); setMsPhraseCount(0);
+      setExConv([{ role: "ai", content: t.makeSentencePrompt(words), options: null, selected: null }]);
       return;
     }
     // Limit cards sent to AI so only practised cards are credited.
@@ -11358,14 +11360,11 @@ function AppInner() {
                     <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 12, padding: 14, margin: "4px 0", textAlign: "center" }}>
                       <div style={{ fontSize: 12, color: C.txtS, marginBottom: 10 }}>+10 pts {msPhraseCount > 1 ? `(${msPhraseCount} phrases)` : ""}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                        <button onClick={async () => {
-                          setMsSentenceOk(false); setExLoad(true);
+                        <button onClick={() => {
+                          setMsSentenceOk(false);
                           const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
-                          try {
-                            const r = await genExercise(sel, "makesentence", lang, context, tl);
-                            setExConv(prev => [...prev, { role: "ai", content: r.message, options: null, selected: null }]);
-                          } catch (e) { console.error("ms another error:", e); setExConv(prev => [...prev, aiError(e)]); }
-                          setExLoad(false);
+                          const words = sel.map(c => c.korean);
+                          setExConv(prev => [...prev, { role: "ai", content: t.makeSentencePrompt(words), options: null, selected: null }]);
                         }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ✍️ {t.makeSentenceAnother}

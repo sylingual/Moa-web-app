@@ -188,7 +188,7 @@ const T = {
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo", lyricsBtn: "Une chanson",
     lyricsAsk: "Est-ce qu’il y a une chanson qui contient ce mot ? 🎵",
     addSongBtn: "Ajouter une chanson", addSongUrl: "Lien YouTube ou Spotify", addSongLyrics: "Lien vers les paroles (optionnel)", addSongAdd: "Ajouter", addSongListenBtn: "Ecouter", addSongLyricsBtn: "Paroles", addSongTitle: "Mes chansons", addSongLoading: "Chargement...", addSongNeedUrl: "Il faut au moins un lien",
-    mySongsSection: "Ma collection de chansons", mySongsLocked: (pts) => `Encore ${pts} points pour debloquer`, mySongsUnlock: "Debloquer", mySongsEmpty: "Aucune chanson ajoutee. Ajoute des chansons depuis les fiches de vocabulaire !", mySongsCard: "Fiche",
+    mySongsSection: "Ma collection de chansons", mySongsLocked: (pts) => `Encore ${pts} points pour débloquer`, mySongsUnlock: "Débloquer", mySongsEmpty: "Aucune chanson ajoutée. Ajoute des chansons depuis les fiches de vocabulaire !", mySongsCard: "Fiche",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",

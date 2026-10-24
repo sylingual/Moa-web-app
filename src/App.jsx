@@ -111,6 +111,8 @@ const T = {
     exDictation: "Dictée", exDictationDesc: "Écoute le mot ou la phrase et écris-le.",
     exYouglish: "Vidéo en contexte", exYouglishDesc: "Voir le mot utilisé dans une vraie vidéo.",
     exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
+    exMakeSentence: "Fais une phrase", exMakeSentenceDesc: "Construis une phrase avec 1 ou 2 mots. L'IA t'aide à t'auto-corriger.",
+    makeSentenceAnother: "Encore une phrase", makeSentenceFinish: "Finir l'exercice", makeSentenceMax: "2 cartes maximum",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
     flashDone: "Bravo pour ta révision !", flashRemaining: (n) => `${n} restante${n > 1 ? "s" : ""}`,
     flashSetupTitle: "Options d'entraînement",
@@ -601,6 +603,8 @@ const T = {
     exDictation: "Dictation", exDictationDesc: "Listen to the word or sentence and write it.",
     exYouglish: "Video in context", exYouglishDesc: "See the word used in a real video.",
     exDialogueFill: "Dialogue fill-in", exDialogueFillDesc: "Complete a generated dialogue with chosen words.",
+    exMakeSentence: "Make a sentence", exMakeSentenceDesc: "Build a sentence with 1 or 2 words. The AI helps you self-correct.",
+    makeSentenceAnother: "Another sentence", makeSentenceFinish: "Finish exercise", makeSentenceMax: "2 cards max",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
     flashDone: "Great review session!", flashRemaining: (n) => `${n} remaining`,
     flashSetupTitle: "Training options",
@@ -1092,6 +1096,8 @@ const T = {
     exDictation: "받아쓰기", exDictationDesc: "단어나 문장을 듣고 써 봐.",
     exYouglish: "영상 속 단어", exYouglishDesc: "실제 영상에서 단어가 쓰이는 걸 봐.",
     exDialogueFill: "대화 빈칸 채우기", exDialogueFillDesc: "생성된 대화의 빈칸을 선택한 단어로 채워 봐.",
+    exMakeSentence: "문장 만들기", exMakeSentenceDesc: "단어 1~2개로 문장을 만들어 봐. AI가 스스로 고치게 도와줘.",
+    makeSentenceAnother: "한 문장 더", makeSentenceFinish: "연습 끝내기", makeSentenceMax: "카드 최대 2장",
     flashKnow: "알아", flashReview: "복습", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k}개 알고 있고, ${r}개 복습 필요`,
     flashDone: "복습 수고했어!", flashRemaining: (n) => `${n}개 남았어`,
     flashSetupTitle: "연습 옵션",
@@ -2488,7 +2494,17 @@ Return ONLY this JSON structure:
     {"num": 2, "answer": "exact dictionary form", "display": "form in context"}
   ]
 }
-CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value. "characters" lists each speaker with their gender ("F" or "M").`
+CRITICAL: "answer" must be the EXACT word from the vocabulary list (dictionary form). "display" is how it appears grammatically in the dialogue. If they are the same, set both to the same value. "characters" lists each speaker with their gender ("F" or "M").`,
+
+    makesentence: `MAKE A SENTENCE MODE: The student must write a sentence in ${TL} using the word(s) listed below.
+
+Your role:
+1. First, give a short, friendly prompt in ${L} asking the student to write a sentence in ${TL} using the given word(s). Mention the word(s) clearly. Give a brief context or scenario suggestion to inspire them (e.g. "Imagine you're at a cafe and want to order something using this word").
+2. Do NOT give the answer or an example sentence yet.
+
+Return JSON: {"message": "your prompt asking the student to write a sentence"}
+
+IMPORTANT: Keep your prompt short (2-3 sentences max). Be encouraging. The student will respond with their attempt.`
   };
 
   const vocabSection = (vocabWords && vocabWords.length > 0) ? `\nVocabulary to integrate into the sentences (use as many as possible naturally):\n${vocabWords.map(w => `- ${w}`).join("\n")}\n` : "";
@@ -2547,6 +2563,31 @@ async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode, nex
         : mode === "qcm"
           ? `Then ask question ${asked + 1} of 3: a NEW multiple-choice question on one of the structures, with a short real-world context line, the sentence in ${TL}, the question, and exactly 3 options (one correct). Keep it short.`
           : `Then give exercise ${asked + 1} of 3: a NEW fill-in-the-blank with the ${L} translation, the ${TL} sentence with ______, and the instruction. Keep it short.`;
+
+  if (mode === "makesentence") {
+    const userMsgs = conv.filter(m => m.role === "user");
+    const attempts = userMsgs.length;
+    const msSys = `You are a ${TL} language tutor helping a student practice writing sentences. Speak in ${L}. Be warm and concise.
+${TRANSLATION_RULE}
+
+Words being practiced:
+${structs}
+
+Exercise conversation so far:
+${hist}
+
+IMPORTANT RULES FOR CORRECTION:
+- The student just wrote a sentence in ${TL} using the word(s) above.
+- First, check if the sentence is grammatically correct and uses the word(s) properly.
+- If the sentence is PERFECT: congratulate them warmly, explain briefly why it works, and mention any cultural nuance. Add "CORRECT:true" at the very end of your message.
+- If the sentence has errors: Do NOT give the correct sentence yet. Instead:
+  ${attempts <= 1 ? "Give 1-2 specific hints about what to fix (e.g. 'check the particle after X', 'the verb ending should match the politeness level'). Let them try again." : "The student has tried multiple times. Now give the corrected sentence with a clear explanation of what was wrong and why. Add \"CORRECT:true\" at the very end of your message."}
+- Never be condescending. Frame corrections as tips, not failures.
+- Keep responses short (3-4 sentences max).
+
+Do NOT use markdown headers (###). Return JSON: {"message": "your text"}`;
+    return parseJSON((await callAI(msSys, `Evaluate the student's latest attempt.`, 800)).text);
+  }
 
   const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. Be warm and concise.
 ${mode === "topik" ? "CRITICAL: NEVER provide a full translation of the reading passage. The student must practice reading comprehension on their own. Only explain individual words or grammar points if asked." : TRANSLATION_RULE}
@@ -2828,7 +2869,7 @@ function exModeToCategory(mode) {
   switch (mode) {
     case "flash": case "match": case "qcm": case "topik": case "fill": case "reorder": case "drill": case "fixit": return "ce";
     case "youglish": case "dictation": return "co";
-    case "imgwrite": case "cross": case "story": case "dialoguefill": return "pe";
+    case "imgwrite": case "cross": case "story": case "dialoguefill": case "makesentence": return "pe";
     default: return null;
   }
 }
@@ -6062,6 +6103,8 @@ function AppInner() {
   const [exInp, setExInp] = useState("");
   const [exOn, setExOn] = useState(false);
   const [exDone, setExDone] = useState(false);
+  const [msSentenceOk, setMsSentenceOk] = useState(false);
+  const [msPhraseCount, setMsPhraseCount] = useState(0);
   const [fillData, setFillData] = useState(null);
   const [exTheme, setExTheme] = useState(null);
   const [exGrammarVocab, setExGrammarVocab] = useState([]);
@@ -8443,6 +8486,14 @@ function AppInner() {
     trackEvent("exercise_start", { exercise_type: exMode, card_count: sel.length, category: exCategory, due_filter: exDueOnly, theme: theme || null });
     // Non-AI exercises render their own component; components report actually-used ids via onComplete.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { exActiveIdsRef.current = []; setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }
+    if (exMode === "makesentence") {
+      exActiveIdsRef.current = sel.map(c => c.id);
+      setExOn(true); setExLoad(true); setExDone(false); setFillData(null); setExConv([]); setMsSentenceOk(false); setMsPhraseCount(0);
+      try { const r = await genExercise(sel, "makesentence", lang, context, tl); setExConv([{ role: "ai", content: r.message, options: null, selected: null }]); }
+      catch (e) { console.error("launchEx makesentence error:", e); setExConv([aiError(e, () => launchEx(theme))]); }
+      setExLoad(false);
+      return;
+    }
     // Limit cards sent to AI so only practised cards are credited.
     const aiMax = (exMode === "qcm" || exMode === "topik") ? 6 : (exMode === "story") ? 8 : 10;
     const aiSel = sel.length > aiMax ? shuffle([...sel]).slice(0, aiMax) : sel;
@@ -8506,13 +8557,28 @@ function AppInner() {
     try {
       const activeIds = exActiveIdsRef.current;
       const sel = exerciseCards.filter(c => activeIds.includes(c.id));
-      const isFill = exMode === "fill" || exMode === "dialoguefill";
-      const wasLast = exMode === "topik" ? false
-        : isFill ? u.filter(msg => msg.role === "user").length >= 1
-        : u.filter(msg => msg.role === "ai").length >= 3;
-      const r = await continueExercise(sel, exMode, lang, u, null, tl);
-      setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
-      if (wasLast) { setExDone(true); completeExercise(exMode, activeIds); }
+      if (exMode === "makesentence") {
+        const r = await continueExercise(sel, "makesentence", lang, u, null, tl);
+        let msg = r.message || "";
+        const isCorrect = msg.includes("CORRECT:true");
+        if (isCorrect) msg = msg.replace(/\s*CORRECT:true\s*/g, "").trim();
+        setExConv([...u, { role: "ai", content: msg, options: null, selected: null }]);
+        if (isCorrect) {
+          setMsSentenceOk(true);
+          setMsPhraseCount(prev => prev + 1);
+          const result = recordExerciseProgress(data, activeIds, "makesentence");
+          const nd = awardPoints(10, result.data);
+          save(nd);
+        }
+      } else {
+        const isFill = exMode === "fill" || exMode === "dialoguefill";
+        const wasLast = exMode === "topik" ? false
+          : isFill ? u.filter(msg => msg.role === "user").length >= 1
+          : u.filter(msg => msg.role === "ai").length >= 3;
+        const r = await continueExercise(sel, exMode, lang, u, null, tl);
+        setExConv([...u, { role: "ai", content: r.message, options: r.options || null, selected: null }]);
+        if (wasLast) { setExDone(true); completeExercise(exMode, activeIds); }
+      }
     } catch (e) { console.error("exSend error:", e); setExConv([...u, aiError(e)]); }
     setExLoad(false);
   };
@@ -10970,6 +11036,7 @@ function AppInner() {
                       { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
                       { k: "dictation", l: t.exDictation, d: t.exDictationDesc, i: "🎧", disabled: true },
                     ] : exCategory === "PE" ? [
+                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", vocabOnly: true, ai: true },
                       { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️", vocabOnly: true },
                       { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩", vocabOnly: true },
                       /* story hidden for now */
@@ -11009,7 +11076,7 @@ function AppInner() {
                     </button>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{
-                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, topik: `📝 ${t.topik}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, drill: `✒️ ${t.exDrill}`, fixit: `👩‍🏫 ${t.exFixit}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
+                    { flash: `🃏 ${t.exFlash}`, match: `🔗 ${t.exMatch}`, gender: `🔤 ${t.exGender}`, qcm: `🔀 ${t.qcm}`, topik: `📝 ${t.topik}`, fill: `🔄 ${t.fillBlanks}`, reorder: `💬 ${t.exReorder}`, drill: `✒️ ${t.exDrill}`, fixit: `👩‍🏫 ${t.exFixit}`, youglish: `🎬 ${t.exYouglish}`, dictation: `🎧 ${t.exDictation}`, imgwrite: `🖼️ ${t.exImgWrite}`, cross: `🧩 ${t.exCross}`, story: `✍️ ${t.story}`, dialoguefill: `💬 ${t.exDialogueFill}`, makesentence: `✍️ ${t.exMakeSentence}` }[exMode] || (exCategory === "CE" ? `📖 ${t.exCatCE}` : exCategory === "CO" ? `🎧 ${t.exCatCO}` : exCategory === "PE" ? `✏️ ${t.exCatPE}` : `🎤 ${t.exCatPO}`)
                   }</div>
                   <div style={{ fontSize: 12.5, color: C.txtM }}>{t.exPickCards}</div>
                   {exMode === "youglish" ? (
@@ -11042,7 +11109,7 @@ function AppInner() {
                             {"📅"} {t.exDuePending}
                           </button>
                           {visibleCards.length > 0 && (
-                            <button onClick={() => { const n = Math.min(3 + Math.floor(Math.random() * 3), visibleCards.length); setExSel(new Set(shuffle(visibleCards).slice(0, n).map(c => c.id))); }}
+                            <button onClick={() => { const maxR = exMode === "makesentence" ? Math.min(2, visibleCards.length) : Math.min(3 + Math.floor(Math.random() * 3), visibleCards.length); setExSel(new Set(shuffle(visibleCards).slice(0, maxR).map(c => c.id))); }}
                               style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                               🎲 {t.exRandom}
                             </button>
@@ -11071,14 +11138,17 @@ function AppInner() {
                       {visibleCards.length === 0
                         ? <div style={{ fontSize: 12, color: C.txtM, padding: 12, textAlign: "center" }}>{exDueOnly === "pending" ? t.exDueNonePending : exDueOnly === "all" ? t.exDueNone : exMode === "imgwrite" ? t.exNeedImages : t.noAcquired}</div>
                         : <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                            {visibleCards.map(c => (
-                              <button key={c.id} onClick={() => { const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
-                                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
+                            {visibleCards.map(c => {
+                              const msMax = exMode === "makesentence" && !exSel.has(c.id) && exSel.size >= 2;
+                              return (
+                              <button key={c.id} onClick={() => { if (msMax) return; const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
+                                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: msMax ? C.txtM : C.txt, cursor: msMax ? "not-allowed" : "pointer", opacity: msMax ? 0.5 : 1 }}>
                                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
                               </button>
-                            ))}
+                              ); })}
                           </div>
                       }
+                      {exMode === "makesentence" && <div style={{ fontSize: 11, color: C.txtM, marginTop: 4, fontStyle: "italic" }}>{t.makeSentenceMax}</div>}
                     </div>
                     {visibleCards.length > 0 && (
                       <button onClick={() => {
@@ -11288,6 +11358,29 @@ function AppInner() {
                       </button>
                     </div>
                   )}
+                  {!exLoad && msSentenceOk && exMode === "makesentence" && !exDone && (
+                    <div style={{ background: C.okBg, border: `1px solid ${C.okB}`, borderRadius: 12, padding: 14, margin: "4px 0", textAlign: "center" }}>
+                      <div style={{ fontSize: 12, color: C.txtS, marginBottom: 10 }}>+10 pts {msPhraseCount > 1 ? `(${msPhraseCount} phrases)` : ""}</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                        <button onClick={async () => {
+                          setMsSentenceOk(false); setExLoad(true);
+                          const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
+                          try {
+                            const r = await genExercise(sel, "makesentence", lang, context, tl);
+                            setExConv(prev => [...prev, { role: "ai", content: r.message, options: null, selected: null }]);
+                          } catch (e) { console.error("ms another error:", e); setExConv(prev => [...prev, aiError(e)]); }
+                          setExLoad(false);
+                        }}
+                          style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                          ✍️ {t.makeSentenceAnother}
+                        </button>
+                        <button onClick={() => { setExDone(true); setMsSentenceOk(false); setShowCelebration(true); }}
+                          style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.okB}`, color: C.ok, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+                          ✓ {t.makeSentenceFinish}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {exDone && !exLoad && (
                     <div style={{ background: C.s2, border: `1px solid ${C.okB}`, borderRadius: 12, padding: 16, margin: "4px 0", textAlign: "center" }}>
                       <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
@@ -11305,7 +11398,7 @@ function AppInner() {
                     </div>
                   )}
                 </div>
-                {!exDone && <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
+                {!exDone && !(msSentenceOk && exMode === "makesentence") && <div style={{ padding: "8px 10px", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, background: C.s2, alignItems: "center", flexShrink: 0 }}>
                   <input value={exInp} onChange={e => setExInp(e.target.value)} onKeyDown={e => e.key === "Enter" && !exLoad && exSend()} placeholder={exLoad ? t.thinking : (exConv.some(m => m.role === "ai" && m.options) ? t.askQuestion : t.yourAnswer)} disabled={exLoad}
                     style={{ flex: 1, border: `1px solid ${C.border}`, borderRadius: 6, padding: "7px 10px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, background: C.s1, outline: "none", opacity: exLoad ? 0.6 : 1 }} />
                   <button onClick={exSend} disabled={exLoad} style={{ width: 30, height: 30, background: exLoad ? C.s1 : C.acc, color: exLoad ? C.txtM : C.onAcc, border: "none", borderRadius: 6, cursor: exLoad ? "default" : "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>

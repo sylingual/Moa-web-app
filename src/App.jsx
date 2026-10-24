@@ -4284,7 +4284,7 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
     </div>
   );
 
-  const colBtn = (active, ok) => ({ width: "100%", textAlign: "left", padding: "11px 12px", borderRadius: 10, cursor: ok ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, lineHeight: 1.4, border: `1px solid ${ok ? C.okB : active ? C.acc : C.border}`, background: ok ? C.okBg : active ? C.accBg : C.s2, color: ok ? C.ok : C.txt, transition: "background 0.12s, border-color 0.12s" });
+  const colBtn = (active, ok) => ({ width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: 10, cursor: ok ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, lineHeight: 1.35, border: `1px solid ${ok ? C.okB : active ? C.acc : C.border}`, background: ok ? C.okBg : active ? C.accBg : C.s2, color: ok ? C.ok : C.txt, transition: "background 0.12s, border-color 0.12s" });
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -4302,14 +4302,14 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: "auto", padding: 14, display: "flex", gap: 10 }}>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "12px 10px 30px", display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchWords}</div>
             {left.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id && wrongSide === "left"; return (
               <button key={p.id} onClick={() => pick(p.id, "left")} style={{ ...colBtn(sel === p.id && selSide === "left", ok), fontFamily: tFont, border: `1px solid ${isWrong ? C.warn : ok ? C.okB : sel === p.id && selSide === "left" ? C.acc : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : sel === p.id && selSide === "left" ? C.accBg : C.s2 }}>{p.kr}</button>
             ); })}
           </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 11, color: C.txtM, fontWeight: 600, marginBottom: 2 }}>{t.matchDefs}</div>
             {right.map(p => { const ok = matched.has(p.id); const isWrong = wrong === p.id && wrongSide === "right"; return (
               <button key={p.id} onClick={() => pick(p.id, "right")} style={{ ...colBtn(sel === p.id && selSide === "right", ok), border: `1px solid ${isWrong ? C.warn : ok ? C.okB : sel === p.id && selSide === "right" ? C.acc : C.border}`, background: isWrong ? C.warnBg : ok ? C.okBg : sel === p.id && selSide === "right" ? C.accBg : C.s2 }}>{p.def}</button>

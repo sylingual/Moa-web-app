@@ -184,6 +184,7 @@ const T = {
     askExplain: "Peux-tu m'expliquer ça autrement ? 🔄",
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo", lyricsBtn: "Une chanson",
     lyricsAsk: "Est-ce qu’il y a une chanson qui contient ce mot ? 🎵",
+    addSongBtn: "Ajouter une chanson", addSongUrl: "Lien YouTube ou Spotify", addSongLyrics: "Lien vers les paroles (optionnel)", addSongAdd: "Ajouter", addSongListenBtn: "Ecouter", addSongLyricsBtn: "Paroles", addSongTitle: "Mes chansons", addSongLoading: "Chargement...", addSongNeedUrl: "Il faut au moins un lien",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
@@ -673,6 +674,7 @@ const T = {
     askExplain: "Could you explain this differently? 🔄",
     anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image", youglishBtn: "In video", lyricsBtn: "A song",
     lyricsAsk: "Is there a song that contains this word? 🎵",
+    addSongBtn: "Add a song", addSongUrl: "YouTube or Spotify link", addSongLyrics: "Link to lyrics (optional)", addSongAdd: "Add", addSongListenBtn: "Listen", addSongLyricsBtn: "Lyrics", addSongTitle: "My songs", addSongLoading: "Loading...", addSongNeedUrl: "You need at least one link",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
@@ -1162,6 +1164,7 @@ const T = {
     askExplain: "다른 방식으로 설명해 줄 수 있어? 🔄",
     anExercise: "연습 문제", explainOther: "다르게 설명", anImage: "이미지", youglishBtn: "영상", lyricsBtn: "노래",
     lyricsAsk: "이 단어가 들어간 노래가 있어? 🎵",
+    addSongBtn: "노래 추가", addSongUrl: "YouTube 또는 Spotify 링크", addSongLyrics: "가사 링크 (선택)", addSongAdd: "추가", addSongListenBtn: "듣기", addSongLyricsBtn: "가사", addSongTitle: "내 노래", addSongLoading: "로딩 중...", addSongNeedUrl: "링크가 하나는 필요해",
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
@@ -1957,6 +1960,26 @@ function collectInterests(data, tlCode) {
   if (p.interests) p.interests.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(s => items.push(s));
   if (p.dream) items.push(p.dream);
   return items;
+}
+
+async function fetchSongMeta(url) {
+  try {
+    let endpoint;
+    if (/youtu\.?be/.test(url)) {
+      endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    } else if (/spotify\.com/.test(url)) {
+      endpoint = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+    }
+    if (!endpoint) return { title: "", artist: "", coverImg: "" };
+    const res = await fetch(endpoint);
+    if (!res.ok) return { title: "", artist: "", coverImg: "" };
+    const j = await res.json();
+    return {
+      title: j.title || "",
+      artist: j.author_name || "",
+      coverImg: j.thumbnail_url || "",
+    };
+  } catch { return { title: "", artist: "", coverImg: "" }; }
 }
 
 async function detectPartOfSpeech(cards, tlCode) {
@@ -7402,6 +7425,29 @@ function AppInner() {
     if (card === recapCard) setRecapCard(prev => prev ? { ...prev, reviewDates, discoveredDate, status: newStatus, goalAcquired } : prev);
   };
 
+  const reviewAndAward = (card, pts) => {
+    if (!card) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const cardObj = data.cards.find(c => c.korean === card.korean);
+    if (!cardObj) return;
+    const reviewDates = [...(cardObj.reviewDates || [])];
+    if (!reviewDates.includes(today)) reviewDates.push(today);
+    const discoveredDate = cardObj.discoveredDate || today;
+    let newStatus = cardObj.status;
+    let goalAcquired = cardObj.goalAcquired || false;
+    if (cardObj.goalId) {
+      const goal = (data.goals || []).find(g => g.id === cardObj.goalId);
+      if (goal) {
+        const dLeft = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(discoveredDate + "T00:00:00")) / 86400000));
+        if (isCardGoalAcquired({ ...cardObj, reviewDates, discoveredDate }, dLeft)) goalAcquired = true;
+      }
+    }
+    if (isCardLongTermAcquired({ ...cardObj, reviewDates }) && newStatus !== "acquired") newStatus = "acquired";
+    const updated = { ...data, cards: data.cards.map(c => c.korean === card.korean ? { ...c, reviewDates, discoveredDate, status: newStatus, goalAcquired } : c) };
+    save(awardPoints(pts, updated));
+    if (card === recapCard) setRecapCard(prev => prev ? { ...prev, reviewDates, discoveredDate, status: newStatus, goalAcquired } : prev);
+  };
+
   const startRecapAction = async (action) => {
     if (!recapCard) return;
     recordPracticeReview(recapCard);
@@ -10215,6 +10261,72 @@ function AppInner() {
                       </button>
                     )}
                   </div>
+                  {/* Songs on recap card */}
+                  {recapCard.type === "vocab" && (
+                    <div style={{ marginTop: 12 }}>
+                      {(recapCard.userSongs || []).length > 0 && (
+                        <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.addSongTitle}</div>
+                      )}
+                      {(recapCard.userSongs || []).map((song, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 8px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                          {song.coverImg && <img src={song.coverImg} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title || song.url}</div>
+                            {song.artist && <div style={{ fontSize: 10, color: C.txtM }}>{song.artist}</div>}
+                          </div>
+                          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                            {song.url && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.url, "_blank"); }}
+                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              {t.addSongListenBtn}
+                            </button>}
+                            {song.lyricsUrl && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.lyricsUrl, "_blank"); }}
+                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: "none", color: C.txt, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              {t.addSongLyricsBtn}
+                            </button>}
+                          </div>
+                        </div>
+                      ))}
+                      {recapCard._addingSong ? (
+                        <div style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                          <input placeholder={t.addSongUrl} value={recapCard._songUrl || ""}
+                            onChange={e => setRecapCard(prev => prev ? { ...prev, _songUrl: e.target.value } : prev)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
+                          <input placeholder={t.addSongLyrics} value={recapCard._songLyricsUrl || ""}
+                            onChange={e => setRecapCard(prev => prev ? { ...prev, _songLyricsUrl: e.target.value } : prev)}
+                            style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button disabled={recapCard._songLoading} onClick={async () => {
+                              const url = (recapCard._songUrl || "").trim();
+                              const lyricsUrl = (recapCard._songLyricsUrl || "").trim();
+                              if (!url && !lyricsUrl) return;
+                              setRecapCard(prev => prev ? { ...prev, _songLoading: true } : prev);
+                              const meta = url ? await fetchSongMeta(url) : { title: "", artist: "", coverImg: "" };
+                              const song = { url: url || undefined, lyricsUrl: lyricsUrl || undefined, title: meta.title, artist: meta.artist, coverImg: meta.coverImg, addedDate: new Date().toISOString().slice(0, 10) };
+                              const songs = [...(recapCard.userSongs || []), song];
+                              setData(prev => {
+                                const nd = { ...prev, cards: prev.cards.map(c => c.korean === recapCard.korean ? { ...c, userSongs: songs } : c) };
+                                saveData(nd, syncId);
+                                return nd;
+                              });
+                              setRecapCard(prev => prev ? { ...prev, userSongs: songs, _addingSong: false, _songUrl: "", _songLyricsUrl: "", _songLoading: false } : prev);
+                            }}
+                              style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", opacity: recapCard._songLoading ? 0.6 : 1 }}>
+                              {recapCard._songLoading ? t.addSongLoading : t.addSongAdd}
+                            </button>
+                            <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: false, _songUrl: "", _songLyricsUrl: "" } : prev)}
+                              style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              {t.back}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: true, _songUrl: "", _songLyricsUrl: "" } : prev)}
+                          style={{ padding: "5px 12px", borderRadius: 8, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                          + {t.addSongBtn}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (

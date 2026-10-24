@@ -12842,7 +12842,7 @@ function AppInner() {
               {(() => {
                 const pts = data.profile?.points || 0;
                 const unlocked = data.profile?.songsUnlocked;
-                const allSongs = (data.cards || []).filter(c => (c.targetLang || "ko") === tl && (c.userSongs || []).length > 0).flatMap(c => (c.userSongs || []).map(s => ({ ...s, cardKorean: c.korean, cardMeaning: c.french || c.english || "" })));
+                const allSongs = (data.cards || []).filter(c => (c.targetLang || "ko") === tl && (c.userSongs || []).length > 0).flatMap(c => (c.userSongs || []).map(s => ({ ...s, cardId: c.id, cardKorean: c.korean, cardMeaning: c.french || c.english || "" })));
                 const remaining = Math.max(0, 1500 - pts);
                 return (
                   <div style={{ marginTop: 12, padding: 16, borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1 }}>
@@ -12878,7 +12878,8 @@ function AppInner() {
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ fontSize: 12.5, fontWeight: 600, color: C.txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title || song.url}</div>
                                 {song.artist && <div style={{ fontSize: 10.5, color: C.txtM }}>{song.artist}</div>}
-                                <div style={{ fontSize: 10, color: C.acc, marginTop: 2 }}>{t.mySongsCard} : {song.cardKorean} {song.cardMeaning ? `(${song.cardMeaning})` : ""}</div>
+                                <div onClick={() => { const c = data.cards.find(x => x.id === song.cardId); if (c) { setRecapCard(c); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp(""); setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null); window.history.pushState({ view: "lesson", recap: true, recapCard: c }, ""); setView("lesson"); } }}
+                                  style={{ fontSize: 10, color: C.acc, marginTop: 2, cursor: "pointer", textDecoration: "underline" }}>{t.mySongsCard} : {song.cardKorean} {song.cardMeaning ? `(${song.cardMeaning})` : ""}</div>
                               </div>
                               <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                                 {song.url && <button onClick={() => window.open(song.url, "_blank")}

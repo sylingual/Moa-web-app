@@ -10320,72 +10320,6 @@ function AppInner() {
                       </button>
                     )}
                   </div>
-                  {/* Songs on recap card */}
-                  {recapCard.type !== "grammar" && (
-                    <div style={{ marginTop: 12 }}>
-                      {(recapCard.userSongs || []).length > 0 && (
-                        <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.addSongTitle}</div>
-                      )}
-                      {(recapCard.userSongs || []).map((song, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 8px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
-                          {song.coverImg && <img src={song.coverImg} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title || song.url}</div>
-                            {song.artist && <div style={{ fontSize: 10, color: C.txtM }}>{song.artist}</div>}
-                          </div>
-                          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                            {song.url && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.url, "_blank"); }}
-                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                              {t.addSongListenBtn}
-                            </button>}
-                            {song.lyricsUrl && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.lyricsUrl, "_blank"); }}
-                              style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: "none", color: C.txt, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                              {t.addSongLyricsBtn}
-                            </button>}
-                          </div>
-                        </div>
-                      ))}
-                      {recapCard._addingSong ? (
-                        <div style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
-                          <input placeholder={t.addSongUrl} value={recapCard._songUrl || ""}
-                            onChange={e => setRecapCard(prev => prev ? { ...prev, _songUrl: e.target.value } : prev)}
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
-                          <input placeholder={t.addSongLyrics} value={recapCard._songLyricsUrl || ""}
-                            onChange={e => setRecapCard(prev => prev ? { ...prev, _songLyricsUrl: e.target.value } : prev)}
-                            style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
-                          <div style={{ display: "flex", gap: 6 }}>
-                            <button disabled={recapCard._songLoading} onClick={async () => {
-                              const url = (recapCard._songUrl || "").trim();
-                              const lyricsUrl = (recapCard._songLyricsUrl || "").trim();
-                              if (!url && !lyricsUrl) return;
-                              setRecapCard(prev => prev ? { ...prev, _songLoading: true } : prev);
-                              const meta = url ? await fetchSongMeta(url) : { title: "", artist: "", coverImg: "" };
-                              const song = { url: url || undefined, lyricsUrl: lyricsUrl || undefined, title: meta.title, artist: meta.artist, coverImg: meta.coverImg, addedDate: new Date().toISOString().slice(0, 10) };
-                              const songs = [...(recapCard.userSongs || []), song];
-                              setData(prev => {
-                                const nd = { ...prev, cards: prev.cards.map(c => c.korean === recapCard.korean ? { ...c, userSongs: songs } : c) };
-                                saveData(nd, syncId);
-                                return nd;
-                              });
-                              setRecapCard(prev => prev ? { ...prev, userSongs: songs, _addingSong: false, _songUrl: "", _songLyricsUrl: "", _songLoading: false } : prev);
-                            }}
-                              style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", opacity: recapCard._songLoading ? 0.6 : 1 }}>
-                              {recapCard._songLoading ? t.addSongLoading : t.addSongAdd}
-                            </button>
-                            <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: false, _songUrl: "", _songLyricsUrl: "" } : prev)}
-                              style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                              {t.back}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: true, _songUrl: "", _songLyricsUrl: "" } : prev)}
-                          style={{ padding: "5px 12px", borderRadius: 8, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                          + {t.addSongBtn}
-                        </button>
-                      )}
-                    </div>
-                  )}
                   {/* Tags on recap card */}
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 10, alignItems: "center" }}>
                     {(recapCard.tags || []).map(tag => (
@@ -10671,7 +10605,7 @@ function AppInner() {
                             { k: "youglish", l: t.youglishBtn, i: "🎬" },
                             { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
                             { k: "resources", l: t.onlineRes, i: "📚" },
-                          ].filter(a => (a.k !== "resources" || recapCard?.type !== "vocab") && (a.k !== "image" || recapCard?.type === "vocab") && (a.k !== "youglish" || recapCard?.type === "vocab") && (a.k !== "lyrics" || recapCard?.type === "vocab")).map(a => (
+                          ].filter(a => (a.k !== "resources" || recapCard?.type === "grammar") && (a.k !== "image" || recapCard?.type !== "grammar") && (a.k !== "youglish" || recapCard?.type !== "grammar") && (a.k !== "lyrics" || recapCard?.type !== "grammar")).map(a => (
                             <button key={a.k} onClick={() => {
                               if (a.k === "youglish") {
                                 recordPracticeReview(recapCard);
@@ -10687,6 +10621,72 @@ function AppInner() {
                             </button>
                           ))}
                         </div>
+                        {/* Songs section - below Approfondir grid */}
+                        {recapCard.type !== "grammar" && (
+                          <div style={{ marginTop: 12 }}>
+                            {(recapCard.userSongs || []).length > 0 && (
+                              <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.addSongTitle}</div>
+                            )}
+                            {(recapCard.userSongs || []).map((song, si) => (
+                              <div key={si} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, padding: "6px 8px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                                {song.coverImg && <img src={song.coverImg} alt="" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title || song.url}</div>
+                                  {song.artist && <div style={{ fontSize: 10, color: C.txtM }}>{song.artist}</div>}
+                                </div>
+                                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                                  {song.url && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.url, "_blank"); }}
+                                    style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {t.addSongListenBtn}
+                                  </button>}
+                                  {song.lyricsUrl && <button onClick={() => { reviewAndAward(recapCard, 5); window.open(song.lyricsUrl, "_blank"); }}
+                                    style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: "none", color: C.txt, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {t.addSongLyricsBtn}
+                                  </button>}
+                                </div>
+                              </div>
+                            ))}
+                            {recapCard._addingSong ? (
+                              <div style={{ padding: "8px 10px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                                <input placeholder={t.addSongUrl} value={recapCard._songUrl || ""}
+                                  onChange={e => setRecapCard(prev => prev ? { ...prev, _songUrl: e.target.value } : prev)}
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
+                                <input placeholder={t.addSongLyrics} value={recapCard._songLyricsUrl || ""}
+                                  onChange={e => setRecapCard(prev => prev ? { ...prev, _songLyricsUrl: e.target.value } : prev)}
+                                  style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg, color: C.txt, fontSize: 11.5, fontFamily: "'Plus Jakarta Sans'", marginBottom: 6, boxSizing: "border-box", outline: "none" }} />
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button disabled={recapCard._songLoading} onClick={async () => {
+                                    const url = (recapCard._songUrl || "").trim();
+                                    const lyricsUrl = (recapCard._songLyricsUrl || "").trim();
+                                    if (!url && !lyricsUrl) return;
+                                    setRecapCard(prev => prev ? { ...prev, _songLoading: true } : prev);
+                                    const meta = url ? await fetchSongMeta(url) : { title: "", artist: "", coverImg: "" };
+                                    const song = { url: url || undefined, lyricsUrl: lyricsUrl || undefined, title: meta.title, artist: meta.artist, coverImg: meta.coverImg, addedDate: new Date().toISOString().slice(0, 10) };
+                                    const songs = [...(recapCard.userSongs || []), song];
+                                    setData(prev => {
+                                      const nd = { ...prev, cards: prev.cards.map(c => c.korean === recapCard.korean ? { ...c, userSongs: songs } : c) };
+                                      saveData(nd, syncId);
+                                      return nd;
+                                    });
+                                    setRecapCard(prev => prev ? { ...prev, userSongs: songs, _addingSong: false, _songUrl: "", _songLyricsUrl: "", _songLoading: false } : prev);
+                                  }}
+                                    style={{ padding: "5px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", opacity: recapCard._songLoading ? 0.6 : 1 }}>
+                                    {recapCard._songLoading ? t.addSongLoading : t.addSongAdd}
+                                  </button>
+                                  <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: false, _songUrl: "", _songLyricsUrl: "" } : prev)}
+                                    style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    {t.back}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button onClick={() => setRecapCard(prev => prev ? { ...prev, _addingSong: true, _songUrl: "", _songLyricsUrl: "" } : prev)}
+                                style={{ padding: "5px 12px", borderRadius: 8, border: `1px dashed ${C.borderS}`, background: "none", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                + {t.addSongBtn}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

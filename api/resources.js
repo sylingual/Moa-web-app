@@ -31,10 +31,12 @@ export default async function handler(req, res) {
     var lyricsKeyword = targetLang === 'Korean' ? '가사 노래' : targetLang === 'Japanese' ? '歌詞 曲' : 'lyrics song'
     var exampleContext = targetLang === 'Korean' ? '네이버 블로그 지식인 커뮤니티' : 'blog forum community'
     var exampleExclude = '-site:dict.naver.com -site:ko.dict.naver.com -site:papago.naver.com -site:translate.google.com -site:wordreference.com -site:reverso.net -site:linguee.com -site:glosbe.com -site:wiktionary.org -site:dict.cc -site:krdict.korean.go.kr -site:krdic.naver.com'
+    var terms = structure.indexOf(' OR ') !== -1 ? structure.split(' OR ') : [structure]
+    var examplePhrase = terms.map(function (t) { return '"' + t.trim() + '"' }).join(' OR ')
     var query = isLyrics
       ? structure + ' ' + lyricsKeyword
       : isExamples
-      ? '"' + structure + '" ' + exampleContext + ' ' + exampleExclude
+      ? examplePhrase + ' ' + exampleContext + ' ' + exampleExclude
       : structure + ' ' + targetLang + ' grammar meaning usage explanation'
     var params = new URLSearchParams({
       q: query,
@@ -86,7 +88,7 @@ export default async function handler(req, res) {
       var nativeOnly = mapped.filter(function (it) { return !dictPattern.test(it.uri) })
       var pool = nativeOnly.length ? nativeOnly : mapped
       // Prefer results whose snippet actually contains the structure (real occurrences).
-      var withHit = pool.filter(function (it) { return it.snippet && it.snippet.indexOf(structure) !== -1 })
+      var withHit = pool.filter(function (it) { return it.snippet && terms.some(function (t) { return it.snippet.indexOf(t.trim()) !== -1 }) })
       results = (withHit.length ? withHit : pool).slice(0, 6)
     } else {
       // Surface How To Study Korean first when it shows up — it's usually the most relevant.

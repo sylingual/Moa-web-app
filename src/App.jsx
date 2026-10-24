@@ -12853,7 +12853,7 @@ function AppInner() {
                         {!unlocked && <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>1 500 pts</div>}
                       </div>
                       {!unlocked && pts >= 1500 && (
-                        <button onClick={() => save({ ...data, profile: { ...data.profile, songsUnlocked: true } })}
+                        <button onClick={() => save({ ...data, profile: { ...data.profile, songsUnlocked: true, points: (data.profile?.points || 0) - 1500 } })}
                           style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                           {t.mySongsUnlock}
                         </button>

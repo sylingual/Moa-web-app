@@ -10169,16 +10169,18 @@ function AppInner() {
                     {recapCard._showExInfo && (
                       <div style={{ fontSize: 11, color: C.txtS, lineHeight: 1.5, marginBottom: 8, padding: "6px 10px", background: C.s1, borderRadius: 6, fontStyle: "italic" }}>{t.myExamplesInfo}</div>
                     )}
-                    {(recapCard.userExamples || []).map((ex, i) => (
+                    {(recapCard.userExamples || []).map((ex, i) => {
+                      const justAdded = recapCard._lastAddedEx === i;
+                      return (
                       <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 5 }}>
-                        <div style={{ flex: 1, fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.6, padding: "5px 9px", background: C.s1, borderRadius: 6 }}>{ex}</div>
+                        <div style={{ flex: 1, fontFamily: tFont, fontSize: 12.5, color: C.txtM, lineHeight: 1.6, padding: "5px 9px", background: justAdded ? C.okBg : C.s1, borderRadius: 6, border: justAdded ? `1px solid ${C.ok}` : "1px solid transparent", transition: "background 0.4s, border-color 0.4s" }}>{ex}</div>
                         <button onClick={() => {
                           const updated = (recapCard.userExamples || []).filter((_, j) => j !== i);
                           save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
                           setRecapCard(prev => prev ? { ...prev, userExamples: updated } : prev);
                         }} style={{ padding: 0, border: "none", background: "none", color: C.txtM, fontSize: 12, cursor: "pointer", lineHeight: 1, marginTop: 5, flexShrink: 0 }}>&times;</button>
                       </div>
-                    ))}
+                    ); })}
                     {recapCard._addingExample ? (
                       <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                         <input autoFocus id="user-example-input" placeholder={t.myExamplesPh}
@@ -10188,7 +10190,8 @@ function AppInner() {
                               if (v) {
                                 const updated = [...(recapCard.userExamples || []), v];
                                 save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
-                                setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false } : prev);
+                                setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false, _lastAddedEx: updated.length - 1 } : prev);
+                                setTimeout(() => setRecapCard(prev => prev ? { ...prev, _lastAddedEx: null } : prev), 1500);
                               }
                             }
                             if (e.key === "Escape") setRecapCard(prev => prev ? { ...prev, _addingExample: false } : prev);
@@ -10200,7 +10203,8 @@ function AppInner() {
                           if (v) {
                             const updated = [...(recapCard.userExamples || []), v];
                             save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, userExamples: updated } : c) });
-                            setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false } : prev);
+                            setRecapCard(prev => prev ? { ...prev, userExamples: updated, _addingExample: false, _lastAddedEx: updated.length - 1 } : prev);
+                            setTimeout(() => setRecapCard(prev => prev ? { ...prev, _lastAddedEx: null } : prev), 1500);
                           }
                         }} style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>+</button>
                       </div>

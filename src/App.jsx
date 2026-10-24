@@ -123,7 +123,7 @@ const T = {
     posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
     posVerbFr: "verbe", posAdjFr: "adjectif", posNounFr: "nom", posAdvFr: "adverbe", posParticleFr: "particule", posExpressionFr: "expression",
     batchPosDetect: "Détecter verbes", batchPosProgress: (n, t) => `Analyse ${n}/${t}...`, batchPosDone: (n) => `${n} verbe${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""}`,
-    posConjugations: "Conjugaisons", posInfinitive: "Infinitif", posPresentPolite: "Présent poli", posPresentCasual: "Présent amical", posPastPolite: "Passé poli", posPastCasual: "Passé amical", posFutureStem: "Futur (ㄹ)", posNominalForm: "Forme en 기",
+    posConjugations: "Conjugaisons", posInfinitive: "Infinitif", posStem: "Radical", posPresentPolite: "Présent poli", posPresentCasual: "Présent amical", posPastPolite: "Passé poli", posPastCasual: "Passé amical", posFutureStem: "Futur (ㄹ)", posNominalForm: "Forme en 기",
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
     imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
     exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
@@ -612,7 +612,7 @@ const T = {
     posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
     posVerbFr: "verb", posAdjFr: "adjective", posNounFr: "noun", posAdvFr: "adverb", posParticleFr: "particle", posExpressionFr: "expression",
     batchPosDetect: "Detect verbs", batchPosProgress: (n, t) => `Analyzing ${n}/${t}...`, batchPosDone: (n) => `${n} verb${n > 1 ? "s" : ""} detected`,
-    posConjugations: "Conjugations", posInfinitive: "Infinitive", posPresentPolite: "Present polite", posPresentCasual: "Present casual", posPastPolite: "Past polite", posPastCasual: "Past casual", posFutureStem: "Future (ㄹ)", posNominalForm: "기 form",
+    posConjugations: "Conjugations", posInfinitive: "Infinitive", posStem: "Stem", posPresentPolite: "Present polite", posPresentCasual: "Present casual", posPastPolite: "Past polite", posPastCasual: "Past casual", posFutureStem: "Future (ㄹ)", posNominalForm: "기 form",
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
     imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
     exNeedImages: "Not enough words with images for this exercise (pick some others).",
@@ -1102,7 +1102,7 @@ const T = {
     posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
     posVerbFr: "동사", posAdjFr: "형용사", posNounFr: "명사", posAdvFr: "부사", posParticleFr: "조사", posExpressionFr: "표현",
     batchPosDetect: "동사 감지", batchPosProgress: (n, t) => `분석 중 ${n}/${t}...`, batchPosDone: (n) => `동사 ${n}개 감지됨`,
-    posConjugations: "활용형", posInfinitive: "기본형", posPresentPolite: "현재 높임", posPresentCasual: "현재 반말", posPastPolite: "과거 높임", posPastCasual: "과거 반말", posFutureStem: "미래 (ㄹ)", posNominalForm: "기 형태",
+    posConjugations: "활용형", posInfinitive: "기본형", posStem: "어간", posPresentPolite: "현재 높임", posPresentCasual: "현재 반말", posPastPolite: "과거 높임", posPastCasual: "과거 반말", posFutureStem: "미래 (ㄹ)", posNominalForm: "기 형태",
     exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
     imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
     exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
@@ -1970,6 +1970,7 @@ Each object has:
 - "pos": one of "verb", "adjective", "noun", "adverb", "particle", "expression"
 - "conjugations": (only for verb/adjective) an object with these keys:
   - "infinitive": dictionary form (다 ending)
+  - "stem": the bare stem without 다
   - "presentPolite": 해요 style
   - "presentCasual": 해 style (without 요)
   - "pastPolite": 했어요 style
@@ -1978,7 +1979,7 @@ Each object has:
   - "nominalForm": 기 form
 
 Example for 먹다:
-{"word":"먹다","pos":"verb","conjugations":{"infinitive":"먹다","presentPolite":"먹어요","presentCasual":"먹어","pastPolite":"먹었어요","pastCasual":"먹었어","futureStem":"먹을","nominalForm":"먹기"}}
+{"word":"먹다","pos":"verb","conjugations":{"infinitive":"먹다","stem":"먹","presentPolite":"먹어요","presentCasual":"먹어","pastPolite":"먹었어요","pastCasual":"먹었어","futureStem":"먹을","nominalForm":"먹기"}}
 
 For non-verb/non-adjective words, omit "conjugations".`;
   const res = await callAI(sys, words, 2000);
@@ -10134,7 +10135,7 @@ function AppInner() {
                       </button>
                       {recapCard._showConj && (
                         <div style={{ padding: "8px 11px", background: C.s1, borderRadius: "0 0 8px 8px", borderTop: "none" }}>
-                          {[["infinitive", t.posInfinitive], ["presentPolite", t.posPresentPolite], ["presentCasual", t.posPresentCasual], ["pastPolite", t.posPastPolite], ["pastCasual", t.posPastCasual], ["futureStem", t.posFutureStem], ["nominalForm", t.posNominalForm]].map(([key, label]) => (
+                          {[["infinitive", t.posInfinitive], ["stem", t.posStem], ["presentPolite", t.posPresentPolite], ["presentCasual", t.posPresentCasual], ["pastPolite", t.posPastPolite], ["pastCasual", t.posPastCasual], ["futureStem", t.posFutureStem], ["nominalForm", t.posNominalForm]].map(([key, label]) => (
                             recapCard.conjugations[key] ? (
                               <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${C.border}` }}>
                                 <span style={{ fontSize: 11, color: C.txtM }}>{label}</span>

@@ -133,6 +133,7 @@ const T = {
     exVocabOnly: "Vocabulaire uniquement", exGrammarOnly: "Grammaire uniquement",
     matchWords: "Mots", matchDefs: "Définitions", exRestart: "Recommencer",
     exNeedWords: "Pas assez de mots adaptés pour cet exercice (choisis-en d'autres).",
+    exNeedMin: (n) => `Cet exercice nécessite au moins ${n} cartes. Sélectionne plus de cartes.`,
     crossCheck: "Vérifier", crossSolved: "Grille complétée !", crossHint: "Une case = une syllabe. Remplis à partir des définitions.", crossNextLvl: "Niveau suivant →",
     fillWordBank: "Banque de mots", fillCheck: "Vérifier mes réponses", fillScore: (c, t) => `${c}/${t} correct${c > 1 ? "s" : ""}`,
     fillCorrect: "Bonne réponse !", fillWrong: (w) => `Réponse : ${w}`, fillDone: "Bravo pour cet exercice !", fillTryAgain: "Bien essayé ! Tu veux retenter ?", fillRetry: "Réessayer",
@@ -629,6 +630,7 @@ const T = {
     exVocabOnly: "Vocabulary only", exGrammarOnly: "Grammar only",
     matchWords: "Words", matchDefs: "Definitions", exRestart: "Play again",
     exNeedWords: "Not enough suitable words for this exercise (pick some others).",
+    exNeedMin: (n) => `This exercise requires at least ${n} cards. Select more cards.`,
     crossCheck: "Check", crossSolved: "Grid complete!", crossHint: "One cell = one syllable. Fill it in from the clues.", crossNextLvl: "Next level →",
     fillWordBank: "Word bank", fillCheck: "Check my answers", fillScore: (c, t) => `${c}/${t} correct`,
     fillCorrect: "Correct!", fillWrong: (w) => `Answer: ${w}`, fillDone: "Great job on this exercise!", fillTryAgain: "Nice try! Want to try again?", fillRetry: "Try again",
@@ -1126,6 +1128,7 @@ const T = {
     exVocabOnly: "어휘 전용", exGrammarOnly: "문법 전용",
     matchWords: "단어", matchDefs: "뜻", exRestart: "다시 하기",
     exNeedWords: "이 연습에 맞는 단어가 부족해요 (다른 단어를 골라봐).",
+    exNeedMin: (n) => `이 연습은 최소 ${n}장의 카드가 필요해. 카드를 더 골라봐.`,
     crossCheck: "확인", crossSolved: "퍼즐 완성!", crossHint: "한 칸 = 한 음절. 뜻을 보고 채워 봐.", crossNextLvl: "다음 레벨 →",
     fillWordBank: "단어 은행", fillCheck: "정답 확인", fillScore: (c, t) => `${c}/${t} 정답`,
     fillCorrect: "정답!", fillWrong: (w) => `정답: ${w}`, fillDone: "잘했어!", fillTryAgain: "잘 했어! 다시 해볼래?", fillRetry: "다시 하기",
@@ -8570,6 +8573,8 @@ function AppInner() {
   // ---- EXERCISE ----
   const launchEx = async (theme) => {
     const sel = exerciseCards.filter(c => exSel.has(c.id)); if (!sel.length) return;
+    const minCards = (exMode === "match" || exMode === "cross") ? 2 : 0;
+    if (minCards && sel.length < minCards) { setProgressToast(t.exNeedMin(minCards)); setTimeout(() => setProgressToast(null), 3000); return; }
     trackEvent("exercise_start", { exercise_type: exMode, card_count: sel.length, category: exCategory, due_filter: exDueOnly, theme: theme || null });
     // Non-AI exercises render their own component; components report actually-used ids via onComplete.
     if (exMode === "match" || exMode === "cross" || exMode === "flash" || exMode === "imgwrite") { exActiveIdsRef.current = []; setExConv([]); setExDone(false); setFillData(null); setExOn(true); return; }

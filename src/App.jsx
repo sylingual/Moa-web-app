@@ -386,7 +386,7 @@ const T = {
     goalExpired: "Le délai est dépassé. Prolonger ?",
     goalExtend: "Prolonger",
     goalNewDeadline: "Nouvelle date limite",
-    goalMilestone: (pct) => `${pct}% de l'objectif atteint !`,
+    goalMilestone: (pct, name) => `${pct}% des mots acquis ${name ? `pour "${name}"` : ""} !`,
     goalCardCount: (n) => `${n} carte${n > 1 ? "s" : ""}`,
     goalOf: "sur",
     goalPickCards: "Sélectionner des cartes",
@@ -879,7 +879,7 @@ const T = {
     goalExpired: "Deadline passed. Extend?",
     goalExtend: "Extend",
     goalNewDeadline: "New deadline",
-    goalMilestone: (pct) => `${pct}% of the goal reached!`,
+    goalMilestone: (pct, name) => `${pct}% of words acquired ${name ? `for "${name}"` : ""}!`,
     goalCardCount: (n) => `${n} card${n > 1 ? "s" : ""}`,
     goalOf: "of",
     goalPickCards: "Select cards",
@@ -1370,7 +1370,7 @@ const T = {
     goalExpired: "기한이 지났어. 연장할래?",
     goalExtend: "연장",
     goalNewDeadline: "새 마감일",
-    goalMilestone: (pct) => `목표의 ${pct}% 달성!`,
+    goalMilestone: (pct, name) => `${name ? `"${name}" ` : ""}단어 습득 ${pct}% 달성!`,
     goalCardCount: (n) => `카드 ${n}장`,
     goalOf: "/",
     goalPickCards: "카드 선택",
@@ -8310,7 +8310,7 @@ function AppInner() {
     }
     nd = awardPoints(hit === 100 ? 50 : 25, nd);
     save(nd);
-    setGoalCelebration({ pct: hit });
+    setGoalCelebration({ pct: hit, name: goal.name });
     setShowCelebration(true);
   };
 
@@ -9036,7 +9036,7 @@ function AppInner() {
       {goalCelebration && !showCelebration && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}
           onClick={() => setGoalCelebration(null)}>
-          🎯 {t.goalMilestone(goalCelebration.pct)}
+          🎯 {t.goalMilestone(goalCelebration.pct, goalCelebration.name)}
         </div>
       )}
 

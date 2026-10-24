@@ -352,6 +352,8 @@ const T = {
     goalTodayDiscover: "À découvrir",
     goalTodayPractice: "À pratiquer",
     goalTodayAllDone: "Tout est fait pour aujourd'hui !",
+    goalDailyBonus: (name, n) => `Objectif "${name}" : tout fait pour aujourd'hui ! +${n} pts`,
+    goalAllDailyBonus: (n) => `Tous les objectifs du jour terminés ! +${n} pts`,
     goalEditDeadline: "Modifier la date",
     goalDaysLeft: (n) => n <= 0 ? "Délai dépassé" : `${n} jour${n > 1 ? "s" : ""} restant${n > 1 ? "s" : ""}`,
     goalProgress1: "Découvertes",
@@ -846,6 +848,8 @@ const T = {
     goalTodayDiscover: "To discover",
     goalTodayPractice: "To practice",
     goalTodayAllDone: "All done for today!",
+    goalDailyBonus: (name, n) => `Goal "${name}": all done for today! +${n} pts`,
+    goalAllDailyBonus: (n) => `All goals done for today! +${n} pts`,
     goalEditDeadline: "Change date",
     goalDaysLeft: (n) => n <= 0 ? "Overdue" : `${n} day${n > 1 ? "s" : ""} left`,
     goalProgress1: "Discovered",
@@ -1338,6 +1342,8 @@ const T = {
     goalTodayDiscover: "발견할 카드",
     goalTodayPractice: "연습할 카드",
     goalTodayAllDone: "오늘 할 거 다 했어!",
+    goalDailyBonus: (name, n) => `"${name}" 오늘 목표 완료! +${n} 포인트`,
+    goalAllDailyBonus: (n) => `오늘 목표 전부 완료! +${n} 포인트`,
     goalEditDeadline: "날짜 변경",
     goalDaysLeft: (n) => n <= 0 ? "기한 초과" : `${n}일 남음`,
     goalProgress1: "학습 시작",
@@ -6609,6 +6615,43 @@ function AppInner() {
     setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
     setTimeout(() => setPointsToast(null), 3000);
   }, [data.today, data.cards, save]);
+
+  // Goal daily bonus: +30 per goal when all today's cards are done, +10 when all goals done (if 2+).
+  useEffect(() => {
+    if (!loaded || !data.goals?.length) return;
+    const today = dayKey();
+    const gt = data.goalToday || {};
+    const activeGoals = data.goals.filter(g => !g.trophyDate && !(g.startDate && g.startDate > today));
+    if (!activeGoals.length) return;
+    const isDoneDiscover = (c) => { const s = migrateStatus(c.status); if (s === "studied" || s === "acquired") return true; const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); };
+    const isDonePractice = (c) => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); };
+    let totalBonus = 0;
+    let updatedGt = { ...gt };
+    let bonusLabel = null;
+    for (const goal of activeGoals) {
+      const todaySet = gt[goal.id];
+      if (!todaySet || todaySet.date !== today || todaySet.bonusAwarded) continue;
+      const disc = (todaySet.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+      const prac = (todaySet.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+      if (!disc.length && !prac.length) continue;
+      if (!disc.every(isDoneDiscover) || !prac.every(isDonePractice)) continue;
+      totalBonus += 30;
+      bonusLabel = t.goalDailyBonus(goal.name, 30);
+      updatedGt = { ...updatedGt, [goal.id]: { ...updatedGt[goal.id], bonusAwarded: true } };
+    }
+    if (totalBonus > 0) {
+      const allBonused = activeGoals.every(g => { const ts = updatedGt[g.id]; return ts && ts.date === today && ts.bonusAwarded; });
+      if (allBonused && activeGoals.length > 1 && !gt.__allGoalsBonus?.[today]) {
+        totalBonus += 10;
+        bonusLabel = t.goalAllDailyBonus(10);
+        updatedGt = { ...updatedGt, __allGoalsBonus: { [today]: true } };
+      }
+      const base = data.profile || DEFAULT_PROFILE;
+      save({ ...data, goalToday: updatedGt, profile: { ...base, points: (base.points || 0) + totalBonus } });
+      setPointsToast({ n: totalBonus, label: bonusLabel });
+      setTimeout(() => setPointsToast(null), 3000);
+    }
+  }, [data.goalToday, data.goals, data.cards, save]);
 
   const handleSync = async () => {
     const id = syncInput.trim();

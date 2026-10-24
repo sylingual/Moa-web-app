@@ -187,6 +187,7 @@ const T = {
     anExercise: "Un exercice", explainOther: "Expliquer autrement", anImage: "Une image", youglishBtn: "Une vidéo", lyricsBtn: "Une chanson",
     lyricsAsk: "Est-ce qu’il y a une chanson qui contient ce mot ? 🎵",
     addSongBtn: "Ajouter une chanson", addSongUrl: "Lien YouTube ou Spotify", addSongLyrics: "Lien vers les paroles (optionnel)", addSongAdd: "Ajouter", addSongListenBtn: "Ecouter", addSongLyricsBtn: "Paroles", addSongTitle: "Mes chansons", addSongLoading: "Chargement...", addSongNeedUrl: "Il faut au moins un lien",
+    mySongsSection: "Ma collection de chansons", mySongsLocked: (pts) => `Encore ${pts} points pour debloquer`, mySongsUnlock: "Debloquer", mySongsEmpty: "Aucune chanson ajoutee. Ajoute des chansons depuis les fiches de vocabulaire !", mySongsCard: "Fiche",
     askImage: "Montre-moi une image de ce mot 📷", imageNone: "Aucune image trouvée pour ce mot.",
     otherImages: "D'autres images", refineImage: "Préciser (ex. dessin, réel…)",
     imgChoose: "Choisir", imgChosen: "Ajouté", imgAdded: "Image ajoutée ✓", imgAlready: "Image déjà sur la carte",
@@ -679,6 +680,7 @@ const T = {
     anExercise: "An exercise", explainOther: "Explain differently", anImage: "An image", youglishBtn: "In video", lyricsBtn: "A song",
     lyricsAsk: "Is there a song that contains this word? 🎵",
     addSongBtn: "Add a song", addSongUrl: "YouTube or Spotify link", addSongLyrics: "Link to lyrics (optional)", addSongAdd: "Add", addSongListenBtn: "Listen", addSongLyricsBtn: "Lyrics", addSongTitle: "My songs", addSongLoading: "Loading...", addSongNeedUrl: "You need at least one link",
+    mySongsSection: "My song collection", mySongsLocked: (pts) => `${pts} more points to unlock`, mySongsUnlock: "Unlock", mySongsEmpty: "No songs added yet. Add songs from your vocabulary cards!", mySongsCard: "Card",
     askImage: "Show me an image of this word 📷", imageNone: "No image found for this word.",
     otherImages: "Other images", refineImage: "Refine (e.g. drawing, real…)",
     imgChoose: "Choose", imgChosen: "Added", imgAdded: "Image added ✓", imgAlready: "Image already on the card",
@@ -1171,6 +1173,7 @@ const T = {
     anExercise: "연습 문제", explainOther: "다르게 설명", anImage: "이미지", youglishBtn: "영상", lyricsBtn: "노래",
     lyricsAsk: "이 단어가 들어간 노래가 있어? 🎵",
     addSongBtn: "노래 추가", addSongUrl: "YouTube 또는 Spotify 링크", addSongLyrics: "가사 링크 (선택)", addSongAdd: "추가", addSongListenBtn: "듣기", addSongLyricsBtn: "가사", addSongTitle: "내 노래", addSongLoading: "로딩 중...", addSongNeedUrl: "링크가 하나는 필요해",
+    mySongsSection: "내 노래 모음", mySongsLocked: (pts) => `잠금 해제까지 ${pts}포인트 더 필요해`, mySongsUnlock: "잠금 해제", mySongsEmpty: "아직 추가된 노래가 없어. 단어 카드에서 노래를 추가해 봐!", mySongsCard: "카드",
     askImage: "이 단어 이미지를 보여줘 📷", imageNone: "이 단어에 대한 이미지를 찾지 못했어요.",
     otherImages: "다른 이미지", refineImage: "검색어 수정 (예: 그림, 실물...)",
     imgChoose: "선택", imgChosen: "추가됨", imgAdded: "이미지 추가됨 ✓", imgAlready: "이미 카드에 있는 이미지야",
@@ -12832,9 +12835,70 @@ function AppInner() {
                 </>;
               })()}
 
-              <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic", paddingBottom: 60 }}>
+              <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.5, fontStyle: "italic", paddingBottom: 20 }}>
                 💡 {t.profileAutoUpdate}
               </div>
+
+              {/* My songs collection */}
+              {(() => {
+                const pts = data.profile?.points || 0;
+                const unlocked = data.profile?.songsUnlocked;
+                const allSongs = (data.cards || []).filter(c => (c.targetLang || "ko") === tl && (c.userSongs || []).length > 0).flatMap(c => (c.userSongs || []).map(s => ({ ...s, cardKorean: c.korean, cardMeaning: c.french || c.english || "" })));
+                const remaining = Math.max(0, 1500 - pts);
+                return (
+                  <div style={{ marginTop: 12, padding: 16, borderRadius: 12, border: `1px solid ${C.border}`, background: C.s1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: unlocked ? 12 : 0 }}>
+                      <span style={{ fontSize: 18 }}>{unlocked ? "🎵" : "🔒"}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{t.mySongsSection}</div>
+                        {!unlocked && <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>1 500 pts</div>}
+                      </div>
+                      {!unlocked && pts >= 1500 && (
+                        <button onClick={() => save({ ...data, profile: { ...data.profile, songsUnlocked: true } })}
+                          style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                          {t.mySongsUnlock}
+                        </button>
+                      )}
+                    </div>
+                    {!unlocked && pts < 1500 && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ height: 6, borderRadius: 3, background: C.s2, overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 3, background: C.acc, width: `${Math.min(100, (pts / 1500) * 100)}%`, transition: "width 0.3s" }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: C.txtM, marginTop: 4 }}>{t.mySongsLocked(remaining)}</div>
+                      </div>
+                    )}
+                    {unlocked && (
+                      allSongs.length === 0 ? (
+                        <div style={{ fontSize: 12, color: C.txtM, fontStyle: "italic" }}>{t.mySongsEmpty}</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {allSongs.map((song, i) => (
+                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 10, background: C.bg, border: `1px solid ${C.border}` }}>
+                              {song.coverImg && <img src={song.coverImg} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12.5, fontWeight: 600, color: C.txt, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title || song.url}</div>
+                                {song.artist && <div style={{ fontSize: 10.5, color: C.txtM }}>{song.artist}</div>}
+                                <div style={{ fontSize: 10, color: C.acc, marginTop: 2 }}>{t.mySongsCard} : {song.cardKorean} {song.cardMeaning ? `(${song.cardMeaning})` : ""}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                                {song.url && <button onClick={() => window.open(song.url, "_blank")}
+                                  style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  {t.addSongListenBtn}
+                                </button>}
+                                {song.lyricsUrl && <button onClick={() => window.open(song.lyricsUrl, "_blank")}
+                                  style={{ padding: "5px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: "none", color: C.txt, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  {t.addSongLyricsBtn}
+                                </button>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Lesson history (filtered by current target language) */}
               {(() => {

@@ -4241,12 +4241,14 @@ function shuffle(arr) {
 
 // #68 — Match each word to its definition (two columns, tap a word then its definition).
 function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
+  const cardsRef = useRef(cards);
+  if (cards.length) cardsRef.current = cards;
   const [round, setRound] = useState(0);
   const pairs = useMemo(() => {
-    const p = cards.filter(c => (c.description || "").trim()).map(c => ({ id: c.id, kr: c.korean, def: (c.description || "").trim() }));
+    const p = cardsRef.current.filter(c => (c.description || "").trim()).map(c => ({ id: c.id, kr: c.korean, def: (c.description || "").trim() }));
     return shuffle(p).slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards, round]);
+  }, [round]);
   const left = useMemo(() => shuffle(pairs), [pairs]);
   const right = useMemo(() => shuffle(pairs), [pairs]);
   const [sel, setSel] = useState(null);       // selected item id
@@ -4315,8 +4317,10 @@ function MatchExercise({ cards, tFont, t, onComplete, onExit }) {
 
 // #69 — Flashcard: supports recto (KR→meaning), verso (meaning→KR), both; recognition or write mode.
 function FlashcardExercise({ cards, tFont, t, direction = "recto", inputMethod = "recognition", onComplete, onExit }) {
+  const cardsRef = useRef(cards);
+  if (cards.length) cardsRef.current = cards;
   const initial = useMemo(() => {
-    const d = cards.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
+    const d = cardsRef.current.filter(c => c.type === "vocab" && (c.description || "").trim()).map(c => ({
       id: c.id, kr: c.korean, def: (c.description || "").trim(),
       ex: (c.example || "").trim(), exTr: (c.exampleTranslation || c.exTranslation || "").trim(),
       img: (c.images && c.images[0]) ? (c.images[0].thumb || c.images[0].url) : null,
@@ -4327,7 +4331,8 @@ function FlashcardExercise({ cards, tFont, t, direction = "recto", inputMethod =
       return shuffle(items);
     }
     return shuffle(d.map(c => ({ ...c, side: direction })));
-  }, [cards, direction]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [direction]);
 
   const [queue, setQueue] = useState(() => [...initial]);
   const [flipped, setFlipped] = useState(false);
@@ -4502,12 +4507,15 @@ function normalizeAnswer(s) {
   return s.replace(/\s+/g, "").toLowerCase();
 }
 function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
+  const cardsRef = useRef(cards);
+  if (cards.length) cardsRef.current = cards;
   const initial = useMemo(() => {
-    const d = cards.filter(c => c.type === "vocab" && c.images && c.images.length > 0).map(c => ({
+    const d = cardsRef.current.filter(c => c.type === "vocab" && c.images && c.images.length > 0).map(c => ({
       id: c.id, kr: c.korean.trim(), img: c.images[0].thumb || c.images[0].url, def: (c.description || "").trim(),
     }));
     return shuffle(d);
-  }, [cards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [queue, setQueue] = useState(() => [...initial]);
   const [input, setInput] = useState("");
   const [result, setResult] = useState(null);
@@ -4753,9 +4761,11 @@ function buildCrossword(words) {
 }
 
 function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
+  const cardsRef = useRef(cards);
+  if (cards.length) cardsRef.current = cards;
   const [round, setRound] = useState(0);
   const words = useMemo(() => {
-    const w = cards
+    const w = cardsRef.current
       .filter(c => isCrosswordWord(c.korean) && (c.description || "").trim())
       .map(c => {
         const raw = c.korean.trim();
@@ -4765,7 +4775,7 @@ function CrosswordExercise({ cards, tFont, t, onComplete, onExit }) {
       });
     return shuffle(w).slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards, round]);
+  }, [round]);
   const isKorean = words.length > 0 && words.some(w => w.hangul);
   const cw = useMemo(() => buildCrossword(words), [words]);
   const [vals, setVals] = useState({});

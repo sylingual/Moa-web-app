@@ -2248,7 +2248,27 @@ function exampleSearchLinks(card, tlCode) {
     { title: `YouTube — ${structure}`, uri: `https://www.youtube.com/results?search_query=${plain}` },
   ];
   if (tlCode === "ko") links.push({ title: `Naver — ${structure}`, uri: `https://search.naver.com/search.naver?query=${phrase}` });
+  const extra = getVerbForms(card);
+  for (const form of extra.slice(0, 3)) {
+    const fp = encodeURIComponent('"' + form + '"');
+    links.push({ title: `Google — « ${form} »`, uri: `https://www.google.com/search?q=${fp}` });
+  }
   return links;
+}
+
+function getVerbForms(card) {
+  if (!card.conjugations || !(card.pos === "verb" || card.pos === "adjective")) return [];
+  const c = card.conjugations;
+  const forms = [c.stem, c.presentPolite, c.presentCasual, c.pastPolite, c.pastCasual, c.futureStem, c.nominalForm].filter(Boolean);
+  const base = card.korean.trim();
+  return [...new Set(forms.filter(f => f !== base))];
+}
+
+function buildSearchQuery(card) {
+  const base = card.korean.trim();
+  const extra = getVerbForms(card);
+  if (!extra.length) return base;
+  return [base, ...extra.slice(0, 4)].join(" OR ");
 }
 
 // "Exemples authentiques": real web occurrences of the structure via Brave Search (same
@@ -2257,6 +2277,7 @@ function exampleSearchLinks(card, tlCode) {
 async function findRealExamples(card, lang, tlCode) {
   const TL = getTargetLangName(tlCode, "en");
   const structure = card.korean.trim();
+  const searchQ = buildSearchQuery(card);
 
   const curatedFallback = () => {
     const note = lang === "fr"
@@ -2266,7 +2287,7 @@ async function findRealExamples(card, lang, tlCode) {
   };
 
   try {
-    const data = await callResources(structure, TL, lang, "examples");
+    const data = await callResources(searchQ, TL, lang, "examples");
     const results = (data.results || []).filter((r) => r && r.uri);
     if (results.length) {
       const intro = lang === "fr"
@@ -2285,6 +2306,7 @@ async function findSongLyrics(card, lang, tlCode) {
   const structure = card.korean.trim();
   const TL = getTargetLangName(tlCode, "en");
   const lyricsWord = tlCode === "ko" ? "가사 노래" : "lyrics song";
+  const searchQ = buildSearchQuery(card);
 
   const curatedFallback = () => {
     const q = encodeURIComponent(structure + " " + lyricsWord);
@@ -2293,14 +2315,20 @@ async function findSongLyrics(card, lang, tlCode) {
       : lang === "ko"
         ? `« ${structure} »가 포함된 노래 가사 검색:`
         : `Search for songs containing "${structure}" in their lyrics:`;
-    return { text: note, sources: [
+    const sources = [
       { title: `Google — ${structure} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
       { title: `YouTube — ${structure} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
-    ] };
+    ];
+    const extra = getVerbForms(card);
+    for (const form of extra.slice(0, 2)) {
+      const fq = encodeURIComponent(form + " " + lyricsWord);
+      sources.push({ title: `Google — ${form} ${lyricsWord}`, uri: `https://www.google.com/search?q=${fq}` });
+    }
+    return { text: note, sources };
   };
 
   try {
-    const data = await callResources(structure, TL, lang, "lyrics");
+    const data = await callResources(searchQ, TL, lang, "lyrics");
     const results = (data.results || []).filter((r) => r && r.uri);
     if (results.length) {
       const intro = lang === "fr"

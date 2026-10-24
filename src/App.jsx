@@ -10321,7 +10321,7 @@ function AppInner() {
                     )}
                   </div>
                   {/* Songs on recap card */}
-                  {recapCard.type === "vocab" && (
+                  {recapCard.type !== "grammar" && (
                     <div style={{ marginTop: 12 }}>
                       {(recapCard.userSongs || []).length > 0 && (
                         <div style={{ fontSize: 11, fontWeight: 600, color: C.txtM, marginBottom: 6 }}>{t.addSongTitle}</div>
@@ -10437,7 +10437,7 @@ function AppInner() {
                       </div>
                     );
                   })()}
-                  {tl === "ko" && recapCard.type === "vocab" && (
+                  {tl === "ko" && recapCard.type !== "grammar" && (
                     <div style={{ marginTop: 10, padding: "10px 12px", background: C.s1, borderRadius: 8 }}>
                       {(recapCard.formality || recapCard.registerFormal !== undefined) ? (
                         <>
@@ -10477,7 +10477,7 @@ function AppInner() {
                       )}
                     </div>
                   )}
-                  {recapCard.type === "vocab" && (recapCard.images || []).length > 0 && (
+                  {recapCard.type !== "grammar" && (recapCard.images || []).length > 0 && (
                     <div style={{ marginTop: 10 }}>
                       <div style={{ fontSize: 11, color: C.txtM, marginBottom: 6 }}>{t.cardImages}</div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

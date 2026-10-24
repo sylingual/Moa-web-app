@@ -120,6 +120,10 @@ const T = {
     flashInputLabel: "Mode de réponse", flashInputRecog: "Reconnaissance", flashInputRecogDesc: "Retourne la carte",
     flashInputWrite: "Écrire", flashInputWriteDesc: "Tape la réponse",
     flashBonusPoints: "bonus", flashTypeAnswer: "Tape ta réponse", flashWrong: (w) => `C'était : ${w}`,
+    posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
+    posVerbFr: "verbe", posAdjFr: "adjectif", posNounFr: "nom", posAdvFr: "adverbe", posParticleFr: "particule", posExpressionFr: "expression",
+    batchPosDetect: "Détecter verbes", batchPosProgress: (n, t) => `Analyse ${n}/${t}...`, batchPosDone: (n) => `${n} verbe${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""}`,
+    posConjugations: "Conjugaisons", posInfinitive: "Infinitif", posPresentPolite: "Présent poli", posPresentCasual: "Présent amical", posPastPolite: "Passé poli", posPastCasual: "Passé amical", posFutureStem: "Futur (ㄹ)", posNominalForm: "Forme en 기",
     exImgWrite: "Image -> Mot", exImgWriteDesc: "Retrouve le mot à partir de son image.",
     imgWriteHint: "Écris le mot correspondant à l'image", imgWriteCheck: "Vérifier", imgWriteCorrect: "Correct !", imgWriteWrong: (w) => `C'était : ${w}`, imgWriteNext: "Suivant",
     exNeedImages: "Pas assez de mots avec image pour cet exercice (choisis-en d'autres).",
@@ -605,6 +609,10 @@ const T = {
     flashInputLabel: "Answer mode", flashInputRecog: "Recognition", flashInputRecogDesc: "Flip the card",
     flashInputWrite: "Write", flashInputWriteDesc: "Type the answer",
     flashBonusPoints: "bonus", flashTypeAnswer: "Type your answer", flashWrong: (w) => `It was: ${w}`,
+    posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
+    posVerbFr: "verb", posAdjFr: "adjective", posNounFr: "noun", posAdvFr: "adverb", posParticleFr: "particle", posExpressionFr: "expression",
+    batchPosDetect: "Detect verbs", batchPosProgress: (n, t) => `Analyzing ${n}/${t}...`, batchPosDone: (n) => `${n} verb${n > 1 ? "s" : ""} detected`,
+    posConjugations: "Conjugations", posInfinitive: "Infinitive", posPresentPolite: "Present polite", posPresentCasual: "Present casual", posPastPolite: "Past polite", posPastCasual: "Past casual", posFutureStem: "Future (ㄹ)", posNominalForm: "기 form",
     exImgWrite: "Image -> Word", exImgWriteDesc: "Find the word from its image.",
     imgWriteHint: "Write the word matching the image", imgWriteCheck: "Check", imgWriteCorrect: "Correct!", imgWriteWrong: (w) => `It was: ${w}`, imgWriteNext: "Next",
     exNeedImages: "Not enough words with images for this exercise (pick some others).",
@@ -1091,6 +1099,10 @@ const T = {
     flashInputLabel: "답변 방식", flashInputRecog: "인식", flashInputRecogDesc: "카드 뒤집기",
     flashInputWrite: "쓰기", flashInputWriteDesc: "답 입력하기",
     flashBonusPoints: "보너스", flashTypeAnswer: "답을 입력해", flashWrong: (w) => `정답은: ${w}`,
+    posVerb: "동사", posAdj: "형용사", posNoun: "명사", posAdv: "부사", posParticle: "조사", posExpression: "표현",
+    posVerbFr: "동사", posAdjFr: "형용사", posNounFr: "명사", posAdvFr: "부사", posParticleFr: "조사", posExpressionFr: "표현",
+    batchPosDetect: "동사 감지", batchPosProgress: (n, t) => `분석 중 ${n}/${t}...`, batchPosDone: (n) => `동사 ${n}개 감지됨`,
+    posConjugations: "활용형", posInfinitive: "기본형", posPresentPolite: "현재 높임", posPresentCasual: "현재 반말", posPastPolite: "과거 높임", posPastCasual: "과거 반말", posFutureStem: "미래 (ㄹ)", posNominalForm: "기 형태",
     exImgWrite: "이미지 → 단어", exImgWriteDesc: "이미지를 보고 단어를 찾아봐.",
     imgWriteHint: "이미지에 맞는 단어를 써 봐", imgWriteCheck: "확인", imgWriteCorrect: "정답!", imgWriteWrong: (w) => `정답은: ${w}`, imgWriteNext: "다음",
     exNeedImages: "이 연습에 필요한 이미지가 있는 단어가 부족해요 (다른 단어를 골라봐).",
@@ -1945,6 +1957,32 @@ function collectInterests(data, tlCode) {
   if (p.interests) p.interests.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(s => items.push(s));
   if (p.dream) items.push(p.dream);
   return items;
+}
+
+async function detectPartOfSpeech(cards, tlCode) {
+  const TL = getTargetLangName(tlCode, "en");
+  const words = cards.map(c => c.korean).join("\n");
+  const sys = `You are a ${TL} linguistics expert. For each word, determine its part of speech and, if it is a verb or adjective, provide Korean conjugation forms.
+
+Respond ONLY in valid JSON: an array of objects, one per input word (same order).
+Each object has:
+- "word": the input word
+- "pos": one of "verb", "adjective", "noun", "adverb", "particle", "expression"
+- "conjugations": (only for verb/adjective) an object with these keys:
+  - "infinitive": dictionary form (다 ending)
+  - "presentPolite": 해요 style
+  - "presentCasual": 해 style (without 요)
+  - "pastPolite": 했어요 style
+  - "pastCasual": 했어 style (without 요)
+  - "futureStem": stem + ㄹ form
+  - "nominalForm": 기 form
+
+Example for 먹다:
+{"word":"먹다","pos":"verb","conjugations":{"infinitive":"먹다","presentPolite":"먹어요","presentCasual":"먹어","pastPolite":"먹었어요","pastCasual":"먹었어","futureStem":"먹을","nominalForm":"먹기"}}
+
+For non-verb/non-adjective words, omit "conjugations".`;
+  const res = await callAI(sys, words, 2000);
+  return parseJSON(res.text);
 }
 
 async function startSocratic(card, article, lang, context, tlCode, interestPool) {
@@ -3236,6 +3274,8 @@ function BookSpine({ card, t, color, cardBg, masked, compact, active, onClick, o
       <span style={{ padding: compact ? "6px 8px 6px 11px" : "8px 10px 8px 11px", display: "flex", alignItems: "center", gap: 7 }}>
         {card.images && card.images[0] && <img src={card.images[0].thumb || card.images[0].url} alt="" style={{ width: compact ? 18 : 22, height: compact ? 18 : 22, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />}
         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: compact ? 13.5 : 14.5, color: C.txt }}>{card.korean}</span>
+        {card.pos === "verb" && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 8, background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE", lineHeight: 1.3, flexShrink: 0 }}>동</span>}
+        {card.pos === "adjective" && <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 5px", borderRadius: 8, background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE", lineHeight: 1.3, flexShrink: 0 }}>형</span>}
         {masked && <span style={{ width: 15, height: 15, borderRadius: "50%", background: C.s1, color: C.txtM, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans'" }}>?</span>}
         {onToggleStatus && iconBtn("↩", t.toStudied, onToggleStatus, C.acc)}
         {onDelete && iconBtn("🗑", t.deleteCard, onDelete, C.warn)}
@@ -5918,6 +5958,8 @@ function AppInner() {
   const [bulkTagPicker, setBulkTagPicker] = useState(false);
   const [bulkImportedIds, setBulkImportedIds] = useState([]);
   const [cardToDelete, setCardToDelete] = useState(null);
+  const [batchPosRunning, setBatchPosRunning] = useState(false);
+  const [batchPosProgress, setBatchPosProgress] = useState(null);
   const [confirmToggle, setConfirmToggle] = useState(null); // card pending Studied<->Acquired change
   const [expandedId, setExpandedId] = useState(null); // studied card whose explanation is unfolded
   const [pendingExpanded, setPendingExpanded] = useState(false);
@@ -7579,6 +7621,18 @@ function AppInner() {
           if (res.description_target) {
             setData(prev => {
               const nd = { ...prev, cards: prev.cards.map(x => x.id === lCard.id ? { ...x, description_target: res.description_target } : x) };
+              saveData(nd, syncId);
+              return nd;
+            });
+          }
+        }).catch(() => {});
+      }
+      if (lCard.type === "vocab" && !lCard.pos) {
+        detectPartOfSpeech([lCard], lCard.targetLang || tl).then(results => {
+          if (results && results[0] && results[0].pos) {
+            const r = results[0];
+            setData(prev => {
+              const nd = { ...prev, cards: prev.cards.map(x => x.id === lCard.id ? { ...x, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) } : x) };
               saveData(nd, syncId);
               return nd;
             });
@@ -9344,6 +9398,41 @@ function AppInner() {
                     🏷 {bulkTagMode ? t.bulkTagDone : t.bulkTagBtn}
                   </button>
                 )}
+                {filteredCards.some(c => c.type === "vocab" && !c.pos) && !batchPosRunning && (
+                  <button onClick={async () => {
+                    setBatchPosRunning(true);
+                    const vocabCards = filteredCards.filter(c => c.type === "vocab" && !c.pos);
+                    let detected = 0;
+                    for (let i = 0; i < vocabCards.length; i += 10) {
+                      const batch = vocabCards.slice(i, i + 10);
+                      setBatchPosProgress({ current: i, total: vocabCards.length });
+                      try {
+                        const results = await detectPartOfSpeech(batch, tl);
+                        if (results && Array.isArray(results)) {
+                          setData(prev => {
+                            const nd = { ...prev, cards: prev.cards.map(c => {
+                              const r = results.find(r => r.word === c.korean);
+                              if (!r || !r.pos) return c;
+                              return { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) };
+                            })};
+                            saveData(nd, syncId);
+                            return nd;
+                          });
+                          detected += results.filter(r => r.pos === "verb" || r.pos === "adjective").length;
+                        }
+                      } catch (e) { console.error("Batch POS error:", e); }
+                    }
+                    setBatchPosProgress(null);
+                    setBatchPosRunning(false);
+                    alert(t.batchPosDone(detected));
+                  }}
+                    style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                    🔍 {t.batchPosDetect}
+                  </button>
+                )}
+                {batchPosRunning && batchPosProgress && (
+                  <span style={{ fontSize: 11, color: C.acc, fontFamily: "'Plus Jakarta Sans'" }}>{t.batchPosProgress(batchPosProgress.current, batchPosProgress.total)}</span>
+                )}
               </div>
             </div>
             {filteredCards.length === 0
@@ -9388,6 +9477,12 @@ function AppInner() {
                                 <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 8px", borderRadius: 10, background: ex.formality === "formal" ? C.stStudiedCard : ex.formality === "casual" ? C.stAcqCard : C.s1, color: ex.formality === "formal" ? C.stStudied : ex.formality === "casual" ? C.stAcq : C.txtM, border: `1px solid ${ex.formality === "formal" ? C.stStudiedB : ex.formality === "casual" ? C.stAcqB : C.border}` }}>
                                   {t.formalityLabel} · {t.formality[ex.formality]}
                                 </span>
+                              )}
+                              {ex.pos === "verb" && (
+                                <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{t.posVerb} · {t.posVerbFr}</span>
+                              )}
+                              {ex.pos === "adjective" && (
+                                <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE" }}>{t.posAdj} · {t.posAdjFr}</span>
                               )}
                             </div>
                             {showTargetDef[ex.id] && ex.description_target ? (
@@ -10004,6 +10099,12 @@ function AppInner() {
                         {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
                       </span>
                     )}
+                    {recapCard.pos === "verb" && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{t.posVerb} · {t.posVerbFr}</span>
+                    )}
+                    {recapCard.pos === "adjective" && (
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE" }}>{t.posAdj} · {t.posAdjFr}</span>
+                    )}
                   </div>
                   {showTargetDef[recapCard.id] && recapCard.description_target ? (
                     <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.6, marginBottom: 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
@@ -10023,6 +10124,27 @@ function AppInner() {
                     {recapCard.example_kr && <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8 }}>{recapCard.example_kr}</div>}
                     {recapCard.example_tr && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 3 }}>{recapCard.example_tr}</div>}
                   </div>
+                  )}
+                  {recapCard.conjugations && (recapCard.pos === "verb" || recapCard.pos === "adjective") && (
+                    <div style={{ marginTop: 8 }}>
+                      <button onClick={() => setRecapCard(prev => prev ? { ...prev, _showConj: !prev._showConj } : prev)}
+                        style={{ width: "100%", padding: "8px 11px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.txt }}>{t.posConjugations}</span>
+                        <span style={{ fontSize: 9, color: C.txtS, transform: recapCard._showConj ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>&#9660;</span>
+                      </button>
+                      {recapCard._showConj && (
+                        <div style={{ padding: "8px 11px", background: C.s1, borderRadius: "0 0 8px 8px", borderTop: "none" }}>
+                          {[["infinitive", t.posInfinitive], ["presentPolite", t.posPresentPolite], ["presentCasual", t.posPresentCasual], ["pastPolite", t.posPastPolite], ["pastCasual", t.posPastCasual], ["futureStem", t.posFutureStem], ["nominalForm", t.posNominalForm]].map(([key, label]) => (
+                            recapCard.conjugations[key] ? (
+                              <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${C.border}` }}>
+                                <span style={{ fontSize: 11, color: C.txtM }}>{label}</span>
+                                <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{recapCard.conjugations[key]}</span>
+                              </div>
+                            ) : null
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                   {recapCard.sourceContext && (
                     <div style={{ background: C.s1, borderRadius: 8, overflow: "hidden", marginTop: 6 }}>

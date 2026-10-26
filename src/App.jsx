@@ -78,6 +78,7 @@ const T = {
     compYourReformulation: "Ta reformulation...",
     compIllustration: "Illustration",
     compIllustrationLoading: "Recherche d'illustration...",
+    compTtsPlay: "Lire", compTtsStop: "Stop", compTtsLoading: "Chargement...",
     compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
     compSaved: "Compréhension sauvegardée !",
     compResume: "Reprendre", compLevel: (n) => `Niveau ${n}`,
@@ -572,6 +573,7 @@ const T = {
     compYourReformulation: "Your reformulation...",
     compIllustration: "Illustration",
     compIllustrationLoading: "Searching for illustration...",
+    compTtsPlay: "Listen", compTtsStop: "Stop", compTtsLoading: "Loading...",
     compEncourage: "You don't need to know every word, what matters is grasping the overall meaning!",
     compSaved: "Comprehension saved!",
     compResume: "Resume", compLevel: (n) => `Level ${n}`,
@@ -1066,6 +1068,7 @@ const T = {
     compYourReformulation: "네가 정리한 내용...",
     compIllustration: "삽화",
     compIllustrationLoading: "삽화 검색 중...",
+    compTtsPlay: "듣기", compTtsStop: "멈추기", compTtsLoading: "로딩 중...",
     compEncourage: "모든 단어를 다 알 필요 없어, 전체적인 뜻을 파악하는 게 중요해!",
     compSaved: "독해 저장 완료!",
     compResume: "이어하기", compLevel: (n) => `레벨 ${n}`,
@@ -3805,14 +3808,17 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const [reformResult, setReformResult] = useState(null);
   const [illustration, setIllustration] = useState(null);
   const [illustrationLoading, setIllustrationLoading] = useState(false);
+  const [ttsState, setTtsState] = useState("idle");
+  const ttsAudioRef = useRef(null);
   const [level1Done, setLevel1Done] = useState(existingStudy?.level1Complete || false);
   const [level2Done, setLevel2Done] = useState(existingStudy?.level2Complete || false);
   const [showLevel1Complete, setShowLevel1Complete] = useState(false);
 
-  const loadQCM = async (idx) => {
+  const loadQCM = async (idx, overrideLang) => {
     setLoading(true); setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+    const useLang = overrideLang !== undefined ? overrideLang : inTargetLang;
     try {
-      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, inTargetLang);
+      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, useLang);
       setQcm(result);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -3864,6 +3870,44 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
     } catch (e) { console.error(e); }
     setIllustrationLoading(false);
   };
+
+  const handleTts = async () => {
+    if (ttsState === "playing") {
+      if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
+      setTtsState("idle");
+      return;
+    }
+    setTtsState("loading");
+    try {
+      const r = await fetch("/api/tts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: paragraphs[paraIdx] }),
+      });
+      if (!r.ok) throw new Error("TTS " + r.status);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      setTtsState("playing");
+      await new Promise((resolve) => { audio.onended = resolve; audio.onerror = resolve; audio.play().catch(resolve); });
+      URL.revokeObjectURL(url);
+      ttsAudioRef.current = null;
+      setTtsState("idle");
+    } catch (e) {
+      console.error("TTS error:", e.message);
+      ttsAudioRef.current = null;
+      setTtsState("idle");
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; } };
+  }, []);
+
+  useEffect(() => {
+    if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
+    setTtsState("idle");
+  }, [paraIdx]);
 
   const startLevel2 = () => {
     setLevel(2); setParaIdx(0); setShowLevel1Complete(false);
@@ -3929,14 +3973,19 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
               <img src={illustration.thumb || illustration.url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />
             </div>
           )}
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={handleTts}
+              style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${ttsState === "playing" ? C.acc : C.border}`, background: ttsState === "playing" ? C.accBg : C.s1, color: ttsState === "loading" ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: ttsState === "loading" ? "default" : "pointer" }}
+              className={ttsState === "loading" ? "pulse" : ""}>
+              {ttsState === "playing" ? "⏹" : "🔊"} {ttsState === "loading" ? t.compTtsLoading : ttsState === "playing" ? t.compTtsStop : t.compTtsPlay}
+            </button>
             <button onClick={handleIllustration} disabled={illustrationLoading}
               style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: illustrationLoading ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: illustrationLoading ? "default" : "pointer" }}
               className={illustrationLoading ? "pulse" : ""}>
               🖼 {illustrationLoading ? t.compIllustrationLoading : t.compIllustration}
             </button>
             {level === 1 && (
-              <button onClick={() => { setInTargetLang(!inTargetLang); setQcm(null); loadQCM(paraIdx); }}
+              <button onClick={() => { const next = !inTargetLang; setInTargetLang(next); setQcm(null); loadQCM(paraIdx, next); }}
                 style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer" }}>
                 {inTargetLang ? t.compInInterfaceLang : t.compInTargetLang}
               </button>
@@ -7115,7 +7164,7 @@ function AppInner() {
       return;
     }
     const exWord = data.cards.find(c => c.korean === word);
-    if (exWord && exWord.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setSelAdd(null); return; }
     if (exWord && exWord.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
       setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
@@ -7133,7 +7182,7 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setVocabPreview(null); return; }
+    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setVocabPreview(null); return; }
     if (exBase && exBase.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
       setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;

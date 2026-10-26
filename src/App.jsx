@@ -68,16 +68,19 @@ const T = {
     importModeSub: "Que veux-tu étudier dans ce texte ?",
     bulkPickTitle: "Contenu extrait", bulkPickSub: "Désélecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter à la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} !`, bulkNone: "Sélectionne au moins un élément.",
     bulkTagBtn: "Tagger", bulkTagTitle: "Tagger en masse", bulkTagApply: "Appliquer", bulkTagDone: "Terminer", bulkTagSelectAll: "Tout", bulkTagNone: "Aucun",
-    compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM", compLevel2: "Niveau 2 : Reformulation",
+    compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM global", compLevel2: "Niveau 2 : Phrase par phrase", compLevel3: "Niveau 3 : Reformulation",
     compParagraph: (i, n) => `Paragraphe ${i}/${n}`,
     compQuestion: "Question", compCheck: "Vérifier", compNext: "Suivant",
     compCorrect: "Bonne réponse !", compWrong: "Pas tout à fait.",
     compLevel1Done: "Niveau 1 terminé ! Tu veux tenter le niveau 2 ?",
-    compStartLevel2: "Passer au niveau 2", compFinish: "Terminer",
+    compLevel2Done: "Niveau 2 terminé ! Tu veux tenter le niveau 3 ?",
+    compStartLevel2: "Passer au niveau 2", compStartLevel3: "Passer au niveau 3", compFinish: "Terminer",
     compReformulate: "Reformule en 1-2 phrases ce qui a été dit :",
     compYourReformulation: "Ta reformulation...",
-    compIllustration: "Illustration",
-    compIllustrationLoading: "Recherche d'illustration...",
+    compSentence: (i, n) => `Phrase ${i}/${n}`,
+    compAskAI: "Poser une question", compAskPlaceholder: "Ex : Pourquoi on utilise cette forme ici ?",
+    compAskSend: "Envoyer", compAiAnswer: "Reponse",
+    compTtsPlay: "Lire", compTtsStop: "Stop", compTtsLoading: "Chargement...",
     compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
     compSaved: "Compréhension sauvegardée !",
     compResume: "Reprendre", compLevel: (n) => `Niveau ${n}`,
@@ -111,7 +114,7 @@ const T = {
     exDictation: "Dictée", exDictationDesc: "Écoute le mot ou la phrase et écris-le.",
     exYouglish: "Vidéo en contexte", exYouglishDesc: "Voir le mot utilisé dans une vraie vidéo.",
     exDialogueFill: "Dialogue à trous", exDialogueFillDesc: "Complète un dialogue généré avec les mots choisis.",
-    exMakeSentence: "Fais une phrase", exMakeSentenceDesc: "Construis une phrase avec 1 ou 2 mots. L'IA t'aide à t'auto-corriger.",
+    exMakeSentence: "Écris une phrase", exMakeSentenceDesc: "Construis une phrase avec 1 ou 2 mots ou points de grammaire. L'IA t'aide à t'auto-corriger.",
     makeSentencePrompt: (words) => `Écris une phrase en utilisant ${words.length > 1 ? "les mots" : "le mot"} : ${words.join(", ")}`,
     makeSentenceAnother: "Encore une phrase", makeSentenceFinish: "Finir l'exercice", makeSentenceMax: "2 cartes maximum",
     flashKnow: "Je sais", flashReview: "À revoir", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} su${k > 1 ? "s" : ""}, ${r} à revoir`,
@@ -565,16 +568,19 @@ const T = {
     importModeSub: "What do you want to study in this text?",
     bulkPickTitle: "Extracted content", bulkPickSub: "Deselect what you don't want to import.", bulkAddToLib: "Add to library", bulkAdded: (n) => `${n} card${n > 1 ? "s" : ""} added!`, bulkNone: "Select at least one item.",
     bulkTagBtn: "Tag", bulkTagTitle: "Bulk tag", bulkTagApply: "Apply", bulkTagDone: "Done", bulkTagSelectAll: "All", bulkTagNone: "None",
-    compTitle: "Text Comprehension", compLevel1: "Level 1: QCM", compLevel2: "Level 2: Reformulation",
+    compTitle: "Text Comprehension", compLevel1: "Level 1: Global QCM", compLevel2: "Level 2: Sentence by sentence", compLevel3: "Level 3: Reformulation",
     compParagraph: (i, n) => `Paragraph ${i}/${n}`,
     compQuestion: "Question", compCheck: "Check", compNext: "Next",
     compCorrect: "Correct!", compWrong: "Not quite.",
     compLevel1Done: "Level 1 complete! Want to try Level 2?",
-    compStartLevel2: "Go to Level 2", compFinish: "Finish",
+    compLevel2Done: "Level 2 complete! Want to try Level 3?",
+    compStartLevel2: "Go to Level 2", compStartLevel3: "Go to Level 3", compFinish: "Finish",
     compReformulate: "Reformulate in 1-2 sentences what was said:",
     compYourReformulation: "Your reformulation...",
-    compIllustration: "Illustration",
-    compIllustrationLoading: "Searching for illustration...",
+    compSentence: (i, n) => `Sentence ${i}/${n}`,
+    compAskAI: "Ask a question", compAskPlaceholder: "E.g. Why is this form used here?",
+    compAskSend: "Send", compAiAnswer: "Answer",
+    compTtsPlay: "Listen", compTtsStop: "Stop", compTtsLoading: "Loading...",
     compEncourage: "You don't need to know every word, what matters is grasping the overall meaning!",
     compSaved: "Comprehension saved!",
     compResume: "Resume", compLevel: (n) => `Level ${n}`,
@@ -608,7 +614,7 @@ const T = {
     exDictation: "Dictation", exDictationDesc: "Listen to the word or sentence and write it.",
     exYouglish: "Video in context", exYouglishDesc: "See the word used in a real video.",
     exDialogueFill: "Dialogue fill-in", exDialogueFillDesc: "Complete a generated dialogue with chosen words.",
-    exMakeSentence: "Make a sentence", exMakeSentenceDesc: "Build a sentence with 1 or 2 words. The AI helps you self-correct.",
+    exMakeSentence: "Write a sentence", exMakeSentenceDesc: "Build a sentence with 1 or 2 words or grammar points. The AI helps you self-correct.",
     makeSentencePrompt: (words) => `Write a sentence using ${words.length > 1 ? "the words" : "the word"}: ${words.join(", ")}`,
     makeSentenceAnother: "Another sentence", makeSentenceFinish: "Finish exercise", makeSentenceMax: "2 cards max",
     flashKnow: "I know", flashReview: "Review", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k} known, ${r} to review`,
@@ -1062,16 +1068,19 @@ const T = {
     importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
     bulkPickTitle: "추출된 내용", bulkPickSub: "가져오고 싶지 않은 건 선택 해제해.", bulkAddToLib: "라이브러리에 추가", bulkAdded: (n) => `카드 ${n}개 추가됨!`, bulkNone: "최소 하나는 선택해 줘.",
     bulkTagBtn: "태그", bulkTagTitle: "대량 태그", bulkTagApply: "적용", bulkTagDone: "완료", bulkTagSelectAll: "전체", bulkTagNone: "없음",
-    compTitle: "텍스트 독해", compLevel1: "레벨 1: 객관식", compLevel2: "레벨 2: 바꿔 말하기",
+    compTitle: "텍스트 독해", compLevel1: "레벨 1: 전체 객관식", compLevel2: "레벨 2: 문장별 이해", compLevel3: "레벨 3: 바꿔 말하기",
     compParagraph: (i, n) => `단락 ${i}/${n}`,
     compQuestion: "문제", compCheck: "확인", compNext: "다음",
     compCorrect: "정답이에요!", compWrong: "아쉽지만 틀렸어요.",
     compLevel1Done: "레벨 1 완료! 레벨 2에 도전해 볼래?",
-    compStartLevel2: "레벨 2로 가기", compFinish: "끝내기",
+    compLevel2Done: "레벨 2 완료! 레벨 3에 도전해 볼래?",
+    compStartLevel2: "레벨 2로 가기", compStartLevel3: "레벨 3으로 가기", compFinish: "끝내기",
     compReformulate: "내용을 1~2문장으로 다시 정리해 봐:",
     compYourReformulation: "네가 정리한 내용...",
-    compIllustration: "삽화",
-    compIllustrationLoading: "삽화 검색 중...",
+    compSentence: (i, n) => `문장 ${i}/${n}`,
+    compAskAI: "질문하기", compAskPlaceholder: "예: 여기서 왜 이 형태를 쓰는 거야?",
+    compAskSend: "보내기", compAiAnswer: "답변",
+    compTtsPlay: "듣기", compTtsStop: "멈추기", compTtsLoading: "로딩 중...",
     compEncourage: "모든 단어를 다 알 필요 없어, 전체적인 뜻을 파악하는 게 중요해!",
     compSaved: "독해 저장 완료!",
     compResume: "이어하기", compLevel: (n) => `레벨 ${n}`,
@@ -1106,7 +1115,7 @@ const T = {
     exDictation: "받아쓰기", exDictationDesc: "단어나 문장을 듣고 써 봐.",
     exYouglish: "영상 속 단어", exYouglishDesc: "실제 영상에서 단어가 쓰이는 걸 봐.",
     exDialogueFill: "대화 빈칸 채우기", exDialogueFillDesc: "생성된 대화의 빈칸을 선택한 단어로 채워 봐.",
-    exMakeSentence: "문장 만들기", exMakeSentenceDesc: "단어 1~2개로 문장을 만들어 봐. AI가 스스로 고치게 도와줘.",
+    exMakeSentence: "문장 만들기", exMakeSentenceDesc: "단어나 문법 1~2개로 문장을 만들어 봐. AI가 스스로 고치게 도와줘.",
     makeSentencePrompt: (words) => `${words.join(", ")} ${words.length > 1 ? "단어들을" : "단어를"} 사용해서 문장을 써 봐`,
     makeSentenceAnother: "한 문장 더", makeSentenceFinish: "연습 끝내기", makeSentenceMax: "카드 최대 2장",
     flashKnow: "알아", flashReview: "복습", flashProgress: (i, n) => `${i} / ${n}`, flashScore: (k, r) => `${k}개 알고 있고, ${r}개 복습 필요`,
@@ -1940,6 +1949,43 @@ Return JSON:
 
 "answer" is the 0-based index of the correct option.`;
   return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1200)).text);
+}
+
+async function generateSentenceQCM(sentence, fullText, lang, context, tlCode, inTargetLang) {
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const qLang = inTargetLang ? TL : L;
+  const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Your goal is to help the student understand one specific sentence from a text.
+
+${context}
+The student is reading a ${TL} text sentence by sentence.
+
+TASK: Generate ONE multiple-choice question about the meaning of this specific sentence.
+Write the question and all options in ${qLang}.
+The question should test whether the student understood WHAT this sentence means (its meaning, who does what, what is described), NOT grammar details.
+
+Return JSON:
+{
+  "question": "the question in ${qLang}",
+  "options": ["option A", "option B", "option C", "option D"],
+  "answer": 0,
+  "explanation_fr": "brief explanation in French of the correct answer and what the sentence means",
+  "explanation_en": "same in English",
+  "encouragement_fr": "a short encouraging message in French",
+  "encouragement_en": "same in English"
+}
+
+"answer" is the 0-based index of the correct option.`;
+  return parseJSON((await callAI(sys, `Full text for context:\n${fullText}\n\nSentence to ask about:\n${sentence}`, 1200)).text);
+}
+
+async function answerSentenceQuestion(sentence, fullText, question, lang, context, tlCode) {
+  const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
+  const TL = getTargetLangName(tlCode, "en");
+  const sys = `You are a warm, encouraging ${TL} language tutor helping a student understand a specific sentence from a text. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Answer the student's question about this sentence clearly and simply in ${L}. Keep your answer concise (2-4 sentences). If they ask about grammar or vocabulary, explain it in context.
+
+${context}`;
+  return (await callAI(sys, `Full text:\n${fullText}\n\nSentence being studied:\n${sentence}\n\nStudent's question:\n${question}`, 500, false, true)).text;
 }
 
 // Evaluate a student's reformulation of a text excerpt.
@@ -3762,20 +3808,22 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
         <div>
           <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {textStudies.map(s => (
+            {[...textStudies].sort((a, b) => (b.createdAt || parseInt(b.id) || 0) - (a.createdAt || parseInt(a.id) || 0)).map(s => (
               <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                 <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
                   {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: s.level1Complete ? "#e8f5e9" : C.s1, color: s.level1Complete ? C.ok : C.txtM, fontWeight: 500 }}>
-                    {t.compLevel(1)} {s.level1Complete ? "✓" : ""}
-                  </span>
-                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: s.level2Complete ? "#e8f5e9" : C.s1, color: s.level2Complete ? C.ok : C.txtM, fontWeight: 500 }}>
-                    {t.compLevel(2)} {s.level2Complete ? "✓" : ""}
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  {[1, 2, 3].map(lv => {
+                    const done = lv === 1 ? s.level1Complete : lv === 2 ? s.level2Complete : s.level3Complete;
+                    return (
+                      <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, fontWeight: 500 }}>
+                        {t.compLevel(lv)} {done ? "✓" : ""}
+                      </span>
+                    );
+                  })}
                   <span style={{ fontSize: 10, color: C.txtM }}>{s.date}</span>
-                  {(!s.level1Complete || !s.level2Complete) && onResumeComprehension && (
+                  {(!s.level1Complete || !s.level2Complete || !s.level3Complete) && onResumeComprehension && (
                     <button onClick={() => onResumeComprehension(s)}
                       style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
                       {t.compResume}
@@ -3803,8 +3851,13 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
     if (ps.length <= 1) return text.split(/[.!?。]+/).map(s => s.trim()).filter(s => s.length > 10);
     return ps;
   });
-  const [level, setLevel] = useState(existingStudy?.level1Complete ? 2 : 1);
+  const [sentences] = useState(() => {
+    return text.split(/(?<=[.!?。])\s+/).map(s => s.trim()).filter(s => s.length > 3);
+  });
+  const startLevel = existingStudy?.level2Complete ? 3 : existingStudy?.level1Complete ? 2 : 1;
+  const [level, setLevel] = useState(startLevel);
   const [paraIdx, setParaIdx] = useState(0);
+  const [sentIdx, setSentIdx] = useState(0);
   const [qcm, setQcm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -3812,27 +3865,43 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const [inTargetLang, setInTargetLang] = useState(true);
   const [reformInput, setReformInput] = useState("");
   const [reformResult, setReformResult] = useState(null);
-  const [illustration, setIllustration] = useState(null);
-  const [illustrationLoading, setIllustrationLoading] = useState(false);
+  const [ttsState, setTtsState] = useState("idle");
+  const ttsAudioRef = useRef(null);
   const [level1Done, setLevel1Done] = useState(existingStudy?.level1Complete || false);
   const [level2Done, setLevel2Done] = useState(existingStudy?.level2Complete || false);
-  const [showLevel1Complete, setShowLevel1Complete] = useState(false);
+  const [level3Done, setLevel3Done] = useState(existingStudy?.level3Complete || false);
+  const [showLevelComplete, setShowLevelComplete] = useState(null);
+  const [askInput, setAskInput] = useState("");
+  const [askAnswer, setAskAnswer] = useState(null);
+  const [askLoading, setAskLoading] = useState(false);
 
-  const loadQCM = async (idx) => {
-    setLoading(true); setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+  const loadQCM = async (idx, overrideLang) => {
+    setLoading(true); setQcm(null); setSelected(null); setChecked(false); setAskInput(""); setAskAnswer(null);
+    const useLang = overrideLang !== undefined ? overrideLang : inTargetLang;
     try {
-      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, inTargetLang);
+      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, useLang);
+      setQcm(result);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  };
+
+  const loadSentenceQCM = async (idx, overrideLang) => {
+    setLoading(true); setQcm(null); setSelected(null); setChecked(false); setAskInput(""); setAskAnswer(null);
+    const useLang = overrideLang !== undefined ? overrideLang : inTargetLang;
+    try {
+      const result = await generateSentenceQCM(sentences[idx], text, lang, context, tl, useLang);
       setQcm(result);
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
   const loadReformExcerpt = () => {
-    setReformInput(""); setReformResult(null); setIllustration(null);
+    setReformInput(""); setReformResult(null);
   };
 
   useEffect(() => { if (level === 1 && !qcm && !loading) loadQCM(paraIdx); }, [paraIdx, level]);
-  useEffect(() => { if (level === 2) loadReformExcerpt(); }, [paraIdx, level]);
+  useEffect(() => { if (level === 2 && !qcm && !loading) loadSentenceQCM(sentIdx); }, [sentIdx, level]);
+  useEffect(() => { if (level === 3) loadReformExcerpt(); }, [paraIdx, level]);
 
   const handleCheck = () => {
     if (selected === null) return;
@@ -3840,13 +3909,28 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   };
 
   const handleNext = () => {
-    if (paraIdx < paragraphs.length - 1) {
-      setParaIdx(paraIdx + 1);
-      setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
-      setReformInput(""); setReformResult(null);
+    if (level === 1) {
+      if (paraIdx < paragraphs.length - 1) {
+        setParaIdx(paraIdx + 1);
+        setQcm(null); setSelected(null); setChecked(false);
+      } else {
+        setLevel1Done(true); setShowLevelComplete(1);
+      }
+    } else if (level === 2) {
+      if (sentIdx < sentences.length - 1) {
+        setSentIdx(sentIdx + 1);
+        setQcm(null); setSelected(null); setChecked(false); setAskInput(""); setAskAnswer(null);
+      } else {
+        setLevel2Done(true); setShowLevelComplete(2);
+      }
     } else {
-      if (level === 1) { setLevel1Done(true); setShowLevel1Complete(true); }
-      else { setLevel2Done(true); onFinish({ level1Complete: true, level2Complete: true }); }
+      if (paraIdx < paragraphs.length - 1) {
+        setParaIdx(paraIdx + 1);
+        setReformInput(""); setReformResult(null);
+      } else {
+        setLevel3Done(true);
+        onFinish({ level1Complete: true, level2Complete: true, level3Complete: true });
+      }
     }
   };
 
@@ -3860,45 +3944,145 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
     setLoading(false);
   };
 
-  const handleIllustration = async () => {
-    setIllustrationLoading(true);
+  const handleAskAI = async () => {
+    if (!askInput.trim()) return;
+    setAskLoading(true);
     try {
-      const TL = getTargetLangName(tl, "en");
-      const prompt = await callAI(
-        `You generate a short image search query (2-4 English words) to find an illustration that helps visualize the meaning of a ${TL} paragraph. Return ONLY the search query, nothing else.`,
-        paragraphs[paraIdx], 50, false, true
-      );
-      const { images } = await fetchImages(prompt.text.trim(), 4);
-      if (images.length > 0) setIllustration(images[0]);
-    } catch (e) { console.error(e); }
-    setIllustrationLoading(false);
+      const currentText = level === 2 ? sentences[sentIdx] : paragraphs[paraIdx];
+      const answer = await answerSentenceQuestion(currentText, text, askInput, lang, context, tl);
+      setAskAnswer(answer);
+    } catch (e) { console.error(e); setAskAnswer("Error: " + e.message); }
+    setAskLoading(false);
   };
 
-  const startLevel2 = () => {
-    setLevel(2); setParaIdx(0); setShowLevel1Complete(false);
-    loadReformExcerpt();
+  const handleTts = async () => {
+    if (ttsState === "playing") {
+      if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
+      setTtsState("idle");
+      return;
+    }
+    setTtsState("loading");
+    try {
+      const ttsText = level === 2 ? sentences[sentIdx] : paragraphs[paraIdx];
+      const r = await fetch("/api/tts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: ttsText }),
+      });
+      if (!r.ok) throw new Error("TTS " + r.status);
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      setTtsState("playing");
+      await new Promise((resolve) => { audio.onended = resolve; audio.onerror = resolve; audio.play().catch(resolve); });
+      URL.revokeObjectURL(url);
+      ttsAudioRef.current = null;
+      setTtsState("idle");
+    } catch (e) {
+      console.error("TTS error:", e.message);
+      ttsAudioRef.current = null;
+      setTtsState("idle");
+    }
   };
 
-  const finishLevel1 = () => {
-    onFinish({ level1Complete: true, level2Complete: level2Done });
+  useEffect(() => {
+    return () => { if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; } };
+  }, []);
+
+  useEffect(() => {
+    if (ttsAudioRef.current) { ttsAudioRef.current.pause(); ttsAudioRef.current = null; }
+    setTtsState("idle");
+  }, [paraIdx, sentIdx]);
+
+  const goToLevel = (lv) => {
+    setLevel(lv); setParaIdx(0); setSentIdx(0); setShowLevelComplete(null);
+    setQcm(null); setSelected(null); setChecked(false); setAskInput(""); setAskAnswer(null);
+    setReformInput(""); setReformResult(null);
+  };
+
+  const finishAtLevel = (lv) => {
+    onFinish({ level1Complete: true, level2Complete: lv >= 2 || level2Done, level3Complete: lv >= 3 || level3Done });
   };
 
   const isCorrect = qcm && selected === qcm.answer;
   const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : (qcm.explanation_en || qcm.explanation_fr)) : "";
   const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : (qcm.encouragement_en || qcm.encouragement_fr)) : "";
 
-  if (showLevel1Complete) {
+  const qcmBlock = (nextLabel) => (
+    loading ? (
+      <div className="pulse" style={{ fontSize: 13, color: C.txtS, textAlign: "center", padding: 20 }}>{t.analyzing}</div>
+    ) : qcm ? (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{qcm.question}</div>
+        {qcm.options.map((opt, i) => (
+          <button key={i} onClick={() => { if (!checked) setSelected(i); }}
+            style={{
+              padding: "10px 14px", borderRadius: 8, textAlign: "left",
+              border: `1px solid ${checked ? (i === qcm.answer ? C.ok : i === selected ? C.warn : C.border) : (i === selected ? C.acc : C.border)}`,
+              background: checked ? (i === qcm.answer ? "#e8f5e9" : i === selected ? "#fce4ec" : C.s2) : (i === selected ? C.accBg : C.s2),
+              color: C.txt, fontSize: 12.5, cursor: checked ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", lineHeight: 1.5
+            }}>
+            {opt}
+          </button>
+        ))}
+        {!checked ? (
+          <button onClick={handleCheck} disabled={selected === null}
+            style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: selected !== null ? C.acc : C.s1, color: selected !== null ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: selected !== null ? "pointer" : "default" }}>
+            {t.compCheck}
+          </button>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: isCorrect ? "#e8f5e9" : "#fff3e0", border: `1px solid ${isCorrect ? C.ok : "#ffb74d"}` }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: isCorrect ? C.ok : "#e65100", marginBottom: 4 }}>{isCorrect ? t.compCorrect : t.compWrong}</div>
+              <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{explanation}</div>
+              {encouragement && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 4 }}>{encouragement}</div>}
+            </div>
+            {level === 2 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}>
+                {askAnswer && (
+                  <div style={{ padding: "10px 14px", borderRadius: 8, background: C.s1, border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: 10, color: C.txtM, fontWeight: 600, marginBottom: 4 }}>{t.compAiAnswer}</div>
+                    <div style={{ fontSize: 12, color: C.txt, lineHeight: 1.6 }}>{askAnswer}</div>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input value={askInput} onChange={e => setAskInput(e.target.value)} placeholder={t.compAskPlaceholder}
+                    onKeyDown={e => { if (e.key === "Enter" && !askLoading) handleAskAI(); }}
+                    style={{ flex: 1, padding: "7px 10px", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, fontFamily: "'Plus Jakarta Sans'", color: C.txt, background: C.s2, outline: "none" }} />
+                  <button onClick={handleAskAI} disabled={!askInput.trim() || askLoading}
+                    style={{ padding: "7px 12px", borderRadius: 6, border: "none", background: askInput.trim() ? C.acc : C.s1, color: askInput.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: askInput.trim() && !askLoading ? "pointer" : "default" }}
+                    className={askLoading ? "pulse" : ""}>
+                    {askLoading ? "..." : t.compAskSend}
+                  </button>
+                </div>
+              </div>
+            )}
+            <button onClick={handleNext}
+              style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
+              {nextLabel} →
+            </button>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  if (showLevelComplete) {
+    const isL1 = showLevelComplete === 1;
+    const doneMsg = isL1 ? t.compLevel1Done : t.compLevel2Done;
+    const nextBtn = isL1 ? t.compStartLevel2 : t.compStartLevel3;
+    const nextLv = isL1 ? 2 : 3;
     return (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 16 }}>
         <div style={{ fontSize: 48 }}>🎉</div>
-        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, textAlign: "center" }}>{t.compLevel1Done}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, textAlign: "center" }}>{doneMsg}</div>
         <div style={{ fontSize: 13, color: C.txtS, textAlign: "center", maxWidth: 360 }}>{t.compEncourage}</div>
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <button onClick={startLevel2}
+          <button onClick={() => goToLevel(nextLv)}
             style={{ padding: "8px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-            {t.compStartLevel2}
+            {nextBtn}
           </button>
-          <button onClick={finishLevel1}
+          <button onClick={() => finishAtLevel(showLevelComplete)}
             style={{ padding: "8px 18px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
             {t.compFinish}
           </button>
@@ -3907,6 +4091,13 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
     );
   }
 
+  const currentIdx = level === 2 ? sentIdx : paraIdx;
+  const totalItems = level === 2 ? sentences.length : paragraphs.length;
+  const currentText = level === 2 ? sentences[sentIdx] : paragraphs[paraIdx];
+  const progressLabel = level === 2 ? t.compSentence(sentIdx + 1, sentences.length) : t.compParagraph(paraIdx + 1, paragraphs.length);
+  const levelLabel = level === 1 ? t.compLevel1 : level === 2 ? t.compLevel2 : t.compLevel3;
+  const nextLabel = currentIdx < totalItems - 1 ? t.compNext : t.compFinish;
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto" }}>
       {/* Header */}
@@ -3914,9 +4105,9 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: C.txt }}>{t.compTitle}</span>
           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontWeight: 500 }}>
-            {level === 1 ? t.compLevel1 : t.compLevel2}
+            {levelLabel}
           </span>
-          <span style={{ fontSize: 11, color: C.txtM }}>{t.compParagraph(paraIdx + 1, paragraphs.length)}</span>
+          <span style={{ fontSize: 11, color: C.txtM }}>{progressLabel}</span>
         </div>
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
           {t.back}
@@ -3925,75 +4116,35 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
 
       <div style={{ flex: 1, display: "flex", justifyContent: "center", overflowY: "auto" }}>
         <div style={{ width: "100%", maxWidth: 520, padding: "20px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Current paragraph */}
+          {/* Current text block */}
           <div style={{ background: C.s1, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
             <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap" }}>
-              {paragraphs[paraIdx]}
+              {currentText}
             </div>
           </div>
 
-          {/* Illustration */}
-          {illustration && (
-            <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}` }}>
-              <img src={illustration.thumb || illustration.url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={handleIllustration} disabled={illustrationLoading}
-              style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: illustrationLoading ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: illustrationLoading ? "default" : "pointer" }}
-              className={illustrationLoading ? "pulse" : ""}>
-              🖼 {illustrationLoading ? t.compIllustrationLoading : t.compIllustration}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={handleTts}
+              style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${ttsState === "playing" ? C.acc : C.border}`, background: ttsState === "playing" ? C.accBg : C.s1, color: ttsState === "loading" ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: ttsState === "loading" ? "default" : "pointer" }}
+              className={ttsState === "loading" ? "pulse" : ""}>
+              {ttsState === "playing" ? "⏹" : "🔊"} {ttsState === "loading" ? t.compTtsLoading : ttsState === "playing" ? t.compTtsStop : t.compTtsPlay}
             </button>
-            {level === 1 && (
-              <button onClick={() => { setInTargetLang(!inTargetLang); setQcm(null); loadQCM(paraIdx); }}
+            {(level === 1 || level === 2) && (
+              <button onClick={() => { const next = !inTargetLang; setInTargetLang(next); setQcm(null); if (level === 1) loadQCM(paraIdx, next); else loadSentenceQCM(sentIdx, next); }}
                 style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer" }}>
                 {inTargetLang ? t.compInInterfaceLang : t.compInTargetLang}
               </button>
             )}
           </div>
 
-          {/* Level 1: QCM */}
-          {level === 1 && (
-            loading ? (
-              <div className="pulse" style={{ fontSize: 13, color: C.txtS, textAlign: "center", padding: 20 }}>{t.analyzing}</div>
-            ) : qcm ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{qcm.question}</div>
-                {qcm.options.map((opt, i) => (
-                  <button key={i} onClick={() => { if (!checked) setSelected(i); }}
-                    style={{
-                      padding: "10px 14px", borderRadius: 8, textAlign: "left",
-                      border: `1px solid ${checked ? (i === qcm.answer ? C.ok : i === selected ? C.warn : C.border) : (i === selected ? C.acc : C.border)}`,
-                      background: checked ? (i === qcm.answer ? "#e8f5e9" : i === selected ? "#fce4ec" : C.s2) : (i === selected ? C.accBg : C.s2),
-                      color: C.txt, fontSize: 12.5, cursor: checked ? "default" : "pointer", fontFamily: "'Plus Jakarta Sans'", lineHeight: 1.5
-                    }}>
-                    {opt}
-                  </button>
-                ))}
-                {!checked ? (
-                  <button onClick={handleCheck} disabled={selected === null}
-                    style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: selected !== null ? C.acc : C.s1, color: selected !== null ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: selected !== null ? "pointer" : "default" }}>
-                    {t.compCheck}
-                  </button>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <div style={{ padding: "10px 14px", borderRadius: 8, background: isCorrect ? "#e8f5e9" : "#fff3e0", border: `1px solid ${isCorrect ? C.ok : "#ffb74d"}` }}>
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: isCorrect ? C.ok : "#e65100", marginBottom: 4 }}>{isCorrect ? t.compCorrect : t.compWrong}</div>
-                      <div style={{ fontSize: 12, color: C.txtS, lineHeight: 1.5 }}>{explanation}</div>
-                      {encouragement && <div style={{ fontSize: 11.5, color: C.txtM, fontStyle: "italic", marginTop: 4 }}>{encouragement}</div>}
-                    </div>
-                    <button onClick={handleNext}
-                      style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
-                      {paraIdx < paragraphs.length - 1 ? t.compNext : t.compFinish} →
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : null
-          )}
+          {/* Level 1: QCM per paragraph */}
+          {level === 1 && qcmBlock(nextLabel)}
 
-          {/* Level 2: Reformulation */}
-          {level === 2 && (
+          {/* Level 2: QCM per sentence + ask AI */}
+          {level === 2 && qcmBlock(nextLabel)}
+
+          {/* Level 3: Reformulation */}
+          {level === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.compReformulate}</div>
               <textarea value={reformInput} onChange={e => setReformInput(e.target.value)} placeholder={t.compYourReformulation}
@@ -4018,7 +4169,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
                   </div>
                   <button onClick={handleNext}
                     style={{ alignSelf: "flex-end", padding: "7px 18px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
-                    {paraIdx < paragraphs.length - 1 ? t.compNext : t.compFinish} →
+                    {nextLabel} →
                   </button>
                 </div>
               )}
@@ -7171,7 +7322,7 @@ function AppInner() {
       return;
     }
     const exWord = data.cards.find(c => c.korean === word);
-    if (exWord && exWord.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setSelAdd(null); return; }
+    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setSelAdd(null); return; }
     if (exWord && exWord.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
       setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
@@ -7189,7 +7340,7 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { setFlash(t.alreadyInLib); setTimeout(() => setFlash(null), 1800); setVocabPreview(null); return; }
+    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setVocabPreview(null); return; }
     if (exBase && exBase.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
       setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
@@ -11088,11 +11239,12 @@ function AppInner() {
                       { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true, grammarOnly: true },
                       { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true, grammarOnly: true },
                       { k: "fill", l: t.fillBlanks, d: t.fillDesc, i: "🔄", ai: true },
+                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", ai: true },
                     ] : exCategory === "CO" ? [
                       { k: "youglish", l: t.exYouglish, d: t.exYouglishDesc, i: "🎬", vocabOnly: true },
                       { k: "dictation", l: t.exDictation, d: t.exDictationDesc, i: "🎧", disabled: true },
                     ] : exCategory === "PE" ? [
-                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", vocabOnly: true, ai: true },
+                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", ai: true },
                       { k: "imgwrite", l: t.exImgWrite, d: t.exImgWriteDesc, i: "🖼️", vocabOnly: true },
                       { k: "cross", l: t.exCross, d: t.exCrossDesc, i: "🧩", vocabOnly: true },
                       /* story hidden for now */
@@ -11606,11 +11758,13 @@ function AppInner() {
             onFinish={(result) => {
               const study = {
                 id: compSession.existing?.id || (Date.now().toString() + Math.random().toString(36).slice(2, 5)),
+                createdAt: compSession.existing?.createdAt || Date.now(),
                 text: compSession.text,
                 targetLang: tl || "ko",
                 date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
                 level1Complete: result.level1Complete,
                 level2Complete: result.level2Complete,
+                level3Complete: result.level3Complete,
               };
               const existing = data.textStudies || [];
               const idx = existing.findIndex(s => s.id === study.id);

@@ -2870,7 +2870,7 @@ function dedupeExtracted(items, existingCards) {
     const ex = byKorean[key];
     if (!ex) return true;                        // brand new -> show
     const s = migrateStatus(ex.status);
-    return s === "studied" || s === "pending";   // studied or pending -> re-show; acquired/queued -> hide
+    return s === "pending";   // only pending -> re-show; studied/acquired/queued -> hide
   });
 }
 
@@ -7248,7 +7248,7 @@ function AppInner() {
       const ex = data.cards.find(c => c.korean === p.korean);
       if (!ex) {
         save({ ...data, cards: [...data.cards, makeCard(p, "acquired")] });
-      } else if (ex.status === "pending") {
+      } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }
@@ -7265,7 +7265,7 @@ function AppInner() {
       const ex = data.cards.find(c => c.korean === word);
       if (!ex) {
         save({ ...data, cards: [...data.cards, makeVocabCard(v, "acquired")] });
-      } else if (ex.status === "pending") {
+      } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }
@@ -7284,7 +7284,7 @@ function AppInner() {
         const isVocab = v.type === "vocab";
         const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
-      } else if (ex.status === "pending") {
+      } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
     }

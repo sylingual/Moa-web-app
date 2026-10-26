@@ -177,7 +177,7 @@ const T = {
     drillSentence: (n, total) => `Phrase ${n}/${total}`,
     exFixit: "C'est toi le prof", exFixitDesc: "Trouve et corrige l'erreur.",
     fixitInstr: "Cette phrase contient une erreur. Écris la correction.",
-    fixitPlaceholder: "Phrase corrigée...", fixitCorrect: "Bonne correction !", fixitWrong: "Pas tout à fait...",
+    fixitPlaceholder: "Phrase corrigée...", fixitCorrect: "Bonne correction !", fixitWrong: "Pas tout à fait...", fixitMeaning: "Sens visé :",
     fixitSentence: (n, total) => `Phrase ${n}/${total}`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
@@ -674,7 +674,7 @@ const T = {
     drillSentence: (n, total) => `Sentence ${n}/${total}`,
     exFixit: "Fix It!", exFixitDesc: "Find and correct the error.",
     fixitInstr: "This sentence has an error. Write the correction.",
-    fixitPlaceholder: "Corrected sentence...", fixitCorrect: "Good correction!", fixitWrong: "Not quite...",
+    fixitPlaceholder: "Corrected sentence...", fixitCorrect: "Good correction!", fixitWrong: "Not quite...", fixitMeaning: "Intended meaning:",
     fixitSentence: (n, total) => `Sentence ${n}/${total}`,
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
@@ -1171,7 +1171,7 @@ const T = {
     drillSentence: (n, total) => `문장 ${n}/${total}`,
     exFixit: "네가 선생님!", exFixitDesc: "오류를 찾아서 고쳐 봐.",
     fixitInstr: "이 문장에 오류가 있어. 고쳐서 써 봐.",
-    fixitPlaceholder: "고친 문장...", fixitCorrect: "좋은 수정!", fixitWrong: "아직...",
+    fixitPlaceholder: "고친 문장...", fixitCorrect: "좋은 수정!", fixitWrong: "아직...", fixitMeaning: "의도된 의미:",
     fixitSentence: (n, total) => `문장 ${n}/${total}`,
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
@@ -2513,7 +2513,7 @@ Return ONLY valid JSON:
 {
   "message": "One-line intro in ${L}",
   "sentences": [
-    {"text": "incorrect sentence", "corrected": "natural correct sentence", "explanation": "brief explanation in ${L}"}
+    {"text": "incorrect sentence", "corrected": "natural correct sentence", "translation": "translation of the corrected sentence in ${L}", "explanation": "brief explanation in ${L}"}
   ]
 }`,
 
@@ -5365,6 +5365,7 @@ IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if t
       <div style={{ fontSize: 16, fontFamily: tFont, lineHeight: 1.6, color: "#FF3B30", padding: 12, background: "rgba(255,59,48,0.06)", borderRadius: 10, border: "1px solid rgba(255,59,48,0.2)" }}>
         {sent?.text}
       </div>
+      {sent?.translation && <div style={{ fontSize: 12, color: C.txtM, fontStyle: "italic", marginTop: -8 }}>{t.fixitMeaning} {sent.translation}</div>}
       {!checked && (
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && input.trim()) check(); }}
           placeholder={t.fixitPlaceholder}

@@ -3853,7 +3853,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
             </button>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...textStudies].sort((a, b) => { const diff = (b.createdAt || parseInt(b.id) || 0) - (a.createdAt || parseInt(a.id) || 0); return textSortAsc ? -diff : diff; }).map(s => (
+            {[...textStudies].sort((a, b) => { const ta = a.createdAt || parseInt(a.id) || 0; const tb = b.createdAt || parseInt(b.id) || 0; if (!ta && !tb) return 0; if (!ta) return 1; if (!tb) return -1; const diff = tb - ta; return textSortAsc ? -diff : diff; }).map(s => (
               <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                 <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
                   {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}

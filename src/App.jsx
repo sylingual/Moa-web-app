@@ -4209,6 +4209,7 @@ function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFi
   const [err, setErr] = useState(null);
   const [revealed, setRevealed] = useState(1); // steps shown (1..5)
   const [qcmSel, setQcmSel] = useState(null);
+  const bodyRef = useRef(null);
   const word = words[idx];
 
   useEffect(() => {
@@ -4224,7 +4225,7 @@ function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFi
   const qcm = study && study.qcm;
   const answered = qcmSel !== null;
   const isLastWord = idx >= words.length - 1;
-  const next = () => { if (revealed < 5) setRevealed(revealed + 1); };
+  const next = () => { if (revealed < 5) { setRevealed(revealed + 1); setTimeout(() => { if (bodyRef.current) bodyRef.current.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" }); }, 50); } };
   const nextWord = () => { if (isLastWord) onFinish(); else { const ni = idx + 1; setIdx(ni); if (onIdx) onIdx(ni); } };
 
   const Panel = ({ label, children }) => (
@@ -4247,7 +4248,7 @@ function VocabLesson({ words, startIdx, onIdx, lang, tl, context, tFont, t, onFi
       </div>
 
       {/* body */}
-      <div style={{ flex: 1, overflowY: "auto", padding: 14 }}>
+      <div ref={bodyRef} style={{ flex: 1, overflowY: "auto", padding: 14 }}>
         {loading && <div className="pulse" style={{ textAlign: "center", color: C.txtM, fontSize: 13, padding: 30 }}>{t.thinking}</div>}
         {err && <div style={{ padding: 14, background: C.warnBg, border: `1px solid ${C.warnB}`, borderRadius: 10, fontSize: 12, color: C.warn, lineHeight: 1.6 }}>⚠️ {err}</div>}
         {study && (

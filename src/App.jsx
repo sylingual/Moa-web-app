@@ -2889,6 +2889,7 @@ function getCardReviewCount(card) {
 }
 
 function getCardNextReviewDate(card, daysAvailable) {
+  if (card.status === "acquired") return null;
   const discovered = card.discoveredDate;
   if (!discovered) return null;
   const schedule = getSpacedSchedule(daysAvailable || Infinity);
@@ -2902,11 +2903,13 @@ function getCardNextReviewDate(card, daysAvailable) {
 }
 
 function isCardGoalAcquired(card, daysAvailable) {
+  if (card.status === "acquired") return true;
   const schedule = getSpacedSchedule(daysAvailable);
   return getCardReviewCount(card) >= schedule.R;
 }
 
 function isCardLongTermAcquired(card) {
+  if (card.status === "acquired") return true;
   return getCardReviewCount(card) >= SPACED_REP_SCHEDULE[Infinity].R;
 }
 
@@ -8156,7 +8159,7 @@ function AppInner() {
     const daysTotal = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(goal.createdAt || goal.deadline)) / 86400000));
     const R = getSpacedSchedule(daysTotal).R;
     let reviewsDone = 0;
-    cards.forEach(c => { reviewsDone += Math.min(getCardReviewCount(c), R); });
+    cards.forEach(c => { reviewsDone += (c.goalAcquired || migrateStatus(c.status) === "acquired") ? R : Math.min(getCardReviewCount(c), R); });
     const reviewsTotal = total * R;
     const pctReviews = Math.round((reviewsDone / reviewsTotal) * 100);
     return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100), reviewsDone, reviewsTotal, pctReviews };
@@ -10567,8 +10570,8 @@ function AppInner() {
                   }
                   const schedule = getSpacedSchedule(daysAvailable);
                   const R = schedule.R;
-                  const pct = Math.min(100, Math.round((reviewCount / R) * 100));
-                  const acquired = reviewCount >= R;
+                  const acquired = cardForReview.status === "acquired" || reviewCount >= R;
+                  const pct = acquired ? 100 : Math.min(100, Math.round((reviewCount / R) * 100));
                   const today = new Date().toISOString().slice(0, 10);
                   const nextDate = getCardNextReviewDate(cardForReview, daysAvailable);
                   const practicedToday = cardForReview.reviewDates && cardForReview.reviewDates.includes(today);
@@ -10611,7 +10614,7 @@ function AppInner() {
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
-                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{recapCard.type === "grammar" ? t.grammarProgressLabel(reviewCount, R) : t.progressReviews(reviewCount, R)}</span>
+                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{acquired ? t.progressAcquired : recapCard.type === "grammar" ? t.grammarProgressLabel(reviewCount, R) : t.progressReviews(reviewCount, R)}</span>
                       </div>
                       <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 12, overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
@@ -11148,7 +11151,7 @@ function AppInner() {
                             {exerciseCards.filter(c => c.type === "vocab").map(c => (
                               <button key={c.id} onClick={() => { setYouglishWord(c.korean); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                             ))}
                           </div>
@@ -11204,7 +11207,7 @@ function AppInner() {
                               return (
                               <button key={c.id} onClick={() => { if (msMax) return; const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: msMax ? C.txtM : C.txt, cursor: msMax ? "not-allowed" : "pointer", opacity: msMax ? 0.5 : 1 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                               ); })}
                           </div>

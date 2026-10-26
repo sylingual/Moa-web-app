@@ -1912,10 +1912,9 @@ Return only the JSON object.`;
 }
 
 // Generate a comprehension QCM for one paragraph of a text.
-async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode, inTargetLang) {
+async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const qLang = inTargetLang ? TL : L;
   const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
 
 ${context}
@@ -1924,13 +1923,15 @@ The student is reading a ${TL} text. They do NOT need to understand every word. 
 Always encourage and reassure: "You don't need to know every word to understand the meaning!"
 
 TASK: Generate ONE multiple-choice question about this specific paragraph's meaning.
-Write the question and all options in ${qLang}.
+Provide the question and options in BOTH ${TL} and ${L}.
 The question should test whether the student grasped WHAT the paragraph is about (its main idea, who does what, what happens), NOT grammar or vocabulary details.
 
 Return JSON:
 {
-  "question": "the question in ${qLang}",
-  "options": ["option A", "option B", "option C", "option D"],
+  "question_tl": "the question in ${TL}",
+  "options_tl": ["option A in ${TL}", "option B in ${TL}", "option C in ${TL}", "option D in ${TL}"],
+  "question_l": "the same question in ${L}",
+  "options_l": ["option A in ${L}", "option B in ${L}", "option C in ${L}", "option D in ${L}"],
   "answer": 0,
   "explanation_fr": "brief explanation in French of the correct answer and what the paragraph means",
   "explanation_en": "same in English",
@@ -1938,8 +1939,8 @@ Return JSON:
   "encouragement_en": "same in English"
 }
 
-"answer" is the 0-based index of the correct option.`;
-  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1200)).text);
+"answer" is the 0-based index of the correct option. The options must be in the same order in both languages.`;
+  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1500)).text);
 }
 
 // Evaluate a student's reformulation of a text excerpt.
@@ -3828,7 +3829,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const loadQCM = async (idx) => {
     setLoading(true); setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
     try {
-      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, inTargetLang);
+      const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl);
       setQcm(result);
     } catch (e) { console.error(e); }
     setLoading(false);
@@ -3891,6 +3892,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   };
 
   const isCorrect = qcm && selected === qcm.answer;
+  const qcmQuestion = qcm ? (inTargetLang ? (qcm.question_tl || qcm.question) : (qcm.question_l || qcm.question)) : "";
+  const qcmOptions = qcm ? (inTargetLang ? (qcm.options_tl || qcm.options) : (qcm.options_l || qcm.options)) : [];
   const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : (qcm.explanation_en || qcm.explanation_fr)) : "";
   const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : (qcm.encouragement_en || qcm.encouragement_fr)) : "";
 
@@ -3951,8 +3954,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
               className={illustrationLoading ? "pulse" : ""}>
               🖼 {illustrationLoading ? t.compIllustrationLoading : t.compIllustration}
             </button>
-            {level === 1 && (
-              <button onClick={() => { setInTargetLang(!inTargetLang); setQcm(null); loadQCM(paraIdx); }}
+            {level === 1 && qcm && (
+              <button onClick={() => setInTargetLang(!inTargetLang)}
                 style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer" }}>
                 {inTargetLang ? t.compInInterfaceLang : t.compInTargetLang}
               </button>
@@ -3965,8 +3968,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
               <div className="pulse" style={{ fontSize: 13, color: C.txtS, textAlign: "center", padding: 20 }}>{t.analyzing}</div>
             ) : qcm ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{qcm.question}</div>
-                {qcm.options.map((opt, i) => (
+                <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{qcmQuestion}</div>
+                {qcmOptions.map((opt, i) => (
                   <button key={i} onClick={() => { if (!checked) setSelected(i); }}
                     style={{
                       padding: "10px 14px", borderRadius: 8, textAlign: "left",

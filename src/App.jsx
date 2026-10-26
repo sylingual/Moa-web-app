@@ -3746,19 +3746,19 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
       {noSource.length > 0 && (
         <div>
           <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "2px 0 8px" }}>{t.sourcesNone}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {noSource.map(c => {
-              const ex = recapExcerptFor(c);
+              const si = statusInfo(c.status, t);
+              const isG = normType(c.type) === "grammar";
               return (
-                <div key={c.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-                  <PointChip c={c} />
-                  {ex && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>
-                      <span style={{ fontSize: 9, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.recapExcerpt}</span>
-                      <div style={{ marginTop: 3 }}>{ex}{ex.length >= 220 ? "…" : ""}</div>
-                    </div>
-                  )}
-                </div>
+                <button key={c.id} onClick={() => onReview(c)}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt }}>{c.korean}</span>
+                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: isG ? C.accBg : C.proBg, color: isG ? C.acc : C.pro, fontWeight: 600 }}>{isG ? "G" : "V"}</span>
+                </button>
               );
             })}
           </div>

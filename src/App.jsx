@@ -76,8 +76,6 @@ const T = {
     compStartLevel2: "Passer au niveau 2", compFinish: "Terminer",
     compReformulate: "Reformule en 1-2 phrases ce qui a été dit :",
     compYourReformulation: "Ta reformulation...",
-    compIllustration: "Illustration",
-    compIllustrationLoading: "Recherche d'illustration...",
     compTtsPlay: "Lire", compTtsStop: "Stop", compTtsLoading: "Chargement...",
     compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
     compSaved: "Compréhension sauvegardée !",
@@ -571,8 +569,6 @@ const T = {
     compStartLevel2: "Go to Level 2", compFinish: "Finish",
     compReformulate: "Reformulate in 1-2 sentences what was said:",
     compYourReformulation: "Your reformulation...",
-    compIllustration: "Illustration",
-    compIllustrationLoading: "Searching for illustration...",
     compTtsPlay: "Listen", compTtsStop: "Stop", compTtsLoading: "Loading...",
     compEncourage: "You don't need to know every word, what matters is grasping the overall meaning!",
     compSaved: "Comprehension saved!",
@@ -1066,8 +1062,6 @@ const T = {
     compStartLevel2: "레벨 2로 가기", compFinish: "끝내기",
     compReformulate: "내용을 1~2문장으로 다시 정리해 봐:",
     compYourReformulation: "네가 정리한 내용...",
-    compIllustration: "삽화",
-    compIllustrationLoading: "삽화 검색 중...",
     compTtsPlay: "듣기", compTtsStop: "멈추기", compTtsLoading: "로딩 중...",
     compEncourage: "모든 단어를 다 알 필요 없어, 전체적인 뜻을 파악하는 게 중요해!",
     compSaved: "독해 저장 완료!",
@@ -3756,7 +3750,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
         <div>
           <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {textStudies.map(s => (
+            {[...textStudies].sort((a, b) => (b.createdAt || parseInt(b.id) || 0) - (a.createdAt || parseInt(a.id) || 0)).map(s => (
               <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                 <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
                   {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}
@@ -3806,8 +3800,6 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const [inTargetLang, setInTargetLang] = useState(true);
   const [reformInput, setReformInput] = useState("");
   const [reformResult, setReformResult] = useState(null);
-  const [illustration, setIllustration] = useState(null);
-  const [illustrationLoading, setIllustrationLoading] = useState(false);
   const [ttsState, setTtsState] = useState("idle");
   const ttsAudioRef = useRef(null);
   const [level1Done, setLevel1Done] = useState(existingStudy?.level1Complete || false);
@@ -3815,7 +3807,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const [showLevel1Complete, setShowLevel1Complete] = useState(false);
 
   const loadQCM = async (idx, overrideLang) => {
-    setLoading(true); setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+    setLoading(true); setQcm(null); setSelected(null); setChecked(false);
     const useLang = overrideLang !== undefined ? overrideLang : inTargetLang;
     try {
       const result = await generateComprehensionQCM(paragraphs[idx], text, idx, lang, context, tl, useLang);
@@ -3825,7 +3817,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   };
 
   const loadReformExcerpt = () => {
-    setReformInput(""); setReformResult(null); setIllustration(null);
+    setReformInput(""); setReformResult(null);
   };
 
   useEffect(() => { if (level === 1 && !qcm && !loading) loadQCM(paraIdx); }, [paraIdx, level]);
@@ -3839,7 +3831,7 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   const handleNext = () => {
     if (paraIdx < paragraphs.length - 1) {
       setParaIdx(paraIdx + 1);
-      setQcm(null); setSelected(null); setChecked(false); setIllustration(null);
+      setQcm(null); setSelected(null); setChecked(false);
       setReformInput(""); setReformResult(null);
     } else {
       if (level === 1) { setLevel1Done(true); setShowLevel1Complete(true); }
@@ -3855,20 +3847,6 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
       setReformResult(result);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
-
-  const handleIllustration = async () => {
-    setIllustrationLoading(true);
-    try {
-      const TL = getTargetLangName(tl, "en");
-      const prompt = await callAI(
-        `You generate a short image search query (2-4 English words) to find an illustration that helps visualize the meaning of a ${TL} paragraph. Return ONLY the search query, nothing else.`,
-        paragraphs[paraIdx], 50, false, true
-      );
-      const { images } = await fetchImages(prompt.text.trim(), 4);
-      if (images.length > 0) setIllustration(images[0]);
-    } catch (e) { console.error(e); }
-    setIllustrationLoading(false);
   };
 
   const handleTts = async () => {
@@ -3967,22 +3945,11 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
             </div>
           </div>
 
-          {/* Illustration */}
-          {illustration && (
-            <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}` }}>
-              <img src={illustration.thumb || illustration.url} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover" }} />
-            </div>
-          )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button onClick={handleTts}
               style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${ttsState === "playing" ? C.acc : C.border}`, background: ttsState === "playing" ? C.accBg : C.s1, color: ttsState === "loading" ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: ttsState === "loading" ? "default" : "pointer" }}
               className={ttsState === "loading" ? "pulse" : ""}>
               {ttsState === "playing" ? "⏹" : "🔊"} {ttsState === "loading" ? t.compTtsLoading : ttsState === "playing" ? t.compTtsStop : t.compTtsPlay}
-            </button>
-            <button onClick={handleIllustration} disabled={illustrationLoading}
-              style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: illustrationLoading ? C.txtM : C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: illustrationLoading ? "default" : "pointer" }}
-              className={illustrationLoading ? "pulse" : ""}>
-              🖼 {illustrationLoading ? t.compIllustrationLoading : t.compIllustration}
             </button>
             {level === 1 && (
               <button onClick={() => { const next = !inTargetLang; setInTargetLang(next); setQcm(null); loadQCM(paraIdx, next); }}
@@ -11597,6 +11564,7 @@ function AppInner() {
             onFinish={(result) => {
               const study = {
                 id: compSession.existing?.id || (Date.now().toString() + Math.random().toString(36).slice(2, 5)),
+                createdAt: compSession.existing?.createdAt || Date.now(),
                 text: compSession.text,
                 targetLang: tl || "ko",
                 date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),

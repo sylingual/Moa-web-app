@@ -180,7 +180,7 @@ const T = {
     drillSentence: (n, total) => `Phrase ${n}/${total}`,
     exFixit: "C'est toi le prof", exFixitDesc: "Trouve et corrige l'erreur.",
     fixitInstr: "Cette phrase contient une erreur. Écris la correction.",
-    fixitPlaceholder: "Phrase corrigée...", fixitCorrect: "Bonne correction !", fixitWrong: "Pas tout à fait...",
+    fixitPlaceholder: "Phrase corrigée...", fixitCorrect: "Bonne correction !", fixitWrong: "Pas tout à fait...", fixitMeaning: "Sens visé :",
     fixitSentence: (n, total) => `Phrase ${n}/${total}`,
     availableCards: "Cartes disponibles (acquises)", launchEx: "Lancer l'exercice",
     moreExamples: "Plus d'exemples", onlineRes: "Ressources complémentaires", realExamples: "Exemples authentiques", searching: "Recherche en cours...", sources: "Sources", showTranslations: "Traductions", tapToReveal: "Touche les zones floues pour révéler la traduction",
@@ -680,7 +680,7 @@ const T = {
     drillSentence: (n, total) => `Sentence ${n}/${total}`,
     exFixit: "Fix It!", exFixitDesc: "Find and correct the error.",
     fixitInstr: "This sentence has an error. Write the correction.",
-    fixitPlaceholder: "Corrected sentence...", fixitCorrect: "Good correction!", fixitWrong: "Not quite...",
+    fixitPlaceholder: "Corrected sentence...", fixitCorrect: "Good correction!", fixitWrong: "Not quite...", fixitMeaning: "Intended meaning:",
     fixitSentence: (n, total) => `Sentence ${n}/${total}`,
     availableCards: "Available cards (acquired)", launchEx: "Launch exercise",
     moreExamples: "More examples", onlineRes: "Further resources", realExamples: "Real examples", searching: "Searching...", sources: "Sources", showTranslations: "Translations", tapToReveal: "Tap blurred areas to reveal the translation",
@@ -1180,7 +1180,7 @@ const T = {
     drillSentence: (n, total) => `문장 ${n}/${total}`,
     exFixit: "네가 선생님!", exFixitDesc: "오류를 찾아서 고쳐 봐.",
     fixitInstr: "이 문장에 오류가 있어. 고쳐서 써 봐.",
-    fixitPlaceholder: "고친 문장...", fixitCorrect: "좋은 수정!", fixitWrong: "아직...",
+    fixitPlaceholder: "고친 문장...", fixitCorrect: "좋은 수정!", fixitWrong: "아직...", fixitMeaning: "의도된 의미:",
     fixitSentence: (n, total) => `문장 ${n}/${total}`,
     availableCards: "사용 가능한 카드 (습득 완료)", launchEx: "연습 시작",
     moreExamples: "예문 더 보기", onlineRes: "추가 자료", realExamples: "실제 예문", searching: "검색 중...", sources: "출처", showTranslations: "번역 보기", tapToReveal: "흐린 부분을 터치하면 번역이 나와요",
@@ -1921,10 +1921,9 @@ Return only the JSON object.`;
 }
 
 // Generate a comprehension QCM for one paragraph of a text.
-async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode, inTargetLang) {
+async function generateComprehensionQCM(paragraph, fullText, paragraphIndex, lang, context, tlCode) {
   const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
   const TL = getTargetLangName(tlCode, "en");
-  const qLang = inTargetLang ? TL : L;
   const sys = `You are a warm, encouraging ${TL} reading comprehension tutor. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Your goal is to help the student understand the overall meaning of a text, paragraph by paragraph.
 
 ${context}
@@ -1933,13 +1932,15 @@ The student is reading a ${TL} text. They do NOT need to understand every word. 
 Always encourage and reassure: "You don't need to know every word to understand the meaning!"
 
 TASK: Generate ONE multiple-choice question about this specific paragraph's meaning.
-Write the question and all options in ${qLang}.
+Provide the question and options in BOTH ${TL} and ${L}.
 The question should test whether the student grasped WHAT the paragraph is about (its main idea, who does what, what happens), NOT grammar or vocabulary details.
 
 Return JSON:
 {
-  "question": "the question in ${qLang}",
-  "options": ["option A", "option B", "option C", "option D"],
+  "question_tl": "the question in ${TL}",
+  "options_tl": ["option A in ${TL}", "option B in ${TL}", "option C in ${TL}", "option D in ${TL}"],
+  "question_l": "the same question in ${L}",
+  "options_l": ["option A in ${L}", "option B in ${L}", "option C in ${L}", "option D in ${L}"],
   "answer": 0,
   "explanation_fr": "brief explanation in French of the correct answer and what the paragraph means",
   "explanation_en": "same in English",
@@ -1947,8 +1948,8 @@ Return JSON:
   "encouragement_en": "same in English"
 }
 
-"answer" is the 0-based index of the correct option.`;
-  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1200)).text);
+"answer" is the 0-based index of the correct option. The options must be in the same order in both languages.`;
+  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1500)).text);
 }
 
 async function generateSentenceQCM(sentence, fullText, lang, context, tlCode, inTargetLang) {
@@ -2534,30 +2535,34 @@ Return ONLY this JSON:
 }
 CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank. "hint" is the dictionary/base form the student needs to conjugate.`,
 
-    fixit: `TEACHER MODE: You are an expert ${TL} linguist and native-level speaker. Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
+    fixit: `TEACHER MODE: You are an expert ${TL} linguist, native speaker, and language exercise designer.
+Generate exactly 5 sentences containing ONE grammatical error each, specifically targeting the grammar point(s) provided.
+GENERATION PROCESS (internal):
 
-RULES:
-- Each sentence should be natural-sounding but contain exactly ONE clear, unambiguous grammar error
-- CRITICAL: The error in each sentence MUST be a misuse of one of the grammar points the student is practicing. For example, if the grammar point is "-은/는 vs -이/가", the error must be using the wrong particle. If the grammar point is "past tense -았/었-", the error must be a wrong conjugation of that tense. Do NOT introduce errors unrelated to the selected grammar points (spelling mistakes, wrong vocabulary, etc.)
-- The error must be obvious and clear-cut: there must be ONE unambiguously correct fix. Do NOT create sentences where both the original and corrected versions could be considered acceptable
-- Vary the context: daily life, social media, work, friends, travel, food, etc.
-- Provide the corrected version and a SHORT, CLEAR ${L} explanation (2-3 sentences max): state what is wrong, what the correct form is, and why. Do not ramble or second-guess yourself
+1. FIRST write a grammatically correct, natural sentence that a native speaker would genuinely say in a realistic situation.
+2. THEN introduce exactly ONE error in the target grammar structure, without changing unrelated words.
+3. VERIFY that correcting this single error restores the original, natural sentence. Discard and regenerate if any check fails.
 
-Return ONLY this JSON:
+STRICT RULES:
+
+* The corrected sentence must be grammatically, semantically AND pragmatically natural - not merely technically possible.
+* The error must directly test a provided grammar point.
+* There must be one clearly identifiable error and one clearly preferred minimal correction.
+* The incorrect sentence must not be acceptable in standard usage under the intended interpretation.
+* Avoid ambiguous sentences that require missing context to determine the correct answer.
+* For tense, modality, wishes, and conditionals, verify that the grammar matches the speaker's intention and time reference.
+* Prioritize idiomatic native usage
+* Use varied, realistic situations and level-appropriate vocabulary.
+* Explain the grammatical error in ${L} in 1-2 short sentences.
+
+FINAL CHECK (internal): Reject any exercise with an unnatural correction, multiple valid interpretations, unrelated errors, or an incorrect grammatical explanation.
+Return ONLY valid JSON:
 {
-  "message": "One-line intro in ${L} (e.g. 'Find the mistake in each sentence!')",
+  "message": "One-line intro in ${L}",
   "sentences": [
-    {"text": "the incorrect sentence", "corrected": "the correct sentence", "explanation": "${L} explanation of the error"},
-    {"text": "...", "corrected": "...", "explanation": "..."}
+    {"text": "incorrect sentence", "corrected": "natural correct sentence", "translation": "translation of the corrected sentence in ${L}", "explanation": "brief explanation in ${L}"}
   ]
-}
-CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.
-VERIFICATION (MANDATORY, DO NOT SKIP):
-1. For EVERY sentence, re-read "text" as a ${TL} native speaker. Ask yourself: "Is this sentence grammatically correct as-is?" If YES, it has NO error and you MUST discard it and generate a replacement with a real, clear error.
-2. Compare "text" and "corrected" character by character. If they are identical or if the only difference is punctuation/spacing, DISCARD and regenerate.
-3. The error must be in the grammar point being practiced, not a random typo. A native speaker must be able to identify what is wrong.
-4. Double-check conjugations: if the grammar point is about tense or conjugation, make sure "text" uses the WRONG form (not the correct one). A common mistake is accidentally writing the correct conjugation in "text" — verify this did not happen.
-Every "text" must be genuinely WRONG in ${TL}. Every "corrected" must be genuinely RIGHT. No exceptions.`,
+}`,
 
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 
@@ -2931,6 +2936,7 @@ function getCardReviewCount(card) {
 }
 
 function getCardNextReviewDate(card, daysAvailable) {
+  if (card.status === "acquired") return null;
   const discovered = card.discoveredDate;
   if (!discovered) return null;
   const schedule = getSpacedSchedule(daysAvailable || Infinity);
@@ -2944,11 +2950,13 @@ function getCardNextReviewDate(card, daysAvailable) {
 }
 
 function isCardGoalAcquired(card, daysAvailable) {
+  if (card.status === "acquired") return true;
   const schedule = getSpacedSchedule(daysAvailable);
   return getCardReviewCount(card) >= schedule.R;
 }
 
 function isCardLongTermAcquired(card) {
+  if (card.status === "acquired") return true;
   return getCardReviewCount(card) >= SPACED_REP_SCHEDULE[Infinity].R;
 }
 
@@ -3785,19 +3793,19 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
       {noSource.length > 0 && (
         <div>
           <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "2px 0 8px" }}>{t.sourcesNone}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {noSource.map(c => {
-              const ex = recapExcerptFor(c);
+              const si = statusInfo(c.status, t);
+              const isG = normType(c.type) === "grammar";
               return (
-                <div key={c.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-                  <PointChip c={c} />
-                  {ex && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: C.txtS, lineHeight: 1.6 }}>
-                      <span style={{ fontSize: 9, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.recapExcerpt}</span>
-                      <div style={{ marginTop: 3 }}>{ex}{ex.length >= 220 ? "…" : ""}</div>
-                    </div>
-                  )}
-                </div>
+                <button key={c.id} onClick={() => onReview(c)}
+                  style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.acc; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt }}>{c.korean}</span>
+                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: isG ? C.accBg : C.proBg, color: isG ? C.acc : C.pro, fontWeight: 600 }}>{isG ? "G" : "V"}</span>
+                </button>
               );
             })}
           </div>
@@ -4005,6 +4013,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
   };
 
   const isCorrect = qcm && selected === qcm.answer;
+  const qcmQuestion = qcm ? (inTargetLang ? (qcm.question_tl || qcm.question) : (qcm.question_l || qcm.question)) : "";
+  const qcmOptions = qcm ? (inTargetLang ? (qcm.options_tl || qcm.options) : (qcm.options_l || qcm.options)) : [];
   const explanation = qcm ? (lang === "fr" ? qcm.explanation_fr : (qcm.explanation_en || qcm.explanation_fr)) : "";
   const encouragement = qcm ? (lang === "fr" ? qcm.encouragement_fr : (qcm.encouragement_en || qcm.encouragement_fr)) : "";
 
@@ -5512,6 +5522,7 @@ IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if t
       <div style={{ fontSize: 16, fontFamily: tFont, lineHeight: 1.6, color: "#FF3B30", padding: 12, background: "rgba(255,59,48,0.06)", borderRadius: 10, border: "1px solid rgba(255,59,48,0.2)" }}>
         {sent?.text}
       </div>
+      {sent?.translation && <div style={{ fontSize: 12, color: C.txtM, fontStyle: "italic", marginTop: -8 }}>{t.fixitMeaning} {sent.translation}</div>}
       {!checked && (
         <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && input.trim()) check(); }}
           placeholder={t.fixitPlaceholder}
@@ -8302,7 +8313,7 @@ function AppInner() {
     const daysTotal = Math.max(1, Math.ceil((new Date(goal.deadline + "T23:59:59") - new Date(goal.createdAt || goal.deadline)) / 86400000));
     const R = getSpacedSchedule(daysTotal).R;
     let reviewsDone = 0;
-    cards.forEach(c => { reviewsDone += Math.min(getCardReviewCount(c), R); });
+    cards.forEach(c => { reviewsDone += (c.goalAcquired || migrateStatus(c.status) === "acquired") ? R : Math.min(getCardReviewCount(c), R); });
     const reviewsTotal = total * R;
     const pctReviews = Math.round((reviewsDone / reviewsTotal) * 100);
     return { discovered, acquired, total, pct1: Math.round((discovered / total) * 100), pct2: Math.round((acquired / total) * 100), overall: Math.round((acquired / total) * 100), reviewsDone, reviewsTotal, pctReviews };
@@ -10713,8 +10724,8 @@ function AppInner() {
                   }
                   const schedule = getSpacedSchedule(daysAvailable);
                   const R = schedule.R;
-                  const pct = Math.min(100, Math.round((reviewCount / R) * 100));
-                  const acquired = reviewCount >= R;
+                  const acquired = cardForReview.status === "acquired" || reviewCount >= R;
+                  const pct = acquired ? 100 : Math.min(100, Math.round((reviewCount / R) * 100));
                   const today = new Date().toISOString().slice(0, 10);
                   const nextDate = getCardNextReviewDate(cardForReview, daysAvailable);
                   const practicedToday = cardForReview.reviewDates && cardForReview.reviewDates.includes(today);
@@ -10757,7 +10768,7 @@ function AppInner() {
                     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                         <span style={{ fontSize: 14, fontWeight: 500, color: C.txt }}>{t.progressTitle}</span>
-                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{recapCard.type === "grammar" ? t.grammarProgressLabel(reviewCount, R) : t.progressReviews(reviewCount, R)}</span>
+                        <span style={{ fontSize: 11, color: acquired ? "#34C759" : C.txtM }}>{acquired ? t.progressAcquired : recapCard.type === "grammar" ? t.grammarProgressLabel(reviewCount, R) : t.progressReviews(reviewCount, R)}</span>
                       </div>
                       <div style={{ height: 6, borderRadius: 3, background: C.s1, marginBottom: 12, overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 3, background: acquired ? "#34C759" : C.acc, width: `${pct}%`, transition: "width 0.3s" }} />
@@ -11295,7 +11306,7 @@ function AppInner() {
                             {exerciseCards.filter(c => c.type === "vocab").map(c => (
                               <button key={c.id} onClick={() => { setYouglishWord(c.korean); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                             ))}
                           </div>
@@ -11351,7 +11362,7 @@ function AppInner() {
                               return (
                               <button key={c.id} onClick={() => { if (msMax) return; const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: msMax ? C.txtM : C.txt, cursor: msMax ? "not-allowed" : "pointer", opacity: msMax ? 0.5 : 1 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                               ); })}
                           </div>

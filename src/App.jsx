@@ -6272,6 +6272,7 @@ function AppInner() {
   const [impStep, setImpStep] = useState("input");
   const [found, setFound] = useState([]);
   const [selPick, setSelPick] = useState(0);
+  const [grammarSel, setGrammarSel] = useState(new Set());
   const [known, setKnown] = useState(new Set());
   const [impMode, setImpMode] = useState("grammar"); // "grammar" | "vocab" | "comprehension" | "bulk"
   const [bulkFound, setBulkFound] = useState([]); // bulk import extracted items
@@ -7120,7 +7121,9 @@ function AppInner() {
         setVocabKnown(new Set());
         setImpStep("vocabpicks");
       } else {
-        setFound(dedupeExtracted(await analyzeText(impText, data.cards, lang, context, tl), data.cards));
+        const grammarItems = dedupeExtracted(await analyzeText(impText, data.cards, lang, context, tl), data.cards);
+        setFound(grammarItems);
+        setGrammarSel(new Set(grammarItems.map((_, i) => i)));
         setSelPick(0); setKnown(new Set()); setImpStep("picks");
       }
     } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
@@ -7245,6 +7248,7 @@ function AppInner() {
     if (nk.has(i)) { nk.delete(i); save({ ...data, cards: data.cards.filter(c => c.korean !== p.korean) }); }
     else {
       nk.add(i);
+      setGrammarSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       const ex = data.cards.find(c => c.korean === p.korean);
       if (!ex) {
         save({ ...data, cards: [...data.cards, makeCard(p, "acquired")] });
@@ -7651,7 +7655,7 @@ function AppInner() {
   // Re-open the Import flow prefilled with a source text, to study it again.
   const reStudyFromText = (text) => {
     setImpText(text || "");
-    setFound([]); setSelPick(0); setKnown(new Set());
+    setFound([]); setSelPick(0); setGrammarSel(new Set()); setKnown(new Set());
     setImpStep("input");
     setView("import");
   };
@@ -10095,9 +10099,12 @@ function AppInner() {
                 {found.length === 0
                   ? <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, padding: "12px 14px", background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10 }}>{t.importAllKnown}</div>
                   : <div style={{ fontSize: 12, color: C.txtM, marginBottom: 8 }}>{t.pickSub}</div>}
-                {found.map((p, i) => (
-                  <div key={i} onClick={() => setSelPick(i)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, cursor: "pointer", border: `1px solid ${selPick === i ? C.acc : C.border}`, background: selPick === i ? C.accBg : C.s2 }}>
+                {found.map((p, i) => {
+                  const on = grammarSel.has(i);
+                  return (
+                  <div key={i} onClick={() => { const s = new Set(grammarSel); if (s.has(i)) s.delete(i); else s.add(i); setGrammarSel(s); }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, cursor: "pointer", border: `1px solid ${on ? C.acc : C.border}`, background: on ? C.accBg : C.s2 }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 5, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{p.korean}</div>
                       <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : (p.description_en || p.description_fr)}</div>
@@ -10108,10 +10115,11 @@ function AppInner() {
                       ✓ {known.has(i) ? t.addedAcq : t.iKnow}
                     </button>
                   </div>
-                ))}
+                  );
+                })}
                 <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                  <button onClick={() => beginLesson(null, null)} style={{ padding: "8px 18px", borderRadius: 6, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>→ {t.startLesson}</button>
-                  <button onClick={async () => { setImpStep("scanning"); try { const m = await analyzeText(impText, [...data.cards, ...found.map(p => ({ korean: p.korean }))], lang, context, tl); const fresh = dedupeExtracted(m, [...data.cards, ...found]); setFound([...found, ...fresh]); } catch (e) { console.error(e); } setImpStep("picks"); }}
+                  <button onClick={() => { const firstSel = found.findIndex((_, i) => grammarSel.has(i)); if (firstSel >= 0) { setSelPick(firstSel); beginLesson(found[firstSel], null); } }} disabled={!grammarSel.size} style={{ padding: "8px 18px", borderRadius: 6, background: grammarSel.size ? C.acc : C.border, color: grammarSel.size ? C.onAcc : C.txtS, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500, cursor: grammarSel.size ? "pointer" : "default" }}>→ {t.startLesson} ({grammarSel.size})</button>
+                  <button onClick={async () => { setImpStep("scanning"); try { const m = await analyzeText(impText, [...data.cards, ...found.map(p => ({ korean: p.korean }))], lang, context, tl); const fresh = dedupeExtracted(m, [...data.cards, ...found]); const newFound = [...found, ...fresh]; setFound(newFound); setGrammarSel(new Set(newFound.map((_, i) => i).filter(i => i < found.length ? grammarSel.has(i) : true))); } catch (e) { console.error(e); } setImpStep("picks"); }}
                     style={{ padding: "5px 12px", borderRadius: 6, border: `1px solid ${C.borderS}`, background: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txtS, cursor: "pointer" }}>+ {t.morePoints}</button>
                 </div>
               </div>

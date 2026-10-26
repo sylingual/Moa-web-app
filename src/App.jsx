@@ -83,7 +83,7 @@ const T = {
     compTtsPlay: "Lire", compTtsStop: "Stop", compTtsLoading: "Chargement...",
     compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
     compSaved: "Compréhension sauvegardée !",
-    compResume: "Reprendre", compLevel: (n) => `Niveau ${n}`,
+    compResume: "Reprendre", compReset: "Recommencer", compLevel: (n) => `Niveau ${n}`,
     compDone: "Terminé",
     compInTargetLang: "Questions en langue cible", compInInterfaceLang: "Questions en français",
     vocabPickTitle: "Mots à étudier", vocabPickSub: "Désélectionne ceux que tu connais déjà.",
@@ -583,7 +583,7 @@ const T = {
     compTtsPlay: "Listen", compTtsStop: "Stop", compTtsLoading: "Loading...",
     compEncourage: "You don't need to know every word, what matters is grasping the overall meaning!",
     compSaved: "Comprehension saved!",
-    compResume: "Resume", compLevel: (n) => `Level ${n}`,
+    compResume: "Resume", compReset: "Reset", compLevel: (n) => `Level ${n}`,
     compDone: "Done",
     compInTargetLang: "Questions in target language", compInInterfaceLang: "Questions in English",
     vocabPickTitle: "Words to study", vocabPickSub: "Deselect the ones you already know.",
@@ -1083,7 +1083,7 @@ const T = {
     compTtsPlay: "듣기", compTtsStop: "멈추기", compTtsLoading: "로딩 중...",
     compEncourage: "모든 단어를 다 알 필요 없어, 전체적인 뜻을 파악하는 게 중요해!",
     compSaved: "독해 저장 완료!",
-    compResume: "이어하기", compLevel: (n) => `레벨 ${n}`,
+    compResume: "이어하기", compReset: "초기화", compLevel: (n) => `레벨 ${n}`,
     compDone: "완료",
     compInTargetLang: "학습 언어로 된 문제", compInInterfaceLang: "한국어로 된 문제",
     vocabPickTitle: "공부할 단어", vocabPickSub: "이미 아는 단어는 선택 해제해.",
@@ -3730,7 +3730,7 @@ function TreeView({ cards, t, onToggle, onReview }) {
 // =============================================
 // SOURCES VIEW (original texts + their points)
 // =============================================
-function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension }) {
+function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onResetStudy }) {
   const byKorean = {};
   cards.forEach(c => { byKorean[c.korean] = c; });
   // Derived cards resolve to their parent's source text.
@@ -3831,9 +3831,15 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                     );
                   })}
                   <span style={{ fontSize: 10, color: C.txtM }}>{s.date}</span>
+                  {onResetStudy && (s.level1Complete || s.level2Complete || s.level3Complete) && (
+                    <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(s); }}
+                      style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                      {t.compReset}
+                    </button>
+                  )}
                   {(!s.level1Complete || !s.level2Complete || !s.level3Complete) && onResumeComprehension && (
                     <button onClick={() => onResumeComprehension(s)}
-                      style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                      style={{ marginLeft: onResetStudy && (s.level1Complete || s.level2Complete || s.level3Complete) ? 0 : "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
                       {t.compResume}
                     </button>
                   )}
@@ -9775,7 +9781,7 @@ function AppInner() {
                   </button>
                 </div>
               : libView === "sources"
-                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} />
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} onResetStudy={(s) => { const updated = (data.textStudies || []).map(st => st.id === s.id ? { ...st, level1Complete: false, level2Complete: false, level3Complete: false } : st); save({ ...data, textStudies: updated }); setFlash(t.compReset + " ✓"); setTimeout(() => setFlash(null), 2000); }} />
                 : libView === "grid"
                   ? (() => {
                       const groups = { new: [], in_progress: [], studied: [], acquired: [], pending: [] };

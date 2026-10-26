@@ -2488,30 +2488,34 @@ Return ONLY this JSON:
 }
 CRITICAL: "text" must contain exactly one blank written as "______". "answer" is the exact correct form that fills the blank. "hint" is the dictionary/base form the student needs to conjugate.`,
 
-    fixit: `TEACHER MODE: You are an expert ${TL} linguist and native-level speaker. Generate exactly 5 INCORRECT sentences in ${TL} that each contain a mistake SPECIFICALLY about the grammar point(s) listed below. The student must find and correct the error.
+    fixit: `TEACHER MODE: You are an expert ${TL} linguist, native speaker, and language exercise designer.
+Generate exactly 5 sentences containing ONE grammatical error each, specifically targeting the grammar point(s) provided.
+GENERATION PROCESS (internal):
 
-RULES:
-- Each sentence should be natural-sounding but contain exactly ONE clear, unambiguous grammar error
-- CRITICAL: The error in each sentence MUST be a misuse of one of the grammar points the student is practicing. For example, if the grammar point is "-은/는 vs -이/가", the error must be using the wrong particle. If the grammar point is "past tense -았/었-", the error must be a wrong conjugation of that tense. Do NOT introduce errors unrelated to the selected grammar points (spelling mistakes, wrong vocabulary, etc.)
-- The error must be obvious and clear-cut: there must be ONE unambiguously correct fix. Do NOT create sentences where both the original and corrected versions could be considered acceptable
-- Vary the context: daily life, social media, work, friends, travel, food, etc.
-- Provide the corrected version and a SHORT, CLEAR ${L} explanation (2-3 sentences max): state what is wrong, what the correct form is, and why. Do not ramble or second-guess yourself
+1. FIRST write a grammatically correct, natural sentence that a native speaker would genuinely say in a realistic situation.
+2. THEN introduce exactly ONE error in the target grammar structure, without changing unrelated words.
+3. VERIFY that correcting this single error restores the original, natural sentence. Discard and regenerate if any check fails.
 
-Return ONLY this JSON:
+STRICT RULES:
+
+* The corrected sentence must be grammatically, semantically AND pragmatically natural - not merely technically possible.
+* The error must directly test a provided grammar point.
+* There must be one clearly identifiable error and one clearly preferred minimal correction.
+* The incorrect sentence must not be acceptable in standard usage under the intended interpretation.
+* Avoid ambiguous sentences that require missing context to determine the correct answer.
+* For tense, modality, wishes, and conditionals, verify that the grammar matches the speaker's intention and time reference.
+* Prioritize idiomatic native usage
+* Use varied, realistic situations and level-appropriate vocabulary.
+* Explain the grammatical error in ${L} in 1-2 short sentences.
+
+FINAL CHECK (internal): Reject any exercise with an unnatural correction, multiple valid interpretations, unrelated errors, or an incorrect grammatical explanation.
+Return ONLY valid JSON:
 {
-  "message": "One-line intro in ${L} (e.g. 'Find the mistake in each sentence!')",
+  "message": "One-line intro in ${L}",
   "sentences": [
-    {"text": "the incorrect sentence", "corrected": "the correct sentence", "explanation": "${L} explanation of the error"},
-    {"text": "...", "corrected": "...", "explanation": "..."}
+    {"text": "incorrect sentence", "corrected": "natural correct sentence", "explanation": "brief explanation in ${L}"}
   ]
-}
-CRITICAL: "text" must contain exactly ONE grammar error. "corrected" is the fixed sentence. "explanation" tells the student what was wrong.
-VERIFICATION (MANDATORY, DO NOT SKIP):
-1. For EVERY sentence, re-read "text" as a ${TL} native speaker. Ask yourself: "Is this sentence grammatically correct as-is?" If YES, it has NO error and you MUST discard it and generate a replacement with a real, clear error.
-2. Compare "text" and "corrected" character by character. If they are identical or if the only difference is punctuation/spacing, DISCARD and regenerate.
-3. The error must be in the grammar point being practiced, not a random typo. A native speaker must be able to identify what is wrong.
-4. Double-check conjugations: if the grammar point is about tense or conjugation, make sure "text" uses the WRONG form (not the correct one). A common mistake is accidentally writing the correct conjugation in "text" — verify this did not happen.
-Every "text" must be genuinely WRONG in ${TL}. Every "corrected" must be genuinely RIGHT. No exceptions.`,
+}`,
 
     dialoguefill: `DIALOGUE FILL-IN MODE: Generate a short, realistic dialogue (6-8 lines) between two characters in the target language that naturally uses SOME or ALL of the vocabulary words listed below.
 

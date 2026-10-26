@@ -3761,6 +3761,7 @@ function SourceUrlRow({ sourceUrl, lang, onSave }) {
 // SOURCES VIEW (original texts + their points)
 // =============================================
 function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onResetStudy, onUpdateStudyUrl }) {
+  const [textSortAsc, setTextSortAsc] = useState(false);
   const byKorean = {};
   cards.forEach(c => { byKorean[c.korean] = c; });
   // Derived cards resolve to their parent's source text.
@@ -3844,9 +3845,15 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
       {/* Text comprehension studies */}
       {(textStudies || []).length > 0 && (
         <div>
-          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 8px" }}>
+            <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.compTitle}</div>
+            <button onClick={() => setTextSortAsc(!textSortAsc)}
+              style={{ fontSize: 10, color: C.txtM, background: "none", border: `1px solid ${C.border}`, borderRadius: 4, padding: "2px 7px", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+              {textSortAsc ? "↑" : "↓"} {lang === "fr" ? "Date" : lang === "ko" ? "날짜" : "Date"}
+            </button>
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...textStudies].sort((a, b) => (b.createdAt || parseInt(b.id) || 0) - (a.createdAt || parseInt(a.id) || 0)).map(s => (
+            {[...textStudies].sort((a, b) => { const diff = (b.createdAt || parseInt(b.id) || 0) - (a.createdAt || parseInt(a.id) || 0); return textSortAsc ? -diff : diff; }).map(s => (
               <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
                 <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
                   {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}

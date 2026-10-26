@@ -11146,7 +11146,7 @@ function AppInner() {
                             {exerciseCards.filter(c => c.type === "vocab").map(c => (
                               <button key={c.id} onClick={() => { setYouglishWord(c.korean); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s2, fontFamily: tFont, fontSize: 12.5, color: C.txt, cursor: "pointer" }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                             ))}
                           </div>
@@ -11202,7 +11202,7 @@ function AppInner() {
                               return (
                               <button key={c.id} onClick={() => { if (msMax) return; const ns = new Set(exSel); ns.has(c.id) ? ns.delete(c.id) : ns.add(c.id); setExSel(ns); }}
                                 style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: `1px solid ${exSel.has(c.id) ? C.acc : C.border}`, borderRadius: 6, background: exSel.has(c.id) ? C.accBg : C.s2, fontFamily: tFont, fontSize: 12.5, color: msMax ? C.txtM : C.txt, cursor: msMax ? "not-allowed" : "pointer", opacity: msMax ? 0.5 : 1 }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.ok }} />{c.korean}
+                                {c.korean}
                               </button>
                               ); })}
                           </div>

@@ -56,7 +56,7 @@ const T = {
     importTitle: "Importer un texte",
     importSub: "Colle un article de blog, un extrait, ou n'importe quel texte coréen. L'IA va repérer les points pertinents pour ton niveau.",
     analyze: "Analyser ce texte", analyzing: "Analyse en cours...",
-    importImage: "Importer une image", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
+    importImage: "Importer une image", importSourceUrl: "Lien source (optionnel)", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
     ocrNoTarget: (l) => `Aucun texte en ${l} n'a été détecté dans cette image. Tu t'es peut-être trompé d'image ?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} repéré${n > 1 ? "s" : ""} dans ton texte`,
     importAllKnown: "Tous les points de ce texte sont déjà dans ta bibliothèque — rien de nouveau à ajouter.",
@@ -556,7 +556,7 @@ const T = {
     importTitle: "Import a text",
     importSub: "Paste a blog article or any Korean text. The AI will find relevant points for your level.",
     analyze: "Analyze this text", analyzing: "Analyzing...",
-    importImage: "Import an image", ocrLoading: "Extracting text...", ocrEmpty: "No text detected in the image.",
+    importImage: "Import an image", importSourceUrl: "Source link (optional)", ocrLoading: "Extracting text...", ocrEmpty: "No text detected in the image.",
     ocrNoTarget: (l) => `No ${l} text was detected in this image. Did you maybe pick the wrong image?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} found in your text`,
     importAllKnown: "All the points in this text are already in your library — nothing new to add.",
@@ -1056,7 +1056,7 @@ const T = {
     importTitle: "텍스트 가져오기",
     importSub: "블로그 글이나 아무 학습 언어 텍스트를 붙여넣어 봐. AI가 네 수준에 맞는 포인트를 찾아줄 거야.",
     analyze: "이 텍스트 분석하기", analyzing: "분석 중...",
-    importImage: "이미지 가져오기", ocrLoading: "텍스트 추출 중...", ocrEmpty: "이미지에서 텍스트를 찾지 못했어요.",
+    importImage: "이미지 가져오기", importSourceUrl: "출처 링크 (선택사항)", ocrLoading: "텍스트 추출 중...", ocrEmpty: "이미지에서 텍스트를 찾지 못했어요.",
     ocrNoTarget: (l) => `이 이미지에서 ${l} 텍스트를 찾지 못했어요. 혹시 다른 이미지 아닌가요?`,
     pointsFound: (n) => `텍스트에서 포인트 ${n}개를 찾았어요`,
     importAllKnown: "이 텍스트의 모든 포인트가 이미 라이브러리에 있어요, 새로 추가할 게 없어요.",
@@ -3727,10 +3727,40 @@ function TreeView({ cards, t, onToggle, onReview }) {
   );
 }
 
+function SourceUrlRow({ sourceUrl, lang, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(sourceUrl || "");
+  const label = lang === "fr" ? "Ajouter un lien source" : lang === "ko" ? "출처 링크 추가" : "Add source link";
+  if (editing) return (
+    <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+      <input value={val} onChange={e => setVal(e.target.value)} placeholder="https://..." autoFocus
+        style={{ flex: 1, padding: "5px 8px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, color: C.txt, outline: "none" }} />
+      <button onClick={() => { if (onSave) onSave(val.trim()); setEditing(false); }}
+        style={{ padding: "4px 8px", borderRadius: 5, border: "none", background: C.acc, color: C.onAcc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>OK</button>
+      <button onClick={() => { setVal(sourceUrl || ""); setEditing(false); }}
+        style={{ padding: "4px 8px", borderRadius: 5, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✕</button>
+    </div>
+  );
+  if (sourceUrl) return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+      <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.acc, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 350 }} onClick={e => e.stopPropagation()}>
+        🔗 {sourceUrl.replace(/^https?:\/\/(www\.)?/, "").slice(0, 60)}{sourceUrl.replace(/^https?:\/\/(www\.)?/, "").length > 60 ? "..." : ""}
+      </a>
+      {onSave && <button onClick={() => setEditing(true)} style={{ padding: "2px 6px", borderRadius: 4, border: `1px solid ${C.border}`, background: "none", color: C.txtM, fontSize: 9, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>✎</button>}
+    </div>
+  );
+  if (onSave) return (
+    <button onClick={() => setEditing(true)} style={{ fontSize: 10.5, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", padding: 0, marginBottom: 6, textDecoration: "underline" }}>
+      + {label}
+    </button>
+  );
+  return null;
+}
+
 // =============================================
 // SOURCES VIEW (original texts + their points)
 // =============================================
-function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onResetStudy }) {
+function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onResetStudy, onUpdateStudyUrl }) {
   const byKorean = {};
   cards.forEach(c => { byKorean[c.korean] = c; });
   // Derived cards resolve to their parent's source text.
@@ -3821,6 +3851,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                 <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
                   {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}
                 </div>
+                <SourceUrlRow sourceUrl={s.sourceUrl} lang={lang} onSave={onUpdateStudyUrl ? (url) => onUpdateStudyUrl(s.id, url) : null} />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   {[1, 2, 3].map(lv => {
                     const done = lv === 1 ? s.level1Complete : lv === 2 ? s.level2Complete : s.level3Complete;
@@ -6269,6 +6300,7 @@ function AppInner() {
 
   // Import
   const [impText, setImpText] = useState("");
+  const [impSourceUrl, setImpSourceUrl] = useState("");
   const [impStep, setImpStep] = useState("input");
   const [found, setFound] = useState([]);
   const [selPick, setSelPick] = useState(0);
@@ -6898,6 +6930,7 @@ function AppInner() {
     setFound([]);
     setImpStep("input");
     setImpText("");
+    setImpSourceUrl("");
   };
 
   const switchTargetLang = (code) => {
@@ -7100,7 +7133,7 @@ function AppInner() {
     if (!impText.trim()) return;
     if (impMode === "comprehension") {
       const existing = (data.textStudies || []).find(s => s.text === impText.trim());
-      setCompSession({ text: impText.trim(), existing: existing || null });
+      setCompSession({ text: impText.trim(), existing: existing || null, sourceUrl: impSourceUrl.trim() || (existing && existing.sourceUrl) || "" });
       setView("comprehension");
       return;
     }
@@ -9786,7 +9819,7 @@ function AppInner() {
                   </button>
                 </div>
               : libView === "sources"
-                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} onResetStudy={(s) => { const updated = (data.textStudies || []).map(st => st.id === s.id ? { ...st, level1Complete: false, level2Complete: false, level3Complete: false } : st); save({ ...data, textStudies: updated }); setFlash(t.compReset + " ✓"); setTimeout(() => setFlash(null), 2000); }} />
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} onResetStudy={(s) => { const updated = (data.textStudies || []).map(st => st.id === s.id ? { ...st, level1Complete: false, level2Complete: false, level3Complete: false } : st); save({ ...data, textStudies: updated }); setFlash(t.compReset + " ✓"); setTimeout(() => setFlash(null), 2000); }} onUpdateStudyUrl={(id, url) => { const updated = (data.textStudies || []).map(st => st.id === id ? { ...st, sourceUrl: url } : st); save({ ...data, textStudies: updated }); }} />
                 : libView === "grid"
                   ? (() => {
                       const groups = { new: [], in_progress: [], studied: [], acquired: [], pending: [] };
@@ -10064,6 +10097,10 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+              <input value={impSourceUrl} onChange={e => setImpSourceUrl(e.target.value)} placeholder={t.importSourceUrl}
+                style={{ width: "100%", maxWidth: 480, border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1, padding: "8px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, outline: "none" }}
+                onFocus={e => { e.target.style.borderColor = C.acc; }}
+                onBlur={e => { e.target.style.borderColor = C.border; }} />
               {/* Import from an image / screenshot (OCR) */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
@@ -11786,6 +11823,7 @@ function AppInner() {
                 id: compSession.existing?.id || (Date.now().toString() + Math.random().toString(36).slice(2, 5)),
                 createdAt: compSession.existing?.createdAt || Date.now(),
                 text: compSession.text,
+                sourceUrl: compSession.sourceUrl || compSession.existing?.sourceUrl || "",
                 targetLang: tl || "ko",
                 date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" }),
                 level1Complete: result.level1Complete,

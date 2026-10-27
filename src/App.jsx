@@ -8901,6 +8901,7 @@ function AppInner() {
     setGoalImpStep(null);
     setGoalImpFound([]);
     setGoalImpSel(new Set());
+    setTimeout(() => { if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight; }, 80);
   };
 
   const goalDetailImportConfirm = (goalId) => {
@@ -8926,6 +8927,7 @@ function AppInner() {
     setGoalImpFound([]);
     setGoalImpSel(new Set());
     setGoalCardPicker(false);
+    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
   };
 
   const completeExercise = (mode, cardIds) => {

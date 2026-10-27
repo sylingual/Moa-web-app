@@ -198,4 +198,47 @@ export function isSupabaseConfigured() {
   return !!supabase;
 }
 
+// ---- AUTH ----
+export function getSupabase() { return supabase; }
+
+export async function signInWithGoogle() {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function signOutAuth() {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+}
+
+export async function getAuthUser() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getUser();
+  return data?.user || null;
+}
+
+export function onAuthStateChange(callback) {
+  if (!supabase) return () => {};
+  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    callback(session?.user || null);
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+export async function migrateOldAccount(oldSyncId, newUserId) {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const old = await loadFromSupabase(oldSyncId);
+  if (old.error || !old.data) return { ok: false, error: old.error || 'no_data' };
+  const result = await saveToSupabase(newUserId, old.data);
+  if (!result.ok) return { ok: false, error: result.error };
+  const merged = mergeWithDefaults(old.data);
+  saveLocal(merged);
+  return { ok: true, data: merged };
+}
+
 export { DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE };

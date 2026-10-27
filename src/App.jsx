@@ -3043,7 +3043,7 @@ const CELEBRATION_MESSAGES_KO = [
   "이 조자로!", "굿!", "화이팅!", "짱!",
 ];
 
-function CelebrationOverlay({ visible, onClose, lang }) {
+function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t }) {
   const [entry] = useState(() => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)]);
   const msgs = lang === "fr" ? CELEBRATION_MESSAGES_FR : lang === "ko" ? CELEBRATION_MESSAGES_KO : CELEBRATION_MESSAGES_EN;
   const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
@@ -3057,12 +3057,18 @@ function CelebrationOverlay({ visible, onClose, lang }) {
   }, [visible]);
 
   if (!visible) return null;
+  const goalMsg = goalCelebration && t ? `🎯 ${t.goalMilestone(goalCelebration.pct, goalCelebration.name)}` : null;
   return (
     <div onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 2000, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)",
       cursor: "pointer", animation: "fadeIn 0.2s ease-out",
     }}>
+      {goalMsg && (
+        <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+          {goalMsg}
+        </div>
+      )}
       <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
         🎉 {msg}
       </div>
@@ -9305,7 +9311,7 @@ function AppInner() {
       )}
 
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
-      {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} />}
+      {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} goalCelebration={goalCelebration} t={t} />}
       {goalCelebration && !showCelebration && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}
           onClick={() => setGoalCelebration(null)}>

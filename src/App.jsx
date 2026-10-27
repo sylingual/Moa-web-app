@@ -6354,7 +6354,7 @@ function AppInner() {
   const [authLoading, setAuthLoading] = useState(true);
   const [migrateMode, setMigrateMode] = useState(false);
   const [migrateInput, setMigrateInput] = useState("");
-  const [migrateStatus, setMigrateStatus] = useState(null);
+  const [migrationMsg, setMigrationMsg] = useState(null);
   const isOldLogin = window.location.pathname === "/vieuxlogin";
   const [syncInput, setSyncInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
@@ -9062,15 +9062,15 @@ function AppInner() {
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
     const doMigrate = async () => {
       if (!migrateInput.trim()) return;
-      setMigrateStatus("loading");
+      setMigrationMsg("loading");
       const result = await migrateOldAccount(migrateInput.trim(), authUser.id);
       if (result.ok) {
-        setMigrateStatus("success");
+        setMigrationMsg("success");
         setData(result.data);
         if (result.data.lastTargetLang) setTargetLang(result.data.lastTargetLang);
         localStorage.setItem("moa-google-migrated", "1");
-        setTimeout(() => { setMigrateMode(false); setMigrateStatus(null); }, 1500);
-      } else { setMigrateStatus("error"); }
+        setTimeout(() => { setMigrateMode(false); setMigrationMsg(null); }, 1500);
+      } else { setMigrationMsg("error"); }
     };
     return (
       <div style={fullScreen}>
@@ -9082,17 +9082,17 @@ function AppInner() {
             </span>
             <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.migrateTitle}</div>
             <div style={{ fontSize: 13, color: "#8B7355", textAlign: "center", lineHeight: 1.6 }}>{t.migrateSub}</div>
-            <input autoFocus value={migrateInput} onChange={e => { setMigrateInput(e.target.value); setMigrateStatus(null); }}
+            <input autoFocus value={migrateInput} onChange={e => { setMigrateInput(e.target.value); setMigrationMsg(null); }}
               onKeyDown={e => { if (e.key === "Enter" && migrateInput.trim()) doMigrate(); }}
               placeholder={t.welcomeCodePlaceholder}
-              disabled={migrateStatus === "loading"}
+              disabled={migrationMsg === "loading"}
               style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
             />
-            <button onClick={doMigrate} disabled={migrateStatus === "loading" || !migrateInput.trim()}
-              style={{ ...wBtn(true), opacity: migrateInput.trim() && migrateStatus !== "loading" ? 1 : 0.5 }}>
-              {migrateStatus === "loading" ? t.syncLoading : migrateStatus === "success" ? t.migrateSuccess : t.migrateAction}
+            <button onClick={doMigrate} disabled={migrationMsg === "loading" || !migrateInput.trim()}
+              style={{ ...wBtn(true), opacity: migrateInput.trim() && migrationMsg !== "loading" ? 1 : 0.5 }}>
+              {migrationMsg === "loading" ? t.syncLoading : migrationMsg === "success" ? t.migrateSuccess : t.migrateAction}
             </button>
-            {migrateStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center" }}>{t.migrateError}</div>}
+            {migrationMsg === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center" }}>{t.migrateError}</div>}
             <button onClick={() => { setMigrateMode(false); localStorage.setItem("moa-google-migrated", "1"); }}
               style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
               {t.migrateSkip}

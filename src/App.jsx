@@ -8572,6 +8572,7 @@ function AppInner() {
   const [goalImpProgress, setGoalImpProgress] = useState(null);
   const goalCardListRef = useRef(null);
   const goalScrollRef = useRef(null);
+  const goalPickerRef = useRef(null);
   const goalPicksRef = useRef(null);
 
   const goals = data.goals || [];
@@ -12654,7 +12655,7 @@ function AppInner() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt }}>{t.goalCards}</div>
-                        <button onClick={() => { setGoalCardPicker(true); setGoalPickSel(new Set()); }}
+                        <button onClick={() => { setGoalCardPicker(true); setGoalPickSel(new Set()); setTimeout(() => { if (goalPickerRef.current) goalPickerRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }}
                           style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, color: C.acc, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalAddCards}</button>
                       </div>
                       {(goal.cardIds || []).length === 0 ? (
@@ -12674,7 +12675,7 @@ function AppInner() {
 
                     {/* Card picker modal */}
                     {goalCardPicker && (
-                      <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+                      <div ref={goalPickerRef} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
                         <div style={{ fontSize: 13, fontWeight: 500, color: C.txt, marginBottom: 4 }}>{t.goalPickCards}</div>
                         <div style={{ fontSize: 11, color: C.txtM, marginBottom: 8 }}>{t.goalPickSub}</div>
                         {(() => {

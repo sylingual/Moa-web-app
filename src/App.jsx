@@ -3866,7 +3866,7 @@ function SourceUrlRow({ sourceUrl, lang, onSave }) {
 // =============================================
 // SOURCES VIEW (original texts + their points)
 // =============================================
-function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onResetStudy, onUpdateStudyUrl }) {
+function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, onRestudy, onResumeComprehension, onStartComprehension, onResetStudy, onUpdateStudyUrl }) {
   const [textSortAsc, setTextSortAsc] = useState(false);
   const byKorean = {};
   cards.forEach(c => { byKorean[c.korean] = c; });
@@ -3913,16 +3913,42 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     );
   };
 
-  const allTexts = [
-    ...groups.map(g => ({ kind: "source", data: g, ts: g.createdAt || 0 })),
-    ...(textStudies || []).map(s => ({ kind: "study", data: s, ts: s.createdAt || parseInt(s.id) || 0 })),
-  ].sort((a, b) => {
+  const studyByText = new Map();
+  (textStudies || []).forEach(s => { studyByText.set(s.text.trim(), s); });
+  const sourceByText = new Map();
+  groups.forEach(g => { sourceByText.set(g.text.trim(), g); });
+
+  const merged = new Map();
+  groups.forEach(g => {
+    const key = g.text.trim();
+    const study = studyByText.get(key);
+    const vocabCards = g.cards.filter(c => normType(c.type) !== "grammar");
+    const gramCards = g.cards.filter(c => normType(c.type) === "grammar");
+    merged.set(key, {
+      text: g.text, cards: g.cards, vocabCount: vocabCards.length, gramCount: gramCards.length,
+      study, sourceUrl: study?.sourceUrl || "", ts: study ? (study.createdAt || parseInt(study.id) || 0) : (g.createdAt || 0),
+    });
+  });
+  (textStudies || []).forEach(s => {
+    const key = s.text.trim();
+    if (merged.has(key)) return;
+    merged.set(key, {
+      text: s.text, cards: [], vocabCount: 0, gramCount: 0,
+      study: s, sourceUrl: s.sourceUrl || "", ts: s.createdAt || parseInt(s.id) || 0,
+    });
+  });
+
+  const allTexts = [...merged.values()].sort((a, b) => {
     if (!a.ts && !b.ts) return 0;
     if (!a.ts) return 1;
     if (!b.ts) return -1;
     const diff = b.ts - a.ts;
     return textSortAsc ? -diff : diff;
   });
+
+  const compLabel = lang === "fr" ? "Compréhension" : lang === "ko" ? "독해" : "Comprehension";
+  const vocabLabel = lang === "fr" ? "Vocabulaire" : lang === "ko" ? "어휘" : "Vocab";
+  const gramLabel = lang === "fr" ? "Grammaire" : lang === "ko" ? "문법" : "Grammar";
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -3934,51 +3960,80 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
           </button>
         </div>
       )}
-      {allTexts.map((item, i) => item.kind === "source" ? (
-        <div key={"src-" + i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
-          <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 170, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
-            {item.data.text}
-          </div>
-          <button onClick={() => onRestudy(item.data.text)}
-            style={{ marginTop: 10, padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-            ✨ {t.restudyText}
-          </button>
-          <div style={{ fontSize: 10, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "13px 0 7px" }}>{t.pointsFromText}</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {item.data.cards.map(c => <PointChip key={c.id} c={c} />)}
-          </div>
-        </div>
-      ) : (
-        <div key={"study-" + item.data.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-          <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
-            {item.data.text.slice(0, 300)}{item.data.text.length > 300 ? "..." : ""}
-          </div>
-          <SourceUrlRow sourceUrl={item.data.sourceUrl} lang={lang} onSave={onUpdateStudyUrl ? (url) => onUpdateStudyUrl(item.data.id, url) : null} />
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            {[1, 2, 3].map(lv => {
-              const done = lv === 1 ? item.data.level1Complete : lv === 2 ? item.data.level2Complete : item.data.level3Complete;
-              return (
-                <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, fontWeight: 500 }}>
-                  {t.compLevel(lv)} {done ? "✓" : ""}
-                </span>
-              );
-            })}
-            <span style={{ fontSize: 10, color: C.txtM }}>{item.data.date}</span>
-            {onResetStudy && (item.data.level1Complete || item.data.level2Complete || item.data.level3Complete) && (
-              <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(item.data); }}
-                style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                {t.compReset}
-              </button>
+      {allTexts.map((item, i) => {
+        const s = item.study;
+        const hasComp = !!s;
+        const compDone = s && s.level1Complete && s.level2Complete && s.level3Complete;
+        const compLevels = s ? [s.level1Complete, s.level2Complete, s.level3Complete] : [false, false, false];
+        const compStarted = compLevels.some(Boolean);
+        return (
+          <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
+            <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 130, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
+              {item.text.slice(0, 400)}{item.text.length > 400 ? "..." : ""}
+            </div>
+            {item.sourceUrl && <SourceUrlRow sourceUrl={item.sourceUrl} lang={lang} onSave={s && onUpdateStudyUrl ? (url) => onUpdateStudyUrl(s.id, url) : null} />}
+            {!item.sourceUrl && s && onUpdateStudyUrl && <SourceUrlRow sourceUrl="" lang={lang} onSave={(url) => onUpdateStudyUrl(s.id, url)} />}
+            {s && <span style={{ fontSize: 10, color: C.txtM, marginTop: 6, display: "inline-block" }}>{s.date}</span>}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: hasComp ? (compDone ? "#e8f5e9" : compStarted ? "#fff8e1" : C.s1) : C.s1, color: hasComp ? (compDone ? C.ok : compStarted ? "#f9a825" : C.txtM) : C.txtM, fontWeight: 500, border: `1px solid ${hasComp ? "transparent" : C.border}`, opacity: hasComp ? 1 : 0.5 }}>
+                📖 {compLabel} {compDone ? "✓" : compStarted ? `${compLevels.filter(Boolean).length}/3` : ""}
+              </span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: item.vocabCount > 0 ? C.proBg : C.s1, color: item.vocabCount > 0 ? C.pro : C.txtM, fontWeight: 500, border: `1px solid ${item.vocabCount > 0 ? "transparent" : C.border}`, opacity: item.vocabCount > 0 ? 1 : 0.5 }}>
+                📝 {vocabLabel} {item.vocabCount > 0 ? `(${item.vocabCount})` : ""}
+              </span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: item.gramCount > 0 ? C.accBg : C.s1, color: item.gramCount > 0 ? C.acc : C.txtM, fontWeight: 500, border: `1px solid ${item.gramCount > 0 ? "transparent" : C.border}`, opacity: item.gramCount > 0 ? 1 : 0.5 }}>
+                📐 {gramLabel} {item.gramCount > 0 ? `(${item.gramCount})` : ""}
+              </span>
+            </div>
+            {hasComp && (
+              <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
+                {[1, 2, 3].map(lv => {
+                  const done = compLevels[lv - 1];
+                  return (
+                    <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, border: `1px solid ${done ? C.ok : C.border}`, fontWeight: done ? 600 : 400 }}>
+                      Niveau {lv}{done ? " ✓" : ""}
+                    </span>
+                  );
+                })}
+              </div>
             )}
-            {(!item.data.level1Complete || !item.data.level2Complete || !item.data.level3Complete) && onResumeComprehension && (
-              <button onClick={() => onResumeComprehension(item.data)}
-                style={{ marginLeft: onResetStudy && (item.data.level1Complete || item.data.level2Complete || item.data.level3Complete) ? 0 : "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                {t.compResume}
-              </button>
+            {item.cards.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: 9.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, marginBottom: 4 }}>
+                  {lang === "fr" ? "Points associés" : lang === "ko" ? "관련 항목" : "Associated items"}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {item.cards.map(c => <PointChip key={c.id} c={c} />)}
+                </div>
+              </div>
             )}
+            <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+              {hasComp && !compDone && onResumeComprehension && (
+                <button onClick={() => onResumeComprehension(s)}
+                  style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.ok, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                  {compStarted ? t.compResume : (lang === "fr" ? "Reprendre" : lang === "ko" ? "이어서" : "Resume")}
+                </button>
+              )}
+              {!hasComp && onStartComprehension && (
+                <button onClick={() => onStartComprehension(item.text)}
+                  style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.ok, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                  📖 {compLabel}
+                </button>
+              )}
+              <button onClick={() => onRestudy(item.text)}
+                style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                ✨ {t.restudyText}
+              </button>
+              {s && onResetStudy && compStarted && (
+                <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(s); }}
+                  style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                  {t.compReset}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {noSource.length > 0 && (
         <div>
           <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "2px 0 8px" }}>{t.sourcesNone}</div>
@@ -10250,7 +10305,7 @@ function AppInner() {
                   </button>
                 </div>
               : libView === "sources"
-                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} onResetStudy={(s) => { const updated = (data.textStudies || []).map(st => st.id === s.id ? { ...st, level1Complete: false, level2Complete: false, level3Complete: false } : st); save({ ...data, textStudies: updated }); setFlash(t.compReset + " ✓"); setTimeout(() => setFlash(null), 2000); }} onUpdateStudyUrl={(id, url) => { const updated = (data.textStudies || []).map(st => st.id === id ? { ...st, sourceUrl: url } : st); save({ ...data, textStudies: updated }); }} />
+                ? <SourcesView cards={filteredCards} summaries={data.summaries} textStudies={(data.textStudies || []).filter(s => (s.targetLang || "ko") === tl)} t={t} lang={lang} tFont={tFont} onReview={(c) => reviewCard(c)} onRestudy={reStudyFromText} onResumeComprehension={(s) => { setCompSession({ text: s.text, existing: s }); setView("comprehension"); }} onStartComprehension={(text) => { setCompSession({ text, existing: null }); setView("comprehension"); }} onResetStudy={(s) => { const updated = (data.textStudies || []).map(st => st.id === s.id ? { ...st, level1Complete: false, level2Complete: false, level3Complete: false } : st); save({ ...data, textStudies: updated }); setFlash(t.compReset + " ✓"); setTimeout(() => setFlash(null), 2000); }} onUpdateStudyUrl={(id, url) => { const updated = (data.textStudies || []).map(st => st.id === id ? { ...st, sourceUrl: url } : st); save({ ...data, textStudies: updated }); }} />
                 : libView === "grid"
                   ? (() => {
                       const groups = { new: [], in_progress: [], studied: [], acquired: [], pending: [] };

@@ -3033,6 +3033,21 @@ const CELEBRATION_GIFS = [
   { type: "tenor", id: "14160543473475444161" },
 ];
 
+const GOAL_COMPLETE_GIFS = [
+  { type: "giphy", id: "316JKVkNXyl1YqBTWj" },
+  { type: "giphy", id: "1BfPP1taCof3s61x71" },
+  { type: "giphy", id: "nuG4puFcRdiDVJnjmC" },
+  { type: "giphy", id: "f2ocXJB3MfCyGmoVDV" },
+  { type: "giphy", id: "QMoXJjGPsmJ6Pdc596" },
+  { type: "giphy", id: "6rBvWzOYWBFyCYwTgr" },
+  { type: "giphy", id: "d2CAekRWjgBe8AWUPA" },
+  { type: "giphy", id: "mQeVzOjhOihcqCL2PH" },
+  { type: "giphy", id: "gjsVqF6Xf2ywOb83tw" },
+  { type: "giphy", id: "4JAUPd0ea6QeiMcDNi" },
+  { type: "giphy", id: "SlCMrve37cguvGOrGh" },
+  { type: "giphy", id: "HYicsQGglSQTGlANuC", koOnly: true },
+];
+
 const CELEBRATION_MESSAGES_FR = [
   "Bien joué !", "Bravo !", "Génial !", "Tu gères !", "Excellent !",
   "Continue comme ça !", "Super travail !", "Trop fort !", "Yeah !",
@@ -3046,8 +3061,15 @@ const CELEBRATION_MESSAGES_KO = [
   "이 조자로!", "굿!", "화이팅!", "짱!",
 ];
 
-function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t }) {
-  const [entry] = useState(() => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)]);
+function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t, targetLang }) {
+  const isGoalComplete = goalCelebration && goalCelebration.pct === 100 && t;
+  const [entry] = useState(() => {
+    if (isGoalComplete) {
+      const pool = GOAL_COMPLETE_GIFS.filter(g => !g.koOnly || targetLang === "ko");
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+    return CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
+  });
   const msgs = lang === "fr" ? CELEBRATION_MESSAGES_FR : lang === "ko" ? CELEBRATION_MESSAGES_KO : CELEBRATION_MESSAGES_EN;
   const [msg] = useState(() => msgs[Math.floor(Math.random() * msgs.length)]);
 
@@ -3060,8 +3082,8 @@ function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t }) {
   }, [visible]);
 
   if (!visible) return null;
-  const isGoalComplete = goalCelebration && goalCelebration.pct === 100 && t;
   const goalMilestoneMsg = goalCelebration && !isGoalComplete && t ? `🎯 ${t.goalMilestone(goalCelebration.pct, goalCelebration.name)}` : null;
+  const embedUrl = entry.type === "giphy" ? `https://giphy.com/embed/${entry.id}` : `https://tenor.com/embed/${entry.id}`;
   return (
     <div onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 2000, display: "flex", flexDirection: "column",
@@ -3087,7 +3109,7 @@ function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t }) {
       <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{ fontSize: 100, position: "absolute", zIndex: 0 }}>🥳</span>
         <iframe
-          src={`https://tenor.com/embed/${entry.id}`}
+          src={embedUrl}
           style={{ position: "absolute", inset: -20, width: "calc(100% + 40px)", height: "calc(100% + 40px)", border: "none", pointerEvents: "none", zIndex: 1 }}
           allowFullScreen
           title="celebration"
@@ -9331,7 +9353,7 @@ function AppInner() {
       )}
 
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
-      {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} goalCelebration={goalCelebration} t={t} />}
+      {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} goalCelebration={goalCelebration} t={t} targetLang={tl} />}
       {goalCelebration && !showCelebration && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}
           onClick={() => setGoalCelebration(null)}>

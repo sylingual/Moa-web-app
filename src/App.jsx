@@ -394,6 +394,7 @@ const T = {
     goalExtend: "Prolonger",
     goalNewDeadline: "Nouvelle date limite",
     goalMilestone: (pct, name) => `${pct}% des mots acquis ${name ? `pour "${name}"` : ""} !`,
+    goalComplete: (name) => `Tu as atteint ton objectif ${name ? `pour "${name}"` : ""} ! Felicitations ! 💪`,
     goalCardCount: (n) => `${n} carte${n > 1 ? "s" : ""}`,
     goalOf: "sur",
     goalPickCards: "Sélectionner des cartes",
@@ -894,6 +895,7 @@ const T = {
     goalExtend: "Extend",
     goalNewDeadline: "New deadline",
     goalMilestone: (pct, name) => `${pct}% of words acquired ${name ? `for "${name}"` : ""}!`,
+    goalComplete: (name) => `You completed your goal ${name ? `for "${name}"` : ""}! Congratulations! 💪`,
     goalCardCount: (n) => `${n} card${n > 1 ? "s" : ""}`,
     goalOf: "of",
     goalPickCards: "Select cards",
@@ -1392,6 +1394,7 @@ const T = {
     goalExtend: "연장",
     goalNewDeadline: "새 마감일",
     goalMilestone: (pct, name) => `${name ? `"${name}" ` : ""}단어 습득 ${pct}% 달성!`,
+    goalComplete: (name) => `${name ? `"${name}" ` : ""}목표 달성! 축하해! 💪`,
     goalCardCount: (n) => `카드 ${n}장`,
     goalOf: "/",
     goalPickCards: "카드 선택",
@@ -3057,21 +3060,30 @@ function CelebrationOverlay({ visible, onClose, lang, goalCelebration, t }) {
   }, [visible]);
 
   if (!visible) return null;
-  const goalMsg = goalCelebration && t ? `🎯 ${t.goalMilestone(goalCelebration.pct, goalCelebration.name)}` : null;
+  const isGoalComplete = goalCelebration && goalCelebration.pct === 100 && t;
+  const goalMilestoneMsg = goalCelebration && !isGoalComplete && t ? `🎯 ${t.goalMilestone(goalCelebration.pct, goalCelebration.name)}` : null;
   return (
     <div onClick={onClose} style={{
       position: "fixed", inset: 0, zIndex: 2000, display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)",
       cursor: "pointer", animation: "fadeIn 0.2s ease-out",
     }}>
-      {goalMsg && (
-        <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
-          {goalMsg}
+      {isGoalComplete ? (
+        <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center", maxWidth: 320, lineHeight: 1.5 }}>
+          🏆 {t.goalComplete(goalCelebration.name)}
         </div>
+      ) : (
+        <>
+          {goalMilestoneMsg && (
+            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center", maxWidth: 320, lineHeight: 1.4 }}>
+              {goalMilestoneMsg}
+            </div>
+          )}
+          <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
+            🎉 {msg}
+          </div>
+        </>
       )}
-      <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 16, textShadow: "0 2px 8px rgba(0,0,0,0.4)", textAlign: "center" }}>
-        🎉 {msg}
-      </div>
       <div style={{ width: 280, height: 280, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", background: "#111", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{ fontSize: 100, position: "absolute", zIndex: 0 }}>🥳</span>
         <iframe

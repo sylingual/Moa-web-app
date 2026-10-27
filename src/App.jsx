@@ -272,11 +272,11 @@ const T = {
     migrateError: "Cle introuvable ou erreur de migration.",
     logoutAuth: "Se deconnecter",
     tutoWelcome: "Bienvenue dans Moa !",
-    tutoWelcomeSub: "Ici, c'est ton espace de travail personnalise pour etudier le coreen.",
-    tutoQuestion: "Pour commencer, est-ce que tu etudies seul(e) ou avec un prof ?",
+    tutoWelcomeSub: "Ton espace de travail personnalisé pour étudier le coréen.",
+    tutoQuestion: (gender) => `Pour commencer, est-ce que tu étudies ${gender === "femme" ? "seule" : "seul"} ou avec un prof ?`,
     tutoWithProf: "Avec un prof",
-    tutoAlone: "Seul(e)",
-    tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la regularite.\nJe te propose de commencer par l'onglet \"Objectifs\".",
+    tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
+    tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
     tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
     tutoReady: "C'est parti !",
     tutoSkip: "Passer le tutoriel",
@@ -805,9 +805,9 @@ const T = {
     logoutAuth: "Sign out",
     tutoWelcome: "Welcome to Moa!",
     tutoWelcomeSub: "This is your personalized workspace for studying Korean.",
-    tutoQuestion: "To start, are you studying alone or with a teacher?",
+    tutoQuestion: () => "To start, are you studying alone or with a teacher?",
     tutoWithProf: "With a teacher",
-    tutoAlone: "Alone",
+    tutoAlone: () => "Alone",
     tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
     tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
     tutoReady: "Let's go!",
@@ -1337,9 +1337,9 @@ const T = {
     logoutAuth: "로그아웃",
     tutoWelcome: "Moa에 오신 걸 환영해요!",
     tutoWelcomeSub: "여기는 한국어 학습을 위한 나만의 맞춤 공간이에요.",
-    tutoQuestion: "먼저, 혼자 공부하나요 아니면 선생님과 함께하나요?",
+    tutoQuestion: () => "먼저, 혼자 공부하나요 아니면 선생님과 함께하나요?",
     tutoWithProf: "선생님과 함께",
-    tutoAlone: "혼자",
+    tutoAlone: () => "혼자",
     tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
     tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
     tutoReady: "시작하자!",
@@ -9780,10 +9780,10 @@ function AppInner() {
               <div style={bubbleBase}>
                 <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
                 <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
                   <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
-                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone}</button>
+                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(data.profile?.gender)}</button>
                 </div>
                 <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
               </div>
@@ -9792,55 +9792,17 @@ function AppInner() {
         }
 
         if (tutoStep === 1) {
-          const goalsEl = document.querySelector('[data-tutorial="goals-tab"]');
-          const goalsRect = goalsEl ? goalsEl.getBoundingClientRect() : null;
           const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
           return (
-            <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={e => e.stopPropagation()}>
-              {/* Dark overlay with cutout for the goals tab */}
-              {goalsRect ? (
-                <div style={{
-                  position: "absolute",
-                  left: goalsRect.left - 6,
-                  top: goalsRect.top - 4,
-                  width: goalsRect.width + 12,
-                  height: goalsRect.height + 8,
-                  borderRadius: 10,
-                  background: "transparent",
-                  boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
-                  zIndex: 1,
-                  animation: "tutoHighlight 2s ease-in-out infinite",
-                  pointerEvents: "none",
-                }} />
-              ) : (
-                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)" }} />
-              )}
-              {/* Speech bubble below the goals tab */}
-              <div style={{
-                position: "absolute",
-                left: "50%",
-                top: goalsRect ? goalsRect.bottom + 18 : "50%",
-                transform: goalsRect ? "translateX(-50%)" : "translate(-50%, -50%)",
-                zIndex: 2,
-                ...bubbleBase,
-                maxWidth: isMobile ? "calc(100vw - 40px)" : 400,
-                animation: "tutoBubble 0.5s ease-out",
-              }}>
-                {/* Arrow pointing up */}
-                {goalsRect && (
-                  <div style={{
-                    position: "absolute",
-                    top: -10,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 0,
-                    height: 0,
-                    borderLeft: "12px solid transparent",
-                    borderRight: "12px solid transparent",
-                    borderBottom: "12px solid #fff",
-                  }} />
-                )}
+            <div style={overlayBase}>
+              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
+                  {"🎯 OBJECTIFS"}
+                </div>
                 <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
+                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
+                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
+                </div>
                 <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
                 <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
               </div>
@@ -10311,6 +10273,10 @@ function AppInner() {
               {t.migrateTitle}
             </button>
           )}
+          <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
+            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
+            {"🔄 Tutoriel"}
+          </button>
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
             {authUser ? t.logoutAuth : t.disconnect}

@@ -6517,7 +6517,7 @@ function AppInner() {
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
   const [ambientOn, setAmbientOn] = useState(() => { try { return localStorage.getItem("moa-ambient") === "1"; } catch { return false; } });
-  const ambientRef = useRef(null);
+  const ambientCtx = useRef(null);
   const autoSelectedKo = useRef(false);
 
   // Profile
@@ -8491,17 +8491,38 @@ function AppInner() {
     try { localStorage.setItem("moa-ex-music", next ? "1" : "0"); } catch {}
   };
 
-  // ---- AMBIENT MUSIC (Issue #108) ----
+  // ---- AMBIENT MUSIC (Issue #108) — Web Audio API for gapless loop ----
   useEffect(() => {
-    const audio = ambientRef.current;
-    if (!audio) return;
-    if (ambientOn) {
-      audio.volume = 0.18;
-      audio.loop = true;
-      audio.play().catch(() => {});
-    } else {
-      audio.pause();
+    if (!ambientOn) {
+      if (ambientCtx.current?.ctx) { ambientCtx.current.gain.gain.setTargetAtTime(0, ambientCtx.current.ctx.currentTime, 0.3); }
+      return;
     }
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!ambientCtx.current) {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const resp = await fetch("/audio/ambient.mp3");
+          const buf = await ctx.decodeAudioData(await resp.arrayBuffer());
+          ambientCtx.current = { ctx, buf, gain: null, src: null };
+        }
+        if (cancelled) return;
+        const { ctx, buf } = ambientCtx.current;
+        if (ctx.state === "suspended") await ctx.resume();
+        if (ambientCtx.current.src) { try { ambientCtx.current.src.stop(); } catch {} }
+        const gain = ctx.createGain();
+        gain.gain.value = 0.18;
+        gain.connect(ctx.destination);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.loop = true;
+        src.connect(gain);
+        src.start(0);
+        ambientCtx.current.gain = gain;
+        ambientCtx.current.src = src;
+      } catch {}
+    })();
+    return () => { cancelled = true; };
   }, [ambientOn]);
 
   const toggleAmbient = () => {
@@ -9703,7 +9724,6 @@ function AppInner() {
       )}
 
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
-      <audio ref={ambientRef} src="/audio/ambient.mp3" preload="none" />
       {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} goalCelebration={goalCelebration} t={t} targetLang={tl} />}
       {goalCelebration && !showCelebration && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}

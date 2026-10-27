@@ -193,6 +193,13 @@ function resetInactivityTimer() {
 function onVisibilityChange() {
   if (document.hidden) {
     flushEvents();
+    if (supabase && sessionId && !sessionEnded) {
+      const now = new Date().toISOString();
+      fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${sessionId}`, {
+        method: 'PATCH', headers: supaHeaders, keepalive: true,
+        body: JSON.stringify({ ended_at: now }),
+      }).catch(() => {});
+    }
   } else {
     lastActivity = Date.now();
     resetInactivityTimer();

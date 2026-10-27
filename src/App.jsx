@@ -1707,6 +1707,9 @@ async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText
   try { data = JSON.parse(rawText); } catch { throw new Error("Server response is not JSON: " + rawText.substring(0, 200)); }
   const text = (data.content || []).map((b) => b.text || "").join("\n");
   if (!text) throw new Error("Empty AI response. Raw: " + rawText.substring(0, 200));
+  if (data.usage) {
+    trackEvent("ai_tokens", data.usage);
+  }
   return { text, sources: data.sources || [] };
 }
 
@@ -1748,6 +1751,7 @@ async function extractImageText(base64, mimeType, tlName) {
   const raw = await res.text();
   if (!res.ok) { let e = raw; try { e = JSON.parse(raw).error || raw; } catch {} throw new Error(e); }
   let data; try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
+  if (data.usage) trackEvent("ai_tokens", data.usage);
   return (data.content || []).map((b) => b.text || "").join("\n").trim();
 }
 
@@ -13295,6 +13299,53 @@ function AppInner() {
                     </table>
                   </div>
                 </div>
+
+                {/* TOKEN USAGE */}
+                {d.tokens && (
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{"🪙"} Consommation tokens</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 12 }}>
+                    {[
+                      ["Appels IA", d.tokens.total_calls],
+                      ["Input tokens", d.tokens.total_input?.toLocaleString()],
+                      ["Output tokens", d.tokens.total_output?.toLocaleString()],
+                      ["Coût total", "$" + (d.tokens.total_cost || 0).toFixed(4)],
+                    ].map(([label, val]) => (
+                      <div key={label} style={{ background: C.s2, borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: C.acc }}>{val}</div>
+                        <div style={{ fontSize: 10, color: C.txtM }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {(d.tokens.by_user || []).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Par utilisateur</div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                            {["Utilisateur", "Appels", "Input", "Output", "Coût", "Provider(s)"].map(h => (
+                              <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(d.tokens.by_user || []).map(u => (
+                            <tr key={u.sync_id} style={{ borderBottom: `1px solid ${C.border}` }}>
+                              <td style={{ padding: "6px 4px", color: C.txt, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>{u.sync_id.length > 12 ? u.sync_id.slice(0, 6) + "..." + u.sync_id.slice(-4) : u.sync_id}</td>
+                              <td style={{ padding: "6px 4px", color: C.txt }}>{u.calls}</td>
+                              <td style={{ padding: "6px 4px", color: C.txt }}>{u.input?.toLocaleString()}</td>
+                              <td style={{ padding: "6px 4px", color: C.txt }}>{u.output?.toLocaleString()}</td>
+                              <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 600 }}>{"$" + u.cost.toFixed(4)}</td>
+                              <td style={{ padding: "6px 4px", color: C.txtM }}>{Object.keys(u.by_provider || {}).join(", ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>)}
+                  {(d.tokens.by_user || []).length === 0 && <div style={{ fontSize: 11, color: C.txtM }}>Pas encore de données de tokens. Les stats s'accumuleront au fil des appels IA.</div>}
+                </div>
+                )}
 
                 {/* GOALS & REVIEWS */}
                 <div style={{ display: "grid", gridTemplateColumns: winW < 700 ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 12 }}>

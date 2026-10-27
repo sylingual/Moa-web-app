@@ -4682,7 +4682,8 @@ function FlashcardExercise({ cards, tFont, t, direction = "recto", inputMethod =
             }}>
               <div style={{
                 position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-                transform: "rotateY(0deg)", zIndex: 2,
+                transform: "translateZ(1px)", zIndex: 2,
+                visibility: flipped ? "hidden" : "visible",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10,
                 borderRadius: 16, border: `2px solid ${C.border}`, background: C.s1, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
               }}>
@@ -4692,7 +4693,8 @@ function FlashcardExercise({ cards, tFont, t, direction = "recto", inputMethod =
               </div>
               <div style={{
                 position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-                transform: "rotateY(180deg)", zIndex: 1,
+                transform: "rotateY(180deg) translateZ(1px)", zIndex: 1,
+                visibility: flipped ? "visible" : "hidden",
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
                 borderRadius: 16, border: `2px solid ${C.acc}`, background: C.accBg, padding: 28, boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
               }}>

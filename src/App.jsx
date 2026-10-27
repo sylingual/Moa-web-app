@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -249,6 +249,15 @@ const T = {
     welcomeCreateAction: "Activer ma clé et continuer",
     welcomeSwitchToLogin: "Se connecter plutôt",
     welcomeSwitchToCreate: "Créer un compte plutôt",
+    googleLogin: "Se connecter avec Google",
+    googleLoggingIn: "Connexion en cours...",
+    migrateTitle: "Lier un compte existant",
+    migrateSub: "Si tu avais un compte avec une cle personnelle, entre-la pour recuperer tes donnees.",
+    migrateAction: "Recuperer mes donnees",
+    migrateSkip: "Non, je suis nouveau",
+    migrateSuccess: "Donnees recuperees !",
+    migrateError: "Cle introuvable ou erreur de migration.",
+    logoutGoogle: "Se deconnecter",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
     signupNamePlaceholder: "Ton prénom...",
@@ -750,6 +759,15 @@ const T = {
     welcomeCreateAction: "Activate my key and continue",
     welcomeSwitchToLogin: "Log in instead",
     welcomeSwitchToCreate: "Create an account instead",
+    googleLogin: "Sign in with Google",
+    googleLoggingIn: "Signing in...",
+    migrateTitle: "Link an existing account",
+    migrateSub: "If you had an account with a personal key, enter it to recover your data.",
+    migrateAction: "Recover my data",
+    migrateSkip: "No, I'm new",
+    migrateSuccess: "Data recovered!",
+    migrateError: "Key not found or migration error.",
+    logoutGoogle: "Sign out",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "What should I call you?",
     signupNamePlaceholder: "Your first name...",
@@ -1251,6 +1269,15 @@ const T = {
     welcomeCreateAction: "비밀키 설정하고 시작하기",
     welcomeSwitchToLogin: "로그인할래",
     welcomeSwitchToCreate: "계정 만들래",
+    googleLogin: "Google로 로그인",
+    googleLoggingIn: "로그인 중...",
+    migrateTitle: "기존 계정 연결",
+    migrateSub: "개인 키로 만든 계정이 있다면 입력해서 데이터를 복구하세요.",
+    migrateAction: "데이터 복구",
+    migrateSkip: "아니요, 처음이에요",
+    migrateSuccess: "데이터 복구 완료!",
+    migrateError: "키를 찾을 수 없거나 오류가 발생했습니다.",
+    logoutGoogle: "로그아웃",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "뭐라고 부를까요?",
     signupNamePlaceholder: "이름...",
@@ -6323,6 +6350,12 @@ function AppInner() {
   const [tlOpen, setTlOpen] = useState(false);
   const [navMenuOpen, setNavMenuOpen] = useState(false); // mobile hamburger menu
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [migrateMode, setMigrateMode] = useState(false);
+  const [migrateInput, setMigrateInput] = useState("");
+  const [migrateStatus, setMigrateStatus] = useState(null);
+  const isOldLogin = window.location.pathname === "/vieuxlogin";
   const [syncInput, setSyncInput] = useState("");
   const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
   const [signupStep, setSignupStep] = useState(0); // 0=name, 1=gender, 2=key
@@ -6803,6 +6836,36 @@ function AppInner() {
     }
   }, [kbOpen]);
 
+  useEffect(() => {
+    if (isOldLogin) { setAuthLoading(false); return; }
+    getAuthUser().then(user => {
+      if (user) {
+        setAuthUser(user);
+        setSyncId(user.id);
+        localStorage.setItem("moa-sync-id", user.id);
+      }
+      setAuthLoading(false);
+    });
+    const unsub = onAuthStateChange((user) => {
+      if (isOldLogin) return;
+      setAuthUser(user);
+      if (user) {
+        setSyncId(user.id);
+        localStorage.setItem("moa-sync-id", user.id);
+      } else {
+        setSyncId("");
+        localStorage.removeItem("moa-sync-id");
+      }
+    });
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!isOldLogin && authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-google-migrated")) {
+      setMigrateMode(true);
+    }
+  }, [authUser, loaded]);
+
   const save = useCallback((nd) => { setData(nd); saveData(nd, syncId); }, [syncId]);
 
   // "Aujourd'hui" is a FIXED daily set per target language: chosen once per
@@ -6940,7 +7003,12 @@ function AppInner() {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
+    // Sign out from Supabase auth if using Google login
+    if (authUser) {
+      await signOutAuth();
+      setAuthUser(null);
+    }
     // Clear sync id
     localStorage.removeItem("moa-sync-id");
     // Clear persisted data and active lesson
@@ -8941,7 +9009,7 @@ function AppInner() {
     outline: "none", resize: "vertical", lineHeight: 1.6,
   };
 
-  if (!loaded || (!syncId && !bgReady)) return (
+  if (!loaded || authLoading || (!syncId && !bgReady)) return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#5C3D2E", gap: 20 }}>
       <span style={{ fontSize: 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", animation: "moaPulse 1.8s ease-in-out infinite" }}>
         모<span style={{ color: "#d4a8ff" }}>아</span>
@@ -8951,7 +9019,91 @@ function AppInner() {
     </div>
   );
 
-  // Welcome / login / signup screen if no sync code
+  // Google Auth login screen (default path)
+  if (!syncId && !isOldLogin) {
+    const isMobile = winW < 700;
+    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
+    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+
+    return (
+      <div style={fullScreen}>
+        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
+            <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+              모<span style={{ color: "#d4a8ff" }}>아</span>
+            </span>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
+              {t.welcomeTitle}
+            </div>
+            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+              {t.welcomeSub}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
+              <button onClick={() => signInWithGoogle()}
+                style={{ ...wBtn(true), fontSize: 16, padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                {t.googleLogin}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Migration prompt after first Google login (user is authenticated but has no cards)
+  if (migrateMode && authUser && !isOldLogin) {
+    const isMobile = winW < 700;
+    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
+    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
+    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+    const doMigrate = async () => {
+      if (!migrateInput.trim()) return;
+      setMigrateStatus("loading");
+      const result = await migrateOldAccount(migrateInput.trim(), authUser.id);
+      if (result.ok) {
+        setMigrateStatus("success");
+        setData(result.data);
+        if (result.data.lastTargetLang) setTargetLang(result.data.lastTargetLang);
+        localStorage.setItem("moa-google-migrated", "1");
+        setTimeout(() => { setMigrateMode(false); setMigrateStatus(null); }, 1500);
+      } else { setMigrateStatus("error"); }
+    };
+    return (
+      <div style={fullScreen}>
+        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+          <div style={wPanel}>
+            <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
+              모<span style={{ color: C.acc }}>아</span>
+            </span>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.migrateTitle}</div>
+            <div style={{ fontSize: 13, color: "#8B7355", textAlign: "center", lineHeight: 1.6 }}>{t.migrateSub}</div>
+            <input autoFocus value={migrateInput} onChange={e => { setMigrateInput(e.target.value); setMigrateStatus(null); }}
+              onKeyDown={e => { if (e.key === "Enter" && migrateInput.trim()) doMigrate(); }}
+              placeholder={t.welcomeCodePlaceholder}
+              disabled={migrateStatus === "loading"}
+              style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
+            />
+            <button onClick={doMigrate} disabled={migrateStatus === "loading" || !migrateInput.trim()}
+              style={{ ...wBtn(true), opacity: migrateInput.trim() && migrateStatus !== "loading" ? 1 : 0.5 }}>
+              {migrateStatus === "loading" ? t.syncLoading : migrateStatus === "success" ? t.migrateSuccess : t.migrateAction}
+            </button>
+            {migrateStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center" }}>{t.migrateError}</div>}
+            <button onClick={() => { setMigrateMode(false); localStorage.setItem("moa-google-migrated", "1"); }}
+              style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+              {t.migrateSkip}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Old code-based login (only accessible at /vieuxlogin)
   if (!syncId) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
@@ -9724,7 +9876,7 @@ function AppInner() {
           </span>
           {/* Sync / account */}
           <button onClick={() => setShowSync(!showSync)}
-            title={syncId}
+            title={authUser ? (authUser.email || syncId) : syncId}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 13, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, flexShrink: 0, padding: 0 }}>
             👤
           </button>
@@ -9765,10 +9917,16 @@ function AppInner() {
       {showSync && (
         <div style={{ padding: "10px 16px", background: C.s1, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>🔗 {t.syncConnected}</span>
-          <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{syncId}</span>
+          <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{authUser ? (authUser.email || "Google") : syncId}</span>
+          {authUser && !isOldLogin && !(data.cards || []).length && (
+            <button onClick={() => setMigrateMode(true)}
+              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
+              {t.migrateTitle}
+            </button>
+          )}
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
-            {t.disconnect}
+            {authUser ? t.logoutGoogle : t.disconnect}
           </button>
           <a href="mailto:sylingual@gmail.com" title={t.contactSub}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer", textDecoration: "none" }}>

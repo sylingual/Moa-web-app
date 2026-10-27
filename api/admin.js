@@ -225,6 +225,26 @@ export default async function handler(req, res) {
       sync_id: id, input: t.input, output: t.output, cost: Math.round(t.cost * 10000) / 10000, calls: t.calls, by_provider: t.by_provider,
     })).sort((a, b) => b.cost - a.cost);
 
+    // --- TOKEN USAGE BY CONTEXT ---
+    const tokensByContext = {};
+    tokenEvents.forEach(e => {
+      const ctx = e.data?.context || 'unknown';
+      const inp = e.data?.input || 0;
+      const out = e.data?.output || 0;
+      const prov = e.data?.provider || 'gemini';
+      const rates = TOKEN_COSTS[prov] || TOKEN_COSTS.gemini;
+      const callCost = (inp / 1000000) * rates.input + (out / 1000000) * rates.output;
+      if (!tokensByContext[ctx]) tokensByContext[ctx] = { input: 0, output: 0, cost: 0, calls: 0 };
+      const c = tokensByContext[ctx];
+      c.input += inp;
+      c.output += out;
+      c.cost += callCost;
+      c.calls++;
+    });
+    const tokenContexts = Object.entries(tokensByContext).map(([ctx, d]) => ({
+      context: ctx, input: d.input, output: d.output, cost: Math.round(d.cost * 10000) / 10000, calls: d.calls,
+    })).sort((a, b) => b.cost - a.cost);
+
     // --- TOKEN USAGE BY MONTH ---
     const tokensByMonth = {};
     const tokenDays = new Set();
@@ -331,6 +351,7 @@ export default async function handler(req, res) {
           calls: Math.round(tokenEvents.length / totalTokenMonths * 10) / 10,
         },
         by_month: tokenMonths,
+        by_context: tokenContexts,
         by_user: tokenUsers,
       },
     });

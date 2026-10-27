@@ -201,12 +201,39 @@ export function isSupabaseConfigured() {
 // ---- AUTH ----
 export function getSupabase() { return supabase; }
 
-export async function signInWithGoogle() {
+export async function signUpWithEmail(email, password) {
   if (!supabase) return { ok: false, error: 'not_configured' };
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.origin },
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: window.location.origin },
   });
+  if (error) return { ok: false, error: error.message };
+  if (data?.user?.identities?.length === 0) {
+    return { ok: false, error: 'email_taken' };
+  }
+  return { ok: true, needsConfirmation: !data.session };
+}
+
+export async function signInWithEmail(email, password) {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function resetPassword(email) {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updatePassword(newPassword) {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
@@ -225,7 +252,7 @@ export async function getAuthUser() {
 export function onAuthStateChange(callback) {
   if (!supabase) return () => {};
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user || null);
+    callback(session?.user || null, _event);
   });
   return () => data.subscription.unsubscribe();
 }

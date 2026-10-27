@@ -1951,15 +1951,15 @@ async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
   for (let ci = 0; ci < chunks.length; ci++) {
     if (onProgress) onProgress(ci + 1, chunks.length);
     const skip = foundSoFar();
-    const sys = `Extract every ${TL} vocabulary word and grammar pattern from this text. Return a JSON array. Be exhaustive.
+    const sys = `Extract ${TL} vocabulary words and grammar patterns that ACTUALLY APPEAR in the text below. Return a JSON array.
+
+CRITICAL: Only extract words and patterns that are literally present in the provided text. Do NOT invent, add, or hallucinate words that are not in the text. Every item you return must correspond to something written in the text.
 
 Skip these already-known items: ${skip || "none"}
 
 Each item: {"korean":"dictionary form","type":"vocab" or "grammar","meaning_fr":"French","meaning_en":"English","category":"topic tag","reading":"romanization or empty"}
 
-IMPORTANT for grammar: merge conjugation variants of the same pattern into ONE entry using the base/citation form. For Korean, combine verb/adjective/noun-attaching forms (e.g. -는데도/-인데도/-ㄴ데도 become one entry "-ㄴ/는데도", -다가/-았다가 become "-다가"). Use the most general citation form as the "korean" value.
-
-Extract ALL items. No limit.`;
+IMPORTANT for grammar: merge conjugation variants of the same pattern into ONE entry using the base/citation form. For Korean, combine verb/adjective/noun-attaching forms (e.g. -는데도/-인데도/-ㄴ데도 become one entry "-ㄴ/는데도", -다가/-았다가 become "-다가"). Use the most general citation form as the "korean" value.`;
     try {
       const items = parseJSON((await callAI(sys, chunks[ci], 8000)).text);
       if (Array.isArray(items)) all.push(...items);

@@ -4800,6 +4800,14 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
 
   const card = queue[0];
   const remaining = queue.length;
+  const [imgLoaded, setImgLoaded] = useState(true);
+  const prevImgRef = useRef(card.img);
+  useEffect(() => {
+    if (card.img !== prevImgRef.current) { setImgLoaded(false); prevImgRef.current = card.img; }
+  }, [card.img]);
+  useEffect(() => {
+    if (queue.length > 1) { const img = new Image(); img.src = queue[1].img; }
+  }, [queue]);
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -4807,9 +4815,9 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
         <button onClick={onExit} style={{ fontSize: 11, color: C.txtS, border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 9px", background: "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>← {t.back}</button>
       </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, gap: 16 }}>
-        <img src={card.img} alt="" style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 16, border: `2px solid ${C.border}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }} />
-        {card.def && <div style={{ fontSize: 13, color: C.txtM, textAlign: "center", maxWidth: 320 }}>{card.def}</div>}
-        <div style={{ fontSize: 12, color: C.txtS }}>{t.imgWriteHint}</div>
+        <img src={card.img} alt="" onLoad={() => setImgLoaded(true)} style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 16, border: `2px solid ${C.border}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", opacity: imgLoaded ? 1 : 0, transition: "opacity 0.15s" }} />
+        {card.def && <div style={{ fontSize: 13, color: C.txtM, textAlign: "center", maxWidth: 320, opacity: imgLoaded ? 1 : 0, transition: "opacity 0.15s" }}>{card.def}</div>}
+        <div style={{ fontSize: 12, color: C.txtS, opacity: imgLoaded ? 1 : 0, transition: "opacity 0.15s" }}>{t.imgWriteHint}</div>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}

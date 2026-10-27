@@ -6437,6 +6437,8 @@ function AppInner() {
   const [flashInput, setFlashInput] = useState("recognition");
   const [exMusic, setExMusic] = useState(() => { try { return localStorage.getItem("moa-ex-music") === "1"; } catch { return false; } });
   const exMusicRef = useRef(null);
+  const [ambientOn, setAmbientOn] = useState(() => { try { return localStorage.getItem("moa-ambient") === "1"; } catch { return false; } });
+  const ambientRef = useRef(null);
   const autoSelectedKo = useRef(false);
 
   // Profile
@@ -8407,6 +8409,25 @@ function AppInner() {
     try { localStorage.setItem("moa-ex-music", next ? "1" : "0"); } catch {}
   };
 
+  // ---- AMBIENT MUSIC (Issue #108) ----
+  useEffect(() => {
+    const audio = ambientRef.current;
+    if (!audio) return;
+    if (ambientOn) {
+      audio.volume = 0.18;
+      audio.loop = true;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [ambientOn]);
+
+  const toggleAmbient = () => {
+    const next = !ambientOn;
+    setAmbientOn(next);
+    try { localStorage.setItem("moa-ambient", next ? "1" : "0"); } catch {}
+  };
+
   // ---- EXERCISE PROGRESSION ----
   const [progressToast, setProgressToast] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -9486,6 +9507,7 @@ function AppInner() {
       )}
 
       <audio ref={exMusicRef} src={EX_MUSIC_URL} preload="none" />
+      <audio ref={ambientRef} src="/audio/ambient.mp3" preload="none" />
       {showCelebration && <CelebrationOverlay visible onClose={() => { setShowCelebration(false); setGoalCelebration(null); }} lang={lang} goalCelebration={goalCelebration} t={t} />}
       {goalCelebration && !showCelebration && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1500, padding: "12px 20px", borderRadius: 12, background: C.ok, color: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "'Plus Jakarta Sans'", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", animation: "fadeIn 0.3s" }}
@@ -9877,6 +9899,11 @@ function AppInner() {
           <span style={{ fontSize: 11, fontWeight: 600, color: C.acc, background: C.accBg, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap" }}>
             ⭐ {data.profile?.points || 0}
           </span>
+          {/* Ambient music toggle (Issue #108) */}
+          <button onClick={toggleAmbient} title={ambientOn ? "Pause music" : "Play music"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: 13, border: `1px solid ${ambientOn ? C.acc : C.border}`, background: ambientOn ? C.accBg : C.s1, color: ambientOn ? C.acc : C.txtM, cursor: "pointer", fontSize: 13, flexShrink: 0, padding: 0 }}>
+            {ambientOn ? "🎵" : "🔇"}
+          </button>
           {/* Sync / account */}
           <button onClick={() => setShowSync(!showSync)}
             title={authUser ? (authUser.email || syncId) : syncId}
@@ -13388,6 +13415,11 @@ function AppInner() {
                   </div>
                 ) : null;
               })()}
+
+              {/* Music credits (Issue #108) */}
+              <div style={{ marginTop: 32, paddingTop: 16, borderTop: `1px solid ${C.border}`, fontSize: 10.5, color: C.txtS, lineHeight: 1.6, textAlign: "center" }}>
+                Music by <a href="https://pixabay.com/users/kaazoom-448850/" target="_blank" rel="noopener noreferrer" style={{ color: C.txtM }}>Paul Winter (Kaazoom)</a> from <a href="https://pixabay.com/" target="_blank" rel="noopener noreferrer" style={{ color: C.txtM }}>Pixabay</a>
+              </div>
             </div>
           </div>
         )}

@@ -3887,7 +3887,10 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
       noSource.push(c);
     }
   });
-  const groups = [...groupMap.entries()].map(([text, cs]) => ({ text, cards: cs }));
+  const groups = [...groupMap.entries()].map(([text, cs]) => {
+    const ts = Math.min(...cs.map(c => parseInt(c.id) || 0));
+    return { text, cards: cs, createdAt: ts || 0 };
+  });
 
   const recapExcerptFor = (c) => {
     const s = (summaries || []).filter(x => x.cardKorean === c.korean);
@@ -3910,9 +3913,25 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     );
   };
 
+  const sortedGroups = [...groups].sort((a, b) => {
+    if (!a.createdAt && !b.createdAt) return 0;
+    if (!a.createdAt) return 1;
+    if (!b.createdAt) return -1;
+    const diff = b.createdAt - a.createdAt;
+    return textSortAsc ? -diff : diff;
+  });
+
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-      {groups.map((g, i) => (
+      {(groups.length > 0 || (textStudies || []).length > 0) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+          <button onClick={() => setTextSortAsc(!textSortAsc)}
+            style={{ fontSize: 10, color: C.txtM, background: "none", border: `1px solid ${C.border}`, borderRadius: 4, padding: "2px 7px", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+            {textSortAsc ? "↑" : "↓"} {lang === "fr" ? "Date" : lang === "ko" ? "날짜" : "Date"}
+          </button>
+        </div>
+      )}
+      {sortedGroups.map((g, i) => (
         <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
           <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 170, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
             {g.text}
@@ -3951,13 +3970,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
       {/* Text comprehension studies */}
       {(textStudies || []).length > 0 && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 8px" }}>
-            <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3 }}>{t.compTitle}</div>
-            <button onClick={() => setTextSortAsc(!textSortAsc)}
-              style={{ fontSize: 10, color: C.txtM, background: "none", border: `1px solid ${C.border}`, borderRadius: 4, padding: "2px 7px", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-              {textSortAsc ? "↑" : "↓"} {lang === "fr" ? "Date" : lang === "ko" ? "날짜" : "Date"}
-            </button>
-          </div>
+          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[...textStudies].sort((a, b) => { const ta = a.createdAt || parseInt(a.id) || 0; const tb = b.createdAt || parseInt(b.id) || 0; if (!ta && !tb) return 0; if (!ta) return 1; if (!tb) return -1; const diff = tb - ta; return textSortAsc ? -diff : diff; }).map(s => (
               <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>

@@ -271,6 +271,15 @@ const T = {
     migrateSuccess: "Donnees recuperees !",
     migrateError: "Cle introuvable ou erreur de migration.",
     logoutAuth: "Se deconnecter",
+    tutoWelcome: "Bienvenue dans Moa !",
+    tutoWelcomeSub: "Ici, c'est ton espace de travail personnalise pour etudier le coreen.",
+    tutoQuestion: "Pour commencer, est-ce que tu etudies seul(e) ou avec un prof ?",
+    tutoWithProf: "Avec un prof",
+    tutoAlone: "Seul(e)",
+    tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la regularite.\nJe te propose de commencer par l'onglet \"Objectifs\".",
+    tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoReady: "C'est parti !",
+    tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
     signupNamePlaceholder: "Ton prénom...",
@@ -794,6 +803,15 @@ const T = {
     migrateSuccess: "Data recovered!",
     migrateError: "Key not found or migration error.",
     logoutAuth: "Sign out",
+    tutoWelcome: "Welcome to Moa!",
+    tutoWelcomeSub: "This is your personalized workspace for studying Korean.",
+    tutoQuestion: "To start, are you studying alone or with a teacher?",
+    tutoWithProf: "With a teacher",
+    tutoAlone: "Alone",
+    tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
+    tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoReady: "Let's go!",
+    tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "What should I call you?",
     signupNamePlaceholder: "Your first name...",
@@ -1317,6 +1335,15 @@ const T = {
     migrateSuccess: "데이터 복구 완료!",
     migrateError: "키를 찾을 수 없거나 오류가 발생했습니다.",
     logoutAuth: "로그아웃",
+    tutoWelcome: "Moa에 오신 걸 환영해요!",
+    tutoWelcomeSub: "여기는 한국어 학습을 위한 나만의 맞춤 공간이에요.",
+    tutoQuestion: "먼저, 혼자 공부하나요 아니면 선생님과 함께하나요?",
+    tutoWithProf: "선생님과 함께",
+    tutoAlone: "혼자",
+    tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoReady: "시작하자!",
+    tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "뭐라고 부를까요?",
     signupNamePlaceholder: "이름...",
@@ -6544,6 +6571,8 @@ function AppInner() {
   const [onbStep, setOnbStep] = useState(0);
   const [onbWelcomeDone, setOnbWelcomeDone] = useState(false);
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
+  const [tutoStep, setTutoStep] = useState(0);
+  const [tutoAnswer, setTutoAnswer] = useState(null);
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -9724,9 +9753,103 @@ function AppInner() {
     );
   }
 
+  // ---- WELCOME TUTORIAL (after onboarding, before main app) ----
+  const showTutorial = data.profile?.onboarded && !data.profile?.tutorialDone;
+  const finishTutorial = () => {
+    const nd = { ...data, profile: { ...data.profile, tutorialDone: true } };
+    save(nd);
+    setTutoStep(0);
+    setTutoAnswer(null);
+  };
+
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}`}</style>
+
+      {/* WELCOME TUTORIAL OVERLAY */}
+      {showTutorial && (() => {
+        const isMobile = winW < 700;
+        const overlayBase = { position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.4s ease" };
+        const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
+        const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
+        const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+
+        if (tutoStep === 0) {
+          return (
+            <div style={overlayBase}>
+              <div style={bubbleBase}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
+                <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                  <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
+                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone}</button>
+                </div>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        if (tutoStep === 1) {
+          const goalsEl = document.querySelector('[data-tutorial="goals-tab"]');
+          const goalsRect = goalsEl ? goalsEl.getBoundingClientRect() : null;
+          const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
+          return (
+            <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={e => e.stopPropagation()}>
+              {/* Dark overlay with cutout for the goals tab */}
+              {goalsRect ? (
+                <div style={{
+                  position: "absolute",
+                  left: goalsRect.left - 6,
+                  top: goalsRect.top - 4,
+                  width: goalsRect.width + 12,
+                  height: goalsRect.height + 8,
+                  borderRadius: 10,
+                  background: "transparent",
+                  boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
+                  zIndex: 1,
+                  animation: "tutoHighlight 2s ease-in-out infinite",
+                  pointerEvents: "none",
+                }} />
+              ) : (
+                <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)" }} />
+              )}
+              {/* Speech bubble below the goals tab */}
+              <div style={{
+                position: "absolute",
+                left: "50%",
+                top: goalsRect ? goalsRect.bottom + 18 : "50%",
+                transform: goalsRect ? "translateX(-50%)" : "translate(-50%, -50%)",
+                zIndex: 2,
+                ...bubbleBase,
+                maxWidth: isMobile ? "calc(100vw - 40px)" : 400,
+                animation: "tutoBubble 0.5s ease-out",
+              }}>
+                {/* Arrow pointing up */}
+                {goalsRect && (
+                  <div style={{
+                    position: "absolute",
+                    top: -10,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 0,
+                    height: 0,
+                    borderLeft: "12px solid transparent",
+                    borderRight: "12px solid transparent",
+                    borderBottom: "12px solid #fff",
+                  }} />
+                )}
+                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
+                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
 
       {/* POINTS TOAST */}
       {pointsToast && (
@@ -10116,7 +10239,7 @@ function AppInner() {
         </div>
         {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
         <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
-        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
+        <button data-tutorial="goals-tab" style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         {/* Lesson tab hidden (unused) */}
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>

@@ -39,6 +39,7 @@ const DEFAULT_PROFILE = {
   points: 0,
   onboarded: false,
   detailedDone: false,
+  tutorialDone: false,
 };
 
 const DEFAULT_LANG_PROFILE = {

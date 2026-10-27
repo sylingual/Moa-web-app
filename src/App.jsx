@@ -1951,9 +1951,9 @@ async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
   for (let ci = 0; ci < chunks.length; ci++) {
     if (onProgress) onProgress(ci + 1, chunks.length);
     const skip = foundSoFar();
-    const sys = `Extract ${TL} vocabulary words and grammar patterns that ACTUALLY APPEAR in the text below. Return a JSON array.
+    const sys = `Extract ALL ${TL} vocabulary words and grammar patterns that ACTUALLY APPEAR in the text below. Return a JSON array. Be exhaustive: extract every single word and pattern from the text.
 
-CRITICAL: Only extract words and patterns that are literally present in the provided text. Do NOT invent, add, or hallucinate words that are not in the text. Every item you return must correspond to something written in the text.
+CRITICAL: Only extract words and patterns that are literally present in the provided text. Do NOT invent, add, or hallucinate words that are not in the text. Every item you return must correspond to something written in the text. But do not miss any word that IS in the text.
 
 Skip these already-known items: ${skip || "none"}
 

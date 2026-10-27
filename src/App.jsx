@@ -13305,12 +13305,13 @@ function AppInner() {
                 {d.tokens && (
                 <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{"🪙"} Consommation tokens</div>
+                  {/* Totals */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 12 }}>
                     {[
                       ["Appels IA", d.tokens.total_calls],
                       ["Input tokens", d.tokens.total_input?.toLocaleString()],
                       ["Output tokens", d.tokens.total_output?.toLocaleString()],
-                      ["Coût total", "$" + (d.tokens.total_cost || 0).toFixed(4)],
+                      ["Cout total", "$" + (d.tokens.total_cost || 0).toFixed(4)],
                     ].map(([label, val]) => (
                       <div key={label} style={{ background: C.s2, borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: C.acc }}>{val}</div>
@@ -13318,13 +13319,69 @@ function AppInner() {
                       </div>
                     ))}
                   </div>
+                  {/* Averages */}
+                  {d.tokens.avg_per_day && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div style={{ background: C.s2, borderRadius: 8, padding: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Moyenne / jour</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Appels</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.calls}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Input</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.input?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Output</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.output?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Cout</span><span style={{ color: C.acc, fontWeight: 600 }}>{"$" + (d.tokens.avg_per_day.cost || 0).toFixed(4)}</span></div>
+                      </div>
+                    </div>
+                    <div style={{ background: C.s2, borderRadius: 8, padding: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Moyenne / mois</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Appels</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.calls}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Input</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.input?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Output</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.output?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Cout</span><span style={{ color: C.acc, fontWeight: 600 }}>{"$" + (d.tokens.avg_per_month.cost || 0).toFixed(4)}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  )}
+                  {/* Monthly evolution */}
+                  {(d.tokens.by_month || []).length > 0 && (() => {
+                    const months = d.tokens.by_month;
+                    const maxCost = Math.max(...months.map(m => m.cost), 0.0001);
+                    const maxTokens = Math.max(...months.map(m => m.input + m.output), 1);
+                    return (<>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Evolution mensuelle</div>
+                      <div style={{ overflowX: "auto", marginBottom: 12 }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                              {["Mois", "Appels", "Input", "Output", "Cout", ""].map(h => (
+                                <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {months.map(m => (
+                              <tr key={m.month} style={{ borderBottom: `1px solid ${C.border}` }}>
+                                <td style={{ padding: "6px 4px", color: C.txt, fontWeight: 600 }}>{m.month}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.calls}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.input?.toLocaleString()}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.output?.toLocaleString()}</td>
+                                <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 600 }}>{"$" + m.cost.toFixed(4)}</td>
+                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.cost / maxCost * 100)) + "%", opacity: 0.7 }} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>);
+                  })()}
+                  {/* Per user */}
                   {(d.tokens.by_user || []).length > 0 && (<>
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Par utilisateur</div>
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                            {["Utilisateur", "Appels", "Input", "Output", "Coût", "Provider(s)"].map(h => (
+                            {["Utilisateur", "Appels", "Input", "Output", "Cout", "Provider(s)"].map(h => (
                               <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
                             ))}
                           </tr>
@@ -13344,7 +13401,7 @@ function AppInner() {
                       </table>
                     </div>
                   </>)}
-                  {(d.tokens.by_user || []).length === 0 && <div style={{ fontSize: 11, color: C.txtM }}>Pas encore de données de tokens. Les stats s'accumuleront au fil des appels IA.</div>}
+                  {(d.tokens.by_user || []).length === 0 && <div style={{ fontSize: 11, color: C.txtM }}>Pas encore de donnees de tokens. Les stats s'accumuleront au fil des appels IA.</div>}
                 </div>
                 )}
 

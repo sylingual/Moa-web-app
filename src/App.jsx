@@ -3913,17 +3913,20 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     );
   };
 
-  const sortedGroups = [...groups].sort((a, b) => {
-    if (!a.createdAt && !b.createdAt) return 0;
-    if (!a.createdAt) return 1;
-    if (!b.createdAt) return -1;
-    const diff = b.createdAt - a.createdAt;
+  const allTexts = [
+    ...groups.map(g => ({ kind: "source", data: g, ts: g.createdAt || 0 })),
+    ...(textStudies || []).map(s => ({ kind: "study", data: s, ts: s.createdAt || parseInt(s.id) || 0 })),
+  ].sort((a, b) => {
+    if (!a.ts && !b.ts) return 0;
+    if (!a.ts) return 1;
+    if (!b.ts) return -1;
+    const diff = b.ts - a.ts;
     return textSortAsc ? -diff : diff;
   });
 
   return (
     <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
-      {(groups.length > 0 || (textStudies || []).length > 0) && (
+      {allTexts.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
           <button onClick={() => setTextSortAsc(!textSortAsc)}
             style={{ fontSize: 10, color: C.txtM, background: "none", border: `1px solid ${C.border}`, borderRadius: 4, padding: "2px 7px", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
@@ -3931,18 +3934,48 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
           </button>
         </div>
       )}
-      {sortedGroups.map((g, i) => (
-        <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
+      {allTexts.map((item, i) => item.kind === "source" ? (
+        <div key={"src-" + i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
           <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt, lineHeight: 1.9, whiteSpace: "pre-wrap", maxHeight: 170, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
-            {g.text}
+            {item.data.text}
           </div>
-          <button onClick={() => onRestudy(g.text)}
+          <button onClick={() => onRestudy(item.data.text)}
             style={{ marginTop: 10, padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
             ✨ {t.restudyText}
           </button>
           <div style={{ fontSize: 10, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "13px 0 7px" }}>{t.pointsFromText}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {g.cards.map(c => <PointChip key={c.id} c={c} />)}
+            {item.data.cards.map(c => <PointChip key={c.id} c={c} />)}
+          </div>
+        </div>
+      ) : (
+        <div key={"study-" + item.data.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+          <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
+            {item.data.text.slice(0, 300)}{item.data.text.length > 300 ? "..." : ""}
+          </div>
+          <SourceUrlRow sourceUrl={item.data.sourceUrl} lang={lang} onSave={onUpdateStudyUrl ? (url) => onUpdateStudyUrl(item.data.id, url) : null} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            {[1, 2, 3].map(lv => {
+              const done = lv === 1 ? item.data.level1Complete : lv === 2 ? item.data.level2Complete : item.data.level3Complete;
+              return (
+                <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, fontWeight: 500 }}>
+                  {t.compLevel(lv)} {done ? "✓" : ""}
+                </span>
+              );
+            })}
+            <span style={{ fontSize: 10, color: C.txtM }}>{item.data.date}</span>
+            {onResetStudy && (item.data.level1Complete || item.data.level2Complete || item.data.level3Complete) && (
+              <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(item.data); }}
+                style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                {t.compReset}
+              </button>
+            )}
+            {(!item.data.level1Complete || !item.data.level2Complete || !item.data.level3Complete) && onResumeComprehension && (
+              <button onClick={() => onResumeComprehension(item.data)}
+                style={{ marginLeft: onResetStudy && (item.data.level1Complete || item.data.level2Complete || item.data.level3Complete) ? 0 : "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+                {t.compResume}
+              </button>
+            )}
           </div>
         </div>
       ))}
@@ -3964,45 +3997,6 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                 </button>
               );
             })}
-          </div>
-        </div>
-      )}
-      {/* Text comprehension studies */}
-      {(textStudies || []).length > 0 && (
-        <div>
-          <div style={{ fontSize: 10.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, margin: "14px 0 8px" }}>{t.compTitle}</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[...textStudies].sort((a, b) => { const ta = a.createdAt || parseInt(a.id) || 0; const tb = b.createdAt || parseInt(b.id) || 0; if (!ta && !tb) return 0; if (!ta) return 1; if (!tb) return -1; const diff = tb - ta; return textSortAsc ? -diff : diff; }).map(s => (
-              <div key={s.id} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-                <div style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto", background: C.s1, borderRadius: 6, padding: "8px 10px", marginBottom: 8 }}>
-                  {s.text.slice(0, 300)}{s.text.length > 300 ? "..." : ""}
-                </div>
-                <SourceUrlRow sourceUrl={s.sourceUrl} lang={lang} onSave={onUpdateStudyUrl ? (url) => onUpdateStudyUrl(s.id, url) : null} />
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  {[1, 2, 3].map(lv => {
-                    const done = lv === 1 ? s.level1Complete : lv === 2 ? s.level2Complete : s.level3Complete;
-                    return (
-                      <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, fontWeight: 500 }}>
-                        {t.compLevel(lv)} {done ? "✓" : ""}
-                      </span>
-                    );
-                  })}
-                  <span style={{ fontSize: 10, color: C.txtM }}>{s.date}</span>
-                  {onResetStudy && (s.level1Complete || s.level2Complete || s.level3Complete) && (
-                    <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(s); }}
-                      style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                      {t.compReset}
-                    </button>
-                  )}
-                  {(!s.level1Complete || !s.level2Complete || !s.level3Complete) && onResumeComprehension && (
-                    <button onClick={() => onResumeComprehension(s)}
-                      style={{ marginLeft: onResetStudy && (s.level1Complete || s.level2Complete || s.level3Complete) ? 0 : "auto", padding: "4px 10px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
-                      {t.compResume}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}

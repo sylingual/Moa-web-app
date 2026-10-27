@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -249,15 +249,28 @@ const T = {
     welcomeCreateAction: "Activer ma clé et continuer",
     welcomeSwitchToLogin: "Se connecter plutôt",
     welcomeSwitchToCreate: "Créer un compte plutôt",
-    googleLogin: "Se connecter avec Google",
-    googleLoggingIn: "Connexion en cours...",
+    authLogin: "Se connecter",
+    authSignup: "Creer un compte",
+    authEmail: "Email",
+    authPassword: "Mot de passe",
+    authLoading: "Chargement...",
+    authForgot: "Mot de passe oublie ?",
+    authResetSent: "Un email de reinitialisation a ete envoye.",
+    authResetAction: "Envoyer le lien",
+    authBackToLogin: "Retour a la connexion",
+    authConfirmSent: "Verifie ta boite mail pour confirmer ton compte.",
+    authEmailTaken: "Cet email est deja utilise.",
+    authInvalidCredentials: "Email ou mot de passe incorrect.",
+    authNewPassword: "Nouveau mot de passe",
+    authUpdatePassword: "Mettre a jour",
+    authPasswordUpdated: "Mot de passe mis a jour !",
     migrateTitle: "Lier un compte existant",
     migrateSub: "Si tu avais un compte avec une cle personnelle, entre-la pour recuperer tes donnees.",
     migrateAction: "Recuperer mes donnees",
     migrateSkip: "Non, je suis nouveau",
     migrateSuccess: "Donnees recuperees !",
     migrateError: "Cle introuvable ou erreur de migration.",
-    logoutGoogle: "Se deconnecter",
+    logoutAuth: "Se deconnecter",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
     signupNamePlaceholder: "Ton prénom...",
@@ -759,15 +772,28 @@ const T = {
     welcomeCreateAction: "Activate my key and continue",
     welcomeSwitchToLogin: "Log in instead",
     welcomeSwitchToCreate: "Create an account instead",
-    googleLogin: "Sign in with Google",
-    googleLoggingIn: "Signing in...",
+    authLogin: "Log in",
+    authSignup: "Create account",
+    authEmail: "Email",
+    authPassword: "Password",
+    authLoading: "Loading...",
+    authForgot: "Forgot password?",
+    authResetSent: "A reset email has been sent.",
+    authResetAction: "Send reset link",
+    authBackToLogin: "Back to login",
+    authConfirmSent: "Check your inbox to confirm your account.",
+    authEmailTaken: "This email is already in use.",
+    authInvalidCredentials: "Incorrect email or password.",
+    authNewPassword: "New password",
+    authUpdatePassword: "Update",
+    authPasswordUpdated: "Password updated!",
     migrateTitle: "Link an existing account",
     migrateSub: "If you had an account with a personal key, enter it to recover your data.",
     migrateAction: "Recover my data",
     migrateSkip: "No, I'm new",
     migrateSuccess: "Data recovered!",
     migrateError: "Key not found or migration error.",
-    logoutGoogle: "Sign out",
+    logoutAuth: "Sign out",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "What should I call you?",
     signupNamePlaceholder: "Your first name...",
@@ -1269,15 +1295,28 @@ const T = {
     welcomeCreateAction: "비밀키 설정하고 시작하기",
     welcomeSwitchToLogin: "로그인할래",
     welcomeSwitchToCreate: "계정 만들래",
-    googleLogin: "Google로 로그인",
-    googleLoggingIn: "로그인 중...",
+    authLogin: "로그인",
+    authSignup: "계정 만들기",
+    authEmail: "이메일",
+    authPassword: "비밀번호",
+    authLoading: "로딩 중...",
+    authForgot: "비밀번호를 잊으셨나요?",
+    authResetSent: "재설정 이메일이 발송되었습니다.",
+    authResetAction: "재설정 링크 보내기",
+    authBackToLogin: "로그인으로 돌아가기",
+    authConfirmSent: "이메일을 확인하여 계정을 인증해주세요.",
+    authEmailTaken: "이미 사용 중인 이메일입니다.",
+    authInvalidCredentials: "이메일 또는 비밀번호가 올바르지 않습니다.",
+    authNewPassword: "새 비밀번호",
+    authUpdatePassword: "변경",
+    authPasswordUpdated: "비밀번호가 변경되었습니다!",
     migrateTitle: "기존 계정 연결",
     migrateSub: "개인 키로 만든 계정이 있다면 입력해서 데이터를 복구하세요.",
     migrateAction: "데이터 복구",
     migrateSkip: "아니요, 처음이에요",
     migrateSuccess: "데이터 복구 완료!",
     migrateError: "키를 찾을 수 없거나 오류가 발생했습니다.",
-    logoutGoogle: "로그아웃",
+    logoutAuth: "로그아웃",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "뭐라고 부를까요?",
     signupNamePlaceholder: "이름...",
@@ -6355,6 +6394,11 @@ function AppInner() {
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState("login"); // "login" | "signup" | "forgot" | "reset"
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPass, setAuthPass] = useState("");
+  const [authMsg, setAuthMsg] = useState(null); // { type: "ok"|"err", text }
+  const [authBusy, setAuthBusy] = useState(false);
   const [migrateMode, setMigrateMode] = useState(false);
   const [migrateInput, setMigrateInput] = useState("");
   const [migrationMsg, setMigrationMsg] = useState(null);
@@ -6849,9 +6893,12 @@ function AppInner() {
       }
       setAuthLoading(false);
     });
-    const unsub = onAuthStateChange((user) => {
+    const unsub = onAuthStateChange((user, event) => {
       if (isOldLogin) return;
       setAuthUser(user);
+      if (event === "PASSWORD_RECOVERY") {
+        setAuthMode("reset");
+      }
       if (user) {
         setSyncId(user.id);
         localStorage.setItem("moa-sync-id", user.id);
@@ -6864,7 +6911,7 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
-    if (!isOldLogin && authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-google-migrated")) {
+    if (!isOldLogin && authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-auth-migrated")) {
       setMigrateMode(true);
     }
   }, [authUser, loaded]);
@@ -9022,19 +9069,91 @@ function AppInner() {
     </div>
   );
 
-  // Google Auth login screen (default path)
+  // Password reset screen (user clicked reset link from email, now authenticated)
+  if (authMode === "reset" && authUser && !isOldLogin) {
+    const isMobile = winW < 700;
+    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
+    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
+    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+    const doReset = async () => {
+      if (!authPass || authPass.length < 6) return;
+      setAuthBusy(true);
+      const r = await updatePassword(authPass);
+      setAuthBusy(false);
+      if (r.ok) {
+        setAuthMsg({ type: "ok", text: t.authPasswordUpdated });
+        setTimeout(() => { setAuthMode("login"); setAuthMsg(null); setAuthPass(""); }, 1500);
+      } else { setAuthMsg({ type: "err", text: r.error }); }
+    };
+    return (
+      <div style={fullScreen}>
+        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+          <div style={wPanel}>
+            <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
+              모<span style={{ color: C.acc }}>아</span>
+            </span>
+            <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.authNewPassword}</div>
+            <input type="password" autoFocus value={authPass} onChange={e => { setAuthPass(e.target.value); setAuthMsg(null); }}
+              onKeyDown={e => { if (e.key === "Enter") doReset(); }}
+              placeholder={t.authNewPassword}
+              style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none" }}
+            />
+            <button onClick={doReset} disabled={authBusy || !authPass || authPass.length < 6}
+              style={{ ...wBtn(true), opacity: authPass && authPass.length >= 6 && !authBusy ? 1 : 0.5 }}>
+              {authBusy ? t.authLoading : t.authUpdatePassword}
+            </button>
+            {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? C.ok : C.warn, textAlign: "center" }}>{authMsg.text}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Email/password login screen (default path)
   if (!syncId && !isOldLogin) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+    const inputStyle = { width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" };
+
+    const doLogin = async () => {
+      if (!authEmail || !authPass) return;
+      setAuthBusy(true); setAuthMsg(null);
+      const r = await signInWithEmail(authEmail, authPass);
+      setAuthBusy(false);
+      if (!r.ok) {
+        setAuthMsg({ type: "err", text: r.error === "Invalid login credentials" ? t.authInvalidCredentials : r.error });
+      }
+    };
+    const doSignup = async () => {
+      if (!authEmail || !authPass || authPass.length < 6) return;
+      setAuthBusy(true); setAuthMsg(null);
+      const r = await signUpWithEmail(authEmail, authPass);
+      setAuthBusy(false);
+      if (!r.ok) {
+        setAuthMsg({ type: "err", text: r.error === "email_taken" ? t.authEmailTaken : r.error });
+      } else if (r.needsConfirmation) {
+        setAuthMsg({ type: "ok", text: t.authConfirmSent });
+      }
+    };
+    const doForgot = async () => {
+      if (!authEmail) return;
+      setAuthBusy(true); setAuthMsg(null);
+      const r = await resetPassword(authEmail);
+      setAuthBusy(false);
+      if (r.ok) setAuthMsg({ type: "ok", text: t.authResetSent });
+      else setAuthMsg({ type: "err", text: r.error });
+    };
 
     return (
       <div style={fullScreen}>
         <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
-            <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
+            <span style={{ fontSize: isMobile ? 56 : 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
               모<span style={{ color: "#d4a8ff" }}>아</span>
             </span>
             <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
@@ -9043,20 +9162,60 @@ function AppInner() {
             <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
               {t.welcomeSub}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
-              <button onClick={() => signInWithGoogle()}
-                style={{ ...wBtn(true), fontSize: 16, padding: "16px", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.003 24.003 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                {t.googleLogin}
-              </button>
-            </div>
+
+            {authMode === "forgot" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
+                <input type="email" autoFocus value={authEmail} onChange={e => { setAuthEmail(e.target.value); setAuthMsg(null); }}
+                  onKeyDown={e => { if (e.key === "Enter") doForgot(); }}
+                  placeholder={t.authEmail}
+                  style={inputStyle}
+                />
+                <button onClick={doForgot} disabled={authBusy || !authEmail}
+                  style={{ ...wBtn(true), opacity: authEmail && !authBusy ? 1 : 0.5 }}>
+                  {authBusy ? t.authLoading : t.authResetAction}
+                </button>
+                {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
+                <button onClick={() => { setAuthMode("login"); setAuthMsg(null); }}
+                  style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.7)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                  {t.authBackToLogin}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
+                <input type="email" autoFocus value={authEmail} onChange={e => { setAuthEmail(e.target.value); setAuthMsg(null); }}
+                  onKeyDown={e => { if (e.key === "Enter" && authPass) { authMode === "login" ? doLogin() : doSignup(); } }}
+                  placeholder={t.authEmail}
+                  style={inputStyle}
+                />
+                <input type="password" value={authPass} onChange={e => { setAuthPass(e.target.value); setAuthMsg(null); }}
+                  onKeyDown={e => { if (e.key === "Enter" && authEmail) { authMode === "login" ? doLogin() : doSignup(); } }}
+                  placeholder={t.authPassword}
+                  style={inputStyle}
+                />
+                <button onClick={authMode === "login" ? doLogin : doSignup} disabled={authBusy || !authEmail || !authPass}
+                  style={{ ...wBtn(true), opacity: authEmail && authPass && !authBusy ? 1 : 0.5 }}>
+                  {authBusy ? t.authLoading : authMode === "login" ? t.authLogin : t.authSignup}
+                </button>
+                {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
+                {authMode === "login" && (
+                  <button onClick={() => { setAuthMode("forgot"); setAuthMsg(null); }}
+                    style={{ padding: "4px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
+                    {t.authForgot}
+                  </button>
+                )}
+                <button onClick={() => { setAuthMode(authMode === "login" ? "signup" : "login"); setAuthMsg(null); }}
+                  style={{ padding: "4px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.7)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                  {authMode === "login" ? t.authSignup : t.authLogin}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     );
   }
 
-  // Migration prompt after first Google login (user is authenticated but has no cards)
+  // Migration prompt after first login (user is authenticated but has no cards)
   if (migrateMode && authUser && !isOldLogin) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
@@ -9071,7 +9230,7 @@ function AppInner() {
         setMigrationMsg("success");
         setData(result.data);
         if (result.data.lastTargetLang) setTargetLang(result.data.lastTargetLang);
-        localStorage.setItem("moa-google-migrated", "1");
+        localStorage.setItem("moa-auth-migrated", "1");
         setTimeout(() => { setMigrateMode(false); setMigrationMsg(null); }, 1500);
       } else { setMigrationMsg("error"); }
     };
@@ -9096,7 +9255,7 @@ function AppInner() {
               {migrationMsg === "loading" ? t.syncLoading : migrationMsg === "success" ? t.migrateSuccess : t.migrateAction}
             </button>
             {migrationMsg === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center" }}>{t.migrateError}</div>}
-            <button onClick={() => { setMigrateMode(false); localStorage.setItem("moa-google-migrated", "1"); }}
+            <button onClick={() => { setMigrateMode(false); localStorage.setItem("moa-auth-migrated", "1"); }}
               style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
               {t.migrateSkip}
             </button>
@@ -9929,7 +10088,7 @@ function AppInner() {
           )}
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
-            {authUser ? t.logoutGoogle : t.disconnect}
+            {authUser ? t.logoutAuth : t.disconnect}
           </button>
           <a href="mailto:sylingual@gmail.com" title={t.contactSub}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer", textDecoration: "none" }}>

@@ -13600,7 +13600,7 @@ function AppInner() {
               })()}
 
               {/* Music credits (Issue #108) */}
-              <div style={{ marginTop: 32, paddingTop: 16, borderTop: `1px solid ${C.border}`, fontSize: 10.5, color: C.txtS, lineHeight: 1.6, textAlign: "center" }}>
+              <div style={{ marginTop: 32, paddingTop: 16, paddingBottom: 40, borderTop: `1px solid ${C.border}`, fontSize: 10.5, color: C.txtS, lineHeight: 1.6, textAlign: "center" }}>
                 Music by <a href="https://pixabay.com/users/kaazoom-448850/" target="_blank" rel="noopener noreferrer" style={{ color: C.txtM }}>Paul Winter (Kaazoom)</a> from <a href="https://pixabay.com/" target="_blank" rel="noopener noreferrer" style={{ color: C.txtM }}>Pixabay</a>
               </div>
             </div>

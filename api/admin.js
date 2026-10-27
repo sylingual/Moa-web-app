@@ -187,6 +187,44 @@ export default async function handler(req, res) {
       ...(userEvents[id] || { cards_added: 0, exercises: 0, ai_messages: 0, image_gens: 0 }),
     }));
 
+    // --- TOKEN USAGE PER USER ---
+    const TOKEN_COSTS = {
+      gemini: { input: 0.00001, output: 0.00004 },
+      anthropic: { input: 0.003, output: 0.015 },
+      openai: { input: 0.0001, output: 0.0004 },
+      groq: { input: 0.00005, output: 0.00008 },
+    };
+    const tokenEvents = events.filter(e => e.type === 'ai_tokens');
+    const tokensByUser = {};
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalCost = 0;
+    tokenEvents.forEach(e => {
+      const uid = e.sync_id;
+      if (!tokensByUser[uid]) tokensByUser[uid] = { input: 0, output: 0, cost: 0, calls: 0, by_provider: {} };
+      const u = tokensByUser[uid];
+      const inp = e.data?.input || 0;
+      const out = e.data?.output || 0;
+      const prov = e.data?.provider || 'gemini';
+      const rates = TOKEN_COSTS[prov] || TOKEN_COSTS.gemini;
+      const callCost = (inp / 1000000) * rates.input + (out / 1000000) * rates.output;
+      u.input += inp;
+      u.output += out;
+      u.cost += callCost;
+      u.calls++;
+      if (!u.by_provider[prov]) u.by_provider[prov] = { input: 0, output: 0, cost: 0, calls: 0 };
+      u.by_provider[prov].input += inp;
+      u.by_provider[prov].output += out;
+      u.by_provider[prov].cost += callCost;
+      u.by_provider[prov].calls++;
+      totalInputTokens += inp;
+      totalOutputTokens += out;
+      totalCost += callCost;
+    });
+    const tokenUsers = Object.entries(tokensByUser).map(([id, t]) => ({
+      sync_id: id, input: t.input, output: t.output, cost: Math.round(t.cost * 10000) / 10000, calls: t.calls, by_provider: t.by_provider,
+    })).sort((a, b) => b.cost - a.cost);
+
     // --- HOURLY PATTERN ---
     const hourCounts = new Array(24).fill(0);
     sessions.forEach(s => {
@@ -249,6 +287,13 @@ export default async function handler(req, res) {
       event_types: eventTypeCounts,
       users,
       all_users: allUsers,
+      tokens: {
+        total_input: totalInputTokens,
+        total_output: totalOutputTokens,
+        total_cost: Math.round(totalCost * 10000) / 10000,
+        total_calls: tokenEvents.length,
+        by_user: tokenUsers,
+      },
     });
   } catch (err) {
     console.error('[admin]', err);

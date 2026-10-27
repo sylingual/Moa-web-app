@@ -22,6 +22,7 @@ export default async function handler(req, res) {
     var userMsg = body.messages.map(function(m) { return m.content }).join('\n')
     var text = ''
     var sources = []
+    var usage = null
 
     if (provider === 'anthropic') {
       // ---- Anthropic (Claude) ----
@@ -53,6 +54,9 @@ export default async function handler(req, res) {
       }
       var data = JSON.parse(raw)
       text = (data.content || []).map(function(b) { return b.text || '' }).join('\n')
+      if (data.usage) {
+        usage = { input: data.usage.input_tokens || 0, output: data.usage.output_tokens || 0, provider: 'anthropic', model: data.model || process.env.AI_MODEL || 'claude-sonnet-4-6' }
+      }
 
     } else if (provider === 'openai') {
       // ---- OpenAI (default: GPT-5 nano) ----
@@ -92,6 +96,9 @@ export default async function handler(req, res) {
       if (!text) {
         throw new Error('OpenAI reponse vide. Message: ' + JSON.stringify(msg0 || data).substring(0, 500))
       }
+      if (data.usage) {
+        usage = { input: data.usage.prompt_tokens || 0, output: data.usage.completion_tokens || 0, provider: 'openai', model: data.model || process.env.AI_MODEL || 'gpt-5-nano' }
+      }
 
     } else if (provider === 'groq') {
       // ---- Groq (default: Llama 3.3 70B, ultra-fast inference) ----
@@ -122,6 +129,9 @@ export default async function handler(req, res) {
       }
       var data = JSON.parse(raw)
       text = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : ''
+      if (data.usage) {
+        usage = { input: data.usage.prompt_tokens || 0, output: data.usage.completion_tokens || 0, provider: 'groq', model: data.model || process.env.AI_MODEL || 'llama-3.1-8b-instant' }
+      }
 
     } else {
       // ---- Gemini (used for web search grounding, or when AI_PROVIDER=gemini) ----
@@ -187,6 +197,9 @@ export default async function handler(req, res) {
 
       var textParts = (cand.content && cand.content.parts) || []
       text = textParts.map(function(p) { return p.text || '' }).join('')
+      if (data.usageMetadata) {
+        usage = { input: data.usageMetadata.promptTokenCount || 0, output: data.usageMetadata.candidatesTokenCount || 0, provider: 'gemini', model: geminiModel }
+      }
 
       var seenSources = {}
       var gm = cand.groundingMetadata
@@ -205,7 +218,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       content: [{ type: 'text', text: text }],
-      sources: sources
+      sources: sources,
+      usage: usage || null
     })
   } catch (err) {
     return res.status(500).json({ error: err.message + ' | Raw: ' + (typeof raw === 'string' ? raw.substring(0, 200) : 'none') })

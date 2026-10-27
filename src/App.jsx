@@ -394,7 +394,7 @@ const T = {
     goalExtend: "Prolonger",
     goalNewDeadline: "Nouvelle date limite",
     goalMilestone: (pct, name) => `${pct}% des mots acquis ${name ? `pour "${name}"` : ""} !`,
-    goalComplete: (name) => `Tu as atteint ton objectif ${name ? `pour "${name}"` : ""} ! Felicitations ! 💪`,
+    goalComplete: (name) => `Tu as atteint ton objectif ${name ? `pour "${name}"` : ""} ! Félicitations ! 💪`,
     goalCardCount: (n) => `${n} carte${n > 1 ? "s" : ""}`,
     goalOf: "sur",
     goalPickCards: "Sélectionner des cartes",

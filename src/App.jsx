@@ -3946,7 +3946,6 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     return textSortAsc ? -diff : diff;
   });
 
-  const compLabel = lang === "fr" ? "Compréhension" : lang === "ko" ? "독해" : "Comprehension";
   const vocabLabel = lang === "fr" ? "Vocabulaire" : lang === "ko" ? "어휘" : "Vocab";
   const gramLabel = lang === "fr" ? "Grammaire" : lang === "ko" ? "문법" : "Grammar";
 
@@ -3961,46 +3960,29 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
         </div>
       )}
       {allTexts.map((item, i) => {
-        const s = item.study;
-        const hasComp = !!s;
-        const compDone = s && s.level1Complete && s.level2Complete && s.level3Complete;
-        const compLevels = s ? [s.level1Complete, s.level2Complete, s.level3Complete] : [false, false, false];
-        const compStarted = compLevels.some(Boolean);
         return (
           <div key={i} style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14 }}>
             <div style={{ fontFamily: tFont, fontSize: 13, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap", maxHeight: 130, overflowY: "auto", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px" }}>
               {item.text.slice(0, 400)}{item.text.length > 400 ? "..." : ""}
             </div>
-            {item.sourceUrl && <SourceUrlRow sourceUrl={item.sourceUrl} lang={lang} onSave={s && onUpdateStudyUrl ? (url) => onUpdateStudyUrl(s.id, url) : null} />}
-            {!item.sourceUrl && s && onUpdateStudyUrl && <SourceUrlRow sourceUrl="" lang={lang} onSave={(url) => onUpdateStudyUrl(s.id, url)} />}
-            {s && <span style={{ fontSize: 10, color: C.txtM, marginTop: 6, display: "inline-block" }}>{s.date}</span>}
+            {item.sourceUrl && <SourceUrlRow sourceUrl={item.sourceUrl} lang={lang} onSave={item.study && onUpdateStudyUrl ? (url) => onUpdateStudyUrl(item.study.id, url) : null} />}
+            {item.study && item.study.date && <span style={{ fontSize: 10, color: C.txtM, marginTop: 6, display: "inline-block" }}>{item.study.date}</span>}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8, alignItems: "center" }}>
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: hasComp ? (compDone ? "#e8f5e9" : compStarted ? "#fff8e1" : C.s1) : C.s1, color: hasComp ? (compDone ? C.ok : compStarted ? "#f9a825" : C.txtM) : C.txtM, fontWeight: 500, border: `1px solid ${hasComp ? "transparent" : C.border}`, opacity: hasComp ? 1 : 0.5 }}>
-                📖 {compLabel} {compDone ? "✓" : compStarted ? `${compLevels.filter(Boolean).length}/3` : ""}
-              </span>
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: item.vocabCount > 0 ? C.proBg : C.s1, color: item.vocabCount > 0 ? C.pro : C.txtM, fontWeight: 500, border: `1px solid ${item.vocabCount > 0 ? "transparent" : C.border}`, opacity: item.vocabCount > 0 ? 1 : 0.5 }}>
-                📝 {vocabLabel} {item.vocabCount > 0 ? `(${item.vocabCount})` : ""}
-              </span>
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: item.gramCount > 0 ? C.accBg : C.s1, color: item.gramCount > 0 ? C.acc : C.txtM, fontWeight: 500, border: `1px solid ${item.gramCount > 0 ? "transparent" : C.border}`, opacity: item.gramCount > 0 ? 1 : 0.5 }}>
-                📐 {gramLabel} {item.gramCount > 0 ? `(${item.gramCount})` : ""}
-              </span>
+              {item.vocabCount > 0 && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.proBg, color: C.pro, fontWeight: 500 }}>
+                  📝 {vocabLabel} ({item.vocabCount})
+                </span>
+              )}
+              {item.gramCount > 0 && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: C.accBg, color: C.acc, fontWeight: 500 }}>
+                  📐 {gramLabel} ({item.gramCount})
+                </span>
+              )}
             </div>
-            {hasComp && (
-              <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
-                {[1, 2, 3].map(lv => {
-                  const done = compLevels[lv - 1];
-                  return (
-                    <span key={lv} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: done ? "#e8f5e9" : C.s1, color: done ? C.ok : C.txtM, border: `1px solid ${done ? C.ok : C.border}`, fontWeight: done ? 600 : 400 }}>
-                      Niveau {lv}{done ? " ✓" : ""}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
             {item.cards.length > 0 && (
               <div style={{ marginTop: 8 }}>
                 <div style={{ fontSize: 9.5, color: C.txtM, textTransform: "uppercase", fontWeight: 600, letterSpacing: 0.3, marginBottom: 4 }}>
-                  {lang === "fr" ? "Points associés" : lang === "ko" ? "관련 항목" : "Associated items"}
+                  {lang === "fr" ? "Points associes" : lang === "ko" ? "관련 항목" : "Associated items"}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {item.cards.map(c => <PointChip key={c.id} c={c} />)}
@@ -4008,28 +3990,10 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
               </div>
             )}
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-              {hasComp && !compDone && onResumeComprehension && (
-                <button onClick={() => onResumeComprehension(s)}
-                  style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.ok, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  {compStarted ? t.compResume : (lang === "fr" ? "Reprendre" : lang === "ko" ? "이어서" : "Resume")}
-                </button>
-              )}
-              {!hasComp && onStartComprehension && (
-                <button onClick={() => onStartComprehension(item.text)}
-                  style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.ok, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  📖 {compLabel}
-                </button>
-              )}
               <button onClick={() => onRestudy(item.text)}
                 style={{ padding: "6px 13px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                 ✨ {t.restudyText}
               </button>
-              {s && onResetStudy && compStarted && (
-                <button onClick={() => { if (confirm(lang === "fr" ? "Remettre ce texte au niveau 1 ?" : lang === "ko" ? "이 텍스트를 레벨 1로 초기화할까?" : "Reset this text to level 1?")) onResetStudy(s); }}
-                  style={{ padding: "6px 13px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
-                  {t.compReset}
-                </button>
-              )}
             </div>
           </div>
         );
@@ -10599,7 +10563,7 @@ function AppInner() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, justifyContent: "center" }}>
-                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["comprehension", t.importModeComprehension], ["bulk", t.importModeBulk]].map(([k, l]) => (
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["bulk", t.importModeBulk]].map(([k, l]) => (
                     <button key={k} onClick={() => setImpMode(k)}
                       style={{ padding: "6px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
                       {l}

@@ -11078,9 +11078,8 @@ function AppInner() {
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ position: "relative" }}>
-                      <span onClick={() => setTypePickerOpen(p => !p)}
-                        style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                        {typeLabel(recapCard.type, t)} <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>
+                      <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        {typeLabel(recapCard.type, t)} {typePickerOpen && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
                       </span>
                       {typePickerOpen && (
                         <>
@@ -11108,13 +11107,17 @@ function AppInner() {
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
                       </span>
                     ); })()}
-                    {(recapCard.reviewCount || 0) > 0 && <span style={{ fontSize: 10, color: C.txtM }}>{t.reviewCount(recapCard.reviewCount)}</span>}
                     <button
                       onClick={() => { const v = !revealTr; setRevealTr(v); localStorage.setItem("moa-reveal-tr", v ? "1" : "0"); }}
                       title={t.tapToReveal}
                       style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁" : "🙈"} {t.showTranslations}
                     </button>
+                    <span onClick={() => setTypePickerOpen(p => !p)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 6, border: `1px solid ${typePickerOpen ? C.acc : C.border}`, background: typePickerOpen ? C.accBg : C.s1, color: typePickerOpen ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", flexShrink: 0 }}
+                      title={lang === "fr" ? "Modifier le type" : lang === "ko" ? "유형 변경" : "Change type"}>
+                      ✎
+                    </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
@@ -11645,6 +11648,11 @@ function AppInner() {
                           </div>
                         )}
                       </div>
+                      {reviewCount > 0 && (
+                        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 12, paddingTop: 10, fontSize: 11, color: C.txtM, textAlign: "center" }}>
+                          {t.reviewCount(reviewCount)}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}

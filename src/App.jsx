@@ -64,8 +64,11 @@ const T = {
     iKnow: "Je connais", addedAcq: "Acquis",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
     vocab: "Vocabulaire",
-    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeBulk: "Import en masse",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeExpression: "Expressions", importModeBulk: "Import en masse",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
+    expressionHint: "Mets une expression entre guillemets pour l'enregistrer telle quelle, sans découpage.",
+    expressionOcrHint: "Tu peux entourer les expressions à retenir avec des guillemets.",
+    expressionNone: "Aucune expression entre guillemets détectée.",
     bulkPickTitle: "Contenu extrait", bulkPickSub: "Désélecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter à la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} !`, bulkNone: "Sélectionne au moins un élément.",
     bulkTagBtn: "Tagger", bulkTagTitle: "Tagger en masse", bulkTagApply: "Appliquer", bulkTagDone: "Terminer", bulkTagSelectAll: "Tout", bulkTagNone: "Aucun",
     compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM global", compLevel2: "Niveau 2 : Phrase par phrase", compLevel3: "Niveau 3 : Reformulation",
@@ -587,8 +590,11 @@ const T = {
     iKnow: "I know this", addedAcq: "Acquired",
     startLesson: "Start lesson", morePoints: "Find more points",
     vocab: "Vocabulary",
-    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeBulk: "Bulk import",
+    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeExpression: "Expressions", importModeBulk: "Bulk import",
     importModeSub: "What do you want to study in this text?",
+    expressionHint: "Put an expression in quotes to save it as-is, without breaking it down.",
+    expressionOcrHint: "You can surround expressions you want to save with quotation marks.",
+    expressionNone: "No quoted expressions found.",
     bulkPickTitle: "Extracted content", bulkPickSub: "Deselect what you don't want to import.", bulkAddToLib: "Add to library", bulkAdded: (n) => `${n} card${n > 1 ? "s" : ""} added!`, bulkNone: "Select at least one item.",
     bulkTagBtn: "Tag", bulkTagTitle: "Bulk tag", bulkTagApply: "Apply", bulkTagDone: "Done", bulkTagSelectAll: "All", bulkTagNone: "None",
     compTitle: "Text Comprehension", compLevel1: "Level 1: Global QCM", compLevel2: "Level 2: Sentence by sentence", compLevel3: "Level 3: Reformulation",
@@ -1110,8 +1116,11 @@ const T = {
     iKnow: "이거 알아", addedAcq: "습득 완료",
     startLesson: "레슨 시작", morePoints: "다른 포인트 찾기",
     vocab: "어휘",
-    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeBulk: "대량 가져오기",
+    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeExpression: "표현", importModeBulk: "대량 가져오기",
     importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
+    expressionHint: "표현을 따옴표로 감싸면 분해 없이 그대로 저장돼.",
+    expressionOcrHint: "기억하고 싶은 표현은 따옴표로 감싸봐.",
+    expressionNone: "따옴표 안의 표현이 없어요.",
     bulkPickTitle: "추출된 내용", bulkPickSub: "가져오고 싶지 않은 건 선택 해제해.", bulkAddToLib: "라이브러리에 추가", bulkAdded: (n) => `카드 ${n}개 추가됨!`, bulkNone: "최소 하나는 선택해 줘.",
     bulkTagBtn: "태그", bulkTagTitle: "대량 태그", bulkTagApply: "적용", bulkTagDone: "완료", bulkTagSelectAll: "전체", bulkTagNone: "없음",
     compTitle: "텍스트 독해", compLevel1: "레벨 1: 전체 객관식", compLevel2: "레벨 2: 문장별 이해", compLevel3: "레벨 3: 바꿔 말하기",
@@ -2976,14 +2985,14 @@ function statusInfo(status, t) {
   }
 }
 
-// Only two card types: a grammar structure, or vocab (any lexical item — word, set phrase,
-// idiom). The old "expression" type folds into vocab; the AI/vocab/grammar distinction was
-// unreliable, so anything that isn't grammar is vocab.
 function normType(type) {
-  return type === "grammar" ? "grammar" : "vocab";
+  if (type === "grammar") return "grammar";
+  if (type === "expression") return "expression";
+  return "vocab";
 }
 function typeLabel(type, t) {
-  return normType(type) === "grammar" ? t.grammar : t.vocab;
+  const nt = normType(type);
+  return nt === "grammar" ? t.grammar : nt === "expression" ? t.expression : t.vocab;
 }
 
 // =============================================

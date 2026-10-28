@@ -9190,7 +9190,7 @@ function AppInner() {
         const r = await continueExercise(sel, "makesentence", lang, u, null, tl);
         let msg = r.message || "";
         const isCorrect = msg.includes("CORRECT:true");
-        if (isCorrect) msg = msg.replace(/\s*CORRECT:true\s*/g, "").trim();
+        msg = msg.replace(/\s*CORRECT:(true|false)\s*/g, "").trim();
         setExConv([...u, { role: "ai", content: msg, options: null, selected: null }]);
         if (isCorrect) {
           setMsSentenceOk(true);
@@ -11061,7 +11061,11 @@ function AppInner() {
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro }}>{typeLabel(recapCard.type, t)}</span>
+                    <span onClick={() => {
+                      const newType = recapCard.type === "grammar" ? "vocab" : "grammar";
+                      save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: newType } : c) });
+                      setRecapCard(prev => prev ? { ...prev, type: newType } : prev);
+                    }} title={lang === "fr" ? "Cliquer pour changer le type" : lang === "ko" ? "유형 변경" : "Click to change type"} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro, cursor: "pointer" }}>{typeLabel(recapCard.type, t)}</span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
@@ -11095,12 +11099,50 @@ function AppInner() {
                       {recapCard.description_target}
                       <button onClick={() => setShowTargetDef(p => ({ ...p, [recapCard.id]: false }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Voir en langue maternelle" : lang === "ko" ? "모국어로 보기" : "Show in native language"}</button>
                     </div>
+                  ) : recapCard._editDesc ? (
+                    <div style={{ marginBottom: 10 }}>
+                      <textarea
+                        id="edit-desc-ta"
+                        autoFocus
+                        defaultValue={recapCard.description || ""}
+                        onKeyDown={e => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            const v = e.target.value.trim();
+                            if (v && v !== recapCard.description) {
+                              save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, description: v } : c) });
+                              setRecapCard(prev => prev ? { ...prev, description: v, _editDesc: false } : prev);
+                            } else {
+                              setRecapCard(prev => prev ? { ...prev, _editDesc: false } : prev);
+                            }
+                          }
+                          if (e.key === "Escape") setRecapCard(prev => prev ? { ...prev, _editDesc: false } : prev);
+                        }}
+                        style={{ width: "100%", fontSize: 12.5, color: C.txtS, lineHeight: 1.6, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.acc}`, fontFamily: "'Plus Jakarta Sans'", resize: "vertical", minHeight: 40, boxSizing: "border-box", outline: "none" }}
+                      />
+                      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                        <button onClick={() => {
+                          const ta = document.getElementById("edit-desc-ta");
+                          const v = (ta?.value || "").trim();
+                          if (v && v !== recapCard.description) {
+                            save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, description: v } : c) });
+                            setRecapCard(prev => prev ? { ...prev, description: v, _editDesc: false } : prev);
+                          } else {
+                            setRecapCard(prev => prev ? { ...prev, _editDesc: false } : prev);
+                          }
+                        }} style={{ padding: "3px 10px", borderRadius: 5, border: "none", background: C.acc, color: C.onAcc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>OK</button>
+                        <button onClick={() => setRecapCard(prev => prev ? { ...prev, _editDesc: false } : prev)} style={{ padding: "3px 10px", borderRadius: 5, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{lang === "fr" ? "Annuler" : lang === "ko" ? "취소" : "Cancel"}</button>
+                      </div>
+                    </div>
                   ) : (
-                    <div style={{ fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>
-                      {recapCard.description}
-                      {recapCard.description_target && (
-                        <button onClick={() => setShowTargetDef(p => ({ ...p, [recapCard.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
-                      )}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 4, fontSize: 12.5, color: C.txtS, lineHeight: 1.6, marginBottom: 10 }}>
+                      <div style={{ flex: 1 }}>
+                        {recapCard.description}
+                        {recapCard.description_target && (
+                          <button onClick={() => setShowTargetDef(p => ({ ...p, [recapCard.id]: true }))} style={{ display: "block", marginTop: 4, padding: 0, border: "none", background: "none", color: C.acc, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.genTargetDesc}</button>
+                        )}
+                      </div>
+                      <button onClick={() => setRecapCard(prev => prev ? { ...prev, _editDesc: true } : prev)} title={lang === "fr" ? "Modifier la définition" : lang === "ko" ? "정의 수정" : "Edit definition"} style={{ padding: 0, border: "none", background: "none", cursor: "pointer", fontSize: 13, lineHeight: 1, flexShrink: 0, opacity: 0.5 }}>{"✏️"}</button>
                     </div>
                   )}
                   {(recapCard.example_kr || recapCard.example_tr) && (

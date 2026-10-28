@@ -13141,6 +13141,34 @@ function AppInner() {
                     </div>
                   )}
 
+                  {/* All daily goals done banner */}
+                  {(() => {
+                    if (!activeGoals.length) return null;
+                    const today = new Date().toISOString().slice(0, 10);
+                    let hasAnyTasks = false;
+                    const allDone = activeGoals.every(goal => {
+                      const todaySet = (data.goalToday || {})[goal.id];
+                      if (!todaySet) return true;
+                      const disc = (todaySet.discoverIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      const prac = (todaySet.practiceIds || []).map(id => data.cards.find(c => c.id === id)).filter(Boolean);
+                      if (!disc.length && !prac.length) return true;
+                      hasAnyTasks = true;
+                      const discOk = disc.every(c => { const s = migrateStatus(c.status); if (s === "studied" || s === "acquired") return true; const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)); });
+                      const pracOk = prac.every(c => { const p = c.progress || {}; return ["ce","co","pe"].some(k => (p[k] || []).includes(today)) || (c.reviewDates || []).includes(today); });
+                      return discOk && pracOk;
+                    });
+                    if (!hasAnyTasks || !allDone) return null;
+                    return (
+                      <div style={{ background: "linear-gradient(135deg, rgba(52,199,89,0.15), rgba(52,199,89,0.06))", border: "1px solid rgba(52,199,89,0.3)", borderRadius: 12, padding: "16px 18px", textAlign: "center" }}>
+                        <div style={{ fontSize: 28, marginBottom: 6 }}>🎉</div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#34C759" }}>{t.goalTodayAllDone}</div>
+                        <div style={{ fontSize: 12, color: C.txtS, marginTop: 4 }}>
+                          {lang === "fr" ? "Tous tes objectifs du jour sont remplis. Bravo !" : lang === "ko" ? "오늘 목표 전부 달성! 잘했어!" : "All your daily goals are complete. Well done!"}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Active goals */}
                   {activeGoals.map(goal => {
                     const prog = goalProgress(goal);

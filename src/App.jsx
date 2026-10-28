@@ -9106,7 +9106,7 @@ function AppInner() {
         const r = await continueExercise(sel, "makesentence", lang, u, null, tl);
         let msg = r.message || "";
         const isCorrect = msg.includes("CORRECT:true");
-        if (isCorrect) msg = msg.replace(/\s*CORRECT:true\s*/g, "").trim();
+        msg = msg.replace(/\s*CORRECT:(true|false)\s*/g, "").trim();
         setExConv([...u, { role: "ai", content: msg, options: null, selected: null }]);
         if (isCorrect) {
           setMsSentenceOk(true);

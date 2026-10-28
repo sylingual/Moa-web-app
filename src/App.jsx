@@ -64,8 +64,11 @@ const T = {
     iKnow: "Je connais", addedAcq: "Acquis",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",
     vocab: "Vocabulaire",
-    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeBulk: "Import en masse",
+    importModeGrammar: "Grammaire", importModeVocab: "Vocabulaire", importModeComprehension: "Compréhension", importModeExpression: "Expressions", importModeBulk: "Import en masse",
     importModeSub: "Que veux-tu étudier dans ce texte ?",
+    expressionHint: "Mets une expression entre guillemets pour l'enregistrer telle quelle, sans découpage.",
+    expressionOcrHint: "Tu peux entourer les expressions à retenir avec des guillemets.",
+    expressionNone: "Aucune expression entre guillemets détectée.",
     bulkPickTitle: "Contenu extrait", bulkPickSub: "Désélecte ce que tu ne veux pas importer.", bulkAddToLib: "Ajouter à la biblio", bulkAdded: (n) => `${n} carte${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} !`, bulkNone: "Sélectionne au moins un élément.",
     bulkTagBtn: "Tagger", bulkTagTitle: "Tagger en masse", bulkTagApply: "Appliquer", bulkTagDone: "Terminer", bulkTagSelectAll: "Tout", bulkTagNone: "Aucun",
     compTitle: "Compréhension du texte", compLevel1: "Niveau 1 : QCM global", compLevel2: "Niveau 2 : Phrase par phrase", compLevel3: "Niveau 3 : Reformulation",
@@ -271,6 +274,15 @@ const T = {
     migrateSuccess: "Donnees recuperees !",
     migrateError: "Cle introuvable ou erreur de migration.",
     logoutAuth: "Se deconnecter",
+    tutoWelcome: "Bienvenue dans Moa !",
+    tutoWelcomeSub: "Ton espace de travail personnalisé pour étudier le coréen.",
+    tutoQuestion: (gender) => `Pour commencer, est-ce que tu étudies ${gender === "femme" ? "seule" : "seul"} ou avec un prof ?`,
+    tutoWithProf: "Avec un prof",
+    tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
+    tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
+    tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoReady: "C'est parti !",
+    tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
     signupNamePlaceholder: "Ton prénom...",
@@ -587,8 +599,11 @@ const T = {
     iKnow: "I know this", addedAcq: "Acquired",
     startLesson: "Start lesson", morePoints: "Find more points",
     vocab: "Vocabulary",
-    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeBulk: "Bulk import",
+    importModeGrammar: "Grammar", importModeVocab: "Vocabulary", importModeComprehension: "Comprehension", importModeExpression: "Expressions", importModeBulk: "Bulk import",
     importModeSub: "What do you want to study in this text?",
+    expressionHint: "Put an expression in quotes to save it as-is, without breaking it down.",
+    expressionOcrHint: "You can surround expressions you want to save with quotation marks.",
+    expressionNone: "No quoted expressions found.",
     bulkPickTitle: "Extracted content", bulkPickSub: "Deselect what you don't want to import.", bulkAddToLib: "Add to library", bulkAdded: (n) => `${n} card${n > 1 ? "s" : ""} added!`, bulkNone: "Select at least one item.",
     bulkTagBtn: "Tag", bulkTagTitle: "Bulk tag", bulkTagApply: "Apply", bulkTagDone: "Done", bulkTagSelectAll: "All", bulkTagNone: "None",
     compTitle: "Text Comprehension", compLevel1: "Level 1: Global QCM", compLevel2: "Level 2: Sentence by sentence", compLevel3: "Level 3: Reformulation",
@@ -794,6 +809,15 @@ const T = {
     migrateSuccess: "Data recovered!",
     migrateError: "Key not found or migration error.",
     logoutAuth: "Sign out",
+    tutoWelcome: "Welcome to Moa!",
+    tutoWelcomeSub: "This is your personalized workspace for studying Korean.",
+    tutoQuestion: () => "To start, are you studying alone or with a teacher?",
+    tutoWithProf: "With a teacher",
+    tutoAlone: () => "Alone",
+    tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
+    tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoReady: "Let's go!",
+    tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "What should I call you?",
     signupNamePlaceholder: "Your first name...",
@@ -1110,8 +1134,11 @@ const T = {
     iKnow: "이거 알아", addedAcq: "습득 완료",
     startLesson: "레슨 시작", morePoints: "다른 포인트 찾기",
     vocab: "어휘",
-    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeBulk: "대량 가져오기",
+    importModeGrammar: "문법", importModeVocab: "어휘", importModeComprehension: "독해", importModeExpression: "표현", importModeBulk: "대량 가져오기",
     importModeSub: "이 텍스트에서 뭘 공부하고 싶어?",
+    expressionHint: "표현을 따옴표로 감싸면 분해 없이 그대로 저장돼.",
+    expressionOcrHint: "기억하고 싶은 표현은 따옴표로 감싸봐.",
+    expressionNone: "따옴표 안의 표현이 없어요.",
     bulkPickTitle: "추출된 내용", bulkPickSub: "가져오고 싶지 않은 건 선택 해제해.", bulkAddToLib: "라이브러리에 추가", bulkAdded: (n) => `카드 ${n}개 추가됨!`, bulkNone: "최소 하나는 선택해 줘.",
     bulkTagBtn: "태그", bulkTagTitle: "대량 태그", bulkTagApply: "적용", bulkTagDone: "완료", bulkTagSelectAll: "전체", bulkTagNone: "없음",
     compTitle: "텍스트 독해", compLevel1: "레벨 1: 전체 객관식", compLevel2: "레벨 2: 문장별 이해", compLevel3: "레벨 3: 바꿔 말하기",
@@ -1317,6 +1344,15 @@ const T = {
     migrateSuccess: "데이터 복구 완료!",
     migrateError: "키를 찾을 수 없거나 오류가 발생했습니다.",
     logoutAuth: "로그아웃",
+    tutoWelcome: "Moa에 오신 걸 환영해요!",
+    tutoWelcomeSub: "여기는 한국어 학습을 위한 나만의 맞춤 공간이에요.",
+    tutoQuestion: () => "먼저, 혼자 공부하나요 아니면 선생님과 함께하나요?",
+    tutoWithProf: "선생님과 함께",
+    tutoAlone: () => "혼자",
+    tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoReady: "시작하자!",
+    tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "뭐라고 부를까요?",
     signupNamePlaceholder: "이름...",
@@ -1940,6 +1976,27 @@ For each item provide:
 
 Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text, 2000, false, false, "analyze_vocab")).text);
+}
+
+async function analyzeExpressions(text, existing, lang, context, tlCode) {
+  const TL = getTargetLangName(tlCode, "en");
+  const regex = /[""“”«»「」]([^""“”«»「」]+)[""“”«»「」]/g;
+  const expressions = [];
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    const expr = m[1].trim();
+    if (expr.length > 1) expressions.push(expr);
+  }
+  if (!expressions.length) return [];
+  const sys = `You are a ${TL} language expert. For each ${TL} expression below, provide a JSON array with one object per expression. Each object:
+{"korean": "the expression exactly as given", "type": "expression", "meaning_fr": "French translation", "meaning_en": "English translation", "description_target": "brief explanation in ${TL}", "example_kr": "example sentence using the expression in ${TL}", "example_fr": "French translation of example", "example_en": "English translation of example", "category": "topic tag", "reading": "romanization or empty"}
+
+Return ONLY valid JSON.`;
+  const userMsg = `The expressions:\n${expressions.map((e, i) => `${i + 1}. ${e}`).join("\n")}`;
+  try {
+    const arr = parseJSON((await callAI(sys, userMsg, 2000)).text);
+    return Array.isArray(arr) ? arr.map(it => ({ ...it, type: "expression" })) : [];
+  } catch (e) { console.warn("Expression analysis failed:", e); return []; }
 }
 
 async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
@@ -2976,14 +3033,14 @@ function statusInfo(status, t) {
   }
 }
 
-// Only two card types: a grammar structure, or vocab (any lexical item — word, set phrase,
-// idiom). The old "expression" type folds into vocab; the AI/vocab/grammar distinction was
-// unreliable, so anything that isn't grammar is vocab.
 function normType(type) {
-  return type === "grammar" ? "grammar" : "vocab";
+  if (type === "grammar") return "grammar";
+  if (type === "expression") return "expression";
+  return "vocab";
 }
 function typeLabel(type, t) {
-  return normType(type) === "grammar" ? t.grammar : t.vocab;
+  const nt = normType(type);
+  return nt === "grammar" ? t.grammar : nt === "expression" ? t.expression : t.vocab;
 }
 
 // =============================================
@@ -3512,7 +3569,7 @@ function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.stAcq, flexShrink: 0 }} />
       <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{card.korean}</span>
-      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
+      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(card.type, t)}</span>
       <button onClick={e => { e.stopPropagation(); onToggle(); }} title={t.toStudiedTitle}
         style={{ width: 20, height: 20, borderRadius: 6, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         onMouseEnter={e => { e.currentTarget.style.color = C.acc; e.currentTarget.style.background = C.accBg; }}
@@ -3658,7 +3715,7 @@ function GrammarCard({ card, t, onToggle, onReview, onDelete, onAddTag, onRemove
         {card.korean.replace(/[~()]/g, "").slice(0, 2)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
+        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(card.type, t)}</span>
         <button onClick={e => { e.stopPropagation(); if (canToggle) onToggle(); }}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 10, fontSize: 10, cursor: canToggle ? "pointer" : "default", border: "none", background: si.bg, color: si.color, fontFamily: "'Plus Jakarta Sans'" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />
@@ -3813,7 +3870,7 @@ function TreeView({ cards, t, onToggle, onReview }) {
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
             <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt, fontWeight: 500 }}>{card.korean}</span>
-            <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro, flexShrink: 0 }}>
               {typeLabel(card.type, t)}
             </span>
             {children.length > 0 && (
@@ -3912,7 +3969,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
         <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
-        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : C.proBg, color: c.type === "grammar" ? C.acc : C.pro }}>{typeLabel(c.type, t)}</span>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : c.type === "expression" ? "#fff3e0" : C.proBg, color: c.type === "grammar" ? C.acc : c.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(c.type, t)}</span>
       </button>
     );
   };
@@ -3926,10 +3983,11 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
   groups.forEach(g => {
     const key = g.text.trim();
     const study = studyByText.get(key);
-    const vocabCards = g.cards.filter(c => normType(c.type) !== "grammar");
+    const vocabCards = g.cards.filter(c => normType(c.type) === "vocab");
     const gramCards = g.cards.filter(c => normType(c.type) === "grammar");
+    const exprCards = g.cards.filter(c => normType(c.type) === "expression");
     merged.set(key, {
-      text: g.text, cards: g.cards, vocabCount: vocabCards.length, gramCount: gramCards.length,
+      text: g.text, cards: g.cards, vocabCount: vocabCards.length, gramCount: gramCards.length, exprCount: exprCards.length,
       study, sourceUrl: study?.sourceUrl || "", ts: study ? (study.createdAt || parseInt(study.id) || 0) : (g.createdAt || 0),
     });
   });
@@ -3937,7 +3995,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     const key = s.text.trim();
     if (merged.has(key)) return;
     merged.set(key, {
-      text: s.text, cards: [], vocabCount: 0, gramCount: 0,
+      text: s.text, cards: [], vocabCount: 0, gramCount: 0, exprCount: 0,
       study: s, sourceUrl: s.sourceUrl || "", ts: s.createdAt || parseInt(s.id) || 0,
     });
   });
@@ -3951,6 +4009,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
   });
 
   const vocabLabel = lang === "fr" ? "Vocabulaire" : lang === "ko" ? "어휘" : "Vocab";
+  const exprLabel = lang === "fr" ? "Expressions" : lang === "ko" ? "표현" : "Expressions";
   const gramLabel = lang === "fr" ? "Grammaire" : lang === "ko" ? "문법" : "Grammar";
 
   return (
@@ -3982,6 +4041,11 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                   📐 {gramLabel} ({item.gramCount})
                 </span>
               )}
+              {item.exprCount > 0 && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#fff3e0", color: "#e65100", fontWeight: 500 }}>
+                  💬 {exprLabel} ({item.exprCount})
+                </span>
+              )}
             </div>
             {item.cards.length > 0 && (
               <div style={{ marginTop: 8 }}>
@@ -4008,7 +4072,10 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {noSource.map(c => {
               const si = statusInfo(c.status, t);
-              const isG = normType(c.type) === "grammar";
+              const nt = normType(c.type);
+              const badgeBg = nt === "grammar" ? C.accBg : nt === "expression" ? "#fff3e0" : C.proBg;
+              const badgeClr = nt === "grammar" ? C.acc : nt === "expression" ? "#e65100" : C.pro;
+              const badgeLbl = nt === "grammar" ? "G" : nt === "expression" ? "E" : "V";
               return (
                 <button key={c.id} onClick={() => onReview(c)}
                   style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
@@ -4016,7 +4083,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                   onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
                   <span style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt }}>{c.korean}</span>
-                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: isG ? C.accBg : C.proBg, color: isG ? C.acc : C.pro, fontWeight: 600 }}>{isG ? "G" : "V"}</span>
+                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: badgeBg, color: badgeClr, fontWeight: 600 }}>{badgeLbl}</span>
                 </button>
               );
             })}
@@ -6544,6 +6611,8 @@ function AppInner() {
   const [onbStep, setOnbStep] = useState(0);
   const [onbWelcomeDone, setOnbWelcomeDone] = useState(false);
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
+  const [tutoStep, setTutoStep] = useState(0);
+  const [tutoAnswer, setTutoAnswer] = useState(null);
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -6625,6 +6694,7 @@ function AppInner() {
   const exerciseCards = useMemo(() => {
     let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
     base = base.filter(c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired" || s === "in_progress"; });
+    base = base.filter(c => c.type !== "expression");
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
@@ -6983,8 +7053,8 @@ function AppInner() {
     if (!langCards.length) return;
     const ep = getEffectiveProfile(data, tl);
     const dc = Number(ep.dailyCount) > 0 ? Number(ep.dailyCount) : 5;
-    const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
-    const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
+    const newCards = langCards.filter(c => c.type !== "expression" && migrateStatus(c.status) === "new");
+    const reviewCards = langCards.filter(c => { if (c.type === "expression") return false; const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
     if (!newCards.length && !reviewCards.length) return;
     const dueReview = reviewCards.filter(c => {
       if (isCardLongTermAcquired(c)) return false;
@@ -7344,7 +7414,18 @@ function AppInner() {
     }
     setImpStep("scanning");
     try {
-      if (impMode === "bulk") {
+      if (impMode === "expression") {
+        const items = dedupeExtracted(await analyzeExpressions(impText, data.cards, lang, context, tl), data.cards);
+        if (!items.length) {
+          alert(t.expressionNone);
+          setImpStep("input");
+          return;
+        }
+        setVocabFound(items);
+        setVocabSel(new Set(items.map((_, i) => i)));
+        setVocabKnown(new Set());
+        setImpStep("vocabpicks");
+      } else if (impMode === "bulk") {
         setBulkProgress(null);
         const items = dedupeExtracted(await analyzeBulk(impText, data.cards, lang, context, tl, (cur, tot) => setBulkProgress({ current: cur, total: tot })), data.cards);
         setBulkProgress(null);
@@ -7369,7 +7450,7 @@ function AppInner() {
 
   const makeVocabCard = (v, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
-    korean: v.word || v.korean, type: "vocab",
+    korean: v.word || v.korean, type: v.type === "expression" ? "expression" : "vocab",
     description: lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr),
     description_fr: v.meaning_fr, description_en: v.meaning_en,
     description_target: v.description_target || "",
@@ -7523,8 +7604,8 @@ function AppInner() {
       setBulkSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       const ex = data.cards.find(c => c.korean === word);
       if (!ex) {
-        const isVocab = v.type === "vocab";
-        const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
+        const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+        const card = isVocabOrExpr ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
       } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
@@ -7844,6 +7925,7 @@ function AppInner() {
       setView("lesson");
       return;
     }
+    if (c.type === "expression") { directTranslate(c); return; }
     // Vocab: let the learner choose a full lesson OR just the direct translation (easy words).
     // Grammar always goes straight to a lesson.
     if (c.type === "vocab") { setStudyChoice(c); return; }
@@ -8485,6 +8567,9 @@ function AppInner() {
       summaries: (data.summaries || []).filter(s => s.cardKorean !== c.korean),
     });
     setCardToDelete(null);
+    if (recapCard && (recapCard.korean === c.korean || recapCard.id === c.id)) {
+      setShowRecap(false); setRecapCard(null);
+    }
   };
 
   // ---- EXERCISE MUSIC (Issue #77) ----
@@ -8863,19 +8948,8 @@ function AppInner() {
         setGoalImpStep(null);
         return;
       }
-      setGoalImpStep("scanning");
-      setGoalImpProgress(null);
-      const items = dedupeExtracted(
-        await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
-        data.cards
-      );
-      setGoalImpProgress(null);
-      const merged = [...goalImpFound];
-      for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
-      setGoalImpFound(merged);
-      setGoalImpSel(new Set(merged.map((_, i) => i)));
-      setGoalImpKnown(new Set());
-      setGoalImpStep("picks");
+      setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
+      setGoalImpStep(null);
     } catch (err) {
       console.error("Goal import error:", err);
       alert(err.message);
@@ -8889,10 +8963,13 @@ function AppInner() {
     setGoalImpStep("scanning");
     setGoalImpProgress(null);
     try {
-      const items = dedupeExtracted(
-        await analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
-        data.cards
-      );
+      const [bulkItems, exprItems] = await Promise.all([
+        analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
+        analyzeExpressions(text, data.cards, lang, context, tl)
+      ]);
+      const exprKeys = new Set(exprItems.map(e => (e.korean || e.word || "").trim()));
+      const filteredBulk = bulkItems.filter(b => !exprKeys.has((b.korean || b.word || "").trim()));
+      const items = dedupeExtracted([...filteredBulk, ...exprItems], data.cards);
       setGoalImpProgress(null);
       const merged = [...goalImpFound];
       for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
@@ -8949,8 +9026,8 @@ function AppInner() {
       nk.add(i);
       setGoalImpSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       if (!data.cards.find(c => c.korean === word)) {
-        const isVocab = v.type === "vocab";
-        const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
+        const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+        const card = isVocabOrExpr ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
       }
     }
@@ -8962,8 +9039,8 @@ function AppInner() {
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goalForm.deadline || "";
     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-      const isVocab = v.type === "vocab";
-      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+      const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       return card;
     });
@@ -8974,7 +9051,11 @@ function AppInner() {
     setGoalImpStep(null);
     setGoalImpFound([]);
     setGoalImpSel(new Set());
-    setTimeout(() => { if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight; }, 80);
+    setTimeout(() => {
+      if (goalScrollRef.current) {
+        goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;
+      }
+    }, 120);
   };
 
   const goalDetailImportConfirm = (goalId) => {
@@ -8983,8 +9064,8 @@ function AppInner() {
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goal?.deadline || "";
     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-      const isVocab = v.type === "vocab";
-      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+      const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       card.goalId = goalId;
       return card;
@@ -9000,7 +9081,7 @@ function AppInner() {
     setGoalImpFound([]);
     setGoalImpSel(new Set());
     setGoalCardPicker(false);
-    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
+    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => { el.scrollTop = el.scrollHeight; }, 300); } }, 120);
   };
 
   const completeExercise = (mode, cardIds) => {
@@ -9142,13 +9223,14 @@ function AppInner() {
     color: on ? C.acc : C.txtM, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", whiteSpace: "nowrap",
   });
 
-  const qa = [
+  const qaAll = [
     { k: "examples", l: t.moreExamples, i: "💡" }, { k: "realExamples", l: t.realExamples, i: "🔍" },
     { k: "resources", l: t.onlineRes, i: "📚" },
     { k: "exercise", l: t.anExercise, i: "✏️" }, { k: "explain", l: t.explainOther, i: "🔄" },
     { k: "image", l: t.anImage, i: "📷" }, { k: "youglish", l: t.youglishBtn, i: "🎬" },
     { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
   ];
+  const qa = recapCard?.type === "expression" ? qaAll.filter(x => x.k === "examples") : qaAll;
 
   const fieldStyle = {
     width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px",
@@ -9724,9 +9806,65 @@ function AppInner() {
     );
   }
 
+  // ---- WELCOME TUTORIAL (after onboarding, before main app) ----
+  const showTutorial = data.profile?.onboarded && !data.profile?.tutorialDone;
+  const finishTutorial = () => {
+    const nd = { ...data, profile: { ...data.profile, tutorialDone: true } };
+    save(nd);
+    setTutoStep(0);
+    setTutoAnswer(null);
+  };
+
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}`}</style>
+
+      {/* WELCOME TUTORIAL OVERLAY */}
+      {showTutorial && (() => {
+        const isMobile = winW < 700;
+        const overlayBase = { position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.4s ease" };
+        const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
+        const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
+        const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+
+        if (tutoStep === 0) {
+          return (
+            <div style={overlayBase}>
+              <div style={bubbleBase}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
+                <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                  <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
+                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(data.profile?.gender)}</button>
+                </div>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        if (tutoStep === 1) {
+          const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
+          return (
+            <div style={overlayBase}>
+              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
+                  {"🎯 OBJECTIFS"}
+                </div>
+                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
+                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
+                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
+                </div>
+                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
 
       {/* POINTS TOAST */}
       {pointsToast && (
@@ -10116,7 +10254,7 @@ function AppInner() {
         </div>
         {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
         <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
-        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
+        <button data-tutorial="goals-tab" style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         {/* Lesson tab hidden (unused) */}
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
@@ -10188,6 +10326,10 @@ function AppInner() {
               {t.migrateTitle}
             </button>
           )}
+          <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
+            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
+            {"🔄 Tutoriel"}
+          </button>
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
             {authUser ? t.logoutAuth : t.disconnect}
@@ -10552,6 +10694,7 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+              {impMode === "expression" && <div style={{ fontSize: 11, color: C.txtM, maxWidth: 480, lineHeight: 1.5 }}>{t.expressionHint}</div>}
               <input value={impSourceUrl} onChange={e => setImpSourceUrl(e.target.value)} placeholder={t.importSourceUrl}
                 style={{ width: "100%", maxWidth: 480, border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1, padding: "8px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, outline: "none" }}
                 onFocus={e => { e.target.style.borderColor = C.acc; }}
@@ -10568,7 +10711,7 @@ function AppInner() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, justifyContent: "center" }}>
-                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["bulk", t.importModeBulk]].map(([k, l]) => (
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["expression", t.importModeExpression], ["bulk", t.importModeBulk]].map(([k, l]) => (
                     <button key={k} onClick={() => setImpMode(k)}
                       style={{ padding: "6px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
                       {l}
@@ -10666,7 +10809,7 @@ function AppInner() {
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
                   {bulkFound.map((v, i) => {
                     const on = bulkSel.has(i);
-                    const isVocab = v.type === "vocab";
+                    const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
                     return (
                       <div key={i} onClick={() => { const s = new Set(bulkSel); if (s.has(i)) s.delete(i); else s.add(i); setBulkSel(s); }}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, cursor: "pointer", border: `1px solid ${on ? C.acc : C.border}`, background: on ? C.accBg : C.s2 }}>
@@ -10675,7 +10818,7 @@ function AppInner() {
                           <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt }}>{v.korean || v.word}{v.reading ? <span style={{ fontSize: 11, color: C.txtM, marginLeft: 6 }}>[{v.reading}]</span> : null}</div>
                           <div style={{ fontSize: 11, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                         </div>
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                         <button onClick={e => { e.stopPropagation(); markBulkKnown(i); }}
                           style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${bulkKnown.has(i) ? C.okB : C.border}`, background: bulkKnown.has(i) ? C.okBg : "none", color: bulkKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                           ✓ {bulkKnown.has(i) ? t.addedAcq : t.iKnow}
@@ -10689,8 +10832,8 @@ function AppInner() {
                     if (bulkSel.size === 0) { alert(t.bulkNone); return; }
                     const items = [...bulkSel].sort((a, b) => a - b).map(i => bulkFound[i]).filter(Boolean);
                     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-                      const isVocab = v.type === "vocab";
-                      return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+                      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+                      return isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
                     });
                     if (newCards.length) {
                       save({ ...data, cards: [...data.cards, ...newCards] });
@@ -11486,6 +11629,16 @@ function AppInner() {
                     🔄 {t.redoLesson}
                   </button>
                 )}
+
+                {/* Delete card */}
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => setCardToDelete(recapCard)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer", opacity: 0.6, transition: "opacity 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = C.warn; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.color = C.txtM; }}>
+                    🗑 {t.deleteCard}
+                  </button>
+                </div>
               </div>
             </div>
           ) : lCard ? (
@@ -12383,6 +12536,7 @@ function AppInner() {
                           style={{ width: "100%", height: 100, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
                           onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                           onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                        <div style={{ fontSize: 11, color: C.txtM, maxWidth: 480, lineHeight: 1.5 }}>{t.expressionOcrHint}</div>
                         <button onClick={processGoalText} disabled={!goalImpText.trim()}
                           style={{ padding: "7px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
                           ✨ {t.goalImportText}
@@ -12415,7 +12569,7 @@ function AppInner() {
                         <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1 }}>
                           {goalImpFound.map((v, i) => {
                             const on = goalImpSel.has(i);
-                            const isVocab = v.type === "vocab";
+                            const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
                             return (
                               <div key={i} onClick={() => { const s = new Set(goalImpSel); s.has(i) ? s.delete(i) : s.add(i); setGoalImpSel(s); }}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent" }}>
@@ -12424,7 +12578,7 @@ function AppInner() {
                                   <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{v.korean || v.word}</div>
                                   <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 1 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                                 </div>
-                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                                 <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                   style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                   ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}
@@ -12457,14 +12611,8 @@ function AppInner() {
                                 if (text && text.trim()) combined += (combined ? "\n" : "") + text;
                               }
                               if (!combined.trim()) { setGoalImpStep("picks"); return; }
-                              setGoalImpStep("scanning");
-                              const items = dedupeExtracted(await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })), data.cards);
-                              setGoalImpProgress(null);
-                              const merged = [...goalImpFound];
-                              for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
-                              setGoalImpFound(merged);
-                              setGoalImpSel(new Set(merged.map((_, i) => i)));
-                              setGoalImpStep("picks");
+                              setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
+                              setGoalImpStep(null);
                             } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
                           }} style={{ display: "none" }} />
                         </label>
@@ -12733,6 +12881,7 @@ function AppInner() {
                                 style={{ width: "100%", height: 80, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
                                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                              <div style={{ fontSize: 10.5, color: C.txtM, lineHeight: 1.5 }}>{t.expressionOcrHint}</div>
                               <button onClick={processGoalText} disabled={!goalImpText.trim()}
                                 style={{ padding: "6px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
                                 ✨ {t.goalImportText}

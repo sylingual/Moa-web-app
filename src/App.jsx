@@ -7604,8 +7604,8 @@ function AppInner() {
       setBulkSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       const ex = data.cards.find(c => c.korean === word);
       if (!ex) {
-        const isVocab = v.type === "vocab";
-        const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
+        const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+        const card = isVocabOrExpr ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
       } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
@@ -8964,7 +8964,9 @@ function AppInner() {
         analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
         analyzeExpressions(text, data.cards, lang, context, tl)
       ]);
-      const items = dedupeExtracted([...bulkItems, ...exprItems], data.cards);
+      const exprKeys = new Set(exprItems.map(e => (e.korean || e.word || "").trim()));
+      const filteredBulk = bulkItems.filter(b => !exprKeys.has((b.korean || b.word || "").trim()));
+      const items = dedupeExtracted([...filteredBulk, ...exprItems], data.cards);
       setGoalImpProgress(null);
       const merged = [...goalImpFound];
       for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
@@ -9034,8 +9036,8 @@ function AppInner() {
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goalForm.deadline || "";
     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-      const isVocab = v.type === "vocab";
-      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+      const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       return card;
     });
@@ -9055,8 +9057,8 @@ function AppInner() {
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goal?.deadline || "";
     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-      const isVocab = v.type === "vocab";
-      const card = isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+      const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       card.goalId = goalId;
       return card;
@@ -10800,7 +10802,7 @@ function AppInner() {
                 <div style={{ maxHeight: 400, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
                   {bulkFound.map((v, i) => {
                     const on = bulkSel.has(i);
-                    const isVocab = v.type === "vocab";
+                    const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
                     return (
                       <div key={i} onClick={() => { const s = new Set(bulkSel); if (s.has(i)) s.delete(i); else s.add(i); setBulkSel(s); }}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, cursor: "pointer", border: `1px solid ${on ? C.acc : C.border}`, background: on ? C.accBg : C.s2 }}>
@@ -10809,7 +10811,7 @@ function AppInner() {
                           <div style={{ fontFamily: tFont, fontSize: 14, color: C.txt }}>{v.korean || v.word}{v.reading ? <span style={{ fontSize: 11, color: C.txtM, marginLeft: 6 }}>[{v.reading}]</span> : null}</div>
                           <div style={{ fontSize: 11, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                         </div>
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                         <button onClick={e => { e.stopPropagation(); markBulkKnown(i); }}
                           style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${bulkKnown.has(i) ? C.okB : C.border}`, background: bulkKnown.has(i) ? C.okBg : "none", color: bulkKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                           ✓ {bulkKnown.has(i) ? t.addedAcq : t.iKnow}
@@ -10823,8 +10825,8 @@ function AppInner() {
                     if (bulkSel.size === 0) { alert(t.bulkNone); return; }
                     const items = [...bulkSel].sort((a, b) => a - b).map(i => bulkFound[i]).filter(Boolean);
                     const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
-                      const isVocab = v.type === "vocab";
-                      return isVocab ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
+                      const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+                      return isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
                     });
                     if (newCards.length) {
                       save({ ...data, cards: [...data.cards, ...newCards] });
@@ -12550,7 +12552,7 @@ function AppInner() {
                         <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1 }}>
                           {goalImpFound.map((v, i) => {
                             const on = goalImpSel.has(i);
-                            const isVocab = v.type === "vocab";
+                            const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
                             return (
                               <div key={i} onClick={() => { const s = new Set(goalImpSel); s.has(i) ? s.delete(i) : s.add(i); setGoalImpSel(s); }}
                                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent" }}>
@@ -12559,7 +12561,7 @@ function AppInner() {
                                   <div style={{ fontFamily: tFont, fontSize: 13.5, color: C.txt }}>{v.korean || v.word}</div>
                                   <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 1 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                                 </div>
-                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: isVocab ? C.proBg : C.accBg, color: isVocab ? C.pro : C.acc }}>{isVocab ? t.importModeVocab : t.importModeGrammar}</span>
+                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                                 <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                   style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                   ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}

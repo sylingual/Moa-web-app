@@ -6490,6 +6490,7 @@ function AppInner() {
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState(false);
@@ -11061,11 +11062,32 @@ function AppInner() {
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span onClick={() => {
-                      const newType = recapCard.type === "grammar" ? "vocab" : "grammar";
-                      save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: newType } : c) });
-                      setRecapCard(prev => prev ? { ...prev, type: newType } : prev);
-                    }} title={lang === "fr" ? "Cliquer pour changer le type" : lang === "ko" ? "유형 변경" : "Click to change type"} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro, cursor: "pointer" }}>{typeLabel(recapCard.type, t)}</span>
+                    <span style={{ position: "relative" }}>
+                      <span onClick={() => setTypePickerOpen(p => !p)}
+                        style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        {typeLabel(recapCard.type, t)} <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>
+                      </span>
+                      {typePickerOpen && (
+                        <>
+                          <div onClick={() => setTypePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 110 }}>
+                            {[["vocab", C.proBg, C.pro], ["grammar", C.accBg, C.acc], ["expression", "#fff3e0", "#e65100"]].map(([tp, bg, col]) => (
+                              <div key={tp} onClick={() => {
+                                if (normType(recapCard.type) !== tp) {
+                                  save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: tp } : c) });
+                                  setRecapCard(prev => prev ? { ...prev, type: tp } : prev);
+                                }
+                                setTypePickerOpen(false);
+                              }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: normType(recapCard.type) === tp ? 600 : 400, color: col, background: normType(recapCard.type) === tp ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                                onMouseEnter={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = C.s1; }}
+                                onMouseLeave={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = "transparent"; }}>
+                                {typeLabel(tp, t)}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}

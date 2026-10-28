@@ -9048,7 +9048,11 @@ function AppInner() {
     setGoalImpStep(null);
     setGoalImpFound([]);
     setGoalImpSel(new Set());
-    setTimeout(() => { if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight; }, 80);
+    setTimeout(() => {
+      if (goalScrollRef.current) {
+        goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;
+      }
+    }, 120);
   };
 
   const goalDetailImportConfirm = (goalId) => {
@@ -9074,7 +9078,7 @@ function AppInner() {
     setGoalImpFound([]);
     setGoalImpSel(new Set());
     setGoalCardPicker(false);
-    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
+    setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setTimeout(() => { el.scrollTop = el.scrollHeight; }, 300); } }, 120);
   };
 
   const completeExercise = (mode, cardIds) => {

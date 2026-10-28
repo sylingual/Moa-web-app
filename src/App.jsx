@@ -3781,17 +3781,30 @@ function SummaryCard({ summary, t, lang }) {
   const [showNotes, setShowNotes] = useState(false);
   const hasRecap = summary.grammarRecap && summary.grammarRecap.length > 0;
   const hasTutorNotes = summary.structuresLearned || summary.mistakesMade || summary.nextSteps;
+  const hasSentences = summary.exerciseSentences && summary.exerciseSentences.length > 0;
   return (
     <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
       <button onClick={() => setOpen(!open)}
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", textAlign: "left" }}>
+        {summary.type === "makesentence" && <span style={{ fontSize: 11 }}>✍️</span>}
         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt, fontWeight: 500 }}>{summary.cardKorean}</span>
         <span style={{ fontSize: 11, color: C.txtM, marginLeft: "auto", flexShrink: 0 }}>{summary.date}</span>
         <span style={{ fontSize: 10, color: C.txtM, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▼</span>
       </button>
       {open && (
         <div style={{ padding: "0 14px 12px" }}>
-          {hasRecap ? (
+          {hasSentences ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: C.ok, textTransform: "uppercase", marginBottom: 2 }}>
+                {lang === "fr" ? "Phrases produites" : lang === "ko" ? "작성한 문장" : "Sentences written"}
+              </div>
+              {summary.exerciseSentences.map((s, i) => (
+                <div key={i} style={{ fontSize: 13, color: C.txt, lineHeight: 1.6, padding: "4px 8px", background: C.s1, borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  {s}
+                </div>
+              ))}
+            </div>
+          ) : hasRecap ? (
             <div style={{ fontSize: 12.5, color: C.txt, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>
               {renderMarkdown(summary.grammarRecap, false)}
             </div>
@@ -6592,6 +6605,7 @@ function AppInner() {
   const [exDone, setExDone] = useState(false);
   const [msSentenceOk, setMsSentenceOk] = useState(false);
   const [msPhraseCount, setMsPhraseCount] = useState(0);
+  const [msSentences, setMsSentences] = useState([]);
   const [fillData, setFillData] = useState(null);
   const [exTheme, setExTheme] = useState(null);
   const [exGrammarVocab, setExGrammarVocab] = useState([]);
@@ -9119,7 +9133,7 @@ function AppInner() {
     if (exMode === "makesentence") {
       exActiveIdsRef.current = sel.map(c => c.id);
       const words = sel.map(c => c.korean);
-      setExOn(true); setExLoad(false); setExDone(false); setFillData(null); setMsSentenceOk(false); setMsPhraseCount(0);
+      setExOn(true); setExLoad(false); setExDone(false); setFillData(null); setMsSentenceOk(false); setMsPhraseCount(0); setMsSentences([]);
       setExConv([{ role: "ai", content: t.makeSentencePrompt(words), options: null, selected: null }]);
       return;
     }
@@ -9195,6 +9209,7 @@ function AppInner() {
         if (isCorrect) {
           setMsSentenceOk(true);
           setMsPhraseCount(prev => prev + 1);
+          setMsSentences(prev => [...prev, m]);
           const result = recordExerciseProgress(data, activeIds, "makesentence");
           const nd = awardPoints(10, result.data);
           save(nd);
@@ -12297,7 +12312,25 @@ function AppInner() {
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ✍️ {t.makeSentenceAnother}
                         </button>
-                        <button onClick={() => { setExDone(true); setMsSentenceOk(false); setShowCelebration(true); }}
+                        <button onClick={() => {
+                          setExDone(true); setMsSentenceOk(false); setShowCelebration(true);
+                          if (msSentences.length > 0) {
+                            const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
+                            const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" });
+                            const newSummaries = sel.map(c => ({
+                              id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
+                              cardKorean: c.korean,
+                              targetLang: c.targetLang || tl || "ko",
+                              grammarRecap: "",
+                              structuresLearned: "",
+                              exerciseSentences: [...msSentences],
+                              date: dateStr,
+                              conversationLength: exConv.length,
+                              type: "makesentence",
+                            }));
+                            save({ ...data, summaries: [...(data.summaries || []), ...newSummaries] });
+                          }
+                        }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: "none", border: `1px solid ${C.okB}`, color: C.ok, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ✓ {t.makeSentenceFinish}
                         </button>

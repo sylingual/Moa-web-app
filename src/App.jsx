@@ -1978,6 +1978,27 @@ Return a JSON array of 6-10 items.`;
   return parseJSON((await callAI(sys, text, 2000, false, false, "analyze_vocab")).text);
 }
 
+async function analyzeExpressions(text, existing, lang, context, tlCode) {
+  const TL = getTargetLangName(tlCode, "en");
+  const regex = /[""“”«»「」]([^""“”«»「」]+)[""“”«»「」]/g;
+  const expressions = [];
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    const expr = m[1].trim();
+    if (expr.length > 1) expressions.push(expr);
+  }
+  if (!expressions.length) return [];
+  const sys = `You are a ${TL} language expert. For each ${TL} expression below, provide a JSON array with one object per expression. Each object:
+{"korean": "the expression exactly as given", "type": "expression", "meaning_fr": "French translation", "meaning_en": "English translation", "description_target": "brief explanation in ${TL}", "example_kr": "example sentence using the expression in ${TL}", "example_fr": "French translation of example", "example_en": "English translation of example", "category": "topic tag", "reading": "romanization or empty"}
+
+Return ONLY valid JSON.`;
+  const userMsg = `The expressions:\n${expressions.map((e, i) => `${i + 1}. ${e}`).join("\n")}`;
+  try {
+    const arr = parseJSON((await callAI(sys, userMsg, 2000)).text);
+    return Array.isArray(arr) ? arr.map(it => ({ ...it, type: "expression" })) : [];
+  } catch (e) { console.warn("Expression analysis failed:", e); return []; }
+}
+
 async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
   const known = existing.map((c) => c.korean).join(", ");
   const TL = getTargetLangName(tlCode, "en");
@@ -3548,7 +3569,7 @@ function AcquiredCard({ card, t, onReview, onToggle, onDelete }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.stAcq, flexShrink: 0 }} />
       <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt }}>{card.korean}</span>
-      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
+      <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(card.type, t)}</span>
       <button onClick={e => { e.stopPropagation(); onToggle(); }} title={t.toStudiedTitle}
         style={{ width: 20, height: 20, borderRadius: 6, border: "none", background: "transparent", color: C.txtM, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
         onMouseEnter={e => { e.currentTarget.style.color = C.acc; e.currentTarget.style.background = C.accBg; }}
@@ -3694,7 +3715,7 @@ function GrammarCard({ card, t, onToggle, onReview, onDelete, onAddTag, onRemove
         {card.korean.replace(/[~()]/g, "").slice(0, 2)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro }}>{typeLabel(card.type, t)}</span>
+        <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(card.type, t)}</span>
         <button onClick={e => { e.stopPropagation(); if (canToggle) onToggle(); }}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 7px", borderRadius: 10, fontSize: 10, cursor: canToggle ? "pointer" : "default", border: "none", background: si.bg, color: si.color, fontFamily: "'Plus Jakarta Sans'" }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />
@@ -3849,7 +3870,7 @@ function TreeView({ cards, t, onToggle, onReview }) {
             onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
             <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, color: C.txt, fontWeight: 500 }}>{card.korean}</span>
-            <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : C.proBg, color: card.type === "grammar" ? C.acc : C.pro, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: card.type === "grammar" ? C.accBg : card.type === "expression" ? "#fff3e0" : C.proBg, color: card.type === "grammar" ? C.acc : card.type === "expression" ? "#e65100" : C.pro, flexShrink: 0 }}>
               {typeLabel(card.type, t)}
             </span>
             {children.length > 0 && (
@@ -3948,7 +3969,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
         <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt }}>{c.korean}</span>
-        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : C.proBg, color: c.type === "grammar" ? C.acc : C.pro }}>{typeLabel(c.type, t)}</span>
+        <span style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: c.type === "grammar" ? C.accBg : c.type === "expression" ? "#fff3e0" : C.proBg, color: c.type === "grammar" ? C.acc : c.type === "expression" ? "#e65100" : C.pro }}>{typeLabel(c.type, t)}</span>
       </button>
     );
   };
@@ -3962,10 +3983,11 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
   groups.forEach(g => {
     const key = g.text.trim();
     const study = studyByText.get(key);
-    const vocabCards = g.cards.filter(c => normType(c.type) !== "grammar");
+    const vocabCards = g.cards.filter(c => normType(c.type) === "vocab");
     const gramCards = g.cards.filter(c => normType(c.type) === "grammar");
+    const exprCards = g.cards.filter(c => normType(c.type) === "expression");
     merged.set(key, {
-      text: g.text, cards: g.cards, vocabCount: vocabCards.length, gramCount: gramCards.length,
+      text: g.text, cards: g.cards, vocabCount: vocabCards.length, gramCount: gramCards.length, exprCount: exprCards.length,
       study, sourceUrl: study?.sourceUrl || "", ts: study ? (study.createdAt || parseInt(study.id) || 0) : (g.createdAt || 0),
     });
   });
@@ -3973,7 +3995,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
     const key = s.text.trim();
     if (merged.has(key)) return;
     merged.set(key, {
-      text: s.text, cards: [], vocabCount: 0, gramCount: 0,
+      text: s.text, cards: [], vocabCount: 0, gramCount: 0, exprCount: 0,
       study: s, sourceUrl: s.sourceUrl || "", ts: s.createdAt || parseInt(s.id) || 0,
     });
   });
@@ -3987,6 +4009,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
   });
 
   const vocabLabel = lang === "fr" ? "Vocabulaire" : lang === "ko" ? "어휘" : "Vocab";
+  const exprLabel = lang === "fr" ? "Expressions" : lang === "ko" ? "표현" : "Expressions";
   const gramLabel = lang === "fr" ? "Grammaire" : lang === "ko" ? "문법" : "Grammar";
 
   return (
@@ -4018,6 +4041,11 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                   📐 {gramLabel} ({item.gramCount})
                 </span>
               )}
+              {item.exprCount > 0 && (
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#fff3e0", color: "#e65100", fontWeight: 500 }}>
+                  💬 {exprLabel} ({item.exprCount})
+                </span>
+              )}
             </div>
             {item.cards.length > 0 && (
               <div style={{ marginTop: 8 }}>
@@ -4044,7 +4072,10 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {noSource.map(c => {
               const si = statusInfo(c.status, t);
-              const isG = normType(c.type) === "grammar";
+              const nt = normType(c.type);
+              const badgeBg = nt === "grammar" ? C.accBg : nt === "expression" ? "#fff3e0" : C.proBg;
+              const badgeClr = nt === "grammar" ? C.acc : nt === "expression" ? "#e65100" : C.pro;
+              const badgeLbl = nt === "grammar" ? "G" : nt === "expression" ? "E" : "V";
               return (
                 <button key={c.id} onClick={() => onReview(c)}
                   style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 8px", background: C.s1, border: `1px solid ${C.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
@@ -4052,7 +4083,7 @@ function SourcesView({ cards, summaries, textStudies, t, lang, tFont, onReview, 
                   onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color, flexShrink: 0 }} />
                   <span style={{ fontFamily: tFont, fontSize: 12.5, color: C.txt }}>{c.korean}</span>
-                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: isG ? C.accBg : C.proBg, color: isG ? C.acc : C.pro, fontWeight: 600 }}>{isG ? "G" : "V"}</span>
+                  <span style={{ fontSize: 8, padding: "1px 4px", borderRadius: 3, background: badgeBg, color: badgeClr, fontWeight: 600 }}>{badgeLbl}</span>
                 </button>
               );
             })}
@@ -6663,6 +6694,7 @@ function AppInner() {
   const exerciseCards = useMemo(() => {
     let base = tl ? allCards.filter(c => (c.targetLang || "ko") === tl) : allCards;
     base = base.filter(c => { const s = migrateStatus(c.status); return s === "studied" || s === "acquired" || s === "in_progress"; });
+    base = base.filter(c => c.type !== "expression");
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
@@ -7021,8 +7053,8 @@ function AppInner() {
     if (!langCards.length) return;
     const ep = getEffectiveProfile(data, tl);
     const dc = Number(ep.dailyCount) > 0 ? Number(ep.dailyCount) : 5;
-    const newCards = langCards.filter(c => migrateStatus(c.status) === "new");
-    const reviewCards = langCards.filter(c => { const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
+    const newCards = langCards.filter(c => c.type !== "expression" && migrateStatus(c.status) === "new");
+    const reviewCards = langCards.filter(c => { if (c.type === "expression") return false; const s = migrateStatus(c.status); return s === "in_progress" || s === "studied"; });
     if (!newCards.length && !reviewCards.length) return;
     const dueReview = reviewCards.filter(c => {
       if (isCardLongTermAcquired(c)) return false;
@@ -7382,7 +7414,18 @@ function AppInner() {
     }
     setImpStep("scanning");
     try {
-      if (impMode === "bulk") {
+      if (impMode === "expression") {
+        const items = dedupeExtracted(await analyzeExpressions(impText, data.cards, lang, context, tl), data.cards);
+        if (!items.length) {
+          alert(t.expressionNone);
+          setImpStep("input");
+          return;
+        }
+        setVocabFound(items);
+        setVocabSel(new Set(items.map((_, i) => i)));
+        setVocabKnown(new Set());
+        setImpStep("vocabpicks");
+      } else if (impMode === "bulk") {
         setBulkProgress(null);
         const items = dedupeExtracted(await analyzeBulk(impText, data.cards, lang, context, tl, (cur, tot) => setBulkProgress({ current: cur, total: tot })), data.cards);
         setBulkProgress(null);
@@ -7407,7 +7450,7 @@ function AppInner() {
 
   const makeVocabCard = (v, status) => ({
     id: Date.now().toString() + Math.random().toString(36).slice(2, 5),
-    korean: v.word || v.korean, type: "vocab",
+    korean: v.word || v.korean, type: v.type === "expression" ? "expression" : "vocab",
     description: lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr),
     description_fr: v.meaning_fr, description_en: v.meaning_en,
     description_target: v.description_target || "",
@@ -7882,6 +7925,7 @@ function AppInner() {
       setView("lesson");
       return;
     }
+    if (c.type === "expression") { directTranslate(c); return; }
     // Vocab: let the learner choose a full lesson OR just the direct translation (easy words).
     // Grammar always goes straight to a lesson.
     if (c.type === "vocab") { setStudyChoice(c); return; }
@@ -8901,19 +8945,8 @@ function AppInner() {
         setGoalImpStep(null);
         return;
       }
-      setGoalImpStep("scanning");
-      setGoalImpProgress(null);
-      const items = dedupeExtracted(
-        await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
-        data.cards
-      );
-      setGoalImpProgress(null);
-      const merged = [...goalImpFound];
-      for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
-      setGoalImpFound(merged);
-      setGoalImpSel(new Set(merged.map((_, i) => i)));
-      setGoalImpKnown(new Set());
-      setGoalImpStep("picks");
+      setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
+      setGoalImpStep(null);
     } catch (err) {
       console.error("Goal import error:", err);
       alert(err.message);
@@ -8927,10 +8960,11 @@ function AppInner() {
     setGoalImpStep("scanning");
     setGoalImpProgress(null);
     try {
-      const items = dedupeExtracted(
-        await analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
-        data.cards
-      );
+      const [bulkItems, exprItems] = await Promise.all([
+        analyzeBulk(text, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })),
+        analyzeExpressions(text, data.cards, lang, context, tl)
+      ]);
+      const items = dedupeExtracted([...bulkItems, ...exprItems], data.cards);
       setGoalImpProgress(null);
       const merged = [...goalImpFound];
       for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
@@ -8987,8 +9021,8 @@ function AppInner() {
       nk.add(i);
       setGoalImpSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       if (!data.cards.find(c => c.korean === word)) {
-        const isVocab = v.type === "vocab";
-        const card = isVocab ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
+        const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
+        const card = isVocabOrExpr ? makeVocabCard(v, "acquired") : makeCard({ korean: word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "acquired");
         save({ ...data, cards: [...data.cards, card] });
       }
     }
@@ -9180,13 +9214,14 @@ function AppInner() {
     color: on ? C.acc : C.txtM, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", whiteSpace: "nowrap",
   });
 
-  const qa = [
+  const qaAll = [
     { k: "examples", l: t.moreExamples, i: "💡" }, { k: "realExamples", l: t.realExamples, i: "🔍" },
     { k: "resources", l: t.onlineRes, i: "📚" },
     { k: "exercise", l: t.anExercise, i: "✏️" }, { k: "explain", l: t.explainOther, i: "🔄" },
     { k: "image", l: t.anImage, i: "📷" }, { k: "youglish", l: t.youglishBtn, i: "🎬" },
     { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
   ];
+  const qa = recapCard?.type === "expression" ? qaAll.filter(x => x.k === "examples") : qaAll;
 
   const fieldStyle = {
     width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px",
@@ -10650,6 +10685,7 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+              {impMode === "expression" && <div style={{ fontSize: 11, color: C.txtM, maxWidth: 480, lineHeight: 1.5 }}>{t.expressionHint}</div>}
               <input value={impSourceUrl} onChange={e => setImpSourceUrl(e.target.value)} placeholder={t.importSourceUrl}
                 style={{ width: "100%", maxWidth: 480, border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1, padding: "8px 12px", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, outline: "none" }}
                 onFocus={e => { e.target.style.borderColor = C.acc; }}
@@ -10666,7 +10702,7 @@ function AppInner() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, justifyContent: "center" }}>
-                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["bulk", t.importModeBulk]].map(([k, l]) => (
+                  {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["expression", t.importModeExpression], ["bulk", t.importModeBulk]].map(([k, l]) => (
                     <button key={k} onClick={() => setImpMode(k)}
                       style={{ padding: "6px 12px", borderRadius: 6, border: "none", fontSize: 11.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: impMode === k ? 600 : 400, background: impMode === k ? C.acc : "transparent", color: impMode === k ? C.onAcc : C.txtS }}>
                       {l}
@@ -12481,6 +12517,7 @@ function AppInner() {
                           style={{ width: "100%", height: 100, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
                           onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                           onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                        <div style={{ fontSize: 11, color: C.txtM, maxWidth: 480, lineHeight: 1.5 }}>{t.expressionOcrHint}</div>
                         <button onClick={processGoalText} disabled={!goalImpText.trim()}
                           style={{ padding: "7px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
                           ✨ {t.goalImportText}
@@ -12555,14 +12592,8 @@ function AppInner() {
                                 if (text && text.trim()) combined += (combined ? "\n" : "") + text;
                               }
                               if (!combined.trim()) { setGoalImpStep("picks"); return; }
-                              setGoalImpStep("scanning");
-                              const items = dedupeExtracted(await analyzeBulk(combined, data.cards, lang, context, tl, (cur, tot) => setGoalImpProgress({ current: cur, total: tot })), data.cards);
-                              setGoalImpProgress(null);
-                              const merged = [...goalImpFound];
-                              for (const it of items) { if (!merged.find(m => (m.korean || m.word) === (it.korean || it.word))) merged.push(it); }
-                              setGoalImpFound(merged);
-                              setGoalImpSel(new Set(merged.map((_, i) => i)));
-                              setGoalImpStep("picks");
+                              setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
+                              setGoalImpStep(null);
                             } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
                           }} style={{ display: "none" }} />
                         </label>
@@ -12831,6 +12862,7 @@ function AppInner() {
                                 style={{ width: "100%", height: 80, border: `2px dashed ${C.borderS}`, borderRadius: 8, background: C.s1, padding: 10, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, color: C.txt, resize: "none", outline: "none", lineHeight: 1.5, boxSizing: "border-box" }}
                                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
                                 onBlur={e => { e.target.style.borderColor = C.borderS; e.target.style.borderStyle = "dashed"; }} />
+                              <div style={{ fontSize: 10.5, color: C.txtM, lineHeight: 1.5 }}>{t.expressionOcrHint}</div>
                               <button onClick={processGoalText} disabled={!goalImpText.trim()}
                                 style={{ padding: "6px 14px", borderRadius: 6, border: "none", cursor: goalImpText.trim() ? "pointer" : "default", background: goalImpText.trim() ? C.acc : C.s1, color: goalImpText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, fontWeight: 500, width: "100%" }}>
                                 ✨ {t.goalImportText}

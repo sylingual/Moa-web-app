@@ -470,7 +470,7 @@ const T = {
     viewSources: "Textes",
     deleteCard: "Supprimer la carte", deleteConfirmTitle: "Supprimer cette carte ?",
     deleteConfirmMsg: (k) => `« ${k} » sera supprimée définitivement, ainsi que ses récaps.`,
-    deleteBtn: "Supprimer", cancelBtn: "Annuler",
+    deleteBtn: "Supprimer", cancelBtn: "Annuler", deleteCardDone: "Carte supprimee",
     filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
     filterByTag: "Filtrer par tag", allTags: "Tous les tags",
     addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum", tagRelated: "Cartes avec ce tag", tagNoOther: "Aucune autre carte avec ce tag",
@@ -1005,7 +1005,7 @@ const T = {
     viewSources: "Texts",
     deleteCard: "Delete card", deleteConfirmTitle: "Delete this card?",
     deleteConfirmMsg: (k) => `"${k}" will be permanently deleted, along with its recaps.`,
-    deleteBtn: "Delete", cancelBtn: "Cancel",
+    deleteBtn: "Delete", cancelBtn: "Cancel", deleteCardDone: "Card deleted",
     filterAll: "All", filterGrammar: "Grammar", filterVocab: "Vocab",
     filterByTag: "Filter by tag", allTags: "All tags",
     addTag: "Add tag", removeTag: "Remove", tagMax: "3 tags max", tagRelated: "Cards with this tag", tagNoOther: "No other cards with this tag",
@@ -1538,7 +1538,7 @@ const T = {
     viewSources: "텍스트",
     deleteCard: "카드 삭제", deleteConfirmTitle: "이 카드를 삭제할까요?",
     deleteConfirmMsg: (k) => `"${k}"이(가) 요약과 함께 영구 삭제돼요.`,
-    deleteBtn: "삭제", cancelBtn: "취소",
+    deleteBtn: "삭제", cancelBtn: "취소", deleteCardDone: "카드 삭제됨",
     filterAll: "전체", filterGrammar: "문법", filterVocab: "어휘",
     filterByTag: "태그로 필터", allTags: "모든 태그",
     addTag: "태그 추가", removeTag: "제거", tagMax: "태그 최대 3개", tagRelated: "이 태그가 있는 카드", tagNoOther: "이 태그가 있는 다른 카드가 없어",
@@ -8561,14 +8561,17 @@ function AppInner() {
   const toggleSt = (id) => save({ ...data, cards: data.cards.map(c => c.id === id ? { ...c, status: c.status === "acquired" ? "studied" : "acquired" } : c) });
 
   const deleteCard = (c) => {
+    const wasRecap = recapCard && (recapCard.korean === c.korean || recapCard.id === c.id);
     save({
       ...data,
       cards: data.cards.filter(x => (c.id ? x.id !== c.id : x.korean !== c.korean)),
       summaries: (data.summaries || []).filter(s => s.cardKorean !== c.korean),
     });
     setCardToDelete(null);
-    if (recapCard && (recapCard.korean === c.korean || recapCard.id === c.id)) {
+    setFlash(t.deleteCardDone); setTimeout(() => setFlash(null), 2000);
+    if (wasRecap) {
       setShowRecap(false); setRecapCard(null);
+      window.history.back();
     }
   };
 

@@ -11059,10 +11059,12 @@ function AppInner() {
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <span onClick={() => {
-                      const newType = recapCard.type === "grammar" ? "vocab" : "grammar";
+                      const cycle = ["vocab", "grammar", "expression"];
+                      const cur = normType(recapCard.type);
+                      const newType = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
                       save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: newType } : c) });
                       setRecapCard(prev => prev ? { ...prev, type: newType } : prev);
-                    }} title={lang === "fr" ? "Cliquer pour changer le type" : lang === "ko" ? "유형 변경" : "Click to change type"} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "grammar" ? C.acc : C.pro, cursor: "pointer" }}>{typeLabel(recapCard.type, t)}</span>
+                    }} title={lang === "fr" ? "Cliquer pour changer le type" : lang === "ko" ? "유형 변경" : "Click to change type"} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : recapCard.type === "expression" ? "#FFF7ED" : C.proBg, color: recapCard.type === "grammar" ? C.acc : recapCard.type === "expression" ? "#C2410C" : C.pro, cursor: "pointer" }}>{typeLabel(recapCard.type, t)}</span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}

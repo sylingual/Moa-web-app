@@ -8567,6 +8567,9 @@ function AppInner() {
       summaries: (data.summaries || []).filter(s => s.cardKorean !== c.korean),
     });
     setCardToDelete(null);
+    if (recapCard && (recapCard.korean === c.korean || recapCard.id === c.id)) {
+      setShowRecap(false); setRecapCard(null);
+    }
   };
 
   // ---- EXERCISE MUSIC (Issue #77) ----
@@ -11626,6 +11629,16 @@ function AppInner() {
                     🔄 {t.redoLesson}
                   </button>
                 )}
+
+                {/* Delete card */}
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => setCardToDelete(recapCard)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "none", background: "none", color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 11, cursor: "pointer", opacity: 0.6, transition: "opacity 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.color = C.warn; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = "0.6"; e.currentTarget.style.color = C.txtM; }}>
+                    🗑 {t.deleteCard}
+                  </button>
+                </div>
               </div>
             </div>
           ) : lCard ? (

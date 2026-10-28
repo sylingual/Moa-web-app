@@ -274,6 +274,15 @@ const T = {
     migrateSuccess: "Donnees recuperees !",
     migrateError: "Cle introuvable ou erreur de migration.",
     logoutAuth: "Se deconnecter",
+    tutoWelcome: "Bienvenue dans Moa !",
+    tutoWelcomeSub: "Ton espace de travail personnalisé pour étudier le coréen.",
+    tutoQuestion: (gender) => `Pour commencer, est-ce que tu étudies ${gender === "femme" ? "seule" : "seul"} ou avec un prof ?`,
+    tutoWithProf: "Avec un prof",
+    tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
+    tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
+    tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoReady: "C'est parti !",
+    tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "Comment dois-je t'appeler ?",
     signupNamePlaceholder: "Ton prénom...",
@@ -800,6 +809,15 @@ const T = {
     migrateSuccess: "Data recovered!",
     migrateError: "Key not found or migration error.",
     logoutAuth: "Sign out",
+    tutoWelcome: "Welcome to Moa!",
+    tutoWelcomeSub: "This is your personalized workspace for studying Korean.",
+    tutoQuestion: () => "To start, are you studying alone or with a teacher?",
+    tutoWithProf: "With a teacher",
+    tutoAlone: () => "Alone",
+    tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
+    tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoReady: "Let's go!",
+    tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "What should I call you?",
     signupNamePlaceholder: "Your first name...",
@@ -1326,6 +1344,15 @@ const T = {
     migrateSuccess: "데이터 복구 완료!",
     migrateError: "키를 찾을 수 없거나 오류가 발생했습니다.",
     logoutAuth: "로그아웃",
+    tutoWelcome: "Moa에 오신 걸 환영해요!",
+    tutoWelcomeSub: "여기는 한국어 학습을 위한 나만의 맞춤 공간이에요.",
+    tutoQuestion: () => "먼저, 혼자 공부하나요 아니면 선생님과 함께하나요?",
+    tutoWithProf: "선생님과 함께",
+    tutoAlone: () => "혼자",
+    tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoReady: "시작하자!",
+    tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
     signupNameSub: "뭐라고 부를까요?",
     signupNamePlaceholder: "이름...",
@@ -1694,7 +1721,7 @@ Do NOT wrap explanations, grammar notes, or questions: only actual translations 
 // =============================================
 // AI CALL (via serverless proxy)
 // =============================================
-async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText) {
+async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText, ctx) {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1717,7 +1744,7 @@ async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText
   const text = (data.content || []).map((b) => b.text || "").join("\n");
   if (!text) throw new Error("Empty AI response. Raw: " + rawText.substring(0, 200));
   if (data.usage) {
-    trackEvent("ai_tokens", data.usage);
+    trackEvent("ai_tokens", ctx ? { ...data.usage, context: ctx } : data.usage);
   }
   return { text, sources: data.sources || [] };
 }
@@ -1760,7 +1787,7 @@ async function extractImageText(base64, mimeType, tlName) {
   const raw = await res.text();
   if (!res.ok) { let e = raw; try { e = JSON.parse(raw).error || raw; } catch {} throw new Error(e); }
   let data; try { data = JSON.parse(raw); } catch { throw new Error("Réponse illisible: " + raw.substring(0, 150)); }
-  if (data.usage) trackEvent("ai_tokens", data.usage);
+  if (data.usage) trackEvent("ai_tokens", { ...data.usage, context: "ocr" });
   return (data.content || []).map((b) => b.text || "").join("\n").trim();
 }
 
@@ -1912,7 +1939,7 @@ For each structure, provide:
 - "category": a short thematic tag (1-3 words) classifying this item, e.g. "emotions", "travel", "formal speech", "time expressions", "causality", "food", "politeness". Pick the most natural theme.
 
 Return a JSON array of exactly 3 items.`;
-  return parseJSON((await callAI(sys, text, 1500)).text);
+  return parseJSON((await callAI(sys, text, 1500, false, false, "analyze_text")).text);
 }
 
 // Pick likely-unknown vocabulary from a text for the learner to choose from.
@@ -1948,7 +1975,7 @@ For each item provide:
 - "register_casual": the casual/반말 equivalent if one exists, or "" if none
 
 Return a JSON array of 6-10 items.`;
-  return parseJSON((await callAI(sys, text, 2000)).text);
+  return parseJSON((await callAI(sys, text, 2000, false, false, "analyze_vocab")).text);
 }
 
 async function analyzeBulk(text, existing, lang, context, tlCode, onProgress) {
@@ -1974,7 +2001,7 @@ Each item: {"korean":"dictionary form","type":"vocab" or "grammar","meaning_fr":
 
 IMPORTANT for grammar: merge conjugation variants of the same pattern into ONE entry using the base/citation form. For Korean, combine verb/adjective/noun-attaching forms (e.g. -는데도/-인데도/-ㄴ데도 become one entry "-ㄴ/는데도", -다가/-았다가 become "-다가"). Use the most general citation form as the "korean" value.`;
     try {
-      const items = parseJSON((await callAI(sys, chunks[ci], 8000)).text);
+      const items = parseJSON((await callAI(sys, chunks[ci], 8000, false, false, "analyze_bulk")).text);
       if (Array.isArray(items)) all.push(...items);
     } catch (e) { console.warn("Bulk chunk", ci, "failed:", e); }
   }
@@ -1999,7 +2026,7 @@ Produce a complete study as a JSON object with these fields:
 - "examples": array of 3 example sentences in ${TL} using the word in DIFFERENT contexts, each followed by " — " then its ${L} translation.
 
 Return only the JSON object.`;
-  return parseJSON((await callAI(sys, `Study the word: ${word}`, 1600)).text);
+  return parseJSON((await callAI(sys, `Study the word: ${word}`, 1600, false, false, "study_vocab")).text);
 }
 
 // Generate a comprehension QCM for one paragraph of a text.
@@ -2031,7 +2058,7 @@ Return JSON:
 }
 
 "answer" is the 0-based index of the correct option. The options must be in the same order in both languages.`;
-  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1500)).text);
+  return parseJSON((await callAI(sys, `Full text:\n${fullText}\n\nParagraph ${paragraphIndex + 1} to ask about:\n${paragraph}`, 1500, false, false, "qcm_comprehension")).text);
 }
 
 async function generateSentenceQCM(sentence, fullText, lang, context, tlCode, inTargetLang) {
@@ -2059,7 +2086,7 @@ Return JSON:
 }
 
 "answer" is the 0-based index of the correct option.`;
-  return parseJSON((await callAI(sys, `Full text for context:\n${fullText}\n\nSentence to ask about:\n${sentence}`, 1200)).text);
+  return parseJSON((await callAI(sys, `Full text for context:\n${fullText}\n\nSentence to ask about:\n${sentence}`, 1200, false, false, "qcm_sentence")).text);
 }
 
 async function answerSentenceQuestion(sentence, fullText, question, lang, context, tlCode) {
@@ -2068,7 +2095,7 @@ async function answerSentenceQuestion(sentence, fullText, question, lang, contex
   const sys = `You are a warm, encouraging ${TL} language tutor helping a student understand a specific sentence from a text. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student. " : ""}Answer the student's question about this sentence clearly and simply in ${L}. Keep your answer concise (2-4 sentences). If they ask about grammar or vocabulary, explain it in context.
 
 ${context}`;
-  return (await callAI(sys, `Full text:\n${fullText}\n\nSentence being studied:\n${sentence}\n\nStudent's question:\n${question}`, 500, false, true)).text;
+  return (await callAI(sys, `Full text:\n${fullText}\n\nSentence being studied:\n${sentence}\n\nStudent's question:\n${question}`, 500, false, true, "qcm_answer")).text;
 }
 
 // Evaluate a student's reformulation of a text excerpt.
@@ -2094,7 +2121,7 @@ Return JSON:
   "suggestion_en": "same in English",
   "model_tl": "a model reformulation in ${TL} for reference"
 }`;
-  return parseJSON((await callAI(sys, `Original excerpt:\n${excerpt}\n\nStudent's reformulation:\n${userText}`, 1000)).text);
+  return parseJSON((await callAI(sys, `Original excerpt:\n${excerpt}\n\nStudent's reformulation:\n${userText}`, 1000, false, false, "reformulation")).text);
 }
 
 function collectInterests(data, tlCode) {
@@ -2155,7 +2182,7 @@ Example for 먹다:
 {"word":"먹다","pos":"verb","conjugations":{"infinitive":"먹다","stem":"먹","presentPolite":"먹어요","presentCasual":"먹어","pastPolite":"먹었어요","pastCasual":"먹었어","futureStem":"먹을","nominalForm":"먹기"}}
 
 For non-verb/non-adjective words, omit "conjugations".`;
-  const res = await callAI(sys, words, 2000);
+  const res = await callAI(sys, words, 2000, false, false, "detect_pos");
   return parseJSON(res.text);
 }
 
@@ -2200,7 +2227,7 @@ Return JSON: {"message": "your teaching text", "options": [{"label": "a) ...", "
   return parseJSON((await callAI(sys, `Structure to teach: ${card.korean}
 Meaning (do NOT reveal this to the student): ${d}
 Example from the article: ${card.example_kr}
-Article context:\n${(article || "").substring(0, 800)}`, 4000)).text);
+Article context:\n${(article || "").substring(0, 800)}`, 4000, false, false, "lesson")).text);
 }
 
 // Quick dictionary-style entry for a word (used when the learner picks "just the translation"
@@ -2210,7 +2237,7 @@ async function quickTranslateWord(word, lang, tlCode) {
   const TL = getTargetLangName(tlCode, "en");
   const sys = `Give a concise dictionary-style entry for the ${TL} word/expression "${word}".
 Return ONLY JSON: {"description_fr":"<short French meaning, one line>","description_en":"<short English meaning, one line>","description_target":"<clear monolingual definition in ${TL}, as in a ${TL}-${TL} learner dictionary>","gender":"<for nouns in gendered languages: m/f/n; empty string for non-nouns>","example_kr":"<one natural ${TL} example sentence>","example_fr":"<French translation of the example>","example_en":"<English translation of the example>"}`;
-  return parseJSON((await callAI(sys, `Word: ${word}`, 500)).text);
+  return parseJSON((await callAI(sys, `Word: ${word}`, 500, false, false, "translate")).text);
 }
 
 async function generateTargetDescription(card, tlCode) {
@@ -2222,7 +2249,7 @@ This is NOT a translation. Write a real definition as you would find in a ${TL}-
 Keep it to one or two sentences. Use simple, natural ${TL}.
 ${desc ? `Context (for your understanding only, do NOT translate this): ${desc}` : ""}
 Return ONLY JSON: {"description_target":"<the ${TL} definition>"}`;
-  return parseJSON((await callAI(sys, `Define in ${TL}: ${card.korean}`, 800)).text);
+  return parseJSON((await callAI(sys, `Define in ${TL}: ${card.korean}`, 800, false, false, "description")).text);
 }
 
 // Register variants of a Korean word: the formal vs casual way to express the same idea.
@@ -2236,7 +2263,7 @@ async function analyzeRegister(card, lang) {
 IMPORTANT: Do NOT return completely different words or synonyms. Stay as close to "${card.korean}" as possible. Only return a different word if it is the standard register variant that native speakers recognize as the formal/casual counterpart (e.g. 먹다/드시다, 있다/계시다). Do NOT return "${card.korean}" itself as formal or casual.
 - "note": ONE short sentence in ${L} explaining the register, mentioning "${card.korean}" explicitly.
 Return ONLY JSON: {"register":"...","formal":"...","casual":"...","note":"..."}`;
-  return parseJSON((await callAI(sys, `Word: ${card.korean}`, 500)).text);
+  return parseJSON((await callAI(sys, `Word: ${card.korean}`, 500, false, false, "register")).text);
 }
 
 async function continueChat(card, conv, action, lang) {
@@ -2297,7 +2324,7 @@ ${instruction}
 Return JSON: {"message": "your response"} or {"message": "your response", "options": [{"label": "a) ...", "correct": false}, ...]} if you include a question. Always use "label" (not "text") as the key for option text.
 IMPORTANT: Only include the "correct" field on quiz/comprehension questions. If you offer navigation choices (like "continue" vs "stop", or "try another exercise" vs "end lesson"), omit the "correct" field entirely from those options — they are not right or wrong.`;
   
-  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 3500)).text);
+  return parseJSON((await callAI(sys, `Conversation so far:\n${hist}`, 3500, false, false, "lesson_chat")).text);
 }
 
 // Curated deep-links: each opens a trusted resource site pre-filtered to this
@@ -2699,7 +2726,7 @@ ${vocabSection}
 Return JSON as specified in the mode instructions above. For MCQ: {"message": "your exercise", "options": [{"label": "...", "correct": true/false}, ...]}. For story/fill modes: follow the exact JSON structure from the mode instructions. Always use "label" as the key for option text, and use boolean true/false for "correct".`;
   
   const tok = mode === "dialoguefill" ? 4000 : mode === "fill" ? 2500 : (mode === "reorder" || mode === "drill" || mode === "fixit") ? 2000 : undefined;
-  return parseJSON((await callAI(sys, `Generate the exercise now.`, tok)).text);
+  return parseJSON((await callAI(sys, `Generate the exercise now.`, tok, false, false, "exercise_gen")).text);
 }
 
 async function continueExercise(cards, mode, lang, conv, wasCorrect, tlCode, nextQuestion) {
@@ -2762,7 +2789,7 @@ IMPORTANT RULES FOR CORRECTION:
 - Keep responses short (3-4 sentences max).
 
 Do NOT use markdown headers (###). Return JSON: {"message": "your text"}`;
-    return parseJSON((await callAI(msSys, `Evaluate the student's latest attempt.`, 800)).text);
+    return parseJSON((await callAI(msSys, `Evaluate the student's latest attempt.`, 800, false, false, "exercise_eval")).text);
   }
 
   const sys = `You are a ${TL} language exercise tutor. Speak in ${L}. ${L === "French" ? "IMPORTANT: Always use informal \"tu\" (never \"vous\") when addressing the student." : ""} Be warm and concise.
@@ -2777,7 +2804,7 @@ ${next}
 
 Do NOT use markdown headers (###). Return JSON: {"message": "your text"} or {"message": "your text", "options": [{"label": "a) ...", "correct": false}, ...]}. Always use "label" as the key for option text.`;
 
-  return parseJSON((await callAI(sys, `Exercise conversation so far:\n${hist}`, 1200)).text);
+  return parseJSON((await callAI(sys, `Exercise conversation so far:\n${hist}`, 1200, false, false, "exercise_continue")).text);
 }
 
 async function genFeedKeywords(profile, lang, tlCode) {
@@ -2803,7 +2830,7 @@ Rules:
 
 Return JSON: {"keywords": ["...", "...", ...]}`;
 
-  const r = await callAI(sys, `Learner interests: ${bits}`, 500, false);
+  const r = await callAI(sys, `Learner interests: ${bits}`, 500, false, false, "feed_keywords");
   const parsed = parseJSON(r.text);
   return Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, 8) : [];
 }
@@ -2829,7 +2856,7 @@ async function dreamToSearchQuery(dream, tlName, uiL) {
 Example: dream "talk with K-drama screenwriters to create stories together" → the industry is K-drama SCREENWRITING, so a good ${tlName} query targets drama writers / scripts / the writing industry (e.g. in Korean: 드라마 작가 집필 소식), never "watch K-drama".
 
 Return ONLY JSON: {"query":"<2-6 ${tlName} words targeting that industry's news>","label":"<a 2-4 word ${uiL} label for that world>"}`;
-  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 150)).text);
+  const parsed = parseJSON((await callAI(sys, `Dream: ${dream}`, 150, false, false, "dream_search")).text);
   return { query: (parsed.query || "").toString().slice(0, 80), label: (parsed.label || "").toString().slice(0, 40) };
 }
 
@@ -2847,7 +2874,7 @@ Rules:
 - Keep at most 5 per section, most newsworthy first.
 Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":"..."}],"interest":[{"i":...,"title":"...","description":"..."}]}.`;
   const user = `GENERAL:\n${pack(general)}\n\nINTEREST:\n${pack(interestItems)}`;
-  return parseJSON((await callAI(sys, user, 1800)).text);
+  return parseJSON((await callAI(sys, user, 1800, false, false, "recap")).text);
 }
 
 // Find a few illustrative images for a vocab word via Brave image search (keyless to the
@@ -2925,7 +2952,7 @@ Return JSON:
 
 For "derivedStructures": include any related patterns the TEACHER introduced. Empty array [] if none.`;
 
-  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 4000)).text);
+  return parseJSON((await callAI(sys, `Structure studied: ${card.korean}\nCard type: ${card.type || "unknown"}; target language: ${card.targetLang || "ko"}\n\nFull conversation:\n${hist}`, 4000, false, false, "lesson_summary")).text);
 }
 
 // =============================================
@@ -5502,7 +5529,7 @@ IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if t
 Answer concisely (2-4 sentences). Be helpful and encouraging but never hide errors.
 
 ${history ? "Conversation so far:\n" + history : ""}`;
-      const { text: reply } = await callAI(sys, msg, 400, false, true);
+      const { text: reply } = await callAI(sys, msg, 400, false, true, "resource_chat");
       setChatMsgs(prev => [...prev, { role: "ai", text: reply }]);
     } catch (e) {
       console.error("Drill chat error:", e);
@@ -5648,7 +5675,7 @@ The app marked it as: ${correct ? "CORRECT" : "INCORRECT"}
 Explanation: "${sent.explanation}"
 
 IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if the student's answer is actually valid (even if the app marked it wrong), say so clearly. Answer concisely (2-3 sentences).`;
-      const r = await callAI(sys, `Chat history:\n${history}\n\nAnswer the student's latest question.`, 400, false, true);
+      const r = await callAI(sys, `Chat history:\n${history}\n\nAnswer the student's latest question.`, 400, false, true, "card_chat");
       setChatMsgs([...newMsgs, { role: "ai", text: r.text || "" }]);
     } catch (e) { setChatMsgs([...newMsgs, { role: "ai", text: "..." }]); }
     setChatLoading(false);
@@ -5680,7 +5707,7 @@ IMPORTANT: Be critical and honest. If the app's expected answer is wrong or if t
       const r = await callAI(
         `You are an expert ${TL} teacher. Respond in ${L}. Be concise (2-3 sentences max).`,
         `The student had to correct this incorrect ${TL} sentence:\n"${sentences[idx].text}"\n\nThe correct answer is:\n"${sentences[idx].corrected}"\n\nThe student wrote:\n"${input}"\n\nExplain specifically why the student's answer is wrong and what they missed or got wrong compared to the correct answer. Focus on the difference between their answer and the correct one. Be direct and helpful.`,
-        400, false, true
+        400, false, true, "card_chat"
       );
       setFeedback(r.text || "");
     } catch (e) { setFeedback(sentences[idx].explanation || ""); }
@@ -5903,7 +5930,7 @@ IMPORTANT: Be critical and honest. If the app's expected answer "${sent.text}" i
 Answer concisely (2-4 sentences). Be helpful and encouraging but never hide errors.
 
 ${history ? "Conversation so far:\n" + history : ""}`;
-      const { text: reply } = await callAI(sys, msg, 400, false, true);
+      const { text: reply } = await callAI(sys, msg, 400, false, true, "library_chat");
       setChatMsgs(prev => [...prev, { role: "ai", text: reply }]);
     } catch (e) {
       console.error("Reorder chat error:", e);
@@ -6553,6 +6580,8 @@ function AppInner() {
   const [onbStep, setOnbStep] = useState(0);
   const [onbWelcomeDone, setOnbWelcomeDone] = useState(false);
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
+  const [tutoStep, setTutoStep] = useState(0);
+  const [tutoAnswer, setTutoAnswer] = useState(null);
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -7602,7 +7631,7 @@ function AppInner() {
     let baseForm = word;
     try {
       const sys = "You are a Korean linguistic assistant. Given a Korean word (possibly conjugated, inflected or with particles), return ONLY the dictionary/base form (기본형). For verbs and adjectives, return the -다 form. For nouns with particles, return just the noun. Reply with the single word only, nothing else.";
-      const { text: lemma } = await callAI(sys, word, 50, false, true);
+      const { text: lemma } = await callAI(sys, word, 50, false, true, "lemma");
       const cleaned = (lemma || "").trim().split(/\s/)[0].trim();
       if (cleaned) baseForm = cleaned;
     } catch (e) {
@@ -7618,7 +7647,7 @@ function AppInner() {
     try {
       const tLang = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
       const sys2 = `You are a Korean-${tLang} dictionary. Given a Korean word, return a short translation in ${tLang} (1-2 lines max: the meaning, and optionally a brief usage note). No extra text.`;
-      const { text: tr } = await callAI(sys2, baseForm, 100, false, true);
+      const { text: tr } = await callAI(sys2, baseForm, 100, false, true, "translate_selection");
       translation = (tr || "").trim();
     } catch (e) {
       console.warn("Translation failed:", e);
@@ -9733,9 +9762,65 @@ function AppInner() {
     );
   }
 
+  // ---- WELCOME TUTORIAL (after onboarding, before main app) ----
+  const showTutorial = data.profile?.onboarded && !data.profile?.tutorialDone;
+  const finishTutorial = () => {
+    const nd = { ...data, profile: { ...data.profile, tutorialDone: true } };
+    save(nd);
+    setTutoStep(0);
+    setTutoAnswer(null);
+  };
+
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}`}</style>
+
+      {/* WELCOME TUTORIAL OVERLAY */}
+      {showTutorial && (() => {
+        const isMobile = winW < 700;
+        const overlayBase = { position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.4s ease" };
+        const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
+        const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
+        const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+
+        if (tutoStep === 0) {
+          return (
+            <div style={overlayBase}>
+              <div style={bubbleBase}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
+                <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                  <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
+                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(data.profile?.gender)}</button>
+                </div>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        if (tutoStep === 1) {
+          const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
+          return (
+            <div style={overlayBase}>
+              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
+                  {"🎯 OBJECTIFS"}
+                </div>
+                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
+                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
+                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
+                </div>
+                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
+                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+              </div>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
 
       {/* POINTS TOAST */}
       {pointsToast && (
@@ -10125,7 +10210,7 @@ function AppInner() {
         </div>
         {/* Scrollable tabs (desktop) — replaced by a hamburger menu on mobile */}
         <div className="nav-tabs" style={{ display: "flex", alignItems: "stretch", flex: 1, overflowX: "auto", minWidth: 0 }}>
-        <button style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
+        <button data-tutorial="goals-tab" style={tabS(view === "goals")} onClick={() => navTo("goals")}>🎯 {t.goalsTab}</button>
         <button style={tabS(view === "library")} onClick={() => navTo("library")}>{t.library}</button>
         {/* Lesson tab hidden (unused) */}
         <button style={tabS(view === "import")} onClick={() => navTo("import")}>{t.import}</button>
@@ -10197,6 +10282,10 @@ function AppInner() {
               {t.migrateTitle}
             </button>
           )}
+          <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
+            style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
+            {"🔄 Tutoriel"}
+          </button>
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
             {authUser ? t.logoutAuth : t.disconnect}
@@ -11216,7 +11305,7 @@ function AppInner() {
                       const TL = getTargetLangName(recapCard.targetLang || tl, "en");
                       const L = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
                       const sys = `${TL} etymology, answer in ${L}, be brief. For the given word: 1) Origin (if Sino-Korean: hanja + meaning of each character). 2) 2-3 related words sharing same roots. Plain text, no JSON, max 4 lines.`;
-                      const { text: etym } = await callAI(sys, recapCard.korean, 150, false, true);
+                      const { text: etym } = await callAI(sys, recapCard.korean, 150, false, true, "etymology");
                       if (etym && etym.trim()) {
                         save({ ...data, cards: data.cards.map(x => x.korean === recapCard.korean ? { ...x, etymology: etym.trim() } : x) });
                         setRecapCard(prev => prev ? { ...prev, etymology: etym.trim() } : prev);
@@ -13314,12 +13403,13 @@ function AppInner() {
                 {d.tokens && (
                 <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{"🪙"} Consommation tokens</div>
+                  {/* Totals */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 12 }}>
                     {[
                       ["Appels IA", d.tokens.total_calls],
                       ["Input tokens", d.tokens.total_input?.toLocaleString()],
                       ["Output tokens", d.tokens.total_output?.toLocaleString()],
-                      ["Coût total", "$" + (d.tokens.total_cost || 0).toFixed(4)],
+                      ["Cout total", "$" + (d.tokens.total_cost || 0).toFixed(4)],
                     ].map(([label, val]) => (
                       <div key={label} style={{ background: C.s2, borderRadius: 8, padding: "10px 8px", textAlign: "center" }}>
                         <div style={{ fontSize: 18, fontWeight: 700, color: C.acc }}>{val}</div>
@@ -13327,13 +13417,89 @@ function AppInner() {
                       </div>
                     ))}
                   </div>
+                  {/* Averages */}
+                  {d.tokens.avg_per_day && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                    <div style={{ background: C.s2, borderRadius: 8, padding: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Moyenne / jour</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Appels</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.calls}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Input</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.input?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Output</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_day.output?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Cout</span><span style={{ color: C.acc, fontWeight: 600 }}>{"$" + (d.tokens.avg_per_day.cost || 0).toFixed(4)}</span></div>
+                      </div>
+                    </div>
+                    <div style={{ background: C.s2, borderRadius: 8, padding: 10 }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Moyenne / mois</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Appels</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.calls}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Input</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.input?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Output</span><span style={{ color: C.txt, fontWeight: 600 }}>{d.tokens.avg_per_month.output?.toLocaleString()}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}><span style={{ color: C.txtM }}>Cout</span><span style={{ color: C.acc, fontWeight: 600 }}>{"$" + (d.tokens.avg_per_month.cost || 0).toFixed(4)}</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  )}
+                  {/* Monthly evolution */}
+                  {(d.tokens.by_month || []).length > 0 && (() => {
+                    const months = d.tokens.by_month;
+                    const maxCost = Math.max(...months.map(m => m.cost), 0.0001);
+                    const maxTokens = Math.max(...months.map(m => m.input + m.output), 1);
+                    return (<>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Evolution mensuelle</div>
+                      <div style={{ overflowX: "auto", marginBottom: 12 }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                          <thead>
+                            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                              {["Mois", "Appels", "Input", "Output", "Cout", ""].map(h => (
+                                <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {months.map(m => (
+                              <tr key={m.month} style={{ borderBottom: `1px solid ${C.border}` }}>
+                                <td style={{ padding: "6px 4px", color: C.txt, fontWeight: 600 }}>{m.month}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.calls}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.input?.toLocaleString()}</td>
+                                <td style={{ padding: "6px 4px", color: C.txt }}>{m.output?.toLocaleString()}</td>
+                                <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 600 }}>{"$" + m.cost.toFixed(4)}</td>
+                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.cost / maxCost * 100)) + "%", opacity: 0.7 }} /></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>);
+                  })()}
+                  {/* By context */}
+                  {(d.tokens.by_context || []).length > 0 && (() => {
+                    const ctxMax = Math.max(...d.tokens.by_context.map(c => c.cost), 0.0001);
+                    const ctxLabels = { analyze_text: "Analyse texte", analyze_vocab: "Analyse vocab", analyze_bulk: "Analyse bulk", study_vocab: "Etude vocab", qcm_comprehension: "QCM comprehension", qcm_sentence: "QCM phrase", qcm_answer: "QCM reponse", reformulation: "Reformulation", detect_pos: "Detection POS", lesson: "Lecon", translate: "Traduction", description: "Description", register: "Registre", lesson_chat: "Chat lecon", exercise_gen: "Exercice (gen)", exercise_eval: "Exercice (eval)", exercise_continue: "Exercice (suite)", feed_keywords: "Feed mots-cles", dream_search: "Recherche dream", recap: "Recap", lesson_summary: "Resume lecon", resource_chat: "Chat ressource", card_chat: "Chat carte", library_chat: "Chat biblio", lemma: "Lemme", translate_selection: "Trad. selection", etymology: "Etymologie", ocr: "OCR image", unknown: "Autre" };
+                    return (<>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6, marginTop: 4 }}>Par type de fonction</div>
+                      <div style={{ marginBottom: 12 }}>
+                        {d.tokens.by_context.map(c => (
+                          <div key={c.context} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                            <span style={{ fontSize: 11, color: C.txt, minWidth: 130, flexShrink: 0 }}>{ctxLabels[c.context] || c.context}</span>
+                            <div style={{ flex: 1, height: 8, borderRadius: 4, background: C.s2, overflow: "hidden" }}>
+                              <div style={{ width: Math.max(2, Math.round(c.cost / ctxMax * 100)) + "%", height: "100%", background: C.acc, borderRadius: 4, opacity: 0.7 }} />
+                            </div>
+                            <span style={{ fontSize: 10, color: C.txtM, minWidth: 55, textAlign: "right" }}>{"$" + c.cost.toFixed(4)}</span>
+                            <span style={{ fontSize: 10, color: C.txtM, minWidth: 30, textAlign: "right" }}>{c.calls}x</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>);
+                  })()}
+                  {/* Per user */}
                   {(d.tokens.by_user || []).length > 0 && (<>
                     <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Par utilisateur</div>
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                         <thead>
                           <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                            {["Utilisateur", "Appels", "Input", "Output", "Coût", "Provider(s)"].map(h => (
+                            {["Utilisateur", "Appels", "Input", "Output", "Cout", "Provider(s)"].map(h => (
                               <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
                             ))}
                           </tr>
@@ -13353,7 +13519,7 @@ function AppInner() {
                       </table>
                     </div>
                   </>)}
-                  {(d.tokens.by_user || []).length === 0 && <div style={{ fontSize: 11, color: C.txtM }}>Pas encore de données de tokens. Les stats s'accumuleront au fil des appels IA.</div>}
+                  {(d.tokens.by_user || []).length === 0 && <div style={{ fontSize: 11, color: C.txtM }}>Pas encore de donnees de tokens. Les stats s'accumuleront au fil des appels IA.</div>}
                 </div>
                 )}
 

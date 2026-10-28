@@ -225,6 +225,52 @@ export default async function handler(req, res) {
       sync_id: id, input: t.input, output: t.output, cost: Math.round(t.cost * 10000) / 10000, calls: t.calls, by_provider: t.by_provider,
     })).sort((a, b) => b.cost - a.cost);
 
+    // --- TOKEN USAGE BY CONTEXT ---
+    const tokensByContext = {};
+    tokenEvents.forEach(e => {
+      const ctx = e.data?.context || 'unknown';
+      const inp = e.data?.input || 0;
+      const out = e.data?.output || 0;
+      const prov = e.data?.provider || 'gemini';
+      const rates = TOKEN_COSTS[prov] || TOKEN_COSTS.gemini;
+      const callCost = (inp / 1000000) * rates.input + (out / 1000000) * rates.output;
+      if (!tokensByContext[ctx]) tokensByContext[ctx] = { input: 0, output: 0, cost: 0, calls: 0 };
+      const c = tokensByContext[ctx];
+      c.input += inp;
+      c.output += out;
+      c.cost += callCost;
+      c.calls++;
+    });
+    const tokenContexts = Object.entries(tokensByContext).map(([ctx, d]) => ({
+      context: ctx, input: d.input, output: d.output, cost: Math.round(d.cost * 10000) / 10000, calls: d.calls,
+    })).sort((a, b) => b.cost - a.cost);
+
+    // --- TOKEN USAGE BY MONTH ---
+    const tokensByMonth = {};
+    const tokenDays = new Set();
+    tokenEvents.forEach(e => {
+      const day = e.ts?.slice(0, 10);
+      const month = e.ts?.slice(0, 7);
+      if (day) tokenDays.add(day);
+      if (!month) return;
+      const inp = e.data?.input || 0;
+      const out = e.data?.output || 0;
+      const prov = e.data?.provider || 'gemini';
+      const rates = TOKEN_COSTS[prov] || TOKEN_COSTS.gemini;
+      const callCost = (inp / 1000000) * rates.input + (out / 1000000) * rates.output;
+      if (!tokensByMonth[month]) tokensByMonth[month] = { input: 0, output: 0, cost: 0, calls: 0 };
+      const m = tokensByMonth[month];
+      m.input += inp;
+      m.output += out;
+      m.cost += callCost;
+      m.calls++;
+    });
+    const tokenMonths = Object.entries(tokensByMonth)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([month, d]) => ({ month, input: d.input, output: d.output, cost: Math.round(d.cost * 10000) / 10000, calls: d.calls }));
+    const totalTokenDays = tokenDays.size || 1;
+    const totalTokenMonths = Object.keys(tokensByMonth).length || 1;
+
     // --- HOURLY PATTERN ---
     const hourCounts = new Array(24).fill(0);
     sessions.forEach(s => {
@@ -292,6 +338,20 @@ export default async function handler(req, res) {
         total_output: totalOutputTokens,
         total_cost: Math.round(totalCost * 10000) / 10000,
         total_calls: tokenEvents.length,
+        avg_per_day: {
+          input: Math.round(totalInputTokens / totalTokenDays),
+          output: Math.round(totalOutputTokens / totalTokenDays),
+          cost: Math.round(totalCost / totalTokenDays * 10000) / 10000,
+          calls: Math.round(tokenEvents.length / totalTokenDays * 10) / 10,
+        },
+        avg_per_month: {
+          input: Math.round(totalInputTokens / totalTokenMonths),
+          output: Math.round(totalOutputTokens / totalTokenMonths),
+          cost: Math.round(totalCost / totalTokenMonths * 10000) / 10000,
+          calls: Math.round(tokenEvents.length / totalTokenMonths * 10) / 10,
+        },
+        by_month: tokenMonths,
+        by_context: tokenContexts,
         by_user: tokenUsers,
       },
     });

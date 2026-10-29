@@ -12315,7 +12315,7 @@ function AppInner() {
                         <button onClick={() => {
                           setExDone(true); setMsSentenceOk(false); setShowCelebration(true);
                           if (msSentences.length > 0) {
-                            const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
+                            const sel = data.cards.filter(c => exActiveIdsRef.current.includes(c.id));
                             const dateStr = new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short", year: "numeric" });
                             const newSummaries = sel.map(c => ({
                               id: Date.now().toString() + Math.random().toString(36).slice(2, 5),

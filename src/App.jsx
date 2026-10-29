@@ -7482,6 +7482,36 @@ function AppInner() {
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
 
+  const batchDetectVerbs = async () => {
+    const tl = targetLang || "ko";
+    const candidates = data.cards.filter(c => (c.targetLang || "ko") === tl && normType(c.type) === "vocab" && !(c.tags || []).includes("verbe") && (c.tags || []).length < 3);
+    if (!candidates.length) { setFlash(t.batchPosDone(0)); setTimeout(() => setFlash(null), 2500); return; }
+    setBatchPosRunning(true); setBatchPosProgress({ current: 0, total: candidates.length });
+    let tagged = 0;
+    const batchSize = 30;
+    const updatedIds = new Set();
+    for (let i = 0; i < candidates.length; i += batchSize) {
+      const batch = candidates.slice(i, i + batchSize);
+      const list = batch.map(c => c.korean).join(", ");
+      try {
+        const sys = `You are a Korean language expert. Given a list of Korean words, identify which ones are VERBS (동사). Do NOT include adjectives (형용사), nouns, adverbs, or any other part of speech. Return ONLY a JSON array of the Korean verbs from the list. Example: ["먹다","가다"]`;
+        const result = parseJSON((await callAI(sys, list, 2000, false, false, "detect_verbs")).text);
+        if (Array.isArray(result)) {
+          result.forEach(verb => {
+            const card = batch.find(c => c.korean === verb);
+            if (card) { updatedIds.add(card.id); tagged++; }
+          });
+        }
+      } catch (e) { console.warn("Verb detection batch failed:", e); }
+      setBatchPosProgress({ current: Math.min(i + batchSize, candidates.length), total: candidates.length });
+    }
+    if (tagged > 0) {
+      save({ ...data, cards: data.cards.map(c => updatedIds.has(c.id) ? { ...c, tags: [...(c.tags || []), "verbe"] } : c) });
+    }
+    setBatchPosRunning(false); setBatchPosProgress(null);
+    setFlash(t.batchPosDone(tagged)); setTimeout(() => setFlash(null), 2500);
+  };
+
   const startVocabLesson = () => {
     const words = [...vocabSel].sort((a, b) => a - b).map(i => vocabFound[i]).filter(Boolean);
     if (!words.length) { alert(t.vocabNoneSelected); return; }
@@ -10423,6 +10453,12 @@ function AppInner() {
                   <button onClick={() => { setBulkTagMode(!bulkTagMode); setBulkTagSel(new Set()); setBulkTagPicker(false); }}
                     style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${bulkTagMode ? C.acc : C.border}`, background: bulkTagMode ? C.accBg : C.s1, color: bulkTagMode ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: bulkTagMode ? 500 : 400 }}>
                     🏷 {bulkTagMode ? t.bulkTagDone : t.bulkTagBtn}
+                  </button>
+                )}
+                {filteredCards.length > 0 && !bulkTagMode && (
+                  <button onClick={batchDetectVerbs} disabled={batchPosRunning}
+                    style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: batchPosRunning ? C.txtS : C.txtM, fontSize: 11, cursor: batchPosRunning ? "wait" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 400, opacity: batchPosRunning ? 0.7 : 1 }}>
+                    {batchPosRunning ? (batchPosProgress ? t.batchPosProgress(batchPosProgress.current, batchPosProgress.total) : "...") : t.batchPosDetect}
                   </button>
                 )}
               </div>

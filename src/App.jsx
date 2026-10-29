@@ -287,7 +287,7 @@ const T = {
     tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
     tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
     tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
-    tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrise déjà.",
+    tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
     tutoClickSave: (gender) => `Quand tu es prêt${gender === "femme" ? "e" : ""}, clique pour créer ton objectif !`,
     tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
     tutoOui: "Oui !",
@@ -8800,7 +8800,10 @@ function AppInner() {
     const t1 = setTimeout(measure, 150);
     const t2 = setTimeout(measure, 400);
     window.addEventListener('resize', measure);
-    window.addEventListener('scroll', measure, true);
+    // Skip scroll-based remeasure during picks phase to avoid jump when user clicks "Je connais"
+    if (!(tutoStep === 7 && goalImpStep === "picks")) {
+      window.addEventListener('scroll', measure, true);
+    }
     return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
   }, [tutoStep, isTutorialActive, goalView, view, goalImpStep]);
 
@@ -9166,7 +9169,7 @@ function AppInner() {
   }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (goalImpStep === "picks" && goalImpFound.length > 0) {
+    if (goalImpStep === "picks" && goalImpFound.length > 0 && !isTutorialActive) {
       setTimeout(() => {
         if (goalPicksRef.current) goalPicksRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
         else if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;

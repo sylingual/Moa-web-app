@@ -7984,6 +7984,7 @@ function AppInner() {
       setShowRecap(true);
       setRecapConv([]); setRecapMode(null); setRecapInp(""); setTagExplore(null);
       setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+      if (c.type === "expression") recordPracticeReview(c);
       window.history.pushState({ view: "lesson", recap: true, recapCard: c }, "");
       setView("lesson");
       return;

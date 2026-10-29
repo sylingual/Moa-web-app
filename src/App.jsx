@@ -10036,8 +10036,8 @@ function AppInner() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.txt }}>{k}</span>
-                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: tp === "grammar" ? "#E8F5E9" : "#E3F2FD", color: tp === "grammar" ? "#2E7D32" : "#1565C0" }}>
-                          {tp === "grammar" ? t.selPickGrammar : t.selPickVocab}
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: tp === "expression" ? "#fff3e0" : tp === "grammar" ? C.accBg : C.proBg, color: tp === "expression" ? "#e65100" : tp === "grammar" ? C.acc : C.pro }}>
+                          {typeLabel(tp, t)}
                         </span>
                       </div>
                       {desc && <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.4 }}>{desc}</div>}
@@ -10764,7 +10764,7 @@ function AppInner() {
                       <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{p.korean}</div>
                       <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : (p.description_en || p.description_fr)}</div>
                     </div>
-                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "expression" ? "#fff3e0" : p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "expression" ? "#e65100" : p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
                     <button onClick={e => { e.stopPropagation(); markKnown(i); }}
                       style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${known.has(i) ? C.okB : C.border}`, background: known.has(i) ? C.okBg : "none", color: known.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       ✓ {known.has(i) ? t.addedAcq : t.iKnow}

@@ -11543,7 +11543,7 @@ function AppInner() {
                             ✏️ {t.moreExercises}
                           </button>
                         </div>
-                      ) : (
+                      ) : recapCard.type === "expression" ? null : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (
                           <div key={c.key} onClick={() => launchCat(c.key)}
@@ -11566,7 +11566,7 @@ function AppInner() {
                             { k: "youglish", l: t.youglishBtn, i: "🎬" },
                             { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
                             { k: "resources", l: t.onlineRes, i: "📚" },
-                          ].filter(a => (a.k !== "resources" || recapCard?.type === "grammar") && (a.k !== "image" || recapCard?.type !== "grammar") && (a.k !== "youglish" || recapCard?.type !== "grammar") && (a.k !== "lyrics" || recapCard?.type !== "grammar")).map(a => (
+                          ].filter(a => recapCard?.type === "expression" ? a.k === "examples" : (a.k !== "resources" || recapCard?.type === "grammar") && (a.k !== "image" || recapCard?.type !== "grammar") && (a.k !== "youglish" || recapCard?.type !== "grammar") && (a.k !== "lyrics" || recapCard?.type !== "grammar")).map(a => (
                             <button key={a.k} onClick={() => {
                               if (a.k === "youglish") {
                                 recordPracticeReview(recapCard);
@@ -13058,7 +13058,7 @@ function AppInner() {
                                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, cursor: "pointer", background: on ? C.accBg : C.s1, border: `1px solid ${on ? C.acc : C.border}` }}>
                                     <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
                                     <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt, flex: 1 }}>{v.korean || v.word}</span>
-                                    <span style={{ fontSize: 10, color: C.txtM }}>{v.type === "vocab" ? "vocab" : "grammar"}</span>
+                                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                                     <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                       style={{ padding: "2px 6px", borderRadius: 5, fontSize: 9.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                       ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}

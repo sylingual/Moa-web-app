@@ -11119,7 +11119,7 @@ function AppInner() {
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span style={{ position: "relative" }}>
+                    <span style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                       <span onClick={recapEditMode ? () => { setTypePickerOpen(p => !p); setPosPickerOpen(false); } : undefined} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: (pendingType || recapCard.type) === "expression" ? "#fff3e0" : (pendingType || recapCard.type) === "grammar" ? C.accBg : C.proBg, color: (pendingType || recapCard.type) === "expression" ? "#e65100" : (pendingType || recapCard.type) === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3, cursor: recapEditMode ? "pointer" : "default" }}>
                         {typeLabel(pendingType || recapCard.type, t)} {recapEditMode && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
                       </span>
@@ -11145,7 +11145,7 @@ function AppInner() {
                       )}
                     </span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
-                      <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
                       </span>
                     ); })()}

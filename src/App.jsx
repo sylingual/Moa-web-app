@@ -8788,6 +8788,11 @@ function AppInner() {
       if (el) setTutoRect(el.getBoundingClientRect());
       else setTutoRect(null);
     };
+    // Scroll target into view for steps where element may be off-screen
+    if (tutoStep === 8) {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
     measure();
     const t1 = setTimeout(measure, 150);
     const t2 = setTimeout(measure, 400);
@@ -10105,17 +10110,38 @@ function AppInner() {
 
         // Step 6: Start date (optional)
         if (tutoStep === 6) {
-          return positionedBubble(t.tutoStartDate, t.tutoContinue, () => setTutoStep(7));
+          return positionedBubble(t.tutoStartDate, t.tutoContinue, () => {
+            setGoalImpText("이번 주 토요일 등산 공지!\n이번 주 토요일에 북한산 가실 분~?");
+            setTutoStep(7);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-import"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+          });
         }
 
         // Step 7: Import area
         if (tutoStep === 7) {
-          return positionedBubble(t.tutoImportArea, t.tutoContinue, () => setTutoStep(8));
+          return positionedBubble(t.tutoImportArea, t.tutoContinue, () => {
+            setTutoStep(8);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-save"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+          });
         }
 
         // Step 8: Save button (auto-advances when goalView goes back to "list")
         if (tutoStep === 8) {
-          return positionedBubble(typeof t.tutoClickSave === "function" ? t.tutoClickSave(gender) : t.tutoClickSave, null, null);
+          const msg = typeof t.tutoClickSave === "function" ? t.tutoClickSave(gender) : t.tutoClickSave;
+          if (!tutoRect) {
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-save"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+            return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
+          }
+          return positionedBubble(msg, null, null);
         }
 
         // Step 9: Congrats

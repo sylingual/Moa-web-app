@@ -82,7 +82,7 @@ const T = {
     compYourReformulation: "Ta reformulation...",
     compSentence: (i, n) => `Phrase ${i}/${n}`,
     compAskAI: "Poser une question", compAskPlaceholder: "Ex : Pourquoi on utilise cette forme ici ?",
-    compAskSend: "Envoyer", compAiAnswer: "Reponse",
+    compAskSend: "Envoyer", compAiAnswer: "Réponse",
     compTtsPlay: "Lire", compTtsStop: "Stop", compTtsLoading: "Chargement...",
     compEncourage: "Pas besoin de connaître tout le vocabulaire, l'important c'est de saisir le sens général !",
     compSaved: "Compréhension sauvegardée !",
@@ -262,14 +262,14 @@ const T = {
     authResetAction: "Envoyer le lien",
     authBackToLogin: "Retour a la connexion",
     authConfirmSent: "Verifie ta boite mail pour confirmer ton compte.",
-    authEmailTaken: "Cet email est deja utilise.",
+    authEmailTaken: "Cet email est déjà utilisé.",
     authInvalidCredentials: "Email ou mot de passe incorrect.",
     authNewPassword: "Nouveau mot de passe",
     authUpdatePassword: "Mettre a jour",
     authPasswordUpdated: "Mot de passe mis a jour !",
     migrateTitle: "Lier un compte existant",
     migrateSub: "Si tu avais un compte avec une cle personnelle, entre-la pour recuperer tes donnees.",
-    migrateAction: "Recuperer mes donnees",
+    migrateAction: "Récupérer mes données",
     migrateSkip: "Non, je suis nouveau",
     migrateSuccess: "Donnees recuperees !",
     migrateError: "Cle introuvable ou erreur de migration.",
@@ -470,7 +470,7 @@ const T = {
     viewSources: "Textes",
     deleteCard: "Supprimer la carte", deleteConfirmTitle: "Supprimer cette carte ?",
     deleteConfirmMsg: (k) => `« ${k} » sera supprimée définitivement, ainsi que ses récaps.`,
-    deleteBtn: "Supprimer", cancelBtn: "Annuler", deleteCardDone: "Carte supprimee",
+    deleteBtn: "Supprimer", cancelBtn: "Annuler", deleteCardDone: "Carte supprimée",
     filterAll: "Tout", filterGrammar: "Grammaire", filterVocab: "Vocab",
     filterByTag: "Filtrer par tag", allTags: "Tous les tags",
     addTag: "Ajouter un tag", removeTag: "Retirer", tagMax: "3 tags maximum", tagRelated: "Cartes avec ce tag", tagNoOther: "Aucune autre carte avec ce tag",
@@ -11195,7 +11195,7 @@ function AppInner() {
                                           const conj = results[0].conjugations;
                                           save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos, conjugations: conj } : c) });
                                           setRecapCard(p => p ? { ...p, pos, conjugations: conj } : p);
-                                          setFlash(lang === "fr" ? "Conjugaisons importees" : lang === "ko" ? "활용형 가져옴" : "Conjugations imported");
+                                          setFlash(lang === "fr" ? "Conjugaisons importées" : lang === "ko" ? "활용형 가져옴" : "Conjugations imported");
                                           setTimeout(() => setFlash(null), 2000);
                                         }
                                       } catch (e) { console.warn("Conjugation fetch failed:", e); }

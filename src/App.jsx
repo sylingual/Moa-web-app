@@ -7901,7 +7901,7 @@ function AppInner() {
       } else {
         setGoalView("list"); setGoalEditId(null);
       }
-      setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false);
+      setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTags(new Set()); setGoalTagDropOpen(false); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false);
     }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
@@ -8666,7 +8666,8 @@ function AppInner() {
   const [goalEditingDeadline, setGoalEditingDeadline] = useState(false);
   const [goalEditingStartDate, setGoalEditingStartDate] = useState(false);
   const [goalDeadlinePopup, setGoalDeadlinePopup] = useState(null);
-  const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
+  const [goalPickTags, setGoalPickTags] = useState(new Set()); // empty = all, Set of tags to filter
+  const [goalTagDropOpen, setGoalTagDropOpen] = useState(false);
   const [goalImpText, setGoalImpText] = useState("");
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
   const [goalImpFound, setGoalImpFound] = useState([]);
@@ -8851,7 +8852,7 @@ function AppInner() {
       }),
     };
     save(nd);
-    setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null);
+    setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTags(new Set()); setGoalTagDropOpen(false);
     setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
   };
 
@@ -12591,29 +12592,49 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "block" }}>{t.goalCards} ({goalPickSel.size})</label>
-                    {/* Tag filter */}
+                    {/* Tag filter dropdown */}
                     {(() => {
                       const availCards = data.cards.filter(c => !c.goalId);
                       const allTags = [...new Set(availCards.flatMap(c => c.tags || []))].sort();
                       if (!allTags.length) return null;
                       return (
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
-                          <button onClick={() => setGoalPickTag(null)}
-                            style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${!goalPickTag ? C.acc : C.border}`, background: !goalPickTag ? C.accBg : C.s1, color: !goalPickTag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                            {t.bulkTagSelectAll}
+                        <div style={{ position: "relative", marginBottom: 8 }}>
+                          <button onClick={() => setGoalTagDropOpen(p => !p)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${goalPickTags.size ? C.acc : C.border}`, background: goalPickTags.size ? C.accBg : C.s1, color: goalPickTags.size ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            {goalPickTags.size ? `${t.filterByTag} (${goalPickTags.size})` : t.allTags} <span style={{ fontSize: 8 }}>&#9660;</span>
                           </button>
-                          {allTags.map(tag => (
-                            <button key={tag} onClick={() => setGoalPickTag(goalPickTag === tag ? null : tag)}
-                              style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${goalPickTag === tag ? C.acc : C.border}`, background: goalPickTag === tag ? C.accBg : C.s1, color: goalPickTag === tag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                              #{tag}
+                          {goalPickTags.size > 0 && (
+                            <button onClick={() => setGoalPickTags(new Set())}
+                              style={{ marginLeft: 6, padding: "4px 8px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              ✕ {t.bulkTagSelectAll}
                             </button>
-                          ))}
+                          )}
+                          {goalTagDropOpen && (
+                            <>
+                              <div onClick={() => setGoalTagDropOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", maxHeight: 260, overflowY: "auto", minWidth: 200, maxWidth: 300 }}>
+                                {allTags.map(tag => {
+                                  const on = goalPickTags.has(tag);
+                                  return (
+                                    <div key={tag} onClick={() => { const s = new Set(goalPickTags); on ? s.delete(tag) : s.add(tag); setGoalPickTags(s); }}
+                                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent", transition: "background 0.1s" }}
+                                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = C.s1; }}
+                                      onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                                      <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                      <span style={{ fontSize: 11.5, color: on ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'" }}>#{tag}</span>
+                                      <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{availCards.filter(c => (c.tags || []).includes(tag)).length}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })()}
                     <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1 }}>
                       {(() => {
-                        const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag));
+                        const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg)));
                         if (!filtered.length) return <div style={{ padding: 16, fontSize: 12, color: C.txtM, textAlign: "center" }}>{t.goalNoCards}</div>;
                         return filtered.map(c => (
                           <div key={c.id} onClick={() => { const s = new Set(goalPickSel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setGoalPickSel(s); }}
@@ -12628,9 +12649,9 @@ function AppInner() {
                     </div>
                     {data.cards.filter(c => !c.goalId).length > 0 && (
                       <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                        <button onClick={() => { const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag)); setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)])); }}
+                        <button onClick={() => { const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg))); setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)])); }}
                           style={{ fontSize: 11, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
-                        <button onClick={() => { if (goalPickTag) { const filtered = data.cards.filter(c => !c.goalId && (c.tags || []).includes(goalPickTag)); const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
+                        <button onClick={() => { if (goalPickTags.size) { const filtered = data.cards.filter(c => !c.goalId && (c.tags || []).some(tg => goalPickTags.has(tg))); const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
                           style={{ fontSize: 11, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
                       </div>
                     )}
@@ -12937,20 +12958,40 @@ function AppInner() {
                         {(() => {
                           const availCards = data.cards.filter(c => !c.goalId || c.goalId === goal.id).filter(c => !(goal.cardIds || []).includes(c.id));
                           const allTags = [...new Set(availCards.flatMap(c => c.tags || []))].sort();
-                          const filtered = availCards.filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag));
+                          const filtered = availCards.filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg)));
                           return (<>
                             {allTags.length > 0 && (
-                              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
-                                <button onClick={() => setGoalPickTag(null)}
-                                  style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${!goalPickTag ? C.acc : C.border}`, background: !goalPickTag ? C.accBg : C.s1, color: !goalPickTag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                  {t.bulkTagSelectAll}
+                              <div style={{ position: "relative", marginBottom: 8 }}>
+                                <button onClick={() => setGoalTagDropOpen(p => !p)}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${goalPickTags.size ? C.acc : C.border}`, background: goalPickTags.size ? C.accBg : C.s1, color: goalPickTags.size ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  {goalPickTags.size ? `${t.filterByTag} (${goalPickTags.size})` : t.allTags} <span style={{ fontSize: 8 }}>&#9660;</span>
                                 </button>
-                                {allTags.map(tag => (
-                                  <button key={tag} onClick={() => setGoalPickTag(goalPickTag === tag ? null : tag)}
-                                    style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${goalPickTag === tag ? C.acc : C.border}`, background: goalPickTag === tag ? C.accBg : C.s1, color: goalPickTag === tag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                    #{tag}
+                                {goalPickTags.size > 0 && (
+                                  <button onClick={() => setGoalPickTags(new Set())}
+                                    style={{ marginLeft: 6, padding: "4px 8px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    ✕ {t.bulkTagSelectAll}
                                   </button>
-                                ))}
+                                )}
+                                {goalTagDropOpen && (
+                                  <>
+                                    <div onClick={() => setGoalTagDropOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                                    <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", maxHeight: 260, overflowY: "auto", minWidth: 200, maxWidth: 300 }}>
+                                      {allTags.map(tag => {
+                                        const on = goalPickTags.has(tag);
+                                        return (
+                                          <div key={tag} onClick={() => { const s = new Set(goalPickTags); on ? s.delete(tag) : s.add(tag); setGoalPickTags(s); }}
+                                            style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent", transition: "background 0.1s" }}
+                                            onMouseEnter={e => { if (!on) e.currentTarget.style.background = C.s1; }}
+                                            onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                                            <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                            <span style={{ fontSize: 11.5, color: on ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'" }}>#{tag}</span>
+                                            <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{availCards.filter(c => (c.tags || []).includes(tag)).length}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             )}
                             <div style={{ maxHeight: 200, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1, marginBottom: 8 }}>
@@ -12968,7 +13009,7 @@ function AppInner() {
                               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                                 <button onClick={() => setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)]))}
                                   style={{ fontSize: 11, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
-                                <button onClick={() => { if (goalPickTag) { const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
+                                <button onClick={() => { if (goalPickTags.size) { const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
                                   style={{ fontSize: 11, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
                               </div>
                             )}
@@ -12979,7 +13020,7 @@ function AppInner() {
                             style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: goalPickSel.size ? C.acc : C.s1, color: goalPickSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalPickSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                             + {t.goalAddCards} ({goalPickSel.size})
                           </button>
-                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
+                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTags(new Set()); setGoalTagDropOpen(false); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
                             style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
                         </div>
                         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>

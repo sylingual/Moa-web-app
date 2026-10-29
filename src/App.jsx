@@ -7604,7 +7604,14 @@ function AppInner() {
       setVocabSel(s => { const ns = new Set(s); ns.delete(i); return ns; });
       const ex = data.cards.find(c => c.korean === word);
       if (!ex) {
-        save({ ...data, cards: [...data.cards, makeVocabCard(v, "acquired")] });
+        const nc = makeVocabCard(v, "acquired");
+        save({ ...data, cards: [...data.cards, nc] });
+        detectPartOfSpeech([nc], tl).then(results => {
+          if (Array.isArray(results) && results[0] && results[0].pos) {
+            const r = results[0];
+            setData(prev => { const nd = { ...prev, cards: prev.cards.map(c => c.id === nc.id ? { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) } : c) }; saveData(nd, syncId); return nd; });
+          }
+        }).catch(() => {});
       } else if (ex.status !== "acquired") {
         save({ ...data, cards: data.cards.map(c => c.id === ex.id ? { ...c, status: "acquired" } : c) });
       }
@@ -9068,6 +9075,16 @@ function AppInner() {
     if (newCards.length) {
       save({ ...data, cards: [...data.cards, ...newCards] });
       setGoalPickSel(prev => new Set([...prev, ...newCards.map(c => c.id)]));
+      const vocabCards = newCards.filter(c => normType(c.type) === "vocab" || normType(c.type) === "expression");
+      if (vocabCards.length) {
+        detectPartOfSpeech(vocabCards, tl).then(results => {
+          if (!Array.isArray(results)) return;
+          setData(prev => {
+            const nd = { ...prev, cards: prev.cards.map(c => { const r = results.find(x => x.word === c.korean); return r && r.pos ? { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) } : c; }) };
+            saveData(nd, syncId); return nd;
+          });
+        }).catch(() => {});
+      }
     }
     setGoalImpStep(null);
     setGoalImpFound([]);
@@ -9097,6 +9114,16 @@ function AppInner() {
         cards: [...data.cards, ...newCards],
         goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...(g.cardIds || []), ...newCards.map(c => c.id)])] } : g),
       });
+      const vocabCards = newCards.filter(c => normType(c.type) === "vocab" || normType(c.type) === "expression");
+      if (vocabCards.length) {
+        detectPartOfSpeech(vocabCards, tl).then(results => {
+          if (!Array.isArray(results)) return;
+          setData(prev => {
+            const nd = { ...prev, cards: prev.cards.map(c => { const r = results.find(x => x.word === c.korean); return r && r.pos ? { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) } : c; }) };
+            saveData(nd, syncId); return nd;
+          });
+        }).catch(() => {});
+      }
     }
     setGoalImpStep(null);
     setGoalImpFound([]);
@@ -10861,6 +10888,16 @@ function AppInner() {
                       save({ ...data, cards: [...data.cards, ...newCards] });
                       setBulkImportedIds(newCards.map(c => c.id));
                       setImpStep("bulktag");
+                      const vocabCards = newCards.filter(c => normType(c.type) === "vocab" || normType(c.type) === "expression");
+                      if (vocabCards.length) {
+                        detectPartOfSpeech(vocabCards, tl).then(results => {
+                          if (!Array.isArray(results)) return;
+                          setData(prev => {
+                            const nd = { ...prev, cards: prev.cards.map(c => { const r = results.find(x => x.word === c.korean); return r && r.pos ? { ...c, pos: r.pos, ...(r.conjugations ? { conjugations: r.conjugations } : {}) } : c; }) };
+                            saveData(nd, syncId); return nd;
+                          });
+                        }).catch(() => {});
+                      }
                     } else {
                       alert(t.bulkAdded(0));
                       setBulkFound([]); setBulkSel(new Set()); setImpStep("input"); setImpText("");

@@ -6506,6 +6506,8 @@ function AppInner() {
   const [recapEditMode, setRecapEditMode] = useState(false);
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [posPickerOpen, setPosPickerOpen] = useState(false);
+  const [pendingType, setPendingType] = useState(null);
+  const [pendingPos, setPendingPos] = useState(null);
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState(false);

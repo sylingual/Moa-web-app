@@ -11206,7 +11206,7 @@ function AppInner() {
                         {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
                       </span>
                     )}
-                    {recapCard.type !== "grammar" && (() => {
+                    {recapCard.type !== "grammar" && recapCard.type !== "expression" && (() => {
                       const posMap = { verb: [t.posVerb, t.posVerbFr, "#EFF6FF", "#1D4ED8", "#BFDBFE"], adjective: [t.posAdj, t.posAdjFr, "#F5F3FF", "#6D28D9", "#DDD6FE"], noun: [t.posNoun, t.posNounFr, "#F0FDF4", "#166534", "#BBF7D0"], adverb: [t.posAdv, t.posAdvFr, "#FFFBEB", "#92400E", "#FDE68A"], particle: [t.posParticle, t.posParticleFr, "#FFF1F2", "#BE123C", "#FECDD3"] };
                       const effectivePos = pendingPos === "__remove__" ? undefined : (pendingPos || recapCard.pos);
                       const cur = posMap[effectivePos];

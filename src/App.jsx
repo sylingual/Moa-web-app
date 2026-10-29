@@ -281,6 +281,15 @@ const T = {
     tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
     tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
     tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoGoalsCreate: "Ici, tu peux créer des objectifs d'apprentissage.\nChaque objectif regroupe du vocabulaire et de la grammaire à réviser.",
+    tutoGoalsImport: "Tu peux importer tes notes de cours par copier/coller ou par photo.\nMoa va extraire les points de grammaire et de vocabulaire pour toi.",
+    tutoGoalsProgress: "Les barres de progression te montrent ton avancement :\n• Découvertes : les cartes pas encore vues\n• Révisions : celles à réviser d'ici la date limite\n• Acquises : celles que tu maîtrises déjà",
+    tutoLibrary: "La Bibliothèque regroupe toutes les cartes que tu as étudiées, avec ou sans objectif.\nTu peux y retrouver n'importe quel mot ou point de grammaire.",
+    tutoImport: "L'onglet Importer te permet de transformer n'importe quel texte coréen en leçon :\narticles de blog, messages KakaoTalk, extraits de livres...",
+    tutoExercise: "Les Exercices te proposent différentes façons de pratiquer :\ncompréhension, traduction, quiz...\nPlus tu t'exerces, mieux tu retiens !",
+    tutoProfile: "Ton Profil permet à Moa de personnaliser les leçons et exercices selon tes centres d'intérêt et ton niveau.",
+    tutoFinal: () => "Super, tu as fait le tour !\nJe te laisse profiter de ton espace.\nSi tu as des questions, clique sur le bouton contact en bas du profil. ❤️",
+    tutoNext: "Suivant",
     tutoReady: "C'est parti !",
     tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -816,6 +825,15 @@ const T = {
     tutoAlone: () => "Alone",
     tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
     tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoGoalsCreate: "Here, you can create learning goals.\nEach goal groups vocabulary and grammar to review.",
+    tutoGoalsImport: "You can import your class notes by copy/paste or photo.\nMoa will extract grammar and vocabulary points for you.",
+    tutoGoalsProgress: "Progress bars show your advancement:\n• Discovered: cards you haven't seen yet\n• Reviews: cards to review before the deadline\n• Acquired: cards you've mastered",
+    tutoLibrary: "The Library holds all cards you've studied, with or without a goal.\nYou can find any word or grammar point here.",
+    tutoImport: "The Import tab lets you turn any Korean text into a lesson:\nblog articles, KakaoTalk messages, book excerpts...",
+    tutoExercise: "Exercises offer different ways to practice:\ncomprehension, translation, quizzes...\nThe more you practice, the better you remember!",
+    tutoProfile: "Your Profile lets Moa personalize lessons and exercises based on your interests and level.",
+    tutoFinal: () => "Great, you've seen it all!\nEnjoy your workspace.\nIf you have questions, click the contact button at the bottom of your profile. ❤️",
+    tutoNext: "Next",
     tutoReady: "Let's go!",
     tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -1351,6 +1369,15 @@ const T = {
     tutoAlone: () => "혼자",
     tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
     tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoGoalsCreate: "여기서 학습 목표를 만들 수 있어요.\n각 목표는 복습할 어휘와 문법을 모아두는 곳이에요.",
+    tutoGoalsImport: "수업 노트를 복사/붙여넣기나 사진으로 가져올 수 있어요.\nMoa가 문법과 어휘 포인트를 추출해 줄 거예요.",
+    tutoGoalsProgress: "진행 바가 학습 상황을 보여줘요:\n• 학습 시작: 아직 보지 못한 카드\n• 복습: 마감일까지 복습해야 할 카드\n• 습득 완료: 충분히 복습한 카드",
+    tutoLibrary: "라이브러리에는 목표와 상관없이 공부한 모든 카드가 있어요.\n어떤 단어나 문법 포인트든 여기서 찾을 수 있어요.",
+    tutoImport: "가져오기 탭에서 한국어 텍스트를 레슨으로 만들 수 있어요:\n블로그, 카카오톡 메시지, 책 발취문...",
+    tutoExercise: "연습은 다양한 방법으로 할 수 있어요:\n독해, 번역, 퀴즈...\n많이 연습할수록 더 잘 기억돼요!",
+    tutoProfile: "프로필을 통해 Moa가 관심사와 레벨에 맞춰 레슨과 연습을 맞춤화해 줄 거예요.",
+    tutoFinal: () => "좋아요, 다 둘러봤어요!\n이제 학습 공간을 즐겨보세요.\n질문이 있으면 프로필 하단의 연락처 버튼을 눌러주세요. ❤️",
+    tutoNext: "다음",
     tutoReady: "시작하자!",
     tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -9917,11 +9944,31 @@ function AppInner() {
         const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
         const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
         const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+        const stepDots = (current, total) => (
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 18 }}>
+            {Array.from({ length: total }, (_, i) => (
+              <div key={i} style={{ width: i === current ? 18 : 7, height: 7, borderRadius: 4, background: i === current ? C.acc : "#ddd", transition: "all 0.3s" }} />
+            ))}
+          </div>
+        );
+        const stepBody = (icon, title, body, nextAction, isFinal) => (
+          <div style={overlayBase}>
+            <div style={bubbleBase}>
+              {stepDots(tutoStep, 10)}
+              <div style={{ fontSize: 28, textAlign: "center", marginBottom: 4 }}>{icon}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginBottom: 8, textAlign: "center" }}>{title}</div>
+              <div style={{ fontSize: 14, color: C.txtS, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 22, textAlign: "center" }}>{body}</div>
+              <button onClick={nextAction} style={btnPrimary}>{isFinal ? t.tutoReady : t.tutoNext}</button>
+              <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+            </div>
+          </div>
+        );
 
         if (tutoStep === 0) {
           return (
             <div style={overlayBase}>
               <div style={bubbleBase}>
+                {stepDots(0, 10)}
                 <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
                 <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
@@ -9937,22 +9984,17 @@ function AppInner() {
 
         if (tutoStep === 1) {
           const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
-          return (
-            <div style={overlayBase}>
-              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
-                  {"🎯 OBJECTIFS"}
-                </div>
-                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
-                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
-                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
-                </div>
-                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
-                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
-              </div>
-            </div>
-          );
+          return stepBody("🎯", t.goalsTab, msg, () => { setTutoStep(2); navTo("goals"); });
         }
+
+        if (tutoStep === 2) return stepBody("📝", t.goalsTab, t.tutoGoalsCreate, () => setTutoStep(3));
+        if (tutoStep === 3) return stepBody("📸", t.goalsTab, t.tutoGoalsImport, () => setTutoStep(4));
+        if (tutoStep === 4) return stepBody("📊", t.goalsTab, t.tutoGoalsProgress, () => { setTutoStep(5); navTo("library"); });
+        if (tutoStep === 5) return stepBody("📚", t.library, t.tutoLibrary, () => { setTutoStep(6); navTo("import"); });
+        if (tutoStep === 6) return stepBody("📥", t.import, t.tutoImport, () => { setTutoStep(7); navTo("exercise"); });
+        if (tutoStep === 7) return stepBody("🏋️", t.exercise, t.tutoExercise, () => { setTutoStep(8); navTo("profile"); });
+        if (tutoStep === 8) return stepBody("👤", t.profile, t.tutoProfile, () => setTutoStep(9));
+        if (tutoStep === 9) return stepBody("🎉", t.tutoWelcome, t.tutoFinal(), () => { finishTutorial(); navTo("goals"); }, true);
 
         return null;
       })()}

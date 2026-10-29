@@ -6504,6 +6504,7 @@ function AppInner() {
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
   const [typePickerOpen, setTypePickerOpen] = useState(false);
+  const [posPickerOpen, setPosPickerOpen] = useState(false);
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState(false);
@@ -7481,36 +7482,6 @@ function AppInner() {
     targetLang: tl || "ko",
     date: new Date().toLocaleDateString(lang === "fr" ? "fr-FR" : lang === "ko" ? "ko-KR" : "en-US", { day: "numeric", month: "short" }),
   });
-
-  const batchDetectVerbs = async () => {
-    const tl = targetLang || "ko";
-    const candidates = data.cards.filter(c => (c.targetLang || "ko") === tl && normType(c.type) === "vocab" && !(c.tags || []).includes("verbe") && (c.tags || []).length < 3);
-    if (!candidates.length) { setFlash(t.batchPosDone(0)); setTimeout(() => setFlash(null), 2500); return; }
-    setBatchPosRunning(true); setBatchPosProgress({ current: 0, total: candidates.length });
-    let tagged = 0;
-    const batchSize = 30;
-    const updatedIds = new Set();
-    for (let i = 0; i < candidates.length; i += batchSize) {
-      const batch = candidates.slice(i, i + batchSize);
-      const list = batch.map(c => c.korean).join(", ");
-      try {
-        const sys = `You are a Korean language expert. Given a list of Korean words, identify which ones are VERBS (동사). Do NOT include adjectives (형용사), nouns, adverbs, or any other part of speech. Return ONLY a JSON array of the Korean verbs from the list. Example: ["먹다","가다"]`;
-        const result = parseJSON((await callAI(sys, list, 2000, false, false, "detect_verbs")).text);
-        if (Array.isArray(result)) {
-          result.forEach(verb => {
-            const card = batch.find(c => c.korean === verb);
-            if (card) { updatedIds.add(card.id); tagged++; }
-          });
-        }
-      } catch (e) { console.warn("Verb detection batch failed:", e); }
-      setBatchPosProgress({ current: Math.min(i + batchSize, candidates.length), total: candidates.length });
-    }
-    if (tagged > 0) {
-      save({ ...data, cards: data.cards.map(c => updatedIds.has(c.id) ? { ...c, tags: [...(c.tags || []), "verbe"] } : c) });
-    }
-    setBatchPosRunning(false); setBatchPosProgress(null);
-    setFlash(t.batchPosDone(tagged)); setTimeout(() => setFlash(null), 2500);
-  };
 
   const startVocabLesson = () => {
     const words = [...vocabSel].sort((a, b) => a - b).map(i => vocabFound[i]).filter(Boolean);
@@ -10455,12 +10426,6 @@ function AppInner() {
                     🏷 {bulkTagMode ? t.bulkTagDone : t.bulkTagBtn}
                   </button>
                 )}
-                {filteredCards.length > 0 && !bulkTagMode && (
-                  <button onClick={batchDetectVerbs} disabled={batchPosRunning}
-                    style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: batchPosRunning ? C.txtS : C.txtM, fontSize: 11, cursor: batchPosRunning ? "wait" : "pointer", fontFamily: "'Plus Jakarta Sans'", fontWeight: 400, opacity: batchPosRunning ? 0.7 : 1 }}>
-                    {batchPosRunning ? (batchPosProgress ? t.batchPosProgress(batchPosProgress.current, batchPosProgress.total) : "...") : t.batchPosDetect}
-                  </button>
-                )}
               </div>
             </div>
             {filteredCards.length === 0
@@ -11164,11 +11129,58 @@ function AppInner() {
                         {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
                       </span>
                     )}
-                    {recapCard.pos === "verb" && (
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>{t.posVerb} · {t.posVerbFr}</span>
-                    )}
-                    {recapCard.pos === "adjective" && (
-                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE" }}>{t.posAdj} · {t.posAdjFr}</span>
+                    {recapCard.type !== "grammar" && (
+                      <span style={{ position: "relative" }}>
+                        <span onClick={() => setPosPickerOpen(p => !p)} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, cursor: "pointer", background: recapCard.pos === "verb" ? "#EFF6FF" : recapCard.pos === "adjective" ? "#F5F3FF" : recapCard.pos === "noun" ? "#F0FDF4" : recapCard.pos === "adverb" ? "#FFFBEB" : recapCard.pos === "particle" ? "#FFF1F2" : C.s1, color: recapCard.pos === "verb" ? "#1D4ED8" : recapCard.pos === "adjective" ? "#6D28D9" : recapCard.pos === "noun" ? "#166534" : recapCard.pos === "adverb" ? "#92400E" : recapCard.pos === "particle" ? "#BE123C" : C.txtM, border: `1px solid ${recapCard.pos === "verb" ? "#BFDBFE" : recapCard.pos === "adjective" ? "#DDD6FE" : recapCard.pos === "noun" ? "#BBF7D0" : recapCard.pos === "adverb" ? "#FDE68A" : recapCard.pos === "particle" ? "#FECDD3" : C.border}`, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                          {recapCard.pos ? `${t["pos" + recapCard.pos.charAt(0).toUpperCase() + recapCard.pos.slice(1)] || recapCard.pos} · ${t["pos" + recapCard.pos.charAt(0).toUpperCase() + recapCard.pos.slice(1) + "Fr"] || recapCard.pos}` : (lang === "fr" ? "Classe ?" : lang === "ko" ? "품사?" : "POS?")}
+                          <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>
+                        </span>
+                        {posPickerOpen && (
+                          <>
+                            <div onClick={() => setPosPickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                            <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 140 }}>
+                              {[["verb", "#EFF6FF", "#1D4ED8"], ["adjective", "#F5F3FF", "#6D28D9"], ["noun", "#F0FDF4", "#166534"], ["adverb", "#FFFBEB", "#92400E"], ["particle", "#FFF1F2", "#BE123C"]].map(([pos, bg, col]) => (
+                                <div key={pos} onClick={async () => {
+                                  const prev = recapCard.pos;
+                                  save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos } : c) });
+                                  setRecapCard(p => p ? { ...p, pos } : p);
+                                  setPosPickerOpen(false);
+                                  if ((pos === "verb" || pos === "adjective") && prev !== pos) {
+                                    try {
+                                      const results = await detectPartOfSpeech([recapCard], recapCard.targetLang || tl);
+                                      if (results && results[0] && results[0].conjugations) {
+                                        const conj = results[0].conjugations;
+                                        save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos, conjugations: conj } : c) });
+                                        setRecapCard(p => p ? { ...p, pos, conjugations: conj } : p);
+                                        setFlash(lang === "fr" ? "Conjugaisons importees" : lang === "ko" ? "활용형 가져옴" : "Conjugations imported");
+                                        setTimeout(() => setFlash(null), 2000);
+                                      }
+                                    } catch (e) { console.warn("Conjugation fetch failed:", e); }
+                                  } else if (pos !== "verb" && pos !== "adjective") {
+                                    save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos, conjugations: undefined } : c) });
+                                    setRecapCard(p => p ? { ...p, pos, conjugations: undefined } : p);
+                                  }
+                                }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: recapCard.pos === pos ? 600 : 400, color: col, background: recapCard.pos === pos ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                                  onMouseEnter={e => { if (recapCard.pos !== pos) e.currentTarget.style.background = C.s1; }}
+                                  onMouseLeave={e => { if (recapCard.pos !== pos) e.currentTarget.style.background = "transparent"; }}>
+                                  {t["pos" + pos.charAt(0).toUpperCase() + pos.slice(1)] || pos} · {t["pos" + pos.charAt(0).toUpperCase() + pos.slice(1) + "Fr"] || pos}
+                                </div>
+                              ))}
+                              {recapCard.pos && (
+                                <div onClick={() => {
+                                  save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos: undefined, conjugations: undefined } : c) });
+                                  setRecapCard(p => p ? { ...p, pos: undefined, conjugations: undefined } : p);
+                                  setPosPickerOpen(false);
+                                }} style={{ padding: "7px 12px", fontSize: 11, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", borderTop: `1px solid ${C.border}` }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = C.s1; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                                  {lang === "fr" ? "Retirer" : lang === "ko" ? "제거" : "Remove"}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </span>
                     )}
                   </div>
                   {showTargetDef[recapCard.id] && recapCard.description_target ? (

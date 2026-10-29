@@ -8155,7 +8155,8 @@ function AppInner() {
         return;
       } else if (action === "imageSearch") {
         setSearching(true);
-        const imgRes = await fetchImages(recapCard.korean, 8);
+        const imgQ = [recapCard.korean, ...getVerbForms(recapCard).slice(0, 3)].join(" ");
+        const imgRes = await fetchImages(imgQ, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
@@ -8590,7 +8591,8 @@ function AppInner() {
         return;
       } else if (a === "imageSearch") {
         setSearching(true);
-        const imgRes = await fetchImages(lCard.korean, 8);
+        const imgQ = [lCard.korean, ...getVerbForms(lCard).slice(0, 3)].join(" ");
+        const imgRes = await fetchImages(imgQ, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);

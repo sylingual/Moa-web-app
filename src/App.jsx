@@ -2433,18 +2433,16 @@ async function findResources(card, lang, tlCode) {
 // Curated phrase-search links, used when Brave returns nothing (or has no key).
 function exampleSearchLinks(card, tlCode) {
   const structure = card.korean.trim();
-  const phrase = encodeURIComponent('"' + structure + '"');
-  const plain = encodeURIComponent(structure);
-  const links = [
-    { title: `Google — « ${structure} »`, uri: `https://www.google.com/search?q=${phrase}` },
-    { title: `YouTube — ${structure}`, uri: `https://www.youtube.com/results?search_query=${plain}` },
-  ];
-  if (tlCode === "ko") links.push({ title: `Naver — ${structure}`, uri: `https://search.naver.com/search.naver?query=${phrase}` });
   const extra = getVerbForms(card);
-  for (const form of extra.slice(0, 3)) {
-    const fp = encodeURIComponent('"' + form + '"');
-    links.push({ title: `Google — « ${form} »`, uri: `https://www.google.com/search?q=${fp}` });
-  }
+  const allForms = [structure, ...extra.slice(0, 4)];
+  const combined = allForms.map(f => `"${f}"`).join(" OR ");
+  const q = encodeURIComponent(combined);
+  const label = allForms.length > 1 ? allForms.join(" / ") : structure;
+  const links = [
+    { title: `Google — ${label}`, uri: `https://www.google.com/search?q=${q}` },
+    { title: `YouTube — ${label}`, uri: `https://www.youtube.com/results?search_query=${q}` },
+  ];
+  if (tlCode === "ko") links.push({ title: `Naver — ${label}`, uri: `https://search.naver.com/search.naver?query=${q}` });
   return links;
 }
 
@@ -2541,21 +2539,20 @@ async function findSongLyrics(card, lang, tlCode) {
   const searchQ = buildSearchQuery(card);
 
   const curatedFallback = () => {
-    const q = encodeURIComponent(structure + " " + lyricsWord);
-    const note = lang === "fr"
-      ? `Recherche de chansons contenant « ${structure} » dans les paroles :`
-      : lang === "ko"
-        ? `« ${structure} »가 포함된 노래 가사 검색:`
-        : `Search for songs containing "${structure}" in their lyrics:`;
-    const sources = [
-      { title: `Google — ${structure} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
-      { title: `YouTube — ${structure} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
-    ];
     const extra = getVerbForms(card);
-    for (const form of extra.slice(0, 2)) {
-      const fq = encodeURIComponent(form + " " + lyricsWord);
-      sources.push({ title: `Google — ${form} ${lyricsWord}`, uri: `https://www.google.com/search?q=${fq}` });
-    }
+    const allForms = [structure, ...extra.slice(0, 4)];
+    const combined = allForms.map(f => `"${f}"`).join(" OR ");
+    const q = encodeURIComponent(combined + " " + lyricsWord);
+    const label = allForms.length > 1 ? allForms.join(" / ") : structure;
+    const note = lang === "fr"
+      ? `Recherche de chansons contenant « ${structure} » (et ses formes conjuguees) dans les paroles :`
+      : lang === "ko"
+        ? `« ${structure} »(및 활용형)가 포함된 노래 가사 검색:`
+        : `Search for songs containing "${structure}" (and conjugated forms) in their lyrics:`;
+    const sources = [
+      { title: `Google — ${label} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
+      { title: `YouTube — ${label} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
+    ];
     return { text: note, sources };
   };
 

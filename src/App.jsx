@@ -6503,6 +6503,7 @@ function AppInner() {
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
+  const [recapEditMode, setRecapEditMode] = useState(false);
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [posPickerOpen, setPosPickerOpen] = useState(false);
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
@@ -7980,7 +7981,7 @@ function AppInner() {
     if (gain) { setPointsToast(gain); setTimeout(() => setPointsToast(null), 2000); }
     const card = updatedCards.find(x => x.korean === c.korean);
     // Open the recap screen so the translation/summary is shown right away.
-    setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp("");
+    setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp(""); setRecapEditMode(false);
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
     const gv = goalReturnIdRef.current ? "detail" : undefined;
     const ge = goalReturnIdRef.current || undefined;
@@ -11080,10 +11081,10 @@ function AppInner() {
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ position: "relative" }}>
-                      <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                        {typeLabel(recapCard.type, t)} {typePickerOpen && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
+                      <span onClick={recapEditMode ? () => { setTypePickerOpen(p => !p); setPosPickerOpen(false); } : undefined} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3, cursor: recapEditMode ? "pointer" : "default" }}>
+                        {typeLabel(recapCard.type, t)} {recapEditMode && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
                       </span>
-                      {typePickerOpen && (
+                      {typePickerOpen && recapEditMode && (
                         <>
                           <div onClick={() => setTypePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
                           <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 110 }}>
@@ -11115,8 +11116,8 @@ function AppInner() {
                       style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁" : "🙈"} {t.showTranslations}
                     </button>
-                    <span onClick={() => { setTypePickerOpen(p => !p); setPosPickerOpen(false); }}
-                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 6, border: `1px solid ${typePickerOpen ? C.acc : C.border}`, background: typePickerOpen ? C.accBg : C.s1, color: typePickerOpen ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", flexShrink: 0 }}
+                    <span onClick={() => { setRecapEditMode(p => !p); setTypePickerOpen(false); setPosPickerOpen(false); }}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 6, border: `1px solid ${recapEditMode ? C.acc : C.border}`, background: recapEditMode ? C.accBg : C.s1, color: recapEditMode ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", flexShrink: 0 }}
                       title={lang === "fr" ? "Modifier" : lang === "ko" ? "수정" : "Edit"}>
                       ✎
                     </span>
@@ -11132,9 +11133,9 @@ function AppInner() {
                     {recapCard.type !== "grammar" && (() => {
                       const posMap = { verb: [t.posVerb, t.posVerbFr, "#EFF6FF", "#1D4ED8", "#BFDBFE"], adjective: [t.posAdj, t.posAdjFr, "#F5F3FF", "#6D28D9", "#DDD6FE"], noun: [t.posNoun, t.posNounFr, "#F0FDF4", "#166534", "#BBF7D0"], adverb: [t.posAdv, t.posAdvFr, "#FFFBEB", "#92400E", "#FDE68A"], particle: [t.posParticle, t.posParticleFr, "#FFF1F2", "#BE123C", "#FECDD3"] };
                       const cur = posMap[recapCard.pos];
-                      return recapCard.pos && !typePickerOpen ? (
+                      return recapCard.pos && !recapEditMode ? (
                         <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: cur[2], color: cur[3], border: `1px solid ${cur[4]}` }}>{cur[0]} · {cur[1]}</span>
-                      ) : typePickerOpen ? (
+                      ) : recapEditMode ? (
                         <span style={{ position: "relative" }}>
                           <span onClick={() => setPosPickerOpen(p => !p)} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, cursor: "pointer", background: cur ? cur[2] : C.s1, color: cur ? cur[3] : C.txtM, border: `1px solid ${cur ? cur[4] : C.border}`, display: "inline-flex", alignItems: "center", gap: 3 }}>
                             {cur ? `${cur[0]} · ${cur[1]}` : (lang === "fr" ? "Classe ?" : lang === "ko" ? "품사?" : "POS?")}

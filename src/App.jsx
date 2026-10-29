@@ -286,7 +286,8 @@ const T = {
     tutoFillNameAlone: "Donne un nom à ton objectif, par exemple \"Cours du 15 octobre\".",
     tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
     tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
-    tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot. Moa extrait la grammaire et le vocabulaire pour toi.",
+    tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
+    tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrise déjà.",
     tutoClickSave: (gender) => `Quand tu es prêt${gender === "femme" ? "e" : ""}, clique pour créer ton objectif !`,
     tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
     tutoOui: "Oui !",
@@ -832,7 +833,8 @@ const T = {
     tutoFillNameAlone: "Give your goal a name, for example \"October 15 lesson\".",
     tutoFillDeadline: "For example, your next class or your next exam.",
     tutoStartDate: "This field is optional, but useful if you want to plan ahead.",
-    tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot. Moa will extract grammar and vocabulary for you.",
+    tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot.\nGo ahead, click \"Import a text\"!",
+    tutoImportPicks: "Great! Moa extracted the vocabulary and grammar for you to review.\nChoose what you want to study, or click \"I know this\" for words you already know.",
     tutoClickSave: () => "When you're ready, click to create your goal!",
     tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you. Happy studying!",
     tutoOui: "Yes!",
@@ -1378,7 +1380,8 @@ const T = {
     tutoFillNameAlone: "목표 이름을 적어보세요, 예: \"10월 15일 수업\".",
     tutoFillDeadline: "예를 들어 다음 수업이나 다음 시험 날짜를 적어보세요.",
     tutoStartDate: "이 필드는 선택사항이지만, 미리 계획하고 싶을 때 유용해요.",
-    tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷. Moa가 문법과 어휘를 추출해 줄 거예요.",
+    tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷.\n\"텍스트 가져오기\"를 클릭해 보세요!",
+    tutoImportPicks: "좋아요! Moa가 복습할 어휘와 문법을 추출했어요.\n공부하고 싶은 것을 선택하거나, 이미 아는 단어는 \"알고 있어요\"를 클릭하세요.",
     tutoClickSave: () => "준비가 되면 클릭해서 목표를 만들어 보세요!",
     tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요. 즐거운 공부 되세요!",
     tutoOui: "네!",
@@ -8799,7 +8802,7 @@ function AppInner() {
     window.addEventListener('resize', measure);
     window.addEventListener('scroll', measure, true);
     return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
-  }, [tutoStep, isTutorialActive, goalView, view]);
+  }, [tutoStep, isTutorialActive, goalView, view, goalImpStep]);
 
   // Auto-advance: step 2 when user clicks goals tab, step 3 when create form opens, step 8 when goal saved
   useEffect(() => {
@@ -10120,15 +10123,24 @@ function AppInner() {
           });
         }
 
-        // Step 7: Import area
+        // Step 7: Import area (sub-phases based on goalImpStep)
         if (tutoStep === 7) {
-          return positionedBubble(t.tutoImportArea, t.tutoContinue, () => {
-            setTutoStep(8);
-            setTimeout(() => {
-              const el = document.querySelector('[data-tutorial="goal-save"]');
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 100);
-          });
+          if (goalImpStep === "picks") {
+            // Picks are shown: explain and let user choose, then continue
+            return positionedBubble(t.tutoImportPicks, t.tutoContinue, () => {
+              setTutoStep(8);
+              setTimeout(() => {
+                const el = document.querySelector('[data-tutorial="goal-save"]');
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 100);
+            });
+          }
+          if (goalImpStep === "scanning" || goalImpStep === "ocr") {
+            // Scanning in progress: no bubble, let the UI show
+            return (<div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }} />);
+          }
+          // Default: import area, no continue button - user must click "Importer"
+          return positionedBubble(t.tutoImportArea, null, null);
         }
 
         // Step 8: Save button (auto-advances when goalView goes back to "list")

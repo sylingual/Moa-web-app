@@ -2449,10 +2449,50 @@ function exampleSearchLinks(card, tlCode) {
 }
 
 function getVerbForms(card) {
-  if (!card.conjugations || !(card.pos === "verb" || card.pos === "adjective")) return [];
-  const c = card.conjugations;
-  const forms = [c.stem, c.presentPolite, c.presentCasual, c.pastPolite, c.pastCasual, c.futureStem, c.nominalForm].filter(Boolean);
   const base = card.korean.trim();
+  if (card.conjugations && (card.pos === "verb" || card.pos === "adjective")) {
+    const c = card.conjugations;
+    const forms = [c.stem, c.presentPolite, c.presentCasual, c.pastPolite, c.pastCasual, c.futureStem, c.nominalForm].filter(Boolean);
+    return [...new Set(forms.filter(f => f !== base))];
+  }
+  if (!base.endsWith("다") || base.length < 2) return [];
+  const stem = base.slice(0, -1);
+  if (stem.endsWith("하")) {
+    const root = stem.slice(0, -1);
+    return [...new Set([stem, root + "해", root + "해요", stem + "는"].filter(f => f !== base))];
+  }
+  const last = stem.charCodeAt(stem.length - 1);
+  if (last < 0xAC00 || last > 0xD7A3) return [stem];
+  const vowelIdx = Math.floor((last - 0xAC00) / 28) % 21;
+  const finalC = (last - 0xAC00) % 28;
+  const bright = [0, 2, 8];
+  const isBright = bright.includes(vowelIdx);
+  const forms = [stem];
+  let casual = null;
+  if (finalC === 0) {
+    if (vowelIdx === 0) { casual = stem; } // ㅏ+아 contracts to ㅏ
+    else if (vowelIdx === 4) { casual = stem; } // ㅓ+어 contracts to ㅓ
+    else if (vowelIdx === 8) { // ㅗ+아=ㅘ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 9 * 28);
+    } else if (vowelIdx === 13) { // ㅜ+어=ㅝ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 14 * 28);
+    } else if (vowelIdx === 18) { // ㅡ drops, becomes ㅓ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 4 * 28);
+    } else if (vowelIdx === 20) { // ㅣ+어=ㅕ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 6 * 28);
+    } else {
+      casual = stem + (isBright ? "아" : "어");
+    }
+  } else {
+    casual = stem + (isBright ? "아" : "어");
+  }
+  if (casual && casual !== stem) forms.push(casual);
+  if (casual) forms.push(casual + "요");
+  forms.push(finalC === 0 ? stem + "는" : stem + "은");
   return [...new Set(forms.filter(f => f !== base))];
 }
 
@@ -2460,7 +2500,7 @@ function buildSearchQuery(card) {
   const base = card.korean.trim();
   const extra = getVerbForms(card);
   if (!extra.length) return base;
-  return [base, ...extra.slice(0, 4)].join(" OR ");
+  return [base, ...extra.slice(0, 5)].join(" OR ");
 }
 
 // "Exemples authentiques": real web occurrences of the structure via Brave Search (same

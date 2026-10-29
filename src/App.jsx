@@ -11160,6 +11160,8 @@ function AppInner() {
                       title={lang === "fr" ? "Modifier" : lang === "ko" ? "수정" : "Edit"}>
                       ✎
                     </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
                     <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt }}>{recapCard.korean}</div>
                     {recapCard.gender && GENDERED_LANGS.has(recapCard.targetLang || tl) && (

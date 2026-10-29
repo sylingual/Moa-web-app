@@ -288,7 +288,7 @@ const T = {
     tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
     tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
     tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
-    tutoClickSave: (gender) => `Quand tu es prêt${gender === "femme" ? "e" : ""}, clique pour créer ton objectif !`,
+    tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
     tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
     tutoOui: "Oui !",
     tutoContinue: "Continuer",
@@ -835,7 +835,7 @@ const T = {
     tutoStartDate: "This field is optional, but useful if you want to plan ahead.",
     tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot.\nGo ahead, click \"Import a text\"!",
     tutoImportPicks: "Great! Moa extracted the vocabulary and grammar for you to review.\nChoose what you want to study, or click \"I know this\" for words you already know.",
-    tutoClickSave: () => "When you're ready, click to create your goal!",
+    tutoClickSave: "You can now create your goal!\nDon't worry, you can always edit it later.",
     tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you. Happy studying!",
     tutoOui: "Yes!",
     tutoContinue: "Continue",
@@ -1382,7 +1382,7 @@ const T = {
     tutoStartDate: "이 필드는 선택사항이지만, 미리 계획하고 싶을 때 유용해요.",
     tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷.\n\"텍스트 가져오기\"를 클릭해 보세요!",
     tutoImportPicks: "좋아요! Moa가 복습할 어휘와 문법을 추출했어요.\n공부하고 싶은 것을 선택하거나, 이미 아는 단어는 \"알고 있어요\"를 클릭하세요.",
-    tutoClickSave: () => "준비가 되면 클릭해서 목표를 만들어 보세요!",
+    tutoClickSave: "이제 목표를 만들 수 있어요!\n걱정 마세요, 나중에 수정할 수 있어요.",
     tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요. 즐거운 공부 되세요!",
     tutoOui: "네!",
     tutoContinue: "계속",
@@ -10129,14 +10129,24 @@ function AppInner() {
         // Step 7: Import area (sub-phases based on goalImpStep)
         if (tutoStep === 7) {
           if (goalImpStep === "picks") {
-            // Picks are shown: explain and let user choose, then continue
-            return positionedBubble(t.tutoImportPicks, t.tutoContinue, () => {
+            // Picks shown: fixed bubble at top so it doesn't overlap the selectable cards
+            const onContinue = () => {
               setTutoStep(8);
               setTimeout(() => {
                 const el = document.querySelector('[data-tutorial="goal-save"]');
                 if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
               }, 100);
-            });
+            };
+            return (
+              <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", width: Math.min(340, winW - 32), zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 14, textAlign: "center" }}>{t.tutoImportPicks}</div>
+                  <button onClick={onContinue} style={btnPrimary}>{t.tutoContinue}</button>
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+                </div>
+              </div>
+            );
           }
           if (goalImpStep === "scanning" || goalImpStep === "ocr") {
             // Scanning in progress: no bubble, let the UI show
@@ -10148,7 +10158,7 @@ function AppInner() {
 
         // Step 8: Save button (auto-advances when goalView goes back to "list")
         if (tutoStep === 8) {
-          const msg = typeof t.tutoClickSave === "function" ? t.tutoClickSave(gender) : t.tutoClickSave;
+          const msg = t.tutoClickSave;
           if (!tutoRect) {
             setTimeout(() => {
               const el = document.querySelector('[data-tutorial="goal-save"]');

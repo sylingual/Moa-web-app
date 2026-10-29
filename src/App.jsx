@@ -7988,7 +7988,7 @@ function AppInner() {
     if (gain) { setPointsToast(gain); setTimeout(() => setPointsToast(null), 2000); }
     const card = updatedCards.find(x => x.korean === c.korean);
     // Open the recap screen so the translation/summary is shown right away.
-    setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp(""); setRecapEditMode(false);
+    setRecapCard(card); setShowRecap(true); setRecapConv([]); setRecapMode(null); setRecapInp(""); setRecapEditMode(false); setPendingType(null); setPendingPos(null);
     setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
     const gv = goalReturnIdRef.current ? "detail" : undefined;
     const ge = goalReturnIdRef.current || undefined;
@@ -11118,26 +11118,26 @@ function AppInner() {
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <span style={{ position: "relative" }}>
-                      <span onClick={recapEditMode ? () => { setTypePickerOpen(p => !p); setPosPickerOpen(false); } : undefined} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3, cursor: recapEditMode ? "pointer" : "default" }}>
-                        {typeLabel(recapCard.type, t)} {recapEditMode && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
+                      <span onClick={recapEditMode ? () => { setTypePickerOpen(p => !p); setPosPickerOpen(false); } : undefined} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: (pendingType || recapCard.type) === "expression" ? "#fff3e0" : (pendingType || recapCard.type) === "grammar" ? C.accBg : C.proBg, color: (pendingType || recapCard.type) === "expression" ? "#e65100" : (pendingType || recapCard.type) === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3, cursor: recapEditMode ? "pointer" : "default" }}>
+                        {typeLabel(pendingType || recapCard.type, t)} {recapEditMode && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
                       </span>
                       {typePickerOpen && recapEditMode && (
                         <>
                           <div onClick={() => setTypePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
                           <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 110 }}>
-                            {[["vocab", C.proBg, C.pro], ["grammar", C.accBg, C.acc], ["expression", "#fff3e0", "#e65100"]].map(([tp, bg, col]) => (
+                            {[["vocab", C.proBg, C.pro], ["grammar", C.accBg, C.acc], ["expression", "#fff3e0", "#e65100"]].map(([tp, bg, col]) => {
+                              const isActive = (pendingType || normType(recapCard.type)) === tp;
+                              return (
                               <div key={tp} onClick={() => {
-                                if (normType(recapCard.type) !== tp) {
-                                  save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: tp } : c) });
-                                  setRecapCard(prev => prev ? { ...prev, type: tp } : prev);
-                                }
+                                setPendingType(normType(recapCard.type) !== tp ? tp : null);
                                 setTypePickerOpen(false);
-                              }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: normType(recapCard.type) === tp ? 600 : 400, color: col, background: normType(recapCard.type) === tp ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
-                                onMouseEnter={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = C.s1; }}
-                                onMouseLeave={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = "transparent"; }}>
+                              }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: isActive ? 600 : 400, color: col, background: isActive ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.s1; }}
+                                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
                                 {typeLabel(tp, t)}
                               </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </>
                       )}
@@ -11153,13 +11153,13 @@ function AppInner() {
                       style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁" : "🙈"} {t.showTranslations}
                     </button>
-                    <span onClick={() => { setRecapEditMode(p => !p); setTypePickerOpen(false); setPosPickerOpen(false); }}
+                    <span onClick={() => { setRecapEditMode(p => { if (p) { setPendingType(null); setPendingPos(null); } return !p; }); setTypePickerOpen(false); setPosPickerOpen(false); }}
                       style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 6, border: `1px solid ${recapEditMode ? C.acc : C.border}`, background: recapEditMode ? C.accBg : C.s1, color: recapEditMode ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", flexShrink: 0 }}
                       title={lang === "fr" ? "Modifier" : lang === "ko" ? "수정" : "Edit"}>
                       ✎
                     </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
                     <div style={{ fontFamily: tFont, fontSize: 22, color: C.txt }}>{recapCard.korean}</div>
                     {recapCard.gender && GENDERED_LANGS.has(recapCard.targetLang || tl) && (
@@ -11169,9 +11169,10 @@ function AppInner() {
                     )}
                     {recapCard.type !== "grammar" && (() => {
                       const posMap = { verb: [t.posVerb, t.posVerbFr, "#EFF6FF", "#1D4ED8", "#BFDBFE"], adjective: [t.posAdj, t.posAdjFr, "#F5F3FF", "#6D28D9", "#DDD6FE"], noun: [t.posNoun, t.posNounFr, "#F0FDF4", "#166534", "#BBF7D0"], adverb: [t.posAdv, t.posAdvFr, "#FFFBEB", "#92400E", "#FDE68A"], particle: [t.posParticle, t.posParticleFr, "#FFF1F2", "#BE123C", "#FECDD3"] };
-                      const cur = posMap[recapCard.pos];
+                      const effectivePos = pendingPos === "__remove__" ? undefined : (pendingPos || recapCard.pos);
+                      const cur = posMap[effectivePos];
                       return recapCard.pos && !recapEditMode ? (
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: cur[2], color: cur[3], border: `1px solid ${cur[4]}` }}>{cur[0]} · {cur[1]}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: posMap[recapCard.pos][2], color: posMap[recapCard.pos][3], border: `1px solid ${posMap[recapCard.pos][4]}` }}>{posMap[recapCard.pos][0]} · {posMap[recapCard.pos][1]}</span>
                       ) : recapEditMode ? (
                         <span style={{ position: "relative" }}>
                           <span onClick={() => setPosPickerOpen(p => !p)} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, cursor: "pointer", background: cur ? cur[2] : C.s1, color: cur ? cur[3] : C.txtM, border: `1px solid ${cur ? cur[4] : C.border}`, display: "inline-flex", alignItems: "center", gap: 3 }}>
@@ -11182,37 +11183,22 @@ function AppInner() {
                             <>
                               <div onClick={() => setPosPickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
                               <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 140 }}>
-                                {Object.entries(posMap).map(([pos, [kr, fr, bg, col]]) => (
-                                  <div key={pos} onClick={async () => {
-                                    const prev = recapCard.pos;
-                                    save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos } : c) });
-                                    setRecapCard(p => p ? { ...p, pos } : p);
+                                {Object.entries(posMap).map(([pos, [kr, fr, bg, col]]) => {
+                                  const isActive = (pendingPos !== undefined && pendingPos !== null ? pendingPos : recapCard.pos) === pos;
+                                  return (
+                                  <div key={pos} onClick={() => {
+                                    setPendingPos(recapCard.pos !== pos ? pos : null);
                                     setPosPickerOpen(false);
-                                    if ((pos === "verb" || pos === "adjective") && prev !== pos) {
-                                      try {
-                                        const results = await detectPartOfSpeech([recapCard], recapCard.targetLang || tl);
-                                        if (results && results[0] && results[0].conjugations) {
-                                          const conj = results[0].conjugations;
-                                          save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos, conjugations: conj } : c) });
-                                          setRecapCard(p => p ? { ...p, pos, conjugations: conj } : p);
-                                          setFlash(lang === "fr" ? "Conjugaisons importées" : lang === "ko" ? "활용형 가져옴" : "Conjugations imported");
-                                          setTimeout(() => setFlash(null), 2000);
-                                        }
-                                      } catch (e) { console.warn("Conjugation fetch failed:", e); }
-                                    } else if (pos !== "verb" && pos !== "adjective") {
-                                      save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos, conjugations: undefined } : c) });
-                                      setRecapCard(p => p ? { ...p, pos, conjugations: undefined } : p);
-                                    }
-                                  }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: recapCard.pos === pos ? 600 : 400, color: col, background: recapCard.pos === pos ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
-                                    onMouseEnter={e => { if (recapCard.pos !== pos) e.currentTarget.style.background = C.s1; }}
-                                    onMouseLeave={e => { if (recapCard.pos !== pos) e.currentTarget.style.background = "transparent"; }}>
+                                  }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: isActive ? 600 : 400, color: col, background: isActive ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = C.s1; }}
+                                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
                                     {kr} · {fr}
                                   </div>
-                                ))}
-                                {recapCard.pos && (
+                                  );
+                                })}
+                                {(recapCard.pos || pendingPos) && (
                                   <div onClick={() => {
-                                    save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos: undefined, conjugations: undefined } : c) });
-                                    setRecapCard(p => p ? { ...p, pos: undefined, conjugations: undefined } : p);
+                                    setPendingPos(recapCard.pos ? "__remove__" : null);
                                     setPosPickerOpen(false);
                                   }} style={{ padding: "7px 12px", fontSize: 11, color: C.txtS, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", borderTop: `1px solid ${C.border}` }}
                                     onMouseEnter={e => { e.currentTarget.style.background = C.s1; }}
@@ -11227,6 +11213,47 @@ function AppInner() {
                       ) : null;
                     })()}
                   </div>
+                  {recapEditMode && (pendingType || pendingPos) && (
+                    <div style={{ display: "flex", gap: 8, marginBottom: 4, marginTop: 2 }}>
+                      <button onClick={async () => {
+                        let updatedCard = { ...recapCard };
+                        let updatedCards = [...data.cards];
+                        if (pendingType && normType(recapCard.type) !== pendingType) {
+                          updatedCard.type = pendingType;
+                          updatedCards = updatedCards.map(c => c.korean === recapCard.korean ? { ...c, type: pendingType } : c);
+                        }
+                        const newPos = pendingPos === "__remove__" ? undefined : (pendingPos || recapCard.pos);
+                        if (pendingPos) {
+                          updatedCard.pos = newPos;
+                          if (!newPos || (newPos !== "verb" && newPos !== "adjective")) {
+                            updatedCard.conjugations = undefined;
+                          }
+                          updatedCards = updatedCards.map(c => c.id === recapCard.id ? { ...c, pos: newPos, ...((!newPos || (newPos !== "verb" && newPos !== "adjective")) ? { conjugations: undefined } : {}) } : c);
+                        }
+                        save({ ...data, cards: updatedCards });
+                        setRecapCard(updatedCard);
+                        setPendingType(null);
+                        setPendingPos(null);
+                        if (pendingPos && (newPos === "verb" || newPos === "adjective") && newPos !== recapCard.pos) {
+                          try {
+                            const results = await detectPartOfSpeech([recapCard], recapCard.targetLang || tl);
+                            if (results && results[0] && results[0].conjugations) {
+                              const conj = results[0].conjugations;
+                              save({ ...data, cards: data.cards.map(c => c.id === recapCard.id ? { ...c, pos: newPos, conjugations: conj, ...(pendingType ? { type: pendingType } : {}) } : c) });
+                              setRecapCard(p => p ? { ...p, pos: newPos, conjugations: conj } : p);
+                              setFlash(lang === "fr" ? "Conjugaisons importées" : lang === "ko" ? "활용형 가져옴" : "Conjugations imported");
+                              setTimeout(() => setFlash(null), 2000);
+                            }
+                          } catch (e) { console.warn("Conjugation fetch failed:", e); }
+                        }
+                      }} style={{ padding: "4px 14px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                        OK
+                      </button>
+                      <button onClick={() => { setPendingType(null); setPendingPos(null); }} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                        {lang === "fr" ? "Annuler" : lang === "ko" ? "취소" : "Cancel"}
+                      </button>
+                    </div>
+                  )}
                   {showTargetDef[recapCard.id] && recapCard.description_target ? (
                     <div style={{ fontSize: 12.5, color: C.txtM, fontStyle: "italic", fontFamily: tFont, lineHeight: 1.6, marginBottom: 10, padding: "5px 9px", background: C.s1, borderRadius: 6, border: `1px solid ${C.border}` }}>
                       {recapCard.description_target}

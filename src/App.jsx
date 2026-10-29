@@ -6503,6 +6503,7 @@ function AppInner() {
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [tagExplore, setTagExplore] = useState(null); // tag name to show related cards
   const [tagInput, setTagInput] = useState("");
   const [bulkTagMode, setBulkTagMode] = useState(false);
@@ -7900,7 +7901,7 @@ function AppInner() {
       } else {
         setGoalView("list"); setGoalEditId(null);
       }
-      setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false);
+      setGoalDeleteConfirm(null); setGoalCardPicker(false); setGoalPickTags(new Set()); setGoalTagDropOpen(false); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); setGoalImpKnown(new Set()); setGoalEditingDeadline(false); setGoalEditingStartDate(false);
     }
     if (bulkTagMode) { setBulkTagMode(false); setBulkTagSel(new Set()); setBulkTagPicker(false); }
     // Push history entry unless this navigation was triggered by popstate itself.
@@ -8665,7 +8666,8 @@ function AppInner() {
   const [goalEditingDeadline, setGoalEditingDeadline] = useState(false);
   const [goalEditingStartDate, setGoalEditingStartDate] = useState(false);
   const [goalDeadlinePopup, setGoalDeadlinePopup] = useState(null);
-  const [goalPickTag, setGoalPickTag] = useState(null); // null = all, string = filter by tag
+  const [goalPickTags, setGoalPickTags] = useState(new Set()); // empty = all, Set of tags to filter
+  const [goalTagDropOpen, setGoalTagDropOpen] = useState(false);
   const [goalImpText, setGoalImpText] = useState("");
   const [goalImpStep, setGoalImpStep] = useState(null); // null | "ocr" | "scanning" | "picks"
   const [goalImpFound, setGoalImpFound] = useState([]);
@@ -8850,7 +8852,7 @@ function AppInner() {
       }),
     };
     save(nd);
-    setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null);
+    setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTags(new Set()); setGoalTagDropOpen(false);
     setTimeout(() => { const el = goalCardListRef.current; if (el) { el.scrollTop = el.scrollHeight; } }, 80);
   };
 
@@ -10034,8 +10036,8 @@ function AppInner() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                         <span style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 14, fontWeight: 600, color: C.txt }}>{k}</span>
-                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: tp === "grammar" ? "#E8F5E9" : "#E3F2FD", color: tp === "grammar" ? "#2E7D32" : "#1565C0" }}>
-                          {tp === "grammar" ? t.selPickGrammar : t.selPickVocab}
+                        <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: tp === "expression" ? "#fff3e0" : tp === "grammar" ? C.accBg : C.proBg, color: tp === "expression" ? "#e65100" : tp === "grammar" ? C.acc : C.pro }}>
+                          {typeLabel(tp, t)}
                         </span>
                       </div>
                       {desc && <div style={{ fontSize: 12, color: C.txtM, lineHeight: 1.4 }}>{desc}</div>}
@@ -10762,7 +10764,7 @@ function AppInner() {
                       <div style={{ fontFamily: tFont, fontSize: 15, color: C.txt }}>{p.korean}</div>
                       <div style={{ fontSize: 11.5, color: C.txtS, marginTop: 2 }}>{lang === "fr" ? p.description_fr : (p.description_en || p.description_fr)}</div>
                     </div>
-                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, background: p.type === "expression" ? "#fff3e0" : p.type === "grammar" ? C.accBg : C.proBg, color: p.type === "expression" ? "#e65100" : p.type === "grammar" ? C.acc : C.pro }}>{typeLabel(p.type, t)}</span>
                     <button onClick={e => { e.stopPropagation(); markKnown(i); }}
                       style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${known.has(i) ? C.okB : C.border}`, background: known.has(i) ? C.okBg : "none", color: known.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       ✓ {known.has(i) ? t.addedAcq : t.iKnow}
@@ -11076,25 +11078,47 @@ function AppInner() {
                 {/* Card info */}
                 <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-                    <span onClick={() => {
-                      const cycle = ["vocab", "grammar", "expression"];
-                      const cur = normType(recapCard.type);
-                      const newType = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
-                      save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: newType } : c) });
-                      setRecapCard(prev => prev ? { ...prev, type: newType } : prev);
-                    }} title={lang === "fr" ? "Cliquer pour changer le type" : lang === "ko" ? "유형 변경" : "Click to change type"} style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "grammar" ? C.accBg : recapCard.type === "expression" ? "#FFF7ED" : C.proBg, color: recapCard.type === "grammar" ? C.acc : recapCard.type === "expression" ? "#C2410C" : C.pro, cursor: "pointer" }}>{typeLabel(recapCard.type, t)}</span>
+                    <span style={{ position: "relative" }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, padding: "2px 7px", borderRadius: 4, background: recapCard.type === "expression" ? "#fff3e0" : recapCard.type === "grammar" ? C.accBg : C.proBg, color: recapCard.type === "expression" ? "#e65100" : recapCard.type === "grammar" ? C.acc : C.pro, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                        {typeLabel(recapCard.type, t)} {typePickerOpen && <span style={{ fontSize: 7, opacity: 0.7 }}>&#9660;</span>}
+                      </span>
+                      {typePickerOpen && (
+                        <>
+                          <div onClick={() => setTypePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                          <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", overflow: "hidden", minWidth: 110 }}>
+                            {[["vocab", C.proBg, C.pro], ["grammar", C.accBg, C.acc], ["expression", "#fff3e0", "#e65100"]].map(([tp, bg, col]) => (
+                              <div key={tp} onClick={() => {
+                                if (normType(recapCard.type) !== tp) {
+                                  save({ ...data, cards: data.cards.map(c => c.korean === recapCard.korean ? { ...c, type: tp } : c) });
+                                  setRecapCard(prev => prev ? { ...prev, type: tp } : prev);
+                                }
+                                setTypePickerOpen(false);
+                              }} style={{ padding: "7px 12px", fontSize: 11, fontWeight: normType(recapCard.type) === tp ? 600 : 400, color: col, background: normType(recapCard.type) === tp ? bg : "transparent", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}
+                                onMouseEnter={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = C.s1; }}
+                                onMouseLeave={e => { if (normType(recapCard.type) !== tp) e.currentTarget.style.background = "transparent"; }}>
+                                {typeLabel(tp, t)}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </span>
                     {(() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
                       </span>
                     ); })()}
-                    {(recapCard.reviewCount || 0) > 0 && <span style={{ fontSize: 10, color: C.txtM }}>{t.reviewCount(recapCard.reviewCount)}</span>}
                     <button
                       onClick={() => { const v = !revealTr; setRevealTr(v); localStorage.setItem("moa-reveal-tr", v ? "1" : "0"); }}
                       title={t.tapToReveal}
                       style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: `1px solid ${revealTr ? C.acc : C.border}`, background: revealTr ? C.accBg : C.s1, color: revealTr ? C.acc : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                       {revealTr ? "👁" : "🙈"} {t.showTranslations}
                     </button>
+                    <span onClick={() => setTypePickerOpen(p => !p)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 22, height: 22, borderRadius: 6, border: `1px solid ${typePickerOpen ? C.acc : C.border}`, background: typePickerOpen ? C.accBg : C.s1, color: typePickerOpen ? C.acc : C.txtM, fontSize: 10, cursor: "pointer", flexShrink: 0 }}
+                      title={lang === "fr" ? "Modifier le type" : lang === "ko" ? "유형 변경" : "Change type"}>
+                      ✎
+                    </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
                     {(recapCard.images || [])[0] && <img src={recapCard.images[0].thumb || recapCard.images[0].url} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />}
@@ -11519,7 +11543,7 @@ function AppInner() {
                             ✏️ {t.moreExercises}
                           </button>
                         </div>
-                      ) : (
+                      ) : recapCard.type === "expression" ? null : (
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                         {cats.map(c => (
                           <div key={c.key} onClick={() => launchCat(c.key)}
@@ -11542,7 +11566,7 @@ function AppInner() {
                             { k: "youglish", l: t.youglishBtn, i: "🎬" },
                             { k: "lyrics", l: t.lyricsBtn, i: "🎵" },
                             { k: "resources", l: t.onlineRes, i: "📚" },
-                          ].filter(a => (a.k !== "resources" || recapCard?.type === "grammar") && (a.k !== "image" || recapCard?.type !== "grammar") && (a.k !== "youglish" || recapCard?.type !== "grammar") && (a.k !== "lyrics" || recapCard?.type !== "grammar")).map(a => (
+                          ].filter(a => recapCard?.type === "expression" ? a.k === "examples" : (a.k !== "resources" || recapCard?.type === "grammar") && (a.k !== "image" || recapCard?.type !== "grammar") && (a.k !== "youglish" || recapCard?.type !== "grammar") && (a.k !== "lyrics" || recapCard?.type !== "grammar")).map(a => (
                             <button key={a.k} onClick={() => {
                               if (a.k === "youglish") {
                                 recordPracticeReview(recapCard);
@@ -11625,6 +11649,11 @@ function AppInner() {
                           </div>
                         )}
                       </div>
+                      {reviewCount > 0 && (
+                        <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 12, paddingTop: 10, fontSize: 11, color: C.txtM, textAlign: "center" }}>
+                          {t.reviewCount(reviewCount)}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -12563,29 +12592,49 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "block" }}>{t.goalCards} ({goalPickSel.size})</label>
-                    {/* Tag filter */}
+                    {/* Tag filter dropdown */}
                     {(() => {
                       const availCards = data.cards.filter(c => !c.goalId);
                       const allTags = [...new Set(availCards.flatMap(c => c.tags || []))].sort();
                       if (!allTags.length) return null;
                       return (
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
-                          <button onClick={() => setGoalPickTag(null)}
-                            style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${!goalPickTag ? C.acc : C.border}`, background: !goalPickTag ? C.accBg : C.s1, color: !goalPickTag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                            {t.bulkTagSelectAll}
+                        <div style={{ position: "relative", marginBottom: 8 }}>
+                          <button onClick={() => setGoalTagDropOpen(p => !p)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${goalPickTags.size ? C.acc : C.border}`, background: goalPickTags.size ? C.accBg : C.s1, color: goalPickTags.size ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                            {goalPickTags.size ? `${t.filterByTag} (${goalPickTags.size})` : t.allTags} <span style={{ fontSize: 8 }}>&#9660;</span>
                           </button>
-                          {allTags.map(tag => (
-                            <button key={tag} onClick={() => setGoalPickTag(goalPickTag === tag ? null : tag)}
-                              style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${goalPickTag === tag ? C.acc : C.border}`, background: goalPickTag === tag ? C.accBg : C.s1, color: goalPickTag === tag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                              #{tag}
+                          {goalPickTags.size > 0 && (
+                            <button onClick={() => setGoalPickTags(new Set())}
+                              style={{ marginLeft: 6, padding: "4px 8px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              ✕ {t.bulkTagSelectAll}
                             </button>
-                          ))}
+                          )}
+                          {goalTagDropOpen && (
+                            <>
+                              <div onClick={() => setGoalTagDropOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", maxHeight: 260, overflowY: "auto", minWidth: 200, maxWidth: 300 }}>
+                                {allTags.map(tag => {
+                                  const on = goalPickTags.has(tag);
+                                  return (
+                                    <div key={tag} onClick={() => { const s = new Set(goalPickTags); on ? s.delete(tag) : s.add(tag); setGoalPickTags(s); }}
+                                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent", transition: "background 0.1s" }}
+                                      onMouseEnter={e => { if (!on) e.currentTarget.style.background = C.s1; }}
+                                      onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                                      <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                      <span style={{ fontSize: 11.5, color: on ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'" }}>#{tag}</span>
+                                      <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{availCards.filter(c => (c.tags || []).includes(tag)).length}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })()}
                     <div style={{ maxHeight: 260, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 8, background: C.s1 }}>
                       {(() => {
-                        const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag));
+                        const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg)));
                         if (!filtered.length) return <div style={{ padding: 16, fontSize: 12, color: C.txtM, textAlign: "center" }}>{t.goalNoCards}</div>;
                         return filtered.map(c => (
                           <div key={c.id} onClick={() => { const s = new Set(goalPickSel); s.has(c.id) ? s.delete(c.id) : s.add(c.id); setGoalPickSel(s); }}
@@ -12600,9 +12649,9 @@ function AppInner() {
                     </div>
                     {data.cards.filter(c => !c.goalId).length > 0 && (
                       <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                        <button onClick={() => { const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag)); setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)])); }}
+                        <button onClick={() => { const filtered = data.cards.filter(c => !c.goalId).filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg))); setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)])); }}
                           style={{ fontSize: 11, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
-                        <button onClick={() => { if (goalPickTag) { const filtered = data.cards.filter(c => !c.goalId && (c.tags || []).includes(goalPickTag)); const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
+                        <button onClick={() => { if (goalPickTags.size) { const filtered = data.cards.filter(c => !c.goalId && (c.tags || []).some(tg => goalPickTags.has(tg))); const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
                           style={{ fontSize: 11, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
                       </div>
                     )}
@@ -12909,20 +12958,40 @@ function AppInner() {
                         {(() => {
                           const availCards = data.cards.filter(c => !c.goalId || c.goalId === goal.id).filter(c => !(goal.cardIds || []).includes(c.id));
                           const allTags = [...new Set(availCards.flatMap(c => c.tags || []))].sort();
-                          const filtered = availCards.filter(c => !goalPickTag || (c.tags || []).includes(goalPickTag));
+                          const filtered = availCards.filter(c => !goalPickTags.size || (c.tags || []).some(tg => goalPickTags.has(tg)));
                           return (<>
                             {allTags.length > 0 && (
-                              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
-                                <button onClick={() => setGoalPickTag(null)}
-                                  style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${!goalPickTag ? C.acc : C.border}`, background: !goalPickTag ? C.accBg : C.s1, color: !goalPickTag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                  {t.bulkTagSelectAll}
+                              <div style={{ position: "relative", marginBottom: 8 }}>
+                                <button onClick={() => setGoalTagDropOpen(p => !p)}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${goalPickTags.size ? C.acc : C.border}`, background: goalPickTags.size ? C.accBg : C.s1, color: goalPickTags.size ? C.acc : C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                  {goalPickTags.size ? `${t.filterByTag} (${goalPickTags.size})` : t.allTags} <span style={{ fontSize: 8 }}>&#9660;</span>
                                 </button>
-                                {allTags.map(tag => (
-                                  <button key={tag} onClick={() => setGoalPickTag(goalPickTag === tag ? null : tag)}
-                                    style={{ padding: "3px 10px", borderRadius: 10, border: `1px solid ${goalPickTag === tag ? C.acc : C.border}`, background: goalPickTag === tag ? C.accBg : C.s1, color: goalPickTag === tag ? C.acc : C.txtM, fontSize: 10.5, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
-                                    #{tag}
+                                {goalPickTags.size > 0 && (
+                                  <button onClick={() => setGoalPickTags(new Set())}
+                                    style={{ marginLeft: 6, padding: "4px 8px", borderRadius: 6, border: "none", background: "none", color: C.txtM, fontSize: 10, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                                    ✕ {t.bulkTagSelectAll}
                                   </button>
-                                ))}
+                                )}
+                                {goalTagDropOpen && (
+                                  <>
+                                    <div onClick={() => setGoalTagDropOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                                    <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 4, zIndex: 100, background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, boxShadow: "0 6px 24px rgba(0,0,0,0.18)", maxHeight: 260, overflowY: "auto", minWidth: 200, maxWidth: 300 }}>
+                                      {allTags.map(tag => {
+                                        const on = goalPickTags.has(tag);
+                                        return (
+                                          <div key={tag} onClick={() => { const s = new Set(goalPickTags); on ? s.delete(tag) : s.add(tag); setGoalPickTags(s); }}
+                                            style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 12px", cursor: "pointer", borderBottom: `1px solid ${C.border}`, background: on ? C.accBg : "transparent", transition: "background 0.1s" }}
+                                            onMouseEnter={e => { if (!on) e.currentTarget.style.background = C.s1; }}
+                                            onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                                            <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
+                                            <span style={{ fontSize: 11.5, color: on ? C.acc : C.txt, fontFamily: "'Plus Jakarta Sans'" }}>#{tag}</span>
+                                            <span style={{ fontSize: 10, color: C.txtM, marginLeft: "auto" }}>{availCards.filter(c => (c.tags || []).includes(tag)).length}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             )}
                             <div style={{ maxHeight: 200, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 6, background: C.s1, marginBottom: 8 }}>
@@ -12940,7 +13009,7 @@ function AppInner() {
                               <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                                 <button onClick={() => setGoalPickSel(new Set([...goalPickSel, ...filtered.map(c => c.id)]))}
                                   style={{ fontSize: 11, color: C.acc, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagSelectAll}</button>
-                                <button onClick={() => { if (goalPickTag) { const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
+                                <button onClick={() => { if (goalPickTags.size) { const s = new Set(goalPickSel); filtered.forEach(c => s.delete(c.id)); setGoalPickSel(s); } else { setGoalPickSel(new Set()); } }}
                                   style={{ fontSize: 11, color: C.txtM, background: "none", border: "none", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.bulkTagNone}</button>
                               </div>
                             )}
@@ -12951,7 +13020,7 @@ function AppInner() {
                             style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: goalPickSel.size ? C.acc : C.s1, color: goalPickSel.size ? C.onAcc : C.txtM, fontSize: 12, fontWeight: 500, cursor: goalPickSel.size ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                             + {t.goalAddCards} ({goalPickSel.size})
                           </button>
-                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTag(null); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
+                          <button onClick={() => { setGoalCardPicker(false); setGoalPickSel(new Set()); setGoalPickTags(new Set()); setGoalTagDropOpen(false); setGoalImpStep(null); setGoalImpFound([]); setGoalImpSel(new Set()); }}
                             style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{t.goalCancel}</button>
                         </div>
                         <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 10, paddingTop: 10 }}>
@@ -12989,7 +13058,7 @@ function AppInner() {
                                     style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", borderRadius: 6, cursor: "pointer", background: on ? C.accBg : C.s1, border: `1px solid ${on ? C.acc : C.border}` }}>
                                     <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
                                     <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt, flex: 1 }}>{v.korean || v.word}</span>
-                                    <span style={{ fontSize: 10, color: C.txtM }}>{v.type === "vocab" ? "vocab" : "grammar"}</span>
+                                    <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
                                     <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                       style={{ padding: "2px 6px", borderRadius: 5, fontSize: 9.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                       ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}

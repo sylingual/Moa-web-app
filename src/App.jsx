@@ -12495,9 +12495,8 @@ function AppInner() {
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
                         <button onClick={() => {
                           setMsSentenceOk(false);
-                          const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
-                          const words = sel.map(c => c.korean);
-                          setExConv(prev => [...prev, { role: "ai", content: t.makeSentencePrompt(words), options: null, selected: null }]);
+                          const again = lang === "fr" ? "Ok, j'attends ta nouvelle phrase !" : lang === "ko" ? "좋아, 새 문장을 써 봐!" : "Ok, write another sentence!";
+                          setExConv(prev => [...prev, { role: "ai", content: again, options: null, selected: null }]);
                         }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ✍️ {t.makeSentenceAnother}

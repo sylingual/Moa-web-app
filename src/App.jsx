@@ -281,6 +281,18 @@ const T = {
     tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
     tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
     tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoClickCreate: "Crée ton premier objectif !",
+    tutoFillName: "Indique par exemple la date de ton dernier cours avec ton prof, et son nom.",
+    tutoFillNameAlone: "Donne un nom à ton objectif, par exemple \"Cours du 15 octobre\".",
+    tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
+    tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
+    tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
+    tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
+    tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
+    tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
+    tutoOui: "Oui !",
+    tutoContinue: "Continuer",
+    tutoNext: "Suivant",
     tutoReady: "C'est parti !",
     tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -816,6 +828,18 @@ const T = {
     tutoAlone: () => "Alone",
     tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
     tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoClickCreate: "Create your first goal!",
+    tutoFillName: "For example, enter the date of your last class and your teacher's name.",
+    tutoFillNameAlone: "Give your goal a name, for example \"October 15 lesson\".",
+    tutoFillDeadline: "For example, your next class or your next exam.",
+    tutoStartDate: "This field is optional, but useful if you want to plan ahead.",
+    tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot.\nGo ahead, click \"Import a text\"!",
+    tutoImportPicks: "Great! Moa extracted the vocabulary and grammar for you to review.\nChoose what you want to study, or click \"I know this\" for words you already know.",
+    tutoClickSave: "You can now create your goal!\nDon't worry, you can always edit it later.",
+    tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you. Happy studying!",
+    tutoOui: "Yes!",
+    tutoContinue: "Continue",
+    tutoNext: "Next",
     tutoReady: "Let's go!",
     tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -1351,6 +1375,18 @@ const T = {
     tutoAlone: () => "혼자",
     tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
     tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoClickCreate: "첫 번째 목표를 만들어 보세요!",
+    tutoFillName: "예를 들어 마지막 수업 날짜와 선생님 이름을 적어보세요.",
+    tutoFillNameAlone: "목표 이름을 적어보세요, 예: \"10월 15일 수업\".",
+    tutoFillDeadline: "예를 들어 다음 수업이나 다음 시험 날짜를 적어보세요.",
+    tutoStartDate: "이 필드는 선택사항이지만, 미리 계획하고 싶을 때 유용해요.",
+    tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷.\n\"텍스트 가져오기\"를 클릭해 보세요!",
+    tutoImportPicks: "좋아요! Moa가 복습할 어휘와 문법을 추출했어요.\n공부하고 싶은 것을 선택하거나, 이미 아는 단어는 \"알고 있어요\"를 클릭하세요.",
+    tutoClickSave: "이제 목표를 만들 수 있어요!\n걱정 마세요, 나중에 수정할 수 있어요.",
+    tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요. 즐거운 공부 되세요!",
+    tutoOui: "네!",
+    tutoContinue: "계속",
+    tutoNext: "다음",
     tutoReady: "시작하자!",
     tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -6669,6 +6705,7 @@ function AppInner() {
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
   const [tutoStep, setTutoStep] = useState(0);
   const [tutoAnswer, setTutoAnswer] = useState(null);
+  const [tutoRect, setTutoRect] = useState(null);
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -8730,6 +8767,58 @@ function AppInner() {
   const goalPickerRef = useRef(null);
   const goalPicksRef = useRef(null);
 
+  // Tutorial: highlight target elements & measure position for bubble
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save' };
+  const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone;
+
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    document.querySelectorAll('.tuto-hl').forEach(el => el.classList.remove('tuto-hl'));
+    const attr = tutoTargets[tutoStep];
+    if (attr) {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) el.classList.add('tuto-hl');
+    }
+    return () => document.querySelectorAll('.tuto-hl').forEach(el => el.classList.remove('tuto-hl'));
+  }, [tutoStep, isTutorialActive]);
+
+  useEffect(() => {
+    if (!isTutorialActive) { setTutoRect(null); return; }
+    const attr = tutoTargets[tutoStep];
+    if (!attr) { setTutoRect(null); return; }
+    const measure = () => {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) setTutoRect(el.getBoundingClientRect());
+      else setTutoRect(null);
+    };
+    // Scroll target into view for steps where element may be off-screen
+    if (tutoStep === 8) {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    measure();
+    const t1 = setTimeout(measure, 150);
+    const t2 = setTimeout(measure, 400);
+    window.addEventListener('resize', measure);
+    // Skip scroll-based remeasure during picks phase to avoid jump when user clicks "Je connais"
+    if (!(tutoStep === 7 && goalImpStep === "picks")) {
+      window.addEventListener('scroll', measure, true);
+    }
+    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
+  }, [tutoStep, isTutorialActive, goalView, view, goalImpStep]);
+
+  // Auto-advance: step 2 when user clicks goals tab, step 3 when create form opens, step 8 when goal saved
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (tutoStep === 2 && view === 'goals') setTutoStep(3);
+  }, [view, tutoStep, isTutorialActive]);
+
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (tutoStep === 3 && goalView === 'create') setTutoStep(4);
+    if (tutoStep === 8 && goalView === 'list') setTutoStep(9);
+  }, [goalView, tutoStep, isTutorialActive]);
+
   const goals = data.goals || [];
   const todayKey = dayKey();
   const scheduledGoals = goals.filter(g => !g.trophyDate && g.startDate && g.startDate > todayKey);
@@ -9080,7 +9169,7 @@ function AppInner() {
   }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (goalImpStep === "picks" && goalImpFound.length > 0) {
+    if (goalImpStep === "picks" && goalImpFound.length > 0 && !isTutorialActive) {
       setTimeout(() => {
         if (goalPicksRef.current) goalPicksRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
         else if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;
@@ -9908,48 +9997,186 @@ function AppInner() {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}.tuto-hl{position:relative!important;z-index:9999!important;animation:tutoHighlight 1.5s infinite!important;border-radius:8px}`}</style>
 
       {/* WELCOME TUTORIAL OVERLAY */}
       {showTutorial && (() => {
         const isMobile = winW < 700;
-        const overlayBase = { position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.4s ease" };
-        const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
-        const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
-        const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+        const totalSteps = 10;
+        const gender = data.profile?.gender || "";
+        const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
+        const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
+        const stepDots = (current) => (
+          <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 14 }}>
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <div key={i} style={{ width: i === current ? 16 : 6, height: 6, borderRadius: 3, background: i === current ? C.acc : "rgba(0,0,0,0.15)", transition: "all 0.3s" }} />
+            ))}
+          </div>
+        );
 
-        if (tutoStep === 0) {
+        // Centered bubble (no target element)
+        const centeredOverlay = (content) => (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.3s ease" }}>
+            <div style={{ background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+              {content}
+            </div>
+          </div>
+        );
+
+        // Positioned bubble near a highlighted element
+        const positionedBubble = (text, btnLabel, onBtn) => {
+          if (!tutoRect) return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{text}</div>{btnLabel && <button onClick={onBtn} style={btnPrimary}>{btnLabel}</button>}<button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>);
+          const r = tutoRect;
+          const pad = 12;
+          const bubbleW = Math.min(340, winW - 32);
+          const aboveSpace = r.top;
+          const belowSpace = window.innerHeight - r.bottom;
+          const placeBelow = belowSpace > 180 || belowSpace >= aboveSpace;
+          const top = placeBelow ? r.bottom + pad : undefined;
+          const bottom = !placeBelow ? (window.innerHeight - r.top + pad) : undefined;
+          let left = Math.max(16, r.left + r.width / 2 - bubbleW / 2);
+          if (left + bubbleW > winW - 16) left = winW - 16 - bubbleW;
+          const arrowLeft = Math.min(Math.max(r.left + r.width / 2 - left - 8, 12), bubbleW - 28);
+
           return (
-            <div style={overlayBase}>
-              <div style={bubbleBase}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
-                <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-                  <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
-                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(data.profile?.gender)}</button>
-                </div>
-                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+            <>
+              {/* Dark overlay with cutout */}
+              <div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }}>
+                <div style={{ position: "fixed", top: r.top - 6, left: r.left - 6, width: r.width + 12, height: r.height + 12, borderRadius: 10, boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)", zIndex: 9998, pointerEvents: "none" }} />
               </div>
+              {/* Clickable backdrop (areas outside cutout) */}
+              {!btnLabel && <div onClick={() => {}} style={{ position: "fixed", inset: 0, zIndex: 9997, background: "transparent" }} />}
+              {/* Speech bubble */}
+              <div style={{ position: "fixed", top, bottom, left, width: bubbleW, zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {/* Arrow */}
+                  <div style={{ position: "absolute", [placeBelow ? "top" : "bottom"]: -8, left: arrowLeft, width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", [placeBelow ? "borderBottom" : "borderTop"]: "9px solid #fff" }} />
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: btnLabel ? 14 : 6, textAlign: "center" }}>{text}</div>
+                  {btnLabel && <button onClick={onBtn} style={btnPrimary}>{btnLabel}</button>}
+                  {!btnLabel && <div style={{ fontSize: 12, color: "#aaa", textAlign: "center", marginTop: 4 }}>👆</div>}
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+                </div>
+              </div>
+            </>
+          );
+        };
+
+        // Step 0: Welcome + question
+        if (tutoStep === 0) {
+          return centeredOverlay(
+            <div>
+              {stepDots(0)}
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#333", marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
+              <div style={{ fontSize: 13, color: "#777", marginBottom: 18, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 14, textAlign: "center" }}>{t.tutoQuestion(gender)}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
+                <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(gender)}</button>
+              </div>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
             </div>
           );
         }
 
+        // Step 1: Goals intro + "Oui!" button
         if (tutoStep === 1) {
           const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
-          return (
-            <div style={overlayBase}>
-              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
-                  {"🎯 OBJECTIFS"}
+          return centeredOverlay(
+            <div>
+              {stepDots(1)}
+              <div style={{ fontSize: 28, textAlign: "center", marginBottom: 6 }}>🎯</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{msg}</div>
+              <button onClick={() => { setTutoStep(2); navTo("goals"); }} style={btnPrimary}>{t.tutoOui}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 2: Highlight goals tab (auto-advances when view === "goals")
+        if (tutoStep === 2) {
+          return positionedBubble(t.tutoClickCreate, null, null);
+        }
+
+        // Step 3: Highlight create button (auto-advances when goalView === "create")
+        if (tutoStep === 3) {
+          return positionedBubble(t.tutoClickCreate, null, null);
+        }
+
+        // Step 4: Fill goal name
+        if (tutoStep === 4) {
+          const msg = tutoAnswer === "prof" ? t.tutoFillName : t.tutoFillNameAlone;
+          return positionedBubble(msg, t.tutoContinue, () => setTutoStep(5));
+        }
+
+        // Step 5: Fill deadline
+        if (tutoStep === 5) {
+          return positionedBubble(t.tutoFillDeadline, t.tutoContinue, () => setTutoStep(6));
+        }
+
+        // Step 6: Start date (optional)
+        if (tutoStep === 6) {
+          return positionedBubble(t.tutoStartDate, t.tutoContinue, () => {
+            setGoalImpText("이번 주 토요일 등산 공지!\n이번 주 토요일에 북한산 가실 분~?");
+            setTutoStep(7);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-import"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+          });
+        }
+
+        // Step 7: Import area (sub-phases based on goalImpStep)
+        if (tutoStep === 7) {
+          if (goalImpStep === "picks") {
+            // Picks shown: fixed bubble at top so it doesn't overlap the selectable cards
+            const onContinue = () => {
+              setTutoStep(8);
+              setTimeout(() => {
+                const el = document.querySelector('[data-tutorial="goal-save"]');
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 100);
+            };
+            return (
+              <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", width: Math.min(340, winW - 32), zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 14, textAlign: "center" }}>{t.tutoImportPicks}</div>
+                  <button onClick={onContinue} style={btnPrimary}>{t.tutoContinue}</button>
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
                 </div>
-                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
-                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
-                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
-                </div>
-                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
-                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
               </div>
+            );
+          }
+          if (goalImpStep === "scanning" || goalImpStep === "ocr") {
+            // Scanning in progress: no bubble, let the UI show
+            return (<div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }} />);
+          }
+          // Default: import area, no continue button - user must click "Importer"
+          return positionedBubble(t.tutoImportArea, null, null);
+        }
+
+        // Step 8: Save button (auto-advances when goalView goes back to "list")
+        if (tutoStep === 8) {
+          const msg = t.tutoClickSave;
+          if (!tutoRect) {
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-save"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+            return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
+          }
+          return positionedBubble(msg, null, null);
+        }
+
+        // Step 9: Congrats
+        if (tutoStep === 9) {
+          return centeredOverlay(
+            <div>
+              {stepDots(9)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🎉</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoCongrats}</div>
+              <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );
         }
@@ -12733,18 +12960,18 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalName}</label>
-                    <input value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
+                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
                       style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
-                      <input type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
+                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                     </div>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalStartDate}</label>
-                      <input type="date" value={goalForm.startDate || ""} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })}
+                      <input data-tutorial="goal-startdate" type="date" value={goalForm.startDate || ""} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })}
                         placeholder={t.goalStartDatePh}
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                       <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 3 }}>{t.goalStartDatePh}</div>
@@ -12818,7 +13045,7 @@ function AppInner() {
                   </div>
 
                   {/* Text + screenshot import */}
-                  <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+                  <div data-tutorial="goal-import" style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
                     {!goalImpStep && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <textarea value={goalImpText} onChange={e => setGoalImpText(e.target.value)} placeholder={t.goalImportTextPh}
@@ -12910,7 +13137,7 @@ function AppInner() {
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
+                    <button data-tutorial="goal-save" disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
                       style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                       {t.goalSave}
                     </button>
@@ -13359,7 +13586,7 @@ function AppInner() {
                   )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>🎯 {t.goalsTab}</div>
-                    <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); }}
+                    <button data-tutorial="create-goal-btn" onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); }}
                       style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalCreate}</button>
                   </div>
 

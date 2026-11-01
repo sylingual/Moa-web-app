@@ -7180,7 +7180,9 @@ function AppInner() {
     if (!cards.length || !cards.every(isDone)) return;
     trackEvent("review_completion", { due_count: cards.length, reviewed_count: cards.filter(isDone).length, ratio: 1 });
     const base = data.profile || DEFAULT_PROFILE;
-    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
+    const newBal = (base.points || 0) + 30;
+    trackEvent("points_earned", { amount: 30, source: "daily_review", balance: newBal });
+    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: newBal } });
     setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
     setTimeout(() => setPointsToast(null), 3000);
   }, [data.today, data.cards, save]);
@@ -7216,7 +7218,9 @@ function AppInner() {
         updatedGt = { ...updatedGt, __allGoalsBonus: { [today]: true } };
       }
       const base = data.profile || DEFAULT_PROFILE;
-      save({ ...data, goalToday: updatedGt, profile: { ...base, points: (base.points || 0) + totalBonus } });
+      const newBal = (base.points || 0) + totalBonus;
+      trackEvent("points_earned", { amount: totalBonus, source: "goal_daily", balance: newBal });
+      save({ ...data, goalToday: updatedGt, profile: { ...base, points: newBal } });
       setPointsToast({ n: totalBonus, label: bonusLabel });
       setTimeout(() => setPointsToast(null), 3000);
     }
@@ -7447,17 +7451,18 @@ function AppInner() {
   }, [view, tl]);
 
   // ---- POINTS ----
-  const awardPoints = (n, dataOverride) => {
+  const awardPoints = (n, dataOverride, source) => {
     const base = dataOverride || data;
     const cur = base.profile?.points || 0;
     const next = { ...base, profile: { ...(base.profile || DEFAULT_PROFILE), points: cur + n } };
+    if (source) trackEvent("points_earned", { amount: n, source, balance: cur + n });
     setPointsToast(n);
     setTimeout(() => setPointsToast(null), 2500);
     return next;
   };
 
   // +1 point the first time the learner opens a given "Further resources" link.
-  const awardResourcePoint = () => save(awardPoints(1, data));
+  const awardResourcePoint = () => save(awardPoints(1, data, "resource_link"));
 
   // ---- ONBOARDING ----
   const finishOnboarding = (skip) => {
@@ -7601,7 +7606,9 @@ function AppInner() {
     });
     const base = data.profile || DEFAULT_PROFILE;
     const gain = 15;
-    save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
+    const newBal = (base.points || 0) + gain;
+    trackEvent("points_earned", { amount: gain, source: "vocab_study", balance: newBal });
+    save({ ...data, cards: updated, profile: { ...base, points: newBal } });
     setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
     updated.filter(c => c.type === "vocab" && studiedWords.includes(c.korean) && !c.description_target).forEach(c => {
       generateTargetDescription(c, c.targetLang || tl).then(res => {
@@ -8062,7 +8069,9 @@ function AppInner() {
       const st = migrateStatus(x.status) === "acquired" ? "acquired" : "studied";
       return { ...x, ...extra, status: st, reviewCount: rc };
     });
-    save({ ...data, cards: updatedCards, profile: { ...base, points: (base.points || 0) + gain } });
+    const newBal = (base.points || 0) + gain;
+    if (gain) trackEvent("points_earned", { amount: gain, source: "first_review", balance: newBal });
+    save({ ...data, cards: updatedCards, profile: { ...base, points: newBal } });
     if (gain) { setPointsToast(gain); setTimeout(() => setPointsToast(null), 2000); }
     const card = updatedCards.find(x => x.korean === c.korean);
     // Open the recap screen so the translation/summary is shown right away.
@@ -8385,7 +8394,9 @@ function AppInner() {
         return { ...c, status: newStatus, reviewCount: rc, formality: f, tags: newTags, progress: prog, discoveredDate, reviewDates, goalAcquired };
       });
       const gain = wasFirstTime ? 20 : 10;
-      const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
+      const newBal = (currentProfile.points || 0) + gain;
+      trackEvent("points_earned", { amount: gain, source: "lesson_complete", balance: newBal });
+      const withPoints = { ...currentProfile, points: newBal };
       setPointsToast(gain);
       setTimeout(() => setPointsToast(null), 2500);
       // Don't auto-add derived cards — propose them for the learner to opt in.
@@ -9064,7 +9075,7 @@ function AppInner() {
         return { ...c, goalId: nextId || undefined, goalAcquired: nextId ? false : c.goalAcquired };
       });
     }
-    nd = awardPoints(hit === 100 ? 50 : 25, nd);
+    nd = awardPoints(hit === 100 ? 50 : 25, nd, "goal_milestone");
     save(nd);
     setGoalCelebration({ pct: hit, name: goal.name });
     setShowCelebration(true);
@@ -9274,7 +9285,7 @@ function AppInner() {
         const inputMul = flashInput === "write" ? 2 : 1;
         pts = Math.round(15 * dirMul * inputMul);
       }
-      let nd = awardPoints(pts, result.data);
+      let nd = awardPoints(pts, result.data, "exercise");
       if (result.autoAcquiredIds.length > 0) {
         setProgressToast(t.progressAutoAcquired);
         setTimeout(() => setProgressToast(null), 4000);
@@ -14021,6 +14032,114 @@ function AppInner() {
                   </div>
                 </div>
 
+                {/* POINTS */}
+                {d.points && (
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{"⭐"} Points</div>
+                  {/* Current balances */}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Soldes actuels</div>
+                  <div style={{ overflowX: "auto", marginBottom: 14 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                          {["Utilisateur", "Points", "Gagnes (traces)", "Depenses (traces)"].map(h => (
+                            <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(d.points.balances).sort((a, b) => b[1] - a[1]).map(([uid, pts]) => {
+                          const short = uid.length > 12 ? uid.slice(0, 6) + "…" + uid.slice(-4) : uid;
+                          const earned = d.points.earned_by_user[uid];
+                          const spent = d.points.spent_by_user[uid];
+                          return (
+                          <tr key={uid} style={{ borderBottom: `1px solid ${C.border}` }}>
+                            <td style={{ padding: "6px 4px", color: C.txt, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }} title={uid}>{short}</td>
+                            <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 700 }}>{pts.toLocaleString()}</td>
+                            <td style={{ padding: "6px 4px", color: C.ok }}>{earned ? "+" + earned.total.toLocaleString() : "-"}</td>
+                            <td style={{ padding: "6px 4px", color: C.warn }}>{spent ? "-" + spent.total.toLocaleString() : "-"}</td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Earned by source */}
+                  {Object.keys(d.points.earned_by_source).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points gagnes par source</div>
+                    <div style={{ marginBottom: 14 }}>
+                      {sortedObj(d.points.earned_by_source).map(([src, v]) => (
+                        <div key={src} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: C.txt, minWidth: 100 }}>{src}</span>
+                          <Bar val={v} max={barMax(sortedObj(d.points.earned_by_source))} color={C.ok} />
+                        </div>
+                      ))}
+                    </div>
+                  </>)}
+                  {/* Spent by item */}
+                  {Object.keys(d.points.spent_by_item).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points depenses par item</div>
+                    <div style={{ marginBottom: 14 }}>
+                      {sortedObj(d.points.spent_by_item).map(([item, v]) => (
+                        <div key={item} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: C.txt, minWidth: 100 }}>{item}</span>
+                          <Bar val={v} max={barMax(sortedObj(d.points.spent_by_item))} color={C.warn} />
+                        </div>
+                      ))}
+                    </div>
+                  </>)}
+                  {/* Earned per day (last 14 days) */}
+                  {Object.keys(d.points.earned_per_day).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points gagnes / jour (recent)</div>
+                    <div style={{ overflowX: "auto", marginBottom: 14 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                            {["Date", "Total", "Qui", "Sources"].map(h => (
+                              <th key={h} style={{ padding: "4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(d.points.earned_per_day).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14).map(([day, info]) => (
+                            <tr key={day} style={{ borderBottom: `1px solid ${C.border}` }}>
+                              <td style={{ padding: "4px", color: C.txt }}>{day.slice(5)}</td>
+                              <td style={{ padding: "4px", color: C.ok, fontWeight: 600 }}>+{info.total}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_user).map(([u, v]) => { const s = u.length > 8 ? u.slice(0, 4) + "…" + u.slice(-3) : u; return s + ":" + v; }).join(", ")}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_source).map(([s, v]) => s + ":" + v).join(", ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>)}
+                  {/* Spent per day */}
+                  {Object.keys(d.points.spent_per_day).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points depenses / jour</div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                            {["Date", "Total", "Detail"].map(h => (
+                              <th key={h} style={{ padding: "4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(d.points.spent_per_day).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14).map(([day, info]) => (
+                            <tr key={day} style={{ borderBottom: `1px solid ${C.border}` }}>
+                              <td style={{ padding: "4px", color: C.txt }}>{day.slice(5)}</td>
+                              <td style={{ padding: "4px", color: C.warn, fontWeight: 600 }}>-{info.total}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_user).map(([u, purchases]) => { const s = u.length > 8 ? u.slice(0, 4) + "…" + u.slice(-3) : u; return purchases.map(p => s + ": " + p.item + " (-" + p.amount + ")").join(", "); }).join("; ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>)}
+                </div>
+                )}
+
                 {/* TOKEN USAGE */}
                 {d.tokens && (
                 <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
@@ -14428,7 +14547,7 @@ function AppInner() {
                         {!unlocked && <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>1 500 pts</div>}
                       </div>
                       {!unlocked && pts >= 1500 && (
-                        <button onClick={() => save({ ...data, profile: { ...data.profile, songsUnlocked: true, points: (data.profile?.points || 0) - 1500 } })}
+                        <button onClick={() => { const newBal = (data.profile?.points || 0) - 1500; trackEvent("points_spent", { amount: 1500, item: "songs_unlock", balance: newBal }); save({ ...data, profile: { ...data.profile, songsUnlocked: true, points: newBal } }); }}
                           style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                           {t.mySongsUnlock}
                         </button>

@@ -5054,6 +5054,17 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
   };
   const restart = () => { setQueue(shuffle([...initial])); setInput(""); setResult(null); setKnownSet(new Set()); setAwarded(false); };
 
+  const card = queue.length > 0 ? queue[0] : null;
+  const remaining = queue.length;
+  const [imgLoaded, setImgLoaded] = useState(true);
+  const prevImgRef = useRef(card ? card.img : null);
+  useEffect(() => {
+    if (card && card.img !== prevImgRef.current) { setImgLoaded(false); prevImgRef.current = card.img; }
+  }, [card ? card.img : null]);
+  useEffect(() => {
+    if (queue.length > 1) { const img = new Image(); img.src = queue[1].img; }
+  }, [queue]);
+
   if (!initial.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
       <div style={{ fontSize: 30 }}>🖼️</div><div>{t.exNeedImages}</div>
@@ -5072,16 +5083,6 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
     </div>
   );
 
-  const card = queue[0];
-  const remaining = queue.length;
-  const [imgLoaded, setImgLoaded] = useState(true);
-  const prevImgRef = useRef(card.img);
-  useEffect(() => {
-    if (card.img !== prevImgRef.current) { setImgLoaded(false); prevImgRef.current = card.img; }
-  }, [card.img]);
-  useEffect(() => {
-    if (queue.length > 1) { const img = new Image(); img.src = queue[1].img; }
-  }, [queue]);
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -9264,24 +9265,30 @@ function AppInner() {
   };
 
   const completeExercise = (mode, cardIds) => {
-    trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
-    const result = recordExerciseProgress(data, cardIds, mode);
-    let pts = 15;
-    if (mode === "flash") {
-      const dirMul = flashDir === "both" ? 1.5 : 1;
-      const inputMul = flashInput === "write" ? 2 : 1;
-      pts = Math.round(15 * dirMul * inputMul);
+    try {
+      trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
+      const result = recordExerciseProgress(data, cardIds, mode);
+      let pts = 15;
+      if (mode === "flash") {
+        const dirMul = flashDir === "both" ? 1.5 : 1;
+        const inputMul = flashInput === "write" ? 2 : 1;
+        pts = Math.round(15 * dirMul * inputMul);
+      }
+      let nd = awardPoints(pts, result.data);
+      if (result.autoAcquiredIds.length > 0) {
+        setProgressToast(t.progressAutoAcquired);
+        setTimeout(() => setProgressToast(null), 4000);
+      } else {
+        setProgressToast(t.progressNewReview);
+        setTimeout(() => setProgressToast(null), 2500);
+      }
+      save(nd);
+      setShowCelebration(true);
+    } catch (err) {
+      console.error("completeExercise error:", err);
+      const result = recordExerciseProgress(data, cardIds, mode);
+      save(result.data);
     }
-    let nd = awardPoints(pts, result.data);
-    if (result.autoAcquiredIds.length > 0) {
-      setProgressToast(t.progressAutoAcquired);
-      setTimeout(() => setProgressToast(null), 4000);
-    } else {
-      setProgressToast(t.progressNewReview);
-      setTimeout(() => setProgressToast(null), 2500);
-    }
-    save(nd);
-    setShowCelebration(true);
   };
 
   // ---- EXERCISE ----

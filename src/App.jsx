@@ -11418,7 +11418,7 @@ function AppInner() {
                         </>
                       )}
                     </span>
-                    {(() => { const si = statusInfo(recapCard.status, t); return (
+                    {recapCard.status === "acquired" && (() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
                       </span>

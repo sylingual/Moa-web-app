@@ -10024,6 +10024,7 @@ function AppInner() {
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
         const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
+        const closeBtn = <button onClick={finishTutorial} style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,0.08)", color: "#888", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0 }} aria-label="Close">{"×"}</button>;
         const stepDots = (current) => (
           <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 14 }}>
             {Array.from({ length: totalSteps }, (_, i) => (
@@ -10035,7 +10036,8 @@ function AppInner() {
         // Centered bubble (no target element)
         const centeredOverlay = (content) => (
           <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.3s ease" }}>
-            <div style={{ background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+            <div style={{ position: "relative", background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+              {closeBtn}
               {content}
             </div>
           </div>
@@ -10067,6 +10069,7 @@ function AppInner() {
               {/* Speech bubble */}
               <div style={{ position: "fixed", top, bottom, left, width: bubbleW, zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
                 <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
                   {/* Arrow */}
                   <div style={{ position: "absolute", [placeBelow ? "top" : "bottom"]: -8, left: arrowLeft, width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", [placeBelow ? "borderBottom" : "borderTop"]: "9px solid #fff" }} />
                   {stepDots(tutoStep)}
@@ -10157,7 +10160,8 @@ function AppInner() {
             };
             return (
               <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", width: Math.min(340, winW - 32), zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
-                <div style={{ background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
                   {stepDots(tutoStep)}
                   <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 14, textAlign: "center" }}>{t.tutoImportPicks}</div>
                   <button onClick={onContinue} style={btnPrimary}>{t.tutoContinue}</button>
@@ -10167,8 +10171,11 @@ function AppInner() {
             );
           }
           if (goalImpStep === "scanning" || goalImpStep === "ocr") {
-            // Scanning in progress: no bubble, let the UI show
-            return (<div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }} />);
+            return (
+              <div style={{ position: "fixed", top: 10, right: 10, zIndex: 10000, pointerEvents: "auto" }}>
+                <button onClick={finishTutorial} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "rgba(255,255,255,0.9)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", padding: 0 }} aria-label="Close">{"×"}</button>
+              </div>
+            );
           }
           // Default: import area, no continue button - user must click "Importer"
           return positionedBubble(t.tutoImportArea, null, null);

@@ -13792,8 +13792,7 @@ function AppInner() {
                   {/* Monthly evolution */}
                   {(d.tokens.by_month || []).length > 0 && (() => {
                     const months = d.tokens.by_month;
-                    const maxCost = Math.max(...months.map(m => m.cost), 0.0001);
-                    const maxTokens = Math.max(...months.map(m => m.input + m.output), 1);
+                    const maxCalls = Math.max(...months.map(m => m.calls), 1);
                     return (<>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Evolution mensuelle</div>
                       <div style={{ overflowX: "auto", marginBottom: 12 }}>
@@ -13813,7 +13812,7 @@ function AppInner() {
                                 <td style={{ padding: "6px 4px", color: C.txt }}>{m.input?.toLocaleString()}</td>
                                 <td style={{ padding: "6px 4px", color: C.txt }}>{m.output?.toLocaleString()}</td>
                                 <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 600 }}>{"$" + m.cost.toFixed(4)}</td>
-                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.cost / maxCost * 100)) + "%", opacity: 0.7 }} /></td>
+                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.calls / maxCalls * 100)) + "%", opacity: 0.7 }} /></td>
                               </tr>
                             ))}
                           </tbody>
@@ -13823,8 +13822,8 @@ function AppInner() {
                   })()}
                   {/* By context */}
                   {(d.tokens.by_context || []).length > 0 && (() => {
-                    const ctxMax = Math.max(...d.tokens.by_context.map(c => c.cost), 0.0001);
-                    const ctxLabels = { analyze_text: "Analyse texte", analyze_vocab: "Analyse vocab", analyze_bulk: "Analyse bulk", study_vocab: "Etude vocab", qcm_comprehension: "QCM comprehension", qcm_sentence: "QCM phrase", qcm_answer: "QCM reponse", reformulation: "Reformulation", detect_pos: "Detection POS", lesson: "Lecon", translate: "Traduction", description: "Description", register: "Registre", lesson_chat: "Chat lecon", exercise_gen: "Exercice (gen)", exercise_eval: "Exercice (eval)", exercise_continue: "Exercice (suite)", feed_keywords: "Feed mots-cles", dream_search: "Recherche dream", recap: "Recap", lesson_summary: "Resume lecon", resource_chat: "Chat ressource", card_chat: "Chat carte", library_chat: "Chat biblio", lemma: "Lemme", translate_selection: "Trad. selection", etymology: "Etymologie", ocr: "OCR image", unknown: "Autre" };
+                    const ctxMaxCalls = Math.max(...d.tokens.by_context.map(c => c.calls), 1);
+                    const ctxLabels = { analyze_text: "Analyse texte", analyze_vocab: "Analyse vocab", analyze_bulk: "Analyse bulk", study_vocab: "Etude vocab", qcm_comprehension: "QCM comprehension", qcm_sentence: "QCM phrase", qcm_answer: "QCM reponse", reformulation: "Reformulation", detect_pos: "Détection POS", lesson: "Leçon", translate: "Traduction", description: "Description", register: "Registre", lesson_chat: "Chat leçon", exercise_gen: "Exercice (gen)", exercise_eval: "Exercice (eval)", exercise_continue: "Exercice (suite)", feed_keywords: "Feed mots-clés", dream_search: "Recherche dream", recap: "Récap", lesson_summary: "Résumé leçon", resource_chat: "Chat ressource", card_chat: "Chat carte", library_chat: "Chat biblio", lemma: "Lemme", translate_selection: "Trad. sélection", etymology: "Étymologie", ocr: "OCR image", unknown: "Autre", detect_verbs: "Détection verbes" };
                     return (<>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6, marginTop: 4 }}>Par type de fonction</div>
                       <div style={{ marginBottom: 12 }}>
@@ -13832,7 +13831,7 @@ function AppInner() {
                           <div key={c.context} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                             <span style={{ fontSize: 11, color: C.txt, minWidth: 130, flexShrink: 0 }}>{ctxLabels[c.context] || c.context}</span>
                             <div style={{ flex: 1, height: 8, borderRadius: 4, background: C.s2, overflow: "hidden" }}>
-                              <div style={{ width: Math.max(2, Math.round(c.cost / ctxMax * 100)) + "%", height: "100%", background: C.acc, borderRadius: 4, opacity: 0.7 }} />
+                              <div style={{ width: Math.max(2, Math.round(c.calls / ctxMaxCalls * 100)) + "%", height: "100%", background: C.acc, borderRadius: 4, opacity: 0.7 }} />
                             </div>
                             <span style={{ fontSize: 10, color: C.txtM, minWidth: 55, textAlign: "right" }}>{"$" + c.cost.toFixed(4)}</span>
                             <span style={{ fontSize: 10, color: C.txtM, minWidth: 30, textAlign: "right" }}>{c.calls}x</span>

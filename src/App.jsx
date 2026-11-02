@@ -281,6 +281,18 @@ const T = {
     tutoAlone: (gender) => gender === "femme" ? "Seule" : "Seul",
     tutoGoalsIntro: "Super ! Un prof, c'est pratique pour assurer la régularité.\nJe te propose de commencer par l'onglet \"Objectifs\".",
     tutoGoalsIntroAlone: "Super ! Je te propose de commencer par l'onglet \"Objectifs\" pour organiser ton apprentissage.",
+    tutoClickCreate: "Crée ton premier objectif !",
+    tutoFillName: "Indique par exemple la date de ton dernier cours avec ton prof, et son nom.",
+    tutoFillNameAlone: "Donne un nom à ton objectif, par exemple \"Cours du 15 octobre\".",
+    tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
+    tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
+    tutoImportArea: "C'est ici que tu peux importer tes notes de cours,\npar copié/collé d'un texte, photo ou screenshot.\nJe t'ai mis un texte pour que tu testes. Clique sur \"Importer un texte\" !",
+    tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
+    tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
+    tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
+    tutoOui: "Oui !",
+    tutoContinue: "Continuer",
+    tutoNext: "Suivant",
     tutoReady: "C'est parti !",
     tutoSkip: "Passer le tutoriel",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -816,6 +828,18 @@ const T = {
     tutoAlone: () => "Alone",
     tutoGoalsIntro: "Great! A teacher is handy for keeping you on track.\nI suggest starting with the \"Goals\" tab.",
     tutoGoalsIntroAlone: "Great! I suggest starting with the \"Goals\" tab to organize your learning.",
+    tutoClickCreate: "Create your first goal!",
+    tutoFillName: "For example, enter the date of your last class and your teacher's name.",
+    tutoFillNameAlone: "Give your goal a name, for example \"October 15 lesson\".",
+    tutoFillDeadline: "For example, your next class or your next exam.",
+    tutoStartDate: "This field is optional, but useful if you want to plan ahead.",
+    tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot.\nGo ahead, click \"Import a text\"!",
+    tutoImportPicks: "Great! Moa extracted the vocabulary and grammar for you to review.\nChoose what you want to study, or click \"I know this\" for words you already know.",
+    tutoClickSave: "You can now create your goal!\nDon't worry, you can always edit it later.",
+    tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you. Happy studying!",
+    tutoOui: "Yes!",
+    tutoContinue: "Continue",
+    tutoNext: "Next",
     tutoReady: "Let's go!",
     tutoSkip: "Skip tutorial",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -1351,6 +1375,18 @@ const T = {
     tutoAlone: () => "혼자",
     tutoGoalsIntro: "좋아요! 선생님이 있으면 꾸준히 공부하기 좋죠.\n\"목표\" 탭부터 시작하는 걸 추천해요.",
     tutoGoalsIntroAlone: "좋아요! 학습을 정리하기 위해 \"목표\" 탭부터 시작하는 걸 추천해요.",
+    tutoClickCreate: "첫 번째 목표를 만들어 보세요!",
+    tutoFillName: "예를 들어 마지막 수업 날짜와 선생님 이름을 적어보세요.",
+    tutoFillNameAlone: "목표 이름을 적어보세요, 예: \"10월 15일 수업\".",
+    tutoFillDeadline: "예를 들어 다음 수업이나 다음 시험 날짜를 적어보세요.",
+    tutoStartDate: "이 필드는 선택사항이지만, 미리 계획하고 싶을 때 유용해요.",
+    tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷.\n\"텍스트 가져오기\"를 클릭해 보세요!",
+    tutoImportPicks: "좋아요! Moa가 복습할 어휘와 문법을 추출했어요.\n공부하고 싶은 것을 선택하거나, 이미 아는 단어는 \"알고 있어요\"를 클릭하세요.",
+    tutoClickSave: "이제 목표를 만들 수 있어요!\n걱정 마세요, 나중에 수정할 수 있어요.",
+    tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요. 즐거운 공부 되세요!",
+    tutoOui: "네!",
+    tutoContinue: "계속",
+    tutoNext: "다음",
     tutoReady: "시작하자!",
     tutoSkip: "튜토리얼 건너뛰기",
     signupNameTitle: "어! 만나서 반가워요.",
@@ -2433,26 +2469,64 @@ async function findResources(card, lang, tlCode) {
 // Curated phrase-search links, used when Brave returns nothing (or has no key).
 function exampleSearchLinks(card, tlCode) {
   const structure = card.korean.trim();
-  const phrase = encodeURIComponent('"' + structure + '"');
-  const plain = encodeURIComponent(structure);
-  const links = [
-    { title: `Google — « ${structure} »`, uri: `https://www.google.com/search?q=${phrase}` },
-    { title: `YouTube — ${structure}`, uri: `https://www.youtube.com/results?search_query=${plain}` },
-  ];
-  if (tlCode === "ko") links.push({ title: `Naver — ${structure}`, uri: `https://search.naver.com/search.naver?query=${phrase}` });
   const extra = getVerbForms(card);
-  for (const form of extra.slice(0, 3)) {
-    const fp = encodeURIComponent('"' + form + '"');
-    links.push({ title: `Google — « ${form} »`, uri: `https://www.google.com/search?q=${fp}` });
-  }
+  const allForms = [structure, ...extra.slice(0, 4)];
+  const combined = allForms.map(f => `"${f}"`).join(" OR ");
+  const q = encodeURIComponent(combined);
+  const label = allForms.length > 1 ? allForms.join(" / ") : structure;
+  const links = [
+    { title: `Google — ${label}`, uri: `https://www.google.com/search?q=${q}` },
+    { title: `YouTube — ${label}`, uri: `https://www.youtube.com/results?search_query=${q}` },
+  ];
+  if (tlCode === "ko") links.push({ title: `Naver — ${label}`, uri: `https://search.naver.com/search.naver?query=${q}` });
   return links;
 }
 
 function getVerbForms(card) {
-  if (!card.conjugations || !(card.pos === "verb" || card.pos === "adjective")) return [];
-  const c = card.conjugations;
-  const forms = [c.stem, c.presentPolite, c.presentCasual, c.pastPolite, c.pastCasual, c.futureStem, c.nominalForm].filter(Boolean);
   const base = card.korean.trim();
+  if (card.conjugations && (card.pos === "verb" || card.pos === "adjective")) {
+    const c = card.conjugations;
+    const forms = [c.stem, c.presentPolite, c.presentCasual, c.pastPolite, c.pastCasual, c.futureStem, c.nominalForm].filter(Boolean);
+    return [...new Set(forms.filter(f => f !== base))];
+  }
+  if (!base.endsWith("다") || base.length < 2) return [];
+  const stem = base.slice(0, -1);
+  if (stem.endsWith("하")) {
+    const root = stem.slice(0, -1);
+    return [...new Set([stem, root + "해", root + "해요", stem + "는"].filter(f => f !== base))];
+  }
+  const last = stem.charCodeAt(stem.length - 1);
+  if (last < 0xAC00 || last > 0xD7A3) return [stem];
+  const vowelIdx = Math.floor((last - 0xAC00) / 28) % 21;
+  const finalC = (last - 0xAC00) % 28;
+  const bright = [0, 2, 8];
+  const isBright = bright.includes(vowelIdx);
+  const forms = [stem];
+  let casual = null;
+  if (finalC === 0) {
+    if (vowelIdx === 0) { casual = stem; } // ㅏ+아 contracts to ㅏ
+    else if (vowelIdx === 4) { casual = stem; } // ㅓ+어 contracts to ㅓ
+    else if (vowelIdx === 8) { // ㅗ+아=ㅘ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 9 * 28);
+    } else if (vowelIdx === 13) { // ㅜ+어=ㅝ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 14 * 28);
+    } else if (vowelIdx === 18) { // ㅡ drops, becomes ㅓ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 4 * 28);
+    } else if (vowelIdx === 20) { // ㅣ+어=ㅕ
+      const init = Math.floor((last - 0xAC00) / 28 / 21);
+      casual = stem.slice(0, -1) + String.fromCharCode(0xAC00 + init * 21 * 28 + 6 * 28);
+    } else {
+      casual = stem + (isBright ? "아" : "어");
+    }
+  } else {
+    casual = stem + (isBright ? "아" : "어");
+  }
+  if (casual && casual !== stem) forms.push(casual);
+  if (casual) forms.push(casual + "요");
+  forms.push(finalC === 0 ? stem + "는" : stem + "은");
   return [...new Set(forms.filter(f => f !== base))];
 }
 
@@ -2460,7 +2534,7 @@ function buildSearchQuery(card) {
   const base = card.korean.trim();
   const extra = getVerbForms(card);
   if (!extra.length) return base;
-  return [base, ...extra.slice(0, 4)].join(" OR ");
+  return [base, ...extra.slice(0, 5)].join(" OR ");
 }
 
 // "Exemples authentiques": real web occurrences of the structure via Brave Search (same
@@ -2501,21 +2575,20 @@ async function findSongLyrics(card, lang, tlCode) {
   const searchQ = buildSearchQuery(card);
 
   const curatedFallback = () => {
-    const q = encodeURIComponent(structure + " " + lyricsWord);
-    const note = lang === "fr"
-      ? `Recherche de chansons contenant « ${structure} » dans les paroles :`
-      : lang === "ko"
-        ? `« ${structure} »가 포함된 노래 가사 검색:`
-        : `Search for songs containing "${structure}" in their lyrics:`;
-    const sources = [
-      { title: `Google — ${structure} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
-      { title: `YouTube — ${structure} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
-    ];
     const extra = getVerbForms(card);
-    for (const form of extra.slice(0, 2)) {
-      const fq = encodeURIComponent(form + " " + lyricsWord);
-      sources.push({ title: `Google — ${form} ${lyricsWord}`, uri: `https://www.google.com/search?q=${fq}` });
-    }
+    const allForms = [structure, ...extra.slice(0, 4)];
+    const combined = allForms.map(f => `"${f}"`).join(" OR ");
+    const q = encodeURIComponent(combined + " " + lyricsWord);
+    const label = allForms.length > 1 ? allForms.join(" / ") : structure;
+    const note = lang === "fr"
+      ? `Recherche de chansons contenant « ${structure} » (et ses formes conjuguees) dans les paroles :`
+      : lang === "ko"
+        ? `« ${structure} »(및 활용형)가 포함된 노래 가사 검색:`
+        : `Search for songs containing "${structure}" (and conjugated forms) in their lyrics:`;
+    const sources = [
+      { title: `Google — ${label} ${lyricsWord}`, uri: `https://www.google.com/search?q=${q}` },
+      { title: `YouTube — ${label} ${lyricsWord}`, uri: `https://www.youtube.com/results?search_query=${q}` },
+    ];
     return { text: note, sources };
   };
 
@@ -4981,6 +5054,17 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
   };
   const restart = () => { setQueue(shuffle([...initial])); setInput(""); setResult(null); setKnownSet(new Set()); setAwarded(false); };
 
+  const card = queue.length > 0 ? queue[0] : null;
+  const remaining = queue.length;
+  const [imgLoaded, setImgLoaded] = useState(true);
+  const prevImgRef = useRef(card ? card.img : null);
+  useEffect(() => {
+    if (card && card.img !== prevImgRef.current) { setImgLoaded(false); prevImgRef.current = card.img; }
+  }, [card ? card.img : null]);
+  useEffect(() => {
+    if (queue.length > 1) { const img = new Image(); img.src = queue[1].img; }
+  }, [queue]);
+
   if (!initial.length) return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, color: C.txtM, fontSize: 13, textAlign: "center" }}>
       <div style={{ fontSize: 30 }}>🖼️</div><div>{t.exNeedImages}</div>
@@ -4999,16 +5083,6 @@ function ImageWriteExercise({ cards, tFont, t, onComplete, onExit }) {
     </div>
   );
 
-  const card = queue[0];
-  const remaining = queue.length;
-  const [imgLoaded, setImgLoaded] = useState(true);
-  const prevImgRef = useRef(card.img);
-  useEffect(() => {
-    if (card.img !== prevImgRef.current) { setImgLoaded(false); prevImgRef.current = card.img; }
-  }, [card.img]);
-  useEffect(() => {
-    if (queue.length > 1) { const img = new Image(); img.src = queue[1].img; }
-  }, [queue]);
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -6632,6 +6706,7 @@ function AppInner() {
   const [onbDraft, setOnbDraft] = useState({ gender: "", age: "", nationality: "", languages: [], dream: "", level: "", goals: "", birthDate: "", interests: "" });
   const [tutoStep, setTutoStep] = useState(0);
   const [tutoAnswer, setTutoAnswer] = useState(null);
+  const [tutoRect, setTutoRect] = useState(null);
   const [showDetailed, setShowDetailed] = useState(false);
   const [pointsToast, setPointsToast] = useState(null);
   const [langProfileEdit, setLangProfileEdit] = useState(null);
@@ -7105,7 +7180,9 @@ function AppInner() {
     if (!cards.length || !cards.every(isDone)) return;
     trackEvent("review_completion", { due_count: cards.length, reviewed_count: cards.filter(isDone).length, ratio: 1 });
     const base = data.profile || DEFAULT_PROFILE;
-    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: (base.points || 0) + 30 } });
+    const newBal = (base.points || 0) + 30;
+    trackEvent("points_earned", { amount: 30, source: "daily_review", balance: newBal });
+    save({ ...data, today: { ...sel, bonusAwarded: true }, profile: { ...base, points: newBal } });
     setPointsToast({ n: 30, label: t.dailyGoalReached(30) });
     setTimeout(() => setPointsToast(null), 3000);
   }, [data.today, data.cards, save]);
@@ -7141,7 +7218,9 @@ function AppInner() {
         updatedGt = { ...updatedGt, __allGoalsBonus: { [today]: true } };
       }
       const base = data.profile || DEFAULT_PROFILE;
-      save({ ...data, goalToday: updatedGt, profile: { ...base, points: (base.points || 0) + totalBonus } });
+      const newBal = (base.points || 0) + totalBonus;
+      trackEvent("points_earned", { amount: totalBonus, source: "goal_daily", balance: newBal });
+      save({ ...data, goalToday: updatedGt, profile: { ...base, points: newBal } });
       setPointsToast({ n: totalBonus, label: bonusLabel });
       setTimeout(() => setPointsToast(null), 3000);
     }
@@ -7372,17 +7451,18 @@ function AppInner() {
   }, [view, tl]);
 
   // ---- POINTS ----
-  const awardPoints = (n, dataOverride) => {
+  const awardPoints = (n, dataOverride, source) => {
     const base = dataOverride || data;
     const cur = base.profile?.points || 0;
     const next = { ...base, profile: { ...(base.profile || DEFAULT_PROFILE), points: cur + n } };
+    if (source) trackEvent("points_earned", { amount: n, source, balance: cur + n });
     setPointsToast(n);
     setTimeout(() => setPointsToast(null), 2500);
     return next;
   };
 
   // +1 point the first time the learner opens a given "Further resources" link.
-  const awardResourcePoint = () => save(awardPoints(1, data));
+  const awardResourcePoint = () => save(awardPoints(1, data, "resource_link"));
 
   // ---- ONBOARDING ----
   const finishOnboarding = (skip) => {
@@ -7464,7 +7544,7 @@ function AppInner() {
         setGrammarSel(new Set(grammarItems.map((_, i) => i)));
         setSelPick(0); setKnown(new Set()); setImpStep("picks");
       }
-    } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
+    } catch (e) { console.error(e); handleAIError(e); setImpStep("input"); }
   };
 
   const makeVocabCard = (v, status) => ({
@@ -7526,7 +7606,9 @@ function AppInner() {
     });
     const base = data.profile || DEFAULT_PROFILE;
     const gain = 15;
-    save({ ...data, cards: updated, profile: { ...base, points: (base.points || 0) + gain } });
+    const newBal = (base.points || 0) + gain;
+    trackEvent("points_earned", { amount: gain, source: "vocab_study", balance: newBal });
+    save({ ...data, cards: updated, profile: { ...base, points: newBal } });
     setPointsToast(gain); setTimeout(() => setPointsToast(null), 2500);
     updated.filter(c => c.type === "vocab" && studiedWords.includes(c.korean) && !c.description_target).forEach(c => {
       generateTargetDescription(c, c.targetLang || tl).then(res => {
@@ -7555,7 +7637,7 @@ function AppInner() {
       if (!hasTargetScript(text, tl)) { alert(t.ocrNoTarget(getTargetLangName(tl, lang))); setImpStep("input"); return; }
       setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
       setImpStep("input");
-    } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }
+    } catch (err) { console.error("OCR error:", err); handleAIError(err); setImpStep("input"); }
   };
 
   const onImagePick = async (e) => {
@@ -7947,6 +8029,7 @@ function AppInner() {
       setShowRecap(true);
       setRecapConv([]); setRecapMode(null); setRecapInp(""); setTagExplore(null);
       setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
+      if (c.type === "expression") recordPracticeReview(c);
       window.history.pushState({ view: "lesson", recap: true, recapCard: c }, "");
       setView("lesson");
       return;
@@ -7986,7 +8069,9 @@ function AppInner() {
       const st = migrateStatus(x.status) === "acquired" ? "acquired" : "studied";
       return { ...x, ...extra, status: st, reviewCount: rc };
     });
-    save({ ...data, cards: updatedCards, profile: { ...base, points: (base.points || 0) + gain } });
+    const newBal = (base.points || 0) + gain;
+    if (gain) trackEvent("points_earned", { amount: gain, source: "first_review", balance: newBal });
+    save({ ...data, cards: updatedCards, profile: { ...base, points: newBal } });
     if (gain) { setPointsToast(gain); setTimeout(() => setPointsToast(null), 2000); }
     const card = updatedCards.find(x => x.korean === c.korean);
     // Open the recap screen so the translation/summary is shown right away.
@@ -8117,7 +8202,8 @@ function AppInner() {
         return;
       } else if (action === "imageSearch") {
         setSearching(true);
-        const imgRes = await fetchImages(recapCard.korean, 8);
+        const imgQ = [recapCard.korean, ...getVerbForms(recapCard).slice(0, 3)].join(" ");
+        const imgRes = await fetchImages(imgQ, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
@@ -8308,7 +8394,9 @@ function AppInner() {
         return { ...c, status: newStatus, reviewCount: rc, formality: f, tags: newTags, progress: prog, discoveredDate, reviewDates, goalAcquired };
       });
       const gain = wasFirstTime ? 20 : 10;
-      const withPoints = { ...currentProfile, points: (currentProfile.points || 0) + gain };
+      const newBal = (currentProfile.points || 0) + gain;
+      trackEvent("points_earned", { amount: gain, source: "lesson_complete", balance: newBal });
+      const withPoints = { ...currentProfile, points: newBal };
       setPointsToast(gain);
       setTimeout(() => setPointsToast(null), 2500);
       // Don't auto-add derived cards — propose them for the learner to opt in.
@@ -8552,7 +8640,8 @@ function AppInner() {
         return;
       } else if (a === "imageSearch") {
         setSearching(true);
-        const imgRes = await fetchImages(lCard.korean, 8);
+        const imgQ = [lCard.korean, ...getVerbForms(lCard).slice(0, 3)].join(" ");
+        const imgRes = await fetchImages(imgQ, 8);
         setSearching(false);
         const pool = imgRes.images;
         const noImg = pool.length ? "" : (imgRes.error ? `${t.imageNone} (${imgRes.error})` : t.imageNone);
@@ -8689,6 +8778,58 @@ function AppInner() {
   const goalScrollRef = useRef(null);
   const goalPickerRef = useRef(null);
   const goalPicksRef = useRef(null);
+
+  // Tutorial: highlight target elements & measure position for bubble
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save' };
+  const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone;
+
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    document.querySelectorAll('.tuto-hl').forEach(el => el.classList.remove('tuto-hl'));
+    const attr = tutoTargets[tutoStep];
+    if (attr) {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) el.classList.add('tuto-hl');
+    }
+    return () => document.querySelectorAll('.tuto-hl').forEach(el => el.classList.remove('tuto-hl'));
+  }, [tutoStep, isTutorialActive]);
+
+  useEffect(() => {
+    if (!isTutorialActive) { setTutoRect(null); return; }
+    const attr = tutoTargets[tutoStep];
+    if (!attr) { setTutoRect(null); return; }
+    const measure = () => {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) setTutoRect(el.getBoundingClientRect());
+      else setTutoRect(null);
+    };
+    // Scroll target into view for steps where element may be off-screen
+    if (tutoStep === 8) {
+      const el = document.querySelector(`[data-tutorial="${attr}"]`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    measure();
+    const t1 = setTimeout(measure, 150);
+    const t2 = setTimeout(measure, 400);
+    window.addEventListener('resize', measure);
+    // Skip scroll-based remeasure during picks phase to avoid jump when user clicks "Je connais"
+    if (!(tutoStep === 7 && goalImpStep === "picks")) {
+      window.addEventListener('scroll', measure, true);
+    }
+    return () => { clearTimeout(t1); clearTimeout(t2); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true); };
+  }, [tutoStep, isTutorialActive, goalView, view, goalImpStep]);
+
+  // Auto-advance: step 2 when user clicks goals tab, step 3 when create form opens, step 8 when goal saved
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (tutoStep === 2 && view === 'goals') setTutoStep(3);
+  }, [view, tutoStep, isTutorialActive]);
+
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (tutoStep === 3 && goalView === 'create') setTutoStep(4);
+    if (tutoStep === 8 && goalView === 'list') setTutoStep(9);
+  }, [goalView, tutoStep, isTutorialActive]);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -8934,7 +9075,7 @@ function AppInner() {
         return { ...c, goalId: nextId || undefined, goalAcquired: nextId ? false : c.goalAcquired };
       });
     }
-    nd = awardPoints(hit === 100 ? 50 : 25, nd);
+    nd = awardPoints(hit === 100 ? 50 : 25, nd, "goal_milestone");
     save(nd);
     setGoalCelebration({ pct: hit, name: goal.name });
     setShowCelebration(true);
@@ -8982,9 +9123,19 @@ function AppInner() {
       setGoalImpStep(null);
     } catch (err) {
       console.error("Goal import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
+  };
+
+  const handleAIError = (err) => {
+    const isQuota = err.message && (err.message.includes("429") || err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("resource_exhausted"));
+    if (isQuota) {
+      alert("Crédits IA épuisés. Contacte sylingual@gmail.com pour l'en informer. Réponse sous 24h garantie.");
+    } else {
+      alert(err.message);
+    }
+    if (isTutorialActive) finishTutorial();
   };
 
   const processGoalText = async () => {
@@ -9010,7 +9161,7 @@ function AppInner() {
       setGoalImpText("");
     } catch (err) {
       console.error("Goal text import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
   };
@@ -9040,7 +9191,7 @@ function AppInner() {
   }, [view, goalView, goalImpFound, goalCardPicker]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (goalImpStep === "picks" && goalImpFound.length > 0) {
+    if (goalImpStep === "picks" && goalImpFound.length > 0 && !isTutorialActive) {
       setTimeout(() => {
         if (goalPicksRef.current) goalPicksRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
         else if (goalScrollRef.current) goalScrollRef.current.scrollTop = goalScrollRef.current.scrollHeight;
@@ -9135,24 +9286,30 @@ function AppInner() {
   };
 
   const completeExercise = (mode, cardIds) => {
-    trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
-    const result = recordExerciseProgress(data, cardIds, mode);
-    let pts = 15;
-    if (mode === "flash") {
-      const dirMul = flashDir === "both" ? 1.5 : 1;
-      const inputMul = flashInput === "write" ? 2 : 1;
-      pts = Math.round(15 * dirMul * inputMul);
+    try {
+      trackEvent("exercise_end", { exercise_type: mode, card_count: cardIds.length, completed: true });
+      const result = recordExerciseProgress(data, cardIds, mode);
+      let pts = 15;
+      if (mode === "flash") {
+        const dirMul = flashDir === "both" ? 1.5 : 1;
+        const inputMul = flashInput === "write" ? 2 : 1;
+        pts = Math.round(15 * dirMul * inputMul);
+      }
+      let nd = awardPoints(pts, result.data, "exercise");
+      if (result.autoAcquiredIds.length > 0) {
+        setProgressToast(t.progressAutoAcquired);
+        setTimeout(() => setProgressToast(null), 4000);
+      } else {
+        setProgressToast(t.progressNewReview);
+        setTimeout(() => setProgressToast(null), 2500);
+      }
+      save(nd);
+      setShowCelebration(true);
+    } catch (err) {
+      console.error("completeExercise error:", err);
+      const result = recordExerciseProgress(data, cardIds, mode);
+      save(result.data);
     }
-    let nd = awardPoints(pts, result.data);
-    if (result.autoAcquiredIds.length > 0) {
-      setProgressToast(t.progressAutoAcquired);
-      setTimeout(() => setProgressToast(null), 4000);
-    } else {
-      setProgressToast(t.progressNewReview);
-      setTimeout(() => setProgressToast(null), 2500);
-    }
-    save(nd);
-    setShowCelebration(true);
   };
 
   // ---- EXERCISE ----
@@ -9868,48 +10025,193 @@ function AppInner() {
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans'", display: "flex", flexDirection: "column", height: "100%", minHeight: 0, background: "var(--screen-bg)", overflow: "hidden", animation: "fadeIn 0.6s ease" }}>
-      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}`}</style>
+      <style>{`@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}.pulse{animation:p 1.5s infinite}@keyframes pop{0%{transform:translateY(10px) scale(.9);opacity:0}20%{transform:translateY(0) scale(1);opacity:1}80%{opacity:1}100%{opacity:0}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes tutoBubble{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}@keyframes tutoHighlight{0%,100%{box-shadow:0 0 0 4px rgba(123,127,245,0.4)}50%{box-shadow:0 0 0 8px rgba(123,127,245,0.15)}}.tuto-hl{position:relative!important;z-index:9999!important;animation:tutoHighlight 1.5s infinite!important;border-radius:8px}`}</style>
 
       {/* WELCOME TUTORIAL OVERLAY */}
       {showTutorial && (() => {
         const isMobile = winW < 700;
-        const overlayBase = { position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.4s ease" };
-        const bubbleBase = { background: "#fff", borderRadius: 18, padding: isMobile ? "28px 22px" : "32px 28px", maxWidth: 420, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.5s ease-out", position: "relative" };
-        const btnPrimary = { width: "100%", padding: "13px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "transform 0.15s" };
-        const btnSecondary = { width: "100%", padding: "11px 20px", borderRadius: 12, border: `2px solid ${C.border}`, background: "transparent", color: C.txtS, fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 500, cursor: "pointer" };
+        const totalSteps = 10;
+        const gender = data.profile?.gender || "";
+        const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
+        const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
+        const closeBtn = <button onClick={finishTutorial} style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,0.08)", color: "#888", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0 }} aria-label="Close">{"×"}</button>;
+        const stepDots = (current) => (
+          <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 14 }}>
+            {Array.from({ length: totalSteps }, (_, i) => (
+              <div key={i} style={{ width: i === current ? 16 : 6, height: 6, borderRadius: 3, background: i === current ? C.acc : "rgba(0,0,0,0.15)", transition: "all 0.3s" }} />
+            ))}
+          </div>
+        );
 
-        if (tutoStep === 0) {
+        // Centered bubble (no target element)
+        const centeredOverlay = (content) => (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.3s ease" }}>
+            <div style={{ position: "relative", background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+              {closeBtn}
+              {content}
+            </div>
+          </div>
+        );
+
+        // Positioned bubble near a highlighted element
+        const positionedBubble = (text, btnLabel, onBtn) => {
+          if (!tutoRect) return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{text}</div>{btnLabel && <button onClick={onBtn} style={btnPrimary}>{btnLabel}</button>}<button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>);
+          const r = tutoRect;
+          const pad = 12;
+          const bubbleW = Math.min(340, winW - 32);
+          const aboveSpace = r.top;
+          const belowSpace = window.innerHeight - r.bottom;
+          const placeBelow = belowSpace > 180 || belowSpace >= aboveSpace;
+          const top = placeBelow ? r.bottom + pad : undefined;
+          const bottom = !placeBelow ? (window.innerHeight - r.top + pad) : undefined;
+          let left = Math.max(16, r.left + r.width / 2 - bubbleW / 2);
+          if (left + bubbleW > winW - 16) left = winW - 16 - bubbleW;
+          const arrowLeft = Math.min(Math.max(r.left + r.width / 2 - left - 8, 12), bubbleW - 28);
+
           return (
-            <div style={overlayBase}>
-              <div style={bubbleBase}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
-                <div style={{ fontSize: 14, color: C.txtS, marginBottom: 22, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
-                <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 16, textAlign: "center" }}>{t.tutoQuestion(data.profile?.gender)}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-                  <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
-                  <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(data.profile?.gender)}</button>
-                </div>
-                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 14, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
+            <>
+              {/* Dark overlay with cutout */}
+              <div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }}>
+                <div style={{ position: "fixed", top: r.top - 6, left: r.left - 6, width: r.width + 12, height: r.height + 12, borderRadius: 10, boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)", zIndex: 9998, pointerEvents: "none" }} />
               </div>
+              {/* Clickable backdrop (areas outside cutout) */}
+              {!btnLabel && <div onClick={() => {}} style={{ position: "fixed", inset: 0, zIndex: 9997, background: "transparent" }} />}
+              {/* Speech bubble */}
+              <div style={{ position: "fixed", top, bottom, left, width: bubbleW, zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
+                  {/* Arrow */}
+                  <div style={{ position: "absolute", [placeBelow ? "top" : "bottom"]: -8, left: arrowLeft, width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", [placeBelow ? "borderBottom" : "borderTop"]: "9px solid #fff" }} />
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: btnLabel ? 14 : 6, textAlign: "center" }}>{text}</div>
+                  {btnLabel && <button onClick={onBtn} style={btnPrimary}>{btnLabel}</button>}
+                  {!btnLabel && <div style={{ fontSize: 12, color: "#aaa", textAlign: "center", marginTop: 4 }}>👆</div>}
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+                </div>
+              </div>
+            </>
+          );
+        };
+
+        // Step 0: Welcome + question
+        if (tutoStep === 0) {
+          return centeredOverlay(
+            <div>
+              {stepDots(0)}
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#333", marginBottom: 6, textAlign: "center" }}>{t.tutoWelcome}</div>
+              <div style={{ fontSize: 13, color: "#777", marginBottom: 18, textAlign: "center", lineHeight: 1.6 }}>{t.tutoWelcomeSub}</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#333", marginBottom: 14, textAlign: "center" }}>{t.tutoQuestion(gender)}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button onClick={() => { setTutoAnswer("prof"); setTutoStep(1); }} style={btnPrimary}>{t.tutoWithProf}</button>
+                <button onClick={() => { setTutoAnswer("alone"); setTutoStep(1); }} style={{ ...btnPrimary, background: "#5C3D2E" }}>{t.tutoAlone(gender)}</button>
+              </div>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
             </div>
           );
         }
 
+        // Step 1: Goals intro + "Oui!" button
         if (tutoStep === 1) {
           const msg = tutoAnswer === "prof" ? t.tutoGoalsIntro : t.tutoGoalsIntroAlone;
-          return (
-            <div style={overlayBase}>
-              <div style={{ ...bubbleBase, marginTop: isMobile ? 60 : 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.acc, marginBottom: 8, textAlign: "center", letterSpacing: 1 }}>
-                  {"🎯 OBJECTIFS"}
+          return centeredOverlay(
+            <div>
+              {stepDots(1)}
+              <div style={{ fontSize: 28, textAlign: "center", marginBottom: 6 }}>🎯</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{msg}</div>
+              <button onClick={() => { setTutoStep(2); navTo("goals"); }} style={btnPrimary}>{t.tutoOui}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 2: Highlight goals tab (auto-advances when view === "goals")
+        if (tutoStep === 2) {
+          return positionedBubble(t.tutoClickCreate, null, null);
+        }
+
+        // Step 3: Highlight create button (auto-advances when goalView === "create")
+        if (tutoStep === 3) {
+          return positionedBubble(t.tutoClickCreate, null, null);
+        }
+
+        // Step 4: Fill goal name
+        if (tutoStep === 4) {
+          const msg = tutoAnswer === "prof" ? t.tutoFillName : t.tutoFillNameAlone;
+          return positionedBubble(msg, t.tutoContinue, () => setTutoStep(5));
+        }
+
+        // Step 5: Fill deadline
+        if (tutoStep === 5) {
+          return positionedBubble(t.tutoFillDeadline, t.tutoContinue, () => setTutoStep(6));
+        }
+
+        // Step 6: Start date (optional)
+        if (tutoStep === 6) {
+          return positionedBubble(t.tutoStartDate, t.tutoContinue, () => {
+            setGoalImpText("이번 주 토요일 등산 공지!\n이번 주 토요일에 북한산 가실 분~?");
+            setTutoStep(7);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-import"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+          });
+        }
+
+        // Step 7: Import area (sub-phases based on goalImpStep)
+        if (tutoStep === 7) {
+          if (goalImpStep === "picks") {
+            // Picks shown: fixed bubble at top so it doesn't overlap the selectable cards
+            const onContinue = () => {
+              setTutoStep(8);
+              setTimeout(() => {
+                const el = document.querySelector('[data-tutorial="goal-save"]');
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+              }, 100);
+            };
+            return (
+              <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", width: Math.min(340, winW - 32), zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 14, textAlign: "center" }}>{t.tutoImportPicks}</div>
+                  <button onClick={onContinue} style={btnPrimary}>{t.tutoContinue}</button>
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
                 </div>
-                <div style={{ fontSize: 14, color: C.txt, lineHeight: 1.7, whiteSpace: "pre-line", marginBottom: 20, textAlign: "center" }}>{msg}</div>
-                <div style={{ fontSize: 12, color: C.txtM, marginBottom: 16, textAlign: "center" }}>
-                  {"👆 Clique sur l'onglet 🎯 dans la barre du haut"}
-                </div>
-                <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
-                <button onClick={finishTutorial} style={{ ...btnSecondary, marginTop: 10, border: "none", fontSize: 13 }}>{t.tutoSkip}</button>
               </div>
+            );
+          }
+          if (goalImpStep === "scanning" || goalImpStep === "ocr") {
+            return (
+              <div style={{ position: "fixed", top: 10, right: 10, zIndex: 10000, pointerEvents: "auto" }}>
+                <button onClick={finishTutorial} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "rgba(255,255,255,0.9)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", padding: 0 }} aria-label="Close">{"×"}</button>
+              </div>
+            );
+          }
+          // Default: import area, no continue button - user must click "Importer"
+          return positionedBubble(t.tutoImportArea, null, null);
+        }
+
+        // Step 8: Save button (auto-advances when goalView goes back to "list")
+        if (tutoStep === 8) {
+          const msg = t.tutoClickSave;
+          if (!tutoRect) {
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-save"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 100);
+            return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
+          }
+          return positionedBubble(msg, null, null);
+        }
+
+        // Step 9: Congrats
+        if (tutoStep === 9) {
+          return centeredOverlay(
+            <div>
+              {stepDots(9)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🎉</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoCongrats}</div>
+              <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );
         }
@@ -11144,7 +11446,7 @@ function AppInner() {
                         </>
                       )}
                     </span>
-                    {(() => { const si = statusInfo(recapCard.status, t); return (
+                    {recapCard.status === "acquired" && (() => { const si = statusInfo(recapCard.status, t); return (
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, padding: "2px 7px", borderRadius: 10, background: si.bg, color: si.color }}>
                         <span style={{ width: 6, height: 6, borderRadius: "50%", background: si.color }} />{si.label}
                       </span>
@@ -11169,7 +11471,7 @@ function AppInner() {
                         {recapCard.gender === "m" ? "masc." : recapCard.gender === "f" ? "fém." : "n."}
                       </span>
                     )}
-                    {recapCard.type !== "grammar" && (() => {
+                    {recapCard.type !== "grammar" && recapCard.type !== "expression" && (() => {
                       const posMap = { verb: [t.posVerb, t.posVerbFr, "#EFF6FF", "#1D4ED8", "#BFDBFE"], adjective: [t.posAdj, t.posAdjFr, "#F5F3FF", "#6D28D9", "#DDD6FE"], noun: [t.posNoun, t.posNounFr, "#F0FDF4", "#166534", "#BBF7D0"], adverb: [t.posAdv, t.posAdvFr, "#FFFBEB", "#92400E", "#FDE68A"], particle: [t.posParticle, t.posParticleFr, "#FFF1F2", "#BE123C", "#FECDD3"] };
                       const effectivePos = pendingPos === "__remove__" ? undefined : (pendingPos || recapCard.pos);
                       const cur = posMap[effectivePos];
@@ -12111,6 +12413,7 @@ function AppInner() {
                       { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true },
                       { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true },
                       { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true },
+                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", ai: true },
                       ...(tl === "ko" ? [{ k: "topik", l: t.topik, d: t.topikDesc, i: "📝", ai: true }] : []),
                     ] : exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },
@@ -12455,9 +12758,8 @@ function AppInner() {
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
                         <button onClick={() => {
                           setMsSentenceOk(false);
-                          const sel = exerciseCards.filter(c => exActiveIdsRef.current.includes(c.id));
-                          const words = sel.map(c => c.korean);
-                          setExConv(prev => [...prev, { role: "ai", content: t.makeSentencePrompt(words), options: null, selected: null }]);
+                          const again = lang === "fr" ? "Ok, j'attends ta nouvelle phrase !" : lang === "ko" ? "좋아, 새 문장을 써 봐!" : "Ok, write another sentence!";
+                          setExConv(prev => [...prev, { role: "ai", content: again, options: null, selected: null }]);
                         }}
                           style={{ padding: "8px 18px", borderRadius: 8, background: C.acc, color: C.onAcc, border: "none", fontFamily: "'Plus Jakarta Sans'", fontSize: 12.5, fontWeight: 500, cursor: "pointer" }}>
                           ✍️ {t.makeSentenceAnother}
@@ -12694,18 +12996,18 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalName}</label>
-                    <input value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
+                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
                       style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
-                      <input type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
+                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                     </div>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalStartDate}</label>
-                      <input type="date" value={goalForm.startDate || ""} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })}
+                      <input data-tutorial="goal-startdate" type="date" value={goalForm.startDate || ""} onChange={e => setGoalForm({ ...goalForm, startDate: e.target.value })}
                         placeholder={t.goalStartDatePh}
                         style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                       <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 3 }}>{t.goalStartDatePh}</div>
@@ -12779,7 +13081,7 @@ function AppInner() {
                   </div>
 
                   {/* Text + screenshot import */}
-                  <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
+                  <div data-tutorial="goal-import" style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14 }}>
                     {!goalImpStep && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                         <textarea value={goalImpText} onChange={e => setGoalImpText(e.target.value)} placeholder={t.goalImportTextPh}
@@ -12863,7 +13165,7 @@ function AppInner() {
                               if (!combined.trim()) { setGoalImpStep("picks"); return; }
                               setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
                               setGoalImpStep(null);
-                            } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
+                            } catch (err) { console.error(err); handleAIError(err); setGoalImpStep("picks"); }
                           }} style={{ display: "none" }} />
                         </label>
                       </div>
@@ -12871,7 +13173,7 @@ function AppInner() {
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
+                    <button data-tutorial="goal-save" disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
                       style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
                       {t.goalSave}
                     </button>
@@ -13320,7 +13622,7 @@ function AppInner() {
                   )}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ fontSize: 16, fontWeight: 600, color: C.txt }}>🎯 {t.goalsTab}</div>
-                    <button onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); }}
+                    <button data-tutorial="create-goal-btn" onClick={() => { setGoalView("create"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); }}
                       style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>+ {t.goalCreate}</button>
                   </div>
 
@@ -13748,6 +14050,114 @@ function AppInner() {
                   </div>
                 </div>
 
+                {/* POINTS */}
+                {d.points && (
+                <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, marginBottom: 8 }}>{"⭐"} Points</div>
+                  {/* Current balances */}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Soldes actuels</div>
+                  <div style={{ overflowX: "auto", marginBottom: 14 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                          {["Utilisateur", "Points", "Gagnes (traces)", "Depenses (traces)"].map(h => (
+                            <th key={h} style={{ padding: "6px 4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(d.points.balances).sort((a, b) => b[1] - a[1]).map(([uid, pts]) => {
+                          const short = uid.length > 12 ? uid.slice(0, 6) + "…" + uid.slice(-4) : uid;
+                          const earned = d.points.earned_by_user[uid];
+                          const spent = d.points.spent_by_user[uid];
+                          return (
+                          <tr key={uid} style={{ borderBottom: `1px solid ${C.border}` }}>
+                            <td style={{ padding: "6px 4px", color: C.txt, maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }} title={uid}>{short}</td>
+                            <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 700 }}>{pts.toLocaleString()}</td>
+                            <td style={{ padding: "6px 4px", color: C.ok }}>{earned ? "+" + earned.total.toLocaleString() : "-"}</td>
+                            <td style={{ padding: "6px 4px", color: C.warn }}>{spent ? "-" + spent.total.toLocaleString() : "-"}</td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Earned by source */}
+                  {Object.keys(d.points.earned_by_source).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points gagnes par source</div>
+                    <div style={{ marginBottom: 14 }}>
+                      {sortedObj(d.points.earned_by_source).map(([src, v]) => (
+                        <div key={src} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: C.txt, minWidth: 100 }}>{src}</span>
+                          <Bar val={v} max={barMax(sortedObj(d.points.earned_by_source))} color={C.ok} />
+                        </div>
+                      ))}
+                    </div>
+                  </>)}
+                  {/* Spent by item */}
+                  {Object.keys(d.points.spent_by_item).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points depenses par item</div>
+                    <div style={{ marginBottom: 14 }}>
+                      {sortedObj(d.points.spent_by_item).map(([item, v]) => (
+                        <div key={item} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 12, color: C.txt, minWidth: 100 }}>{item}</span>
+                          <Bar val={v} max={barMax(sortedObj(d.points.spent_by_item))} color={C.warn} />
+                        </div>
+                      ))}
+                    </div>
+                  </>)}
+                  {/* Earned per day (last 14 days) */}
+                  {Object.keys(d.points.earned_per_day).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points gagnes / jour (recent)</div>
+                    <div style={{ overflowX: "auto", marginBottom: 14 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                            {["Date", "Total", "Qui", "Sources"].map(h => (
+                              <th key={h} style={{ padding: "4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(d.points.earned_per_day).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14).map(([day, info]) => (
+                            <tr key={day} style={{ borderBottom: `1px solid ${C.border}` }}>
+                              <td style={{ padding: "4px", color: C.txt }}>{day.slice(5)}</td>
+                              <td style={{ padding: "4px", color: C.ok, fontWeight: 600 }}>+{info.total}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_user).map(([u, v]) => { const s = u.length > 8 ? u.slice(0, 4) + "…" + u.slice(-3) : u; return s + ":" + v; }).join(", ")}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_source).map(([s, v]) => s + ":" + v).join(", ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>)}
+                  {/* Spent per day */}
+                  {Object.keys(d.points.spent_per_day).length > 0 && (<>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Points depenses / jour</div>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                            {["Date", "Total", "Detail"].map(h => (
+                              <th key={h} style={{ padding: "4px", textAlign: "left", color: C.txtM, fontWeight: 500 }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(d.points.spent_per_day).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14).map(([day, info]) => (
+                            <tr key={day} style={{ borderBottom: `1px solid ${C.border}` }}>
+                              <td style={{ padding: "4px", color: C.txt }}>{day.slice(5)}</td>
+                              <td style={{ padding: "4px", color: C.warn, fontWeight: 600 }}>-{info.total}</td>
+                              <td style={{ padding: "4px", color: C.txtM }}>{Object.entries(info.by_user).map(([u, purchases]) => { const s = u.length > 8 ? u.slice(0, 4) + "…" + u.slice(-3) : u; return purchases.map(p => s + ": " + p.item + " (-" + p.amount + ")").join(", "); }).join("; ")}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>)}
+                </div>
+                )}
+
                 {/* TOKEN USAGE */}
                 {d.tokens && (
                 <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 12 }}>
@@ -14154,7 +14564,7 @@ function AppInner() {
                         {!unlocked && <div style={{ fontSize: 11, color: C.txtM, marginTop: 2 }}>1 500 pts</div>}
                       </div>
                       {!unlocked && pts >= 1500 && (
-                        <button onClick={() => save({ ...data, profile: { ...data.profile, songsUnlocked: true, points: (data.profile?.points || 0) - 1500 } })}
+                        <button onClick={() => { const newBal = (data.profile?.points || 0) - 1500; trackEvent("points_spent", { amount: 1500, item: "songs_unlock", balance: newBal }); save({ ...data, profile: { ...data.profile, songsUnlocked: true, points: newBal } }); }}
                           style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                           {t.mySongsUnlock}
                         </button>

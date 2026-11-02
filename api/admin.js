@@ -32,10 +32,12 @@ export default async function handler(req, res) {
       sessionsAll,
       eventsAll,
       sessionsRecent,
+      moaDataAll,
     ] = await Promise.all([
       supabase.from('sessions').select('id, sync_id, started_at, ended_at, interface_lang, target_lang, device_type, os, browser, screen_width, screen_height').order('started_at', { ascending: false }).limit(5000),
       supabase.from('events').select('id, session_id, sync_id, ts, type, data').order('ts', { ascending: false }).limit(10000),
       supabase.from('sessions').select('sync_id, started_at, ended_at, device_type, os, browser, interface_lang, target_lang').gte('started_at', twoMonthsAgo).order('started_at', { ascending: false }).limit(5000),
+      supabase.from('moa_data').select('user_id, data, updated_at'),
     ]);
 
     const allUsers = [...new Set((sessionsAll.data || []).map(s => s.sync_id).filter(Boolean))];
@@ -271,6 +273,71 @@ export default async function handler(req, res) {
     const totalTokenDays = tokenDays.size || 1;
     const totalTokenMonths = Object.keys(tokensByMonth).length || 1;
 
+    // --- POINTS (current balances from moa_data + event history) ---
+    const pointsBalances = {};
+    (moaDataAll.data || []).forEach(row => {
+      if (!shouldKeep(row.user_id)) return;
+      const pts = row.data?.profile?.points || 0;
+      pointsBalances[row.user_id] = pts;
+    });
+    const pointsEarnedEvents = events.filter(e => e.type === 'points_earned');
+    const pointsSpentEvents = events.filter(e => e.type === 'points_spent');
+    const earnedBySource = {};
+    let totalEarned = 0;
+    pointsEarnedEvents.forEach(e => {
+      const src = e.data?.source || 'unknown';
+      const amt = e.data?.amount || 0;
+      earnedBySource[src] = (earnedBySource[src] || 0) + amt;
+      totalEarned += amt;
+    });
+    const spentByItem = {};
+    let totalSpent = 0;
+    pointsSpentEvents.forEach(e => {
+      const item = e.data?.item || 'unknown';
+      const amt = e.data?.amount || 0;
+      spentByItem[item] = (spentByItem[item] || 0) + amt;
+      totalSpent += amt;
+    });
+    const earnedPerDay = {};
+    pointsEarnedEvents.forEach(e => {
+      const day = e.ts?.slice(0, 10);
+      if (!day) return;
+      const amt = e.data?.amount || 0;
+      if (!earnedPerDay[day]) earnedPerDay[day] = { total: 0, by_user: {}, by_source: {} };
+      earnedPerDay[day].total += amt;
+      earnedPerDay[day].by_user[e.sync_id] = (earnedPerDay[day].by_user[e.sync_id] || 0) + amt;
+      const src = e.data?.source || 'unknown';
+      earnedPerDay[day].by_source[src] = (earnedPerDay[day].by_source[src] || 0) + amt;
+    });
+    const spentPerDay = {};
+    pointsSpentEvents.forEach(e => {
+      const day = e.ts?.slice(0, 10);
+      if (!day) return;
+      const amt = e.data?.amount || 0;
+      if (!spentPerDay[day]) spentPerDay[day] = { total: 0, by_user: {} };
+      spentPerDay[day].total += amt;
+      const uid = e.sync_id;
+      if (!spentPerDay[day].by_user[uid]) spentPerDay[day].by_user[uid] = [];
+      spentPerDay[day].by_user[uid].push({ amount: amt, item: e.data?.item || 'unknown' });
+    });
+    const earnedByUser = {};
+    pointsEarnedEvents.forEach(e => {
+      const uid = e.sync_id;
+      const amt = e.data?.amount || 0;
+      const src = e.data?.source || 'unknown';
+      if (!earnedByUser[uid]) earnedByUser[uid] = { total: 0, by_source: {} };
+      earnedByUser[uid].total += amt;
+      earnedByUser[uid].by_source[src] = (earnedByUser[uid].by_source[src] || 0) + amt;
+    });
+    const spentByUser = {};
+    pointsSpentEvents.forEach(e => {
+      const uid = e.sync_id;
+      const amt = e.data?.amount || 0;
+      if (!spentByUser[uid]) spentByUser[uid] = { total: 0, items: [] };
+      spentByUser[uid].total += amt;
+      spentByUser[uid].items.push({ amount: amt, item: e.data?.item || 'unknown', date: e.ts?.slice(0, 10) });
+    });
+
     // --- HOURLY PATTERN ---
     const hourCounts = new Array(24).fill(0);
     sessions.forEach(s => {
@@ -333,6 +400,17 @@ export default async function handler(req, res) {
       event_types: eventTypeCounts,
       users,
       all_users: allUsers,
+      points: {
+        balances: pointsBalances,
+        total_earned: totalEarned,
+        total_spent: totalSpent,
+        earned_by_source: earnedBySource,
+        spent_by_item: spentByItem,
+        earned_per_day: earnedPerDay,
+        spent_per_day: spentPerDay,
+        earned_by_user: earnedByUser,
+        spent_by_user: spentByUser,
+      },
       tokens: {
         total_input: totalInputTokens,
         total_output: totalOutputTokens,

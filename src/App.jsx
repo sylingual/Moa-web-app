@@ -7544,7 +7544,7 @@ function AppInner() {
         setGrammarSel(new Set(grammarItems.map((_, i) => i)));
         setSelPick(0); setKnown(new Set()); setImpStep("picks");
       }
-    } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
+    } catch (e) { console.error(e); handleAIError(e); setImpStep("input"); }
   };
 
   const makeVocabCard = (v, status) => ({
@@ -7637,7 +7637,7 @@ function AppInner() {
       if (!hasTargetScript(text, tl)) { alert(t.ocrNoTarget(getTargetLangName(tl, lang))); setImpStep("input"); return; }
       setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
       setImpStep("input");
-    } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }
+    } catch (err) { console.error("OCR error:", err); handleAIError(err); setImpStep("input"); }
   };
 
   const onImagePick = async (e) => {
@@ -9123,9 +9123,19 @@ function AppInner() {
       setGoalImpStep(null);
     } catch (err) {
       console.error("Goal import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
+  };
+
+  const handleAIError = (err) => {
+    const isQuota = err.message && (err.message.includes("429") || err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("resource_exhausted"));
+    if (isQuota) {
+      alert("Crédits IA épuisés. Contacte sylingual@gmail.com pour l'en informer. Réponse sous 24h garantie.");
+    } else {
+      alert(err.message);
+    }
+    if (isTutorialActive) finishTutorial();
   };
 
   const processGoalText = async () => {
@@ -9151,7 +9161,7 @@ function AppInner() {
       setGoalImpText("");
     } catch (err) {
       console.error("Goal text import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
   };
@@ -13155,7 +13165,7 @@ function AppInner() {
                               if (!combined.trim()) { setGoalImpStep("picks"); return; }
                               setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
                               setGoalImpStep(null);
-                            } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
+                            } catch (err) { console.error(err); handleAIError(err); setGoalImpStep("picks"); }
                           }} style={{ display: "none" }} />
                         </label>
                       </div>

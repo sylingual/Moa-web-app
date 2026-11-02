@@ -286,7 +286,7 @@ const T = {
     tutoFillNameAlone: "Donne un nom à ton objectif, par exemple \"Cours du 15 octobre\".",
     tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
     tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
-    tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
+    tutoImportArea: "C'est ici que tu peux importer tes notes de cours,\npar copié/collé d'un texte, photo ou screenshot.\nJe t'ai mis un texte pour que tu testes. Clique sur \"Importer un texte\" !",
     tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
     tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
     tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",

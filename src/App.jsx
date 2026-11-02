@@ -12396,6 +12396,7 @@ function AppInner() {
                       { k: "reorder", l: t.exReorder, d: t.exReorderDesc, i: "💬", ai: true },
                       { k: "drill", l: t.exDrill, d: t.exDrillDesc, i: "✒️", ai: true },
                       { k: "fixit", l: t.exFixit, d: t.exFixitDesc, i: "👩‍🏫", ai: true },
+                      { k: "makesentence", l: t.exMakeSentence, d: t.exMakeSentenceDesc, i: "✍️", ai: true },
                       ...(tl === "ko" ? [{ k: "topik", l: t.topik, d: t.topikDesc, i: "📝", ai: true }] : []),
                     ] : exCategory === "CE" ? [
                       { k: "flash", l: t.exFlash, d: t.exFlashDesc, i: "🃏", vocabOnly: true },

@@ -12,6 +12,14 @@ export async function verifyAuth(req) {
   try {
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) return { user: null, error: error?.message || 'invalid_token' };
+
+    const { data: moaRow, error: moaErr } = await supabase
+      .from('moa_data')
+      .select('user_id')
+      .eq('user_id', data.user.id)
+      .single();
+    if (moaErr || !moaRow) return { user: null, error: 'no_account' };
+
     return { user: data.user, error: null };
   } catch (e) {
     return { user: null, error: e.message };

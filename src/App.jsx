@@ -8438,6 +8438,8 @@ function AppInner() {
         }
 
         // Step 8: Save button (auto-advances when goalView goes back to "list")
+        // Hide tutorial overlay while form has validation errors so user can fix them
+        if (tutoStep === 8 && (goalFormErrors.name || goalFormErrors.deadline)) return null;
         if (tutoStep === 8) {
           const msg = t.tutoClickSave;
           if (!tutoRect) {

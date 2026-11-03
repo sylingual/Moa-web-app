@@ -11411,8 +11411,19 @@ function AppInner() {
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button data-tutorial="goal-save" disabled={!goalForm.name.trim() || !goalForm.deadline} onClick={() => createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate)}
-                      style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: goalForm.name.trim() && goalForm.deadline ? C.acc : C.s1, color: goalForm.name.trim() && goalForm.deadline ? C.onAcc : C.txtM, fontSize: 13, fontWeight: 500, cursor: goalForm.name.trim() && goalForm.deadline ? "pointer" : "default", fontFamily: "'Plus Jakarta Sans'" }}>
+                    <button data-tutorial="goal-save" onClick={() => {
+                      const missing = [];
+                      if (!goalForm.name.trim()) missing.push('[data-tutorial="goal-name"]');
+                      if (!goalForm.deadline) missing.push('[data-tutorial="goal-deadline"]');
+                      if (missing.length) {
+                        const el = document.querySelector(missing[0]);
+                        if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus(); el.style.border = "2px solid #e53e3e"; setTimeout(() => { el.style.border = ""; }, 2000); }
+                        if (missing.length > 1) { const el2 = document.querySelector(missing[1]); if (el2) { el2.style.border = "2px solid #e53e3e"; setTimeout(() => { el2.style.border = ""; }, 2000); } }
+                        return;
+                      }
+                      createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate);
+                    }}
+                      style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
                       {t.goalSave}
                     </button>
                     <button onClick={() => setGoalView("list")}

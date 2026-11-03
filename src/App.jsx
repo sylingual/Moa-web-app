@@ -10548,7 +10548,7 @@ function AppInner() {
                 onKeyDown={e => { if (e.key === "Enter" && migrateInput.trim()) {
                   setMigrateMsg("loading");
                   migrateOldAccount(migrateInput.trim(), authUser.id).then(r => {
-                    if (r.ok) { setData(r.data); setMigrateMsg("ok"); setMigratePrompt(false); }
+                    if (r.ok) { save(r.data); setMigrateMsg("ok"); setTimeout(() => window.location.reload(), 500); }
                     else setMigrateMsg("err");
                   });
                 }}}
@@ -10559,7 +10559,7 @@ function AppInner() {
                 if (!migrateInput.trim()) return;
                 setMigrateMsg("loading");
                 migrateOldAccount(migrateInput.trim(), authUser.id).then(r => {
-                  if (r.ok) { setData(r.data); setMigrateMsg("ok"); setMigratePrompt(false); }
+                  if (r.ok) { save(r.data); setMigrateMsg("ok"); setTimeout(() => window.location.reload(), 500); }
                   else setMigrateMsg("err");
                 });
               }}

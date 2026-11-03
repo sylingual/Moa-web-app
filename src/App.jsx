@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -6643,9 +6643,8 @@ function AppInner() {
   const [needsInvite, setNeedsInvite] = useState(false);
   const [needsName, setNeedsName] = useState(false);
   const [signupName, setSignupName] = useState("");
-  const [migratePrompt, setMigratePrompt] = useState(false);
-  const [migrateInput, setMigrateInput] = useState("");
-  const [migrateMsg, setMigrateMsg] = useState(null);
+  const [signupGender, setSignupGender] = useState("");
+  const [signupStep, setSignupStep] = useState(0);
   const checkingRef = useRef(false);
   const [showSync, setShowSync] = useState(false);
 
@@ -9621,17 +9620,50 @@ function AppInner() {
     );
   }
 
-  // Name prompt for new users (after signup, before entering the app)
+  // Name + gender prompt for new users (after signup, before entering the app)
   if (needsName && syncId) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
-    const doSaveName = async () => {
-      if (!signupName.trim()) return;
-      const nd = { ...data, profile: { ...data.profile, name: signupName.trim() } };
+    const genderBtn = (val) => ({ width: "100%", padding: "14px", borderRadius: 12, border: signupGender === val ? "2px solid #d4a8ff" : "2px solid rgba(255,255,255,0.25)", background: signupGender === val ? "rgba(212,168,255,0.2)" : "rgba(255,255,255,0.1)", color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "all 0.15s" });
+    const doSaveNameGender = () => {
+      if (!signupGender) return;
+      const nd = { ...data, profile: { ...data.profile, name: signupName.trim(), gender: signupGender } };
       save(nd);
       setNeedsName(false);
     };
+    // Step 0: name, Step 1: gender
+    if (signupStep === 0) {
+      return (
+        <div style={fullScreen}>
+          <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
+              <span style={{ fontSize: isMobile ? 56 : 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+                모<span style={{ color: "#d4a8ff" }}>아</span>
+              </span>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
+                {t.signupNameTitle}
+              </div>
+              <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+                {t.signupNameSub}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
+                <input type="text" autoFocus value={signupName} onChange={e => setSignupName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && signupName.trim()) setSignupStep(1); }}
+                  placeholder={t.signupNamePlaceholder}
+                  style={{ width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" }}
+                />
+                <button onClick={() => setSignupStep(1)} disabled={!signupName.trim()}
+                  style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: signupName.trim() ? 1 : 0.5, transition: "opacity 0.15s" }}>
+                  {t.signupNext}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={fullScreen}>
         <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
@@ -9641,20 +9673,18 @@ function AppInner() {
               모<span style={{ color: "#d4a8ff" }}>아</span>
             </span>
             <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
-              {t.signupNameTitle}
-            </div>
-            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
-              {t.signupNameSub}
+              {t.signupGenderTitle}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
-              <input type="text" autoFocus value={signupName} onChange={e => setSignupName(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && signupName.trim()) doSaveName(); }}
-                placeholder={t.signupNamePlaceholder}
-                style={{ width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" }}
-              />
-              <button onClick={doSaveName} disabled={!signupName.trim()}
-                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: signupName.trim() ? 1 : 0.5, transition: "opacity 0.15s" }}>
+              <button onClick={() => setSignupGender("femme")} style={genderBtn("femme")}>{t.signupGenderF}</button>
+              <button onClick={() => setSignupGender("homme")} style={genderBtn("homme")}>{t.signupGenderM}</button>
+              <button onClick={doSaveNameGender} disabled={!signupGender}
+                style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", opacity: signupGender ? 1 : 0.5, transition: "opacity 0.15s", marginTop: 8 }}>
                 {t.signupNext}
+              </button>
+              <button onClick={() => setSignupStep(0)}
+                style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.signupBack}
               </button>
             </div>
           </div>
@@ -10536,41 +10566,6 @@ function AppInner() {
         <div style={{ padding: "10px 16px", background: C.s1, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>🔗 {t.syncConnected}</span>
           <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{authUser ? (authUser.email || "Google") : syncId}</span>
-          {authUser && !(data.cards || []).length && !migratePrompt && (
-            <button onClick={() => setMigratePrompt(true)}
-              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
-              {t.migrateTitle}
-            </button>
-          )}
-          {migratePrompt && (
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input value={migrateInput} onChange={e => { setMigrateInput(e.target.value); setMigrateMsg(null); }}
-                onKeyDown={e => { if (e.key === "Enter" && migrateInput.trim()) {
-                  setMigrateMsg("loading");
-                  migrateOldAccount(migrateInput.trim(), authUser.id).then(r => {
-                    if (r.ok) { save(r.data); setMigrateMsg("ok"); setTimeout(() => window.location.reload(), 500); }
-                    else setMigrateMsg("err");
-                  });
-                }}}
-                placeholder={t.welcomeCodePlaceholder}
-                style={{ border: `1px solid ${C.border}`, borderRadius: 6, padding: "3px 8px", fontSize: 11, fontFamily: "'Plus Jakarta Sans'", width: 120, background: C.s2, color: C.txt }}
-              />
-              <button onClick={() => {
-                if (!migrateInput.trim()) return;
-                setMigrateMsg("loading");
-                migrateOldAccount(migrateInput.trim(), authUser.id).then(r => {
-                  if (r.ok) { save(r.data); setMigrateMsg("ok"); setTimeout(() => window.location.reload(), 500); }
-                  else setMigrateMsg("err");
-                });
-              }}
-                style={{ padding: "3px 8px", borderRadius: 6, border: "none", background: C.acc, color: C.onAcc, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", cursor: "pointer" }}>
-                {migrateMsg === "loading" ? "..." : t.migrateAction}
-              </button>
-              <button onClick={() => { setMigratePrompt(false); setMigrateMsg(null); }}
-                style={{ padding: "3px 6px", border: "none", background: "none", color: C.txtS, fontSize: 11, cursor: "pointer" }}>✕</button>
-              {migrateMsg === "err" && <span style={{ fontSize: 11, color: C.warn }}>{t.migrateError}</span>}
-            </span>
-          )}
           <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
             {"🔄 Tutoriel"}

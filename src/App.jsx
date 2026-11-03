@@ -231,7 +231,7 @@ const T = {
     syncOff: "Local uniquement",
     connect: "Connecter",
     disconnect: "Déconnecter",
-    syncConnected: "Connecté avec le code :",
+    syncConnected: "Connecté avec l'email :",
     syncLoading: "Synchronisation...",
     syncError: "Erreur de connexion. Vérifie ta configuration Supabase.",
     syncSuccess: "Données synchronisées !",
@@ -253,34 +253,34 @@ const T = {
     welcomeSwitchToLogin: "Se connecter plutôt",
     welcomeSwitchToCreate: "Créer un compte plutôt",
     authLogin: "Se connecter",
-    authSignup: "Creer un compte",
+    authSignup: "Créer un compte",
     authEmail: "Email",
     authPassword: "Mot de passe",
     authLoading: "Chargement...",
-    authForgot: "Mot de passe oublie ?",
-    authResetSent: "Un email de reinitialisation a ete envoye.",
-    authResetAction: "Envoyer le lien",
-    authBackToLogin: "Retour a la connexion",
-    authConfirmSent: "Verifie ta boite mail pour confirmer ton compte.",
+    authForgot: "Mot de passe oublié ?",
+    authResetSent: "Un email de réinitialisation a été envoyé.",
+    authResetAction: "Envoyer le lien de réinitialisation",
+    authBackToLogin: "Retour à la connexion",
+    authConfirmSent: "Vérifie ta boîte mail pour confirmer ton compte.",
     authEmailTaken: "Cet email est déjà utilisé.",
     authInvalidCredentials: "Email ou mot de passe incorrect.",
     authNewPassword: "Nouveau mot de passe",
-    authUpdatePassword: "Mettre a jour",
-    authPasswordUpdated: "Mot de passe mis a jour !",
+    authUpdatePassword: "Mettre à jour",
+    authPasswordUpdated: "Mot de passe mis à jour !",
     authGoogleSignIn: "Continuer avec Google",
     authInviteTitle: "Code d'invitation",
-    authInviteSub: "Entre ton code d'invitation pour creer ton compte.",
+    authInviteSub: "Entre ton code d'invitation pour créer ton compte.",
     authInvitePlaceholder: "Code d'invitation...",
     authInviteAction: "Valider",
     authInviteInvalid: "Code d'invitation invalide.",
-    authInviteError: "Erreur de verification. Reessaie.",
+    authInviteError: "Erreur de vérification. Réessaie.",
     migrateTitle: "Lier un compte existant",
-    migrateSub: "Si tu avais un compte avec une cle personnelle, entre-la pour recuperer tes donnees.",
+    migrateSub: "Si tu avais un compte avec une clé personnelle, entre-la pour récupérer tes données.",
     migrateAction: "Récupérer mes données",
     migrateSkip: "Non, je suis nouveau",
-    migrateSuccess: "Donnees recuperees !",
-    migrateError: "Cle introuvable ou erreur de migration.",
-    logoutAuth: "Se deconnecter",
+    migrateSuccess: "Données récupérées !",
+    migrateError: "Clé introuvable ou erreur de migration.",
+    logoutAuth: "Se déconnecter",
     tutoWelcome: "Bienvenue dans Moa !",
     tutoWelcomeSub: "Ton espace de travail personnalisé pour étudier le coréen.",
     tutoQuestion: (gender) => `Pour commencer, est-ce que tu étudies ${gender === "femme" ? "seule" : "seul"} ou avec un prof ?`,
@@ -785,7 +785,7 @@ const T = {
     syncOff: "Local only",
     connect: "Connect",
     disconnect: "Disconnect",
-    syncConnected: "Connected with code:",
+    syncConnected: "Connected with email:",
     syncLoading: "Syncing...",
     syncError: "Connection error. Check your Supabase setup.",
     syncSuccess: "Data synced!",
@@ -1339,7 +1339,7 @@ const T = {
     syncOff: "로컬만 사용",
     connect: "연결",
     disconnect: "연결 해제",
-    syncConnected: "연결된 코드:",
+    syncConnected: "연결된 이메일:",
     syncLoading: "동기화 중...",
     syncError: "연결 오류. Supabase 설정을 확인해 봐.",
     syncSuccess: "데이터 동기화 완료!",
@@ -6644,14 +6644,7 @@ function AppInner() {
   const [migrateMode, setMigrateMode] = useState(false);
   const [migrateInput, setMigrateInput] = useState("");
   const [migrationMsg, setMigrationMsg] = useState(null);
-  const isOldLogin = window.location.pathname === "/vieuxlogin";
-  const [syncInput, setSyncInput] = useState("");
-  const [welcomeMode, setWelcomeMode] = useState(null); // null | "login" | "create"
-  const [signupStep, setSignupStep] = useState(0); // 0=name, 1=gender, 2=key
-  const [signupName, setSignupName] = useState("");
-  const [signupGender, setSignupGender] = useState("");
   const [showSync, setShowSync] = useState(false);
-  const [syncStatus, setSyncStatus] = useState(null); // null | "loading" | "success" | "error"
 
   // Import
   const [impText, setImpText] = useState("");
@@ -7133,7 +7126,6 @@ function AppInner() {
   }, [kbOpen]);
 
   useEffect(() => {
-    if (isOldLogin) { setAuthLoading(false); return; }
     const checkAndSetUser = async (user) => {
       if (!user) {
         setSyncId("");
@@ -7161,6 +7153,17 @@ function AppInner() {
             return;
           }
         }
+        const inviteValidated = localStorage.getItem("moa-invite-validated");
+        if (inviteValidated) {
+          localStorage.removeItem("moa-invite-validated");
+          const r = await syncData(user.id, null);
+          if (r.ok) {
+            setSyncId(user.id);
+            localStorage.setItem("moa-sync-id", user.id);
+            setNeedsInvite(false);
+            return;
+          }
+        }
         setNeedsInvite(true);
       } else {
         setSyncId(user.id);
@@ -7171,7 +7174,6 @@ function AppInner() {
       checkAndSetUser(user).then(() => setAuthLoading(false));
     });
     const unsub = onAuthStateChange((user, event) => {
-      if (isOldLogin) return;
       setAuthUser(user);
       if (event === "PASSWORD_RECOVERY") {
         setAuthMode("reset");
@@ -7182,7 +7184,7 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
-    if (!isOldLogin && authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-auth-migrated")) {
+    if (authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-auth-migrated")) {
       setMigrateMode(true);
     }
   }, [authUser, loaded]);
@@ -7278,55 +7280,6 @@ function AppInner() {
       setTimeout(() => setPointsToast(null), 3000);
     }
   }, [data.goalToday, data.goals, data.cards, save]);
-
-  const handleSync = async () => {
-    const id = syncInput.trim();
-    if (!id) return;
-    setSyncStatus("loading");
-    try {
-      const result = welcomeMode === "login" ? await connectData(id) : await syncData(id, null);
-      if (!result.ok) {
-        console.error("Sync failed:", result.error);
-        setSyncStatus("error");
-        return;
-      }
-      // Clear any stale active lesson
-      localStorage.removeItem("moa-active-lesson");
-      // Reset lesson state completely
-      setLCard(null); setConv([]); setLessonDone(false); setLessonSummary(null);
-      setShowRecap(false); setRecapCard(null);
-      setLessonRestored(false);
-      // Save the id and load the data
-      localStorage.setItem("moa-sync-id", id);
-      setSyncId(id);
-      let loadedData = result.data;
-      if (welcomeMode === "create") {
-        loadedData = {
-          ...loadedData,
-          profile: {
-            ...(loadedData.profile || {}),
-            name: signupName || loadedData.profile?.name || "",
-            gender: signupGender || loadedData.profile?.gender || "",
-          },
-        };
-        if (!loadedData.targetLangs?.length) {
-          loadedData.targetLangs = ["ko"];
-          loadedData.lastTargetLang = "ko";
-        }
-        saveData(loadedData, id);
-      }
-      setData(loadedData);
-      if (loadedData.lastTargetLang) setTargetLang(loadedData.lastTargetLang);
-      else if (loadedData.targetLangs?.length) setTargetLang(loadedData.targetLangs[0]);
-      else setTargetLang(null);
-      setSyncStatus("success");
-      setSignupStep(0); setSignupName(""); setSignupGender("");
-      setTimeout(() => { setSyncStatus(null); setShowSync(false); }, 1500);
-    } catch (e) {
-      console.error("Sync error:", e);
-      setSyncStatus("error");
-    }
-  };
 
   const handleDisconnect = async () => {
     // Sign out from Supabase auth if using Google login
@@ -9512,7 +9465,7 @@ function AppInner() {
   );
 
   // Password reset screen (user clicked reset link from email, now authenticated)
-  if (authMode === "reset" && authUser && !isOldLogin) {
+  if (authMode === "reset" && authUser) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
@@ -9553,14 +9506,18 @@ function AppInner() {
     );
   }
 
-  // Invite code screen (new Google user, no moa_data yet)
-  if (needsInvite && authUser && !isOldLogin) {
+  // Auth screens (not logged in or needs invite code)
+  if (!syncId) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
     const inputStyle = { width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" };
     const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
-    const doInvite = async () => {
+    const googleBtn = (disabled) => ({ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: "#fff", color: "#3a2a1a", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, opacity: disabled ? 0.5 : 1, transition: "opacity 0.15s" });
+    const googleSvg = <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.09 24.09 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>;
+
+    // Signup path: validate invite code FIRST, then redirect to Google
+    const doInviteThenGoogle = async () => {
       if (!inviteCode.trim()) return;
       setAuthBusy(true); setAuthMsg(null);
       try {
@@ -9571,71 +9528,25 @@ function AppInner() {
         });
         const d = await res.json();
         if (d.ok) {
-          const r = await syncData(authUser.id, null);
-          if (r.ok) {
-            setSyncId(authUser.id);
-            localStorage.setItem("moa-sync-id", authUser.id);
-            setNeedsInvite(false);
-          } else {
-            setAuthMsg({ type: "err", text: r.error || t.authInviteError });
+          localStorage.setItem("moa-invite-validated", "1");
+          const r = await signInWithGoogle();
+          if (!r.ok) {
+            localStorage.removeItem("moa-invite-validated");
+            setAuthBusy(false);
+            setAuthMsg({ type: "err", text: r.error });
           }
         } else {
           setAuthMsg({ type: "err", text: d.error === "invite_invalid" ? t.authInviteInvalid : (d.error || t.authInviteError) });
+          setAuthBusy(false);
         }
       } catch (e) {
         setAuthMsg({ type: "err", text: t.authInviteError });
+        setAuthBusy(false);
       }
-      setAuthBusy(false);
     };
-    const doCancel = async () => {
-      await signOutAuth();
-      setAuthUser(null);
-      setNeedsInvite(false);
-      setSyncId("");
-      localStorage.removeItem("moa-sync-id");
-    };
-    return (
-      <div style={fullScreen}>
-        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
-            <span style={{ fontSize: isMobile ? 56 : 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
-              모<span style={{ color: "#d4a8ff" }}>아</span>
-            </span>
-            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
-              {t.authInviteTitle}
-            </div>
-            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
-              {t.authInviteSub}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
-              <input type="text" autoFocus value={inviteCode} onChange={e => { setInviteCode(e.target.value); setAuthMsg(null); }}
-                onKeyDown={e => { if (e.key === "Enter") doInvite(); }}
-                placeholder={t.authInvitePlaceholder}
-                style={inputStyle}
-              />
-              <button onClick={doInvite} disabled={authBusy || !inviteCode.trim()}
-                style={{ ...wBtn(true), opacity: inviteCode.trim() && !authBusy ? 1 : 0.5 }}>
-                {authBusy ? t.authLoading : t.authInviteAction}
-              </button>
-              {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
-              <button onClick={doCancel}
-                style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                {t.authBackToLogin}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
-  // Google Sign-In screen (default path)
-  if (!syncId && !isOldLogin) {
-    const isMobile = winW < 700;
-    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
-    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
-    const doGoogle = async () => {
+    // Login path: direct Google sign-in (existing users)
+    const doGoogleLogin = async () => {
       setAuthBusy(true); setAuthMsg(null);
       const r = await signInWithGoogle();
       if (!r.ok) {
@@ -9643,6 +9554,47 @@ function AppInner() {
         setAuthMsg({ type: "err", text: r.error });
       }
     };
+
+    // Signup mode: invite code input then Google
+    if (authMode === "invite" || needsInvite) {
+      return (
+        <div style={fullScreen}>
+          <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+          <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
+              <span style={{ fontSize: isMobile ? 56 : 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+                모<span style={{ color: "#d4a8ff" }}>아</span>
+              </span>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
+                {t.authInviteTitle}
+              </div>
+              <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+                {t.authInviteSub}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
+                <input type="text" autoFocus value={inviteCode} onChange={e => { setInviteCode(e.target.value); setAuthMsg(null); }}
+                  onKeyDown={e => { if (e.key === "Enter") doInviteThenGoogle(); }}
+                  placeholder={t.authInvitePlaceholder}
+                  style={inputStyle}
+                />
+                <button onClick={doInviteThenGoogle} disabled={authBusy || !inviteCode.trim()}
+                  style={{ ...googleBtn(authBusy || !inviteCode.trim()) }}>
+                  {googleSvg}
+                  {authBusy ? t.authLoading : t.authGoogleSignIn}
+                </button>
+                {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
+                <button onClick={() => { setAuthMode("login"); setNeedsInvite(false); setAuthMsg(null); setInviteCode(""); }}
+                  style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                  {t.authBackToLogin}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Default: login screen with two paths
     return (
       <div style={fullScreen}>
         <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
@@ -9658,10 +9610,14 @@ function AppInner() {
               {t.welcomeSub}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
-              <button onClick={doGoogle} disabled={authBusy}
-                style={{ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: "#fff", color: "#3a2a1a", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, opacity: authBusy ? 0.5 : 1, transition: "opacity 0.15s" }}>
-                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.09 24.09 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                {authBusy ? t.authLoading : t.authGoogleSignIn}
+              <button onClick={doGoogleLogin} disabled={authBusy}
+                style={googleBtn(authBusy)}>
+                {googleSvg}
+                {authBusy ? t.authLoading : t.authLogin}
+              </button>
+              <button onClick={() => { setAuthMode("invite"); setAuthMsg(null); }}
+                style={{ ...wBtn(false) }}>
+                {t.authSignup}
               </button>
               {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
             </div>
@@ -9672,7 +9628,7 @@ function AppInner() {
   }
 
   // Migration prompt after first login (user is authenticated but has no cards)
-  if (migrateMode && authUser && !isOldLogin) {
+  if (migrateMode && authUser) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
@@ -9721,153 +9677,6 @@ function AppInner() {
     );
   }
 
-  // Old code-based login (only accessible at /vieuxlogin)
-  if (!syncId) {
-    const isMobile = winW < 700;
-    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
-    const wBgIntro = `url('/${isMobile ? "intro-m" : "intro-d"}.png') center/cover no-repeat, #5C3D2E`;
-    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
-    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
-    const bgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease, transform 0.6s ease", opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(1.04)" });
-    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
-
-    const showIntro = welcomeMode === "create";
-
-    return (
-      <div style={fullScreen}>
-        <div style={bgLayer(wBgWelcome, !showIntro)} />
-        <div style={bgLayer(wBgIntro, showIntro)} />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-
-        {welcomeMode === "create" && (
-          <div key="signup" style={wPanel}>
-            {signupStep === 0 && (<>
-              <div style={{ fontSize: 24, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupNameTitle}</div>
-              <div style={{ fontSize: 15, color: "#5C3D2E", textAlign: "center" }}>{t.signupNameSub}</div>
-              <input autoFocus value={signupName} onChange={e => setSignupName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && signupName.trim() && setSignupStep(1)}
-                placeholder={t.signupNamePlaceholder}
-                style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
-                onFocus={e => { e.target.style.borderColor = C.acc; }}
-                onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
-              />
-              <button onClick={() => signupName.trim() && setSignupStep(1)} disabled={!signupName.trim()}
-                style={{ ...wBtn(true), opacity: signupName.trim() ? 1 : 0.5, cursor: signupName.trim() ? "pointer" : "default" }}>
-                {t.signupNext}
-              </button>
-              <button onClick={() => { setWelcomeMode(null); setSignupStep(0); setSignupName(""); setSignupGender(""); setSyncInput(""); setSyncStatus(null); }}
-                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                {t.signupBack}
-              </button>
-            </>)}
-            {signupStep === 1 && (<>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#3a2a1a", textAlign: "center" }}>{t.signupGenderTitle}</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
-                <button onClick={() => setSignupGender("femme")}
-                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "femme" ? C.acc : "#e0d5c5"}`, background: signupGender === "femme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s, background 0.15s" }}>
-                  {t.signupGenderF}
-                </button>
-                <button onClick={() => setSignupGender("homme")}
-                  style={{ width: "100%", padding: "16px", borderRadius: 12, border: `2px solid ${signupGender === "homme" ? C.acc : "#e0d5c5"}`, background: signupGender === "homme" ? C.accBg : "#fff", cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 500, color: "#3a2a1a", transition: "border-color 0.15s, background 0.15s" }}>
-                  {t.signupGenderM}
-                </button>
-              </div>
-              <button onClick={() => signupGender && setSignupStep(2)} disabled={!signupGender}
-                style={{ ...wBtn(true), opacity: signupGender ? 1 : 0.5, cursor: signupGender ? "pointer" : "default" }}>
-                {t.signupNext}
-              </button>
-              <button onClick={() => setSignupStep(0)}
-                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                {t.signupBack}
-              </button>
-            </>)}
-            {signupStep === 2 && (<>
-              <div style={{ fontSize: 22, fontWeight: 700, color: "#3a2a1a", textAlign: "center", lineHeight: 1.4 }}>{t.signupKeyTitle(signupName)}</div>
-              <div style={{ fontSize: 14, color: "#5C3D2E", textAlign: "center", lineHeight: 1.6 }}>{t.signupKeySub}</div>
-              <div style={{ fontSize: 12, color: "#8B7355", textAlign: "center" }}>{t.signupKeyHint}</div>
-              <input autoFocus value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
-                onKeyDown={e => e.key === "Enter" && syncInput.trim() && handleSync()}
-                placeholder={t.welcomeCodePlaceholder}
-                disabled={syncStatus === "loading"}
-                style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
-                onFocus={e => { e.target.style.borderColor = C.acc; }}
-                onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
-              />
-              <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
-                style={{ ...wBtn(true), opacity: syncInput.trim() && syncStatus !== "loading" ? 1 : 0.5, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
-                {syncStatus === "loading" ? t.syncLoading : t.signupKeyAction}
-              </button>
-              {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{t.syncError}</div>}
-              <button onClick={() => setSignupStep(1)}
-                style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                {t.signupBack}
-              </button>
-            </>)}
-          </div>
-        )}
-
-        {welcomeMode === "login" && (
-          <div key="login" style={wPanel}>
-            <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
-              모<span style={{ color: C.acc }}>아</span>
-            </span>
-            <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.welcomeLoginTitle}</div>
-            <div style={{ fontSize: 13, color: "#8B7355", textAlign: "center", lineHeight: 1.6 }}>{t.welcomeLoginSub}</div>
-            <input autoFocus value={syncInput} onChange={e => { setSyncInput(e.target.value); setSyncStatus(null); }}
-              onKeyDown={e => e.key === "Enter" && handleSync()}
-              placeholder={t.welcomeCodePlaceholder}
-              disabled={syncStatus === "loading"}
-              style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
-              onFocus={e => { e.target.style.borderColor = C.acc; }}
-              onBlur={e => { e.target.style.borderColor = "#e0d5c5"; }}
-            />
-            <button onClick={handleSync} disabled={syncStatus === "loading" || !syncInput.trim()}
-              style={{ ...wBtn(true), opacity: syncInput.trim() && syncStatus !== "loading" ? 1 : 0.5, cursor: syncInput.trim() && syncStatus !== "loading" ? "pointer" : "default" }}>
-              {syncStatus === "loading" ? t.syncLoading : t.welcomeLoginAction}
-            </button>
-            {syncStatus === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center", lineHeight: 1.5 }}>{t.welcomeNoAccount}</div>}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <button onClick={() => { setWelcomeMode(null); setSyncInput(""); setSyncStatus(null); }}
-                style={{ padding: "4px 10px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                {t.back}
-              </button>
-              <span style={{ color: "#d4c4a8" }}>|</span>
-              <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); setSyncInput(""); setSyncStatus(null); }}
-                style={{ padding: "4px 10px", border: "none", background: "none", color: C.acc, fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                {t.welcomeSwitchToCreate}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!welcomeMode && (
-          <div key="home" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
-            <span style={{ fontSize: isMobile ? 64 : 80, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
-              모<span style={{ color: "#d4a8ff" }}>아</span>
-            </span>
-            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
-              {t.welcomeTitle}
-            </div>
-            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
-              {t.welcomeSub}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
-              <button onClick={() => { setWelcomeMode("create"); setSignupStep(0); }}
-                style={{ ...wBtn(true), fontSize: 16, padding: "16px" }}>
-                {t.welcomeCreate}
-              </button>
-              <button onClick={() => setWelcomeMode("login")}
-                style={{ ...wBtn(false), fontSize: 16, padding: "16px" }}>
-                {t.welcomeLogin}
-              </button>
-            </div>
-          </div>
-        )}
-
-        </div>
-      </div>
-    );
-  }
 
   // Auto-select Korean if no target language chosen yet (skip language selection screen)
   if (!tl || enabledTLs.length === 0) {
@@ -10742,7 +10551,7 @@ function AppInner() {
         <div style={{ padding: "10px 16px", background: C.s1, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>🔗 {t.syncConnected}</span>
           <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{authUser ? (authUser.email || "Google") : syncId}</span>
-          {authUser && !isOldLogin && !(data.cards || []).length && (
+          {authUser && !(data.cards || []).length && (
             <button onClick={() => setMigrateMode(true)}
               style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
               {t.migrateTitle}
@@ -10752,25 +10561,14 @@ function AppInner() {
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
             {"🔄 Tutoriel"}
           </button>
-          {isOldLogin && syncId && !authUser && (
-            <button onClick={async () => {
-              localStorage.setItem("moa-migrate-from", syncId);
-              const r = await signInWithGoogle();
-              if (!r.ok) { localStorage.removeItem("moa-migrate-from"); alert(r.error); }
-            }}
-              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
-              {"🔗 Connecter Google"}
-            </button>
-          )}
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
-            {authUser ? t.logoutAuth : t.disconnect}
+            {t.logoutAuth}
           </button>
           <a href="mailto:sylingual@gmail.com" title={t.contactSub}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer", textDecoration: "none" }}>
             ✉️ {t.contact}
           </a>
-          <span style={{ fontSize: 11, color: C.txtM, flex: 1 }}>{t.syncInfo}</span>
         </div>
       )}
 

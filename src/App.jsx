@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange } from "./storage.js";
+import { loadData, saveData, syncData, connectData, createAccountOnServer, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -7148,9 +7148,11 @@ function AppInner() {
           setNeedsName(false);
         } else if (existing.error === "account_not_found") {
           const inviteValidated = localStorage.getItem("moa-invite-validated");
-          if (inviteValidated) {
+          const storedInviteCode = localStorage.getItem("moa-invite-code");
+          if (inviteValidated && storedInviteCode) {
             localStorage.removeItem("moa-invite-validated");
-            const r = await syncData(user.id, null);
+            localStorage.removeItem("moa-invite-code");
+            const r = await createAccountOnServer(storedInviteCode);
             if (r.ok) {
               setSyncId(user.id);
               localStorage.setItem("moa-sync-id", user.id);
@@ -9522,9 +9524,11 @@ function AppInner() {
         const d = await res.json();
         if (d.ok) {
           localStorage.setItem("moa-invite-validated", "1");
+          localStorage.setItem("moa-invite-code", inviteCode.trim());
           const r = await signInWithGoogle();
           if (!r.ok) {
             localStorage.removeItem("moa-invite-validated");
+            localStorage.removeItem("moa-invite-code");
             setAuthBusy(false);
             setAuthMsg({ type: "err", text: r.error });
           }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -267,6 +267,13 @@ const T = {
     authNewPassword: "Nouveau mot de passe",
     authUpdatePassword: "Mettre a jour",
     authPasswordUpdated: "Mot de passe mis a jour !",
+    authGoogleSignIn: "Continuer avec Google",
+    authInviteTitle: "Code d'invitation",
+    authInviteSub: "Entre ton code d'invitation pour creer ton compte.",
+    authInvitePlaceholder: "Code d'invitation...",
+    authInviteAction: "Valider",
+    authInviteInvalid: "Code d'invitation invalide.",
+    authInviteError: "Erreur de verification. Reessaie.",
     migrateTitle: "Lier un compte existant",
     migrateSub: "Si tu avais un compte avec une cle personnelle, entre-la pour recuperer tes donnees.",
     migrateAction: "Récupérer mes données",
@@ -814,6 +821,13 @@ const T = {
     authNewPassword: "New password",
     authUpdatePassword: "Update",
     authPasswordUpdated: "Password updated!",
+    authGoogleSignIn: "Continue with Google",
+    authInviteTitle: "Invitation code",
+    authInviteSub: "Enter your invitation code to create your account.",
+    authInvitePlaceholder: "Invitation code...",
+    authInviteAction: "Validate",
+    authInviteInvalid: "Invalid invitation code.",
+    authInviteError: "Verification error. Try again.",
     migrateTitle: "Link an existing account",
     migrateSub: "If you had an account with a personal key, enter it to recover your data.",
     migrateAction: "Recover my data",
@@ -1361,6 +1375,13 @@ const T = {
     authNewPassword: "새 비밀번호",
     authUpdatePassword: "변경",
     authPasswordUpdated: "비밀번호가 변경되었습니다!",
+    authGoogleSignIn: "Google로 계속하기",
+    authInviteTitle: "초대 코드",
+    authInviteSub: "계정을 만들려면 초대 코드를 입력하세요.",
+    authInvitePlaceholder: "초대 코드...",
+    authInviteAction: "확인",
+    authInviteInvalid: "초대 코드가 올바르지 않습니다.",
+    authInviteError: "확인 오류. 다시 시도해주세요.",
     migrateTitle: "기존 계정 연결",
     migrateSub: "개인 키로 만든 계정이 있다면 입력해서 데이터를 복구하세요.",
     migrateAction: "데이터 복구",
@@ -1755,12 +1776,21 @@ EXCEPTION: never use [[...]] inside MCQ option labels. Options are answers the s
 Do NOT wrap explanations, grammar notes, or questions: only actual translations of target-language text.`;
 
 // =============================================
+// AUTHENTICATED FETCH (adds Bearer token to API calls)
+// =============================================
+async function apiFetch(url, options = {}) {
+  const token = await getAccessToken();
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (token) headers["Authorization"] = "Bearer " + token;
+  return fetch(url, { ...options, headers });
+}
+
+// =============================================
 // AI CALL (via serverless proxy)
 // =============================================
 async function callAI(systemPrompt, userMessage, maxTokens, useSearch, plainText, ctx) {
-  const res = await fetch("/api/chat", {
+  const res = await apiFetch("/api/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
@@ -1810,9 +1840,8 @@ function fileToScaledBase64(file, maxDim) {
 // OCR: extract the target-language text from an image via the vision model.
 async function extractImageText(base64, mimeType, tlName) {
   const sys = `You are an OCR engine. Extract ALL the ${tlName} text visible in this image, preserving line breaks and natural reading order. Do NOT translate, summarize, describe the image, or add any commentary. If some text is not ${tlName}, include it as-is. Return ONLY the extracted text.`;
-  const res = await fetch("/api/chat", {
+  const res = await apiFetch("/api/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       system: sys,
       messages: [{ role: "user", content: "Extract the text from this image." }],
@@ -2425,9 +2454,8 @@ function resourceSearchLinks(card, tlCode) {
 
 // Call the Brave-backed /api/resources route. Always resolves to { results: [...] }.
 async function callResources(structure, targetLangName, uiLang, mode) {
-  const res = await fetch("/api/resources", {
+  const res = await apiFetch("/api/resources", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ structure, targetLang: targetLangName, uiLang, mode: mode || "resources" }),
   });
   const raw = await res.text();
@@ -2930,9 +2958,8 @@ Return JSON: {"keywords": ["...", "...", ...]}`;
 }
 
 async function fetchFeed(query, targetLang, category) {
-  const res = await fetch("/api/feed", {
+  const res = await apiFetch("/api/feed", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query, targetLang, category }),
   });
   const raw = await res.text();
@@ -2976,8 +3003,8 @@ Return ONLY JSON: {"general":[{"i":<original index>,"title":"...","description":
 async function fetchImages(query, count) {
   try {
     trackEvent("image_gen", { query, count: count || 20 });
-    const res = await fetch("/api/image", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const res = await apiFetch("/api/image", {
+      method: "POST",
       body: JSON.stringify({ q: query, count: count || 20 }),
     });
     const raw = await res.text();
@@ -2989,9 +3016,8 @@ async function fetchImages(query, count) {
 
 // Fetch a social post's full thread (ancestors + post + replies) for the in-app viewer.
 async function fetchThread(item) {
-  const res = await fetch("/api/feed", {
+  const res = await apiFetch("/api/feed", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "thread", src: item.src, uri: item.uri, mhost: item.mhost, mid: item.mid }),
   });
   const raw = await res.text();
@@ -4305,8 +4331,8 @@ function TextComprehension({ text, lang, tl, context, tFont, t, onFinish, onExit
     setTtsState("loading");
     try {
       const ttsText = level === 2 ? sentences[sentIdx] : paragraphs[paraIdx];
-      const r = await fetch("/api/tts", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await apiFetch("/api/tts", {
+        method: "POST",
         body: JSON.stringify({ text: ttsText }),
       });
       if (!r.ok) throw new Error("TTS " + r.status);
@@ -6216,8 +6242,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
     }
     setWordPopup({ word: key, original: raw !== key ? raw : null, translation: null, x: popupX, y: popupY });
     try {
-      const r = await fetch("/api/translate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const r = await apiFetch("/api/translate", {
+        method: "POST",
         body: JSON.stringify({ text: key, from: tl, to: trLang }),
       });
       const d = await r.json();
@@ -6244,8 +6270,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
           const textToTranslate = match ? match[2].trim() : line.trim();
           const prefix = match ? match[1] + ": " : "";
           try {
-            const r = await fetch("/api/translate", {
-              method: "POST", headers: { "Content-Type": "application/json" },
+            const r = await apiFetch("/api/translate", {
+              method: "POST",
               body: JSON.stringify({ text: textToTranslate, from: tl, to: trLang }),
             });
             const d = await r.json();
@@ -6254,8 +6280,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
         }
         setStoryTr(translated.join("\n"));
       } else {
-        const r = await fetch("/api/translate", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+        const r = await apiFetch("/api/translate", {
+          method: "POST",
           body: JSON.stringify({ text: fullText, from: tl, to: trLang }),
         });
         const d = await r.json();
@@ -6274,8 +6300,8 @@ function FillStoryExercise({ data, cards, tFont, t, lang, tl, mode, onComplete, 
   };
 
   const fetchTtsAudio = async (text, voiceId) => {
-    const r = await fetch("/api/tts", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await apiFetch("/api/tts", {
+      method: "POST",
       body: JSON.stringify({ text, voice_id: voiceId || undefined }),
     });
     if (!r.ok) {
@@ -6608,11 +6634,13 @@ function AppInner() {
   const [syncId, setSyncId] = useState(() => localStorage.getItem("moa-sync-id") || "");
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authMode, setAuthMode] = useState("login"); // "login" | "signup" | "forgot" | "reset"
+  const [authMode, setAuthMode] = useState("login"); // "login" | "invite" | "reset"
   const [authEmail, setAuthEmail] = useState("");
   const [authPass, setAuthPass] = useState("");
   const [authMsg, setAuthMsg] = useState(null); // { type: "ok"|"err", text }
   const [authBusy, setAuthBusy] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [needsInvite, setNeedsInvite] = useState(false);
   const [migrateMode, setMigrateMode] = useState(false);
   const [migrateInput, setMigrateInput] = useState("");
   const [migrationMsg, setMigrationMsg] = useState(null);
@@ -7106,13 +7134,41 @@ function AppInner() {
 
   useEffect(() => {
     if (isOldLogin) { setAuthLoading(false); return; }
-    getAuthUser().then(user => {
-      if (user) {
-        setAuthUser(user);
+    const checkAndSetUser = async (user) => {
+      if (!user) {
+        setSyncId("");
+        setNeedsInvite(false);
+        localStorage.removeItem("moa-sync-id");
+        return;
+      }
+      setAuthUser(user);
+      const existing = await connectData(user.id);
+      if (existing.ok) {
+        setSyncId(user.id);
+        localStorage.setItem("moa-sync-id", user.id);
+        setNeedsInvite(false);
+        localStorage.removeItem("moa-migrate-from");
+      } else if (existing.error === "account_not_found") {
+        const migrateFrom = localStorage.getItem("moa-migrate-from");
+        if (migrateFrom) {
+          localStorage.removeItem("moa-migrate-from");
+          const migrated = await migrateOldAccount(migrateFrom, user.id);
+          if (migrated.ok) {
+            setSyncId(user.id);
+            localStorage.setItem("moa-sync-id", user.id);
+            localStorage.setItem("moa-auth-migrated", "1");
+            setNeedsInvite(false);
+            return;
+          }
+        }
+        setNeedsInvite(true);
+      } else {
         setSyncId(user.id);
         localStorage.setItem("moa-sync-id", user.id);
       }
-      setAuthLoading(false);
+    };
+    getAuthUser().then(user => {
+      checkAndSetUser(user).then(() => setAuthLoading(false));
     });
     const unsub = onAuthStateChange((user, event) => {
       if (isOldLogin) return;
@@ -7120,13 +7176,7 @@ function AppInner() {
       if (event === "PASSWORD_RECOVERY") {
         setAuthMode("reset");
       }
-      if (user) {
-        setSyncId(user.id);
-        localStorage.setItem("moa-sync-id", user.id);
-      } else {
-        setSyncId("");
-        localStorage.removeItem("moa-sync-id");
-      }
+      checkAndSetUser(user);
     });
     return unsub;
   }, []);
@@ -7375,8 +7425,8 @@ function AppInner() {
       // cover niche topics); also get a short label for the section header.
       let interestQuery = interest, interestLabel = interest;
       if (interest) { try { const dq = await dreamToSearchQuery(interest, getTargetLangName(tl, "en"), lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English"); if (dq.query) interestQuery = dq.query; if (dq.label) interestLabel = dq.label; } catch (qe) { console.warn("dream query translate failed:", qe); } }
-      const res = await fetch("/api/feed", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await apiFetch("/api/feed", {
+        method: "POST",
         body: JSON.stringify({ action: "newsRecap", targetLang: tl, interest: interestQuery }),
       });
       const raw = await res.text();
@@ -9493,43 +9543,96 @@ function AppInner() {
     );
   }
 
-  // Email/password login screen (default path)
+  // Invite code screen (new Google user, no moa_data yet)
+  if (needsInvite && authUser && !isOldLogin) {
+    const isMobile = winW < 700;
+    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
+    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
+    const inputStyle = { width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" };
+    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
+    const doInvite = async () => {
+      if (!inviteCode.trim()) return;
+      setAuthBusy(true); setAuthMsg(null);
+      try {
+        const res = await fetch("/api/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "verify-invite", inviteCode: inviteCode.trim() }),
+        });
+        const d = await res.json();
+        if (d.ok) {
+          const r = await syncData(authUser.id, null);
+          if (r.ok) {
+            setSyncId(authUser.id);
+            localStorage.setItem("moa-sync-id", authUser.id);
+            setNeedsInvite(false);
+          } else {
+            setAuthMsg({ type: "err", text: r.error || t.authInviteError });
+          }
+        } else {
+          setAuthMsg({ type: "err", text: d.error === "invite_invalid" ? t.authInviteInvalid : (d.error || t.authInviteError) });
+        }
+      } catch (e) {
+        setAuthMsg({ type: "err", text: t.authInviteError });
+      }
+      setAuthBusy(false);
+    };
+    const doCancel = async () => {
+      await signOutAuth();
+      setAuthUser(null);
+      setNeedsInvite(false);
+      setSyncId("");
+      localStorage.removeItem("moa-sync-id");
+    };
+    return (
+      <div style={fullScreen}>
+        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, maxWidth: 420, width: "100%", textAlign: "center", animation: "fadeIn 0.5s ease", background: "rgba(92,61,46,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", borderRadius: 24, padding: isMobile ? "32px 20px" : "40px 32px" }}>
+            <span style={{ fontSize: isMobile ? 56 : 72, fontWeight: 700, color: "#fff", letterSpacing: -2, fontFamily: "'Noto Sans KR'", textShadow: "0 2px 12px rgba(0,0,0,0.3)" }}>
+              모<span style={{ color: "#d4a8ff" }}>아</span>
+            </span>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, color: "#fff", lineHeight: 1.5 }}>
+              {t.authInviteTitle}
+            </div>
+            <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
+              {t.authInviteSub}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
+              <input type="text" autoFocus value={inviteCode} onChange={e => { setInviteCode(e.target.value); setAuthMsg(null); }}
+                onKeyDown={e => { if (e.key === "Enter") doInvite(); }}
+                placeholder={t.authInvitePlaceholder}
+                style={inputStyle}
+              />
+              <button onClick={doInvite} disabled={authBusy || !inviteCode.trim()}
+                style={{ ...wBtn(true), opacity: inviteCode.trim() && !authBusy ? 1 : 0.5 }}>
+                {authBusy ? t.authLoading : t.authInviteAction}
+              </button>
+              {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
+              <button onClick={doCancel}
+                style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
+                {t.authBackToLogin}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Google Sign-In screen (default path)
   if (!syncId && !isOldLogin) {
     const isMobile = winW < 700;
     const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
     const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
-    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
-    const inputStyle = { width: "100%", boxSizing: "border-box", border: "2px solid rgba(255,255,255,0.25)", borderRadius: 10, padding: "12px 14px", fontSize: 15, fontFamily: "'Plus Jakarta Sans'", color: "#fff", background: "rgba(255,255,255,0.12)", outline: "none", backdropFilter: "blur(4px)" };
-
-    const doLogin = async () => {
-      if (!authEmail || !authPass) return;
+    const doGoogle = async () => {
       setAuthBusy(true); setAuthMsg(null);
-      const r = await signInWithEmail(authEmail, authPass);
-      setAuthBusy(false);
+      const r = await signInWithGoogle();
       if (!r.ok) {
-        setAuthMsg({ type: "err", text: r.error === "Invalid login credentials" ? t.authInvalidCredentials : r.error });
+        setAuthBusy(false);
+        setAuthMsg({ type: "err", text: r.error });
       }
     };
-    const doSignup = async () => {
-      if (!authEmail || !authPass || authPass.length < 6) return;
-      setAuthBusy(true); setAuthMsg(null);
-      const r = await signUpWithEmail(authEmail, authPass);
-      setAuthBusy(false);
-      if (!r.ok) {
-        setAuthMsg({ type: "err", text: r.error === "email_taken" ? t.authEmailTaken : r.error });
-      } else if (r.needsConfirmation) {
-        setAuthMsg({ type: "ok", text: t.authConfirmSent });
-      }
-    };
-    const doForgot = async () => {
-      if (!authEmail) return;
-      setAuthBusy(true); setAuthMsg(null);
-      const r = await resetPassword(authEmail);
-      setAuthBusy(false);
-      if (r.ok) setAuthMsg({ type: "ok", text: t.authResetSent });
-      else setAuthMsg({ type: "err", text: r.error });
-    };
-
     return (
       <div style={fullScreen}>
         <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
@@ -9544,53 +9647,14 @@ function AppInner() {
             <div style={{ fontSize: isMobile ? 13 : 15, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>
               {t.welcomeSub}
             </div>
-
-            {authMode === "forgot" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
-                <input type="email" autoFocus value={authEmail} onChange={e => { setAuthEmail(e.target.value); setAuthMsg(null); }}
-                  onKeyDown={e => { if (e.key === "Enter") doForgot(); }}
-                  placeholder={t.authEmail}
-                  style={inputStyle}
-                />
-                <button onClick={doForgot} disabled={authBusy || !authEmail}
-                  style={{ ...wBtn(true), opacity: authEmail && !authBusy ? 1 : 0.5 }}>
-                  {authBusy ? t.authLoading : t.authResetAction}
-                </button>
-                {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
-                <button onClick={() => { setAuthMode("login"); setAuthMsg(null); }}
-                  style={{ padding: "8px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.7)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                  {t.authBackToLogin}
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 4 }}>
-                <input type="email" autoFocus value={authEmail} onChange={e => { setAuthEmail(e.target.value); setAuthMsg(null); }}
-                  onKeyDown={e => { if (e.key === "Enter" && authPass) { authMode === "login" ? doLogin() : doSignup(); } }}
-                  placeholder={t.authEmail}
-                  style={inputStyle}
-                />
-                <input type="password" value={authPass} onChange={e => { setAuthPass(e.target.value); setAuthMsg(null); }}
-                  onKeyDown={e => { if (e.key === "Enter" && authEmail) { authMode === "login" ? doLogin() : doSignup(); } }}
-                  placeholder={t.authPassword}
-                  style={inputStyle}
-                />
-                <button onClick={authMode === "login" ? doLogin : doSignup} disabled={authBusy || !authEmail || !authPass}
-                  style={{ ...wBtn(true), opacity: authEmail && authPass && !authBusy ? 1 : 0.5 }}>
-                  {authBusy ? t.authLoading : authMode === "login" ? t.authLogin : t.authSignup}
-                </button>
-                {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
-                {authMode === "login" && (
-                  <button onClick={() => { setAuthMode("forgot"); setAuthMsg(null); }}
-                    style={{ padding: "4px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer" }}>
-                    {t.authForgot}
-                  </button>
-                )}
-                <button onClick={() => { setAuthMode(authMode === "login" ? "signup" : "login"); setAuthMsg(null); }}
-                  style={{ padding: "4px 16px", border: "none", background: "none", color: "rgba(255,255,255,0.7)", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
-                  {authMode === "login" ? t.authSignup : t.authLogin}
-                </button>
-              </div>
-            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 8 }}>
+              <button onClick={doGoogle} disabled={authBusy}
+                style={{ width: "100%", padding: "14px 20px", borderRadius: 12, border: "none", background: "#fff", color: "#3a2a1a", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, opacity: authBusy ? 0.5 : 1, transition: "opacity 0.15s" }}>
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.09 24.09 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                {authBusy ? t.authLoading : t.authGoogleSignIn}
+              </button>
+              {authMsg && <div style={{ fontSize: 12, color: authMsg.type === "ok" ? "#a3e635" : "#fca5a5", textAlign: "center" }}>{authMsg.text}</div>}
+            </div>
           </div>
         </div>
       </div>
@@ -10671,6 +10735,16 @@ function AppInner() {
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
             {"🔄 Tutoriel"}
           </button>
+          {isOldLogin && syncId && !authUser && (
+            <button onClick={async () => {
+              localStorage.setItem("moa-migrate-from", syncId);
+              const r = await signInWithGoogle();
+              if (!r.ok) { localStorage.removeItem("moa-migrate-from"); alert(r.error); }
+            }}
+              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
+              {"🔗 Connecter Google"}
+            </button>
+          )}
           <button onClick={handleDisconnect}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s2, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.txtS, cursor: "pointer" }}>
             {authUser ? t.logoutAuth : t.disconnect}
@@ -13785,7 +13859,7 @@ function AppInner() {
               const solo = opts.filterUser !== undefined ? opts.filterUser : adminFilterUser;
               if (excl.size) body.exclude = [...excl];
               if (solo) body.filterUser = solo;
-              const res = await fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+              const res = await apiFetch("/api/admin", { method: "POST", body: JSON.stringify(body) });
               const d = await res.json();
               if (d.error) { console.error("[admin]", d.error); setAdminData(null); }
               else {
@@ -14312,7 +14386,7 @@ function AppInner() {
             if (adminUsersLoading) return;
             setAdminUsersLoading(true);
             try {
-              const res = await fetch("/api/admin-users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId }) });
+              const res = await apiFetch("/api/admin-users", { method: "POST", body: JSON.stringify({ syncId }) });
               const d = await res.json();
               if (d.error) { console.error("[admin-users]", d.error); setAdminUsersData(null); }
               else setAdminUsersData(d);
@@ -14322,7 +14396,7 @@ function AppInner() {
           if (!adminUsersData && !adminUsersLoading) loadUsers();
           const deleteUser = async (uid) => {
             try {
-              const res = await fetch("/api/admin-users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId, action: "delete", targetUserId: uid }) });
+              const res = await apiFetch("/api/admin-users", { method: "POST", body: JSON.stringify({ syncId, action: "delete", targetUserId: uid }) });
               const d = await res.json();
               if (d.ok) { setAdminDeleteConfirm(null); setAdminUsersData(null); }
               else alert("Erreur: " + (d.error || "inconnue"));

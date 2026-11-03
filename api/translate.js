@@ -1,7 +1,13 @@
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  var auth = await verifyAuth(req)
+  if (!auth.user) return res.status(401).json({ error: 'Non authentifie' })
+
   var text = (req.body.text || '').trim()
   var from = req.body.from || 'ko'
   var to = req.body.to || 'fr'

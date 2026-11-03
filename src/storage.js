@@ -202,6 +202,22 @@ export function isSupabaseConfigured() {
 // ---- AUTH ----
 export function getSupabase() { return supabase; }
 
+export async function signInWithGoogle() {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function getAccessToken() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
 export async function signUpWithEmail(email, password) {
   if (!supabase) return { ok: false, error: 'not_configured' };
   const { data, error } = await supabase.auth.signUp({

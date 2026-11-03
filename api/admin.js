@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyAuth } from './_auth.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || '',
@@ -7,6 +8,9 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const auth = await verifyAuth(req);
+  if (!auth.user) return res.status(401).json({ error: 'Non authentifie' });
 
   const { syncId, exclude, filterUser } = req.body || {};
   if (!syncId || syncId !== process.env.ADMIN_SYNC_ID) {

@@ -7100,6 +7100,7 @@ function AppInner() {
   const [goalView, setGoalView] = useState("list"); // "list" | "detail" | "create" | "pick"
   const [goalEditId, setGoalEditId] = useState(null);
   const [goalForm, setGoalForm] = useState({ name: "", deadline: "", startDate: "" });
+  const [goalFormErrors, setGoalFormErrors] = useState({ name: false, deadline: false });
   const [goalCardPicker, setGoalCardPicker] = useState(false);
   const [goalPickSel, setGoalPickSel] = useState(new Set());
   const [goalDeleteConfirm, setGoalDeleteConfirm] = useState(null);
@@ -7325,7 +7326,7 @@ function AppInner() {
     }) };
     save(nd);
     trackEvent("goal_update", { goal_id: id, status: isScheduled ? "scheduled" : "created", card_count: cardIds.size });
-    setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
+    setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); setGoalFormErrors({ name: false, deadline: false });
   };
 
   const deleteGoal = (goalId, deleteCards) => {
@@ -11234,14 +11235,16 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalName}</label>
-                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => setGoalForm({ ...goalForm, name: e.target.value })} placeholder={t.goalNamePh}
-                      style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => { setGoalForm({ ...goalForm, name: e.target.value }); if (e.target.value.trim()) setGoalFormErrors(p => ({ ...p, name: false })); }} placeholder={t.goalNamePh}
+                      style={{ width: "100%", padding: "10px 12px", border: goalFormErrors.name ? "2px solid #e53e3e" : `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                    {goalFormErrors.name && <div style={{ fontSize: 11, color: "#e53e3e", marginTop: 3 }}>{t.goalErrName || "Ce champ est requis"}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
-                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => setGoalForm({ ...goalForm, deadline: e.target.value })}
-                        style={{ width: "100%", padding: "10px 12px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => { setGoalForm({ ...goalForm, deadline: e.target.value }); if (e.target.value) setGoalFormErrors(p => ({ ...p, deadline: false })); }}
+                        style={{ width: "100%", padding: "10px 12px", border: goalFormErrors.deadline ? "2px solid #e53e3e" : `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
+                      {goalFormErrors.deadline && <div style={{ fontSize: 11, color: "#e53e3e", marginTop: 3 }}>{t.goalErrDeadline || "Ce champ est requis"}</div>}
                     </div>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalStartDate}</label>
@@ -11412,15 +11415,15 @@ function AppInner() {
 
                   <div style={{ display: "flex", gap: 8 }}>
                     <button data-tutorial="goal-save" onClick={() => {
-                      const missing = [];
-                      if (!goalForm.name.trim()) missing.push('[data-tutorial="goal-name"]');
-                      if (!goalForm.deadline) missing.push('[data-tutorial="goal-deadline"]');
-                      if (missing.length) {
-                        const el = document.querySelector(missing[0]);
-                        if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus(); el.style.border = "2px solid #e53e3e"; setTimeout(() => { el.style.border = ""; }, 2000); }
-                        if (missing.length > 1) { const el2 = document.querySelector(missing[1]); if (el2) { el2.style.border = "2px solid #e53e3e"; setTimeout(() => { el2.style.border = ""; }, 2000); } }
+                      const errs = { name: !goalForm.name.trim(), deadline: !goalForm.deadline };
+                      if (errs.name || errs.deadline) {
+                        setGoalFormErrors(errs);
+                        const sel = errs.name ? '[data-tutorial="goal-name"]' : '[data-tutorial="goal-deadline"]';
+                        const el = document.querySelector(sel);
+                        if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus(); }
                         return;
                       }
+                      setGoalFormErrors({ name: false, deadline: false });
                       createGoal(goalForm.name.trim(), goalForm.deadline, goalPickSel, goalForm.startDate);
                     }}
                       style={{ flex: 1, padding: "10px 16px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>

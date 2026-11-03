@@ -8441,10 +8441,6 @@ function AppInner() {
         // Hide tutorial overlay while form has validation errors so user can fix them
         if (tutoStep === 8 && (goalFormErrors.name || goalFormErrors.deadline)) return null;
         if (tutoStep === 8) {
-          setTimeout(() => {
-            const el = document.querySelector('[data-tutorial="goal-save"]');
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-          }, 100);
           const msg = t.tutoClickSave;
           if (!tutoRect) {
             return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
@@ -11264,14 +11260,14 @@ function AppInner() {
                   </div>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalName}</label>
-                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => { setGoalForm({ ...goalForm, name: e.target.value }); if (e.target.value.trim()) setGoalFormErrors(p => ({ ...p, name: false })); }} placeholder={t.goalNamePh}
+                    <input data-tutorial="goal-name" value={goalForm.name} onChange={e => { setGoalForm({ ...goalForm, name: e.target.value }); if (e.target.value.trim()) { setGoalFormErrors(p => { const next = { ...p, name: false }; if (!next.name && !next.deadline && (p.name || p.deadline)) setTimeout(() => { const btn = document.querySelector('[data-tutorial="goal-save"]'); if (btn) btn.scrollIntoView({ behavior: "smooth", block: "center" }); }, 150); return next; }); } }} placeholder={t.goalNamePh}
                       style={{ width: "100%", padding: "10px 12px", border: goalFormErrors.name ? "2px solid #e53e3e" : `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                     {goalFormErrors.name && <div style={{ fontSize: 11, color: "#e53e3e", marginTop: 3 }}>{t.goalErrName || "Ce champ est requis"}</div>}
                   </div>
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 140px" }}>
                       <label style={{ fontSize: 12, fontWeight: 500, color: C.txtM, marginBottom: 4, display: "block" }}>{t.goalDeadline}</label>
-                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => { setGoalForm({ ...goalForm, deadline: e.target.value }); if (e.target.value) setGoalFormErrors(p => ({ ...p, deadline: false })); }}
+                      <input data-tutorial="goal-deadline" type="date" value={goalForm.deadline} onChange={e => { setGoalForm({ ...goalForm, deadline: e.target.value }); if (e.target.value) { setGoalFormErrors(p => { const next = { ...p, deadline: false }; if (!next.name && !next.deadline && (p.name || p.deadline)) setTimeout(() => { const btn = document.querySelector('[data-tutorial="goal-save"]'); if (btn) btn.scrollIntoView({ behavior: "smooth", block: "center" }); }, 150); return next; }); } }}
                         style={{ width: "100%", padding: "10px 12px", border: goalFormErrors.deadline ? "2px solid #e53e3e" : `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, fontFamily: "'Inter', 'Plus Jakarta Sans', sans-serif", color: C.txt, background: C.s1, outline: "none" }} />
                       {goalFormErrors.deadline && <div style={{ fontSize: 11, color: "#e53e3e", marginTop: 3 }}>{t.goalErrDeadline || "Ce champ est requis"}</div>}
                     </div>

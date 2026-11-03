@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
-export async function verifyAuth(req) {
+export async function verifyAuth(req, { skipMoaCheck } = {}) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) return { user: null, error: 'missing_token' };
@@ -13,12 +13,14 @@ export async function verifyAuth(req) {
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) return { user: null, error: error?.message || 'invalid_token' };
 
-    const { data: moaRow, error: moaErr } = await supabase
-      .from('moa_data')
-      .select('user_id')
-      .eq('user_id', data.user.id)
-      .single();
-    if (moaErr || !moaRow) return { user: null, error: 'no_account' };
+    if (!skipMoaCheck) {
+      const { data: moaRow, error: moaErr } = await supabase
+        .from('moa_data')
+        .select('user_id')
+        .eq('user_id', data.user.id)
+        .single();
+      if (moaErr || !moaRow) return { user: null, error: 'no_account' };
+    }
 
     return { user: data.user, error: null };
   } catch (e) {

@@ -13807,7 +13807,10 @@ function AppInner() {
             <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 300px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"📊"} Dashboard Admin</h2>
-                <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraîchir</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setView("admin-users"); window.location.hash = "#admin-utilisateurs"; }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"👥"} Utilisateurs</button>
+                  <button onClick={() => { setAdminData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraichir</button>
+                </div>
               </div>
               {adminAllUsers.length > 0 && (
                 <div style={{ background: C.s1, borderRadius: 10, padding: 14, border: `1px solid ${C.border}`, marginBottom: 16 }}>

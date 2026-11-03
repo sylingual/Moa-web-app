@@ -8441,12 +8441,12 @@ function AppInner() {
         // Hide tutorial overlay while form has validation errors so user can fix them
         if (tutoStep === 8 && (goalFormErrors.name || goalFormErrors.deadline)) return null;
         if (tutoStep === 8) {
+          setTimeout(() => {
+            const el = document.querySelector('[data-tutorial="goal-save"]');
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 100);
           const msg = t.tutoClickSave;
           if (!tutoRect) {
-            setTimeout(() => {
-              const el = document.querySelector('[data-tutorial="goal-save"]');
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 100);
             return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
           }
           const r = tutoRect;

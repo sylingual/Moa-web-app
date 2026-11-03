@@ -6574,6 +6574,9 @@ function AppInner() {
   const [adminExclude, setAdminExclude] = useState(new Set());
   const [adminFilterUser, setAdminFilterUser] = useState("");
   const [adminAllUsers, setAdminAllUsers] = useState([]);
+  const [adminUsersData, setAdminUsersData] = useState(null);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminDeleteConfirm, setAdminDeleteConfirm] = useState(null);
   const [tagEditCard, setTagEditCard] = useState(null); // card id currently editing tags
   const [editingTag, setEditingTag] = useState(null); // { cardId, tag } for inline rename
   const [showTargetDef, setShowTargetDef] = useState({}); // { cardId: true } for toggled target def display
@@ -7959,8 +7962,10 @@ function AppInner() {
 
   useEffect(() => {
     const checkAdminHash = () => {
-      if (window.location.hash === "#admin" && syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "")) {
-        setView("admin");
+      const h = window.location.hash;
+      if (syncId && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "")) {
+        if (h === "#admin") setView("admin");
+        else if (h === "#admin-utilisateurs") setView("admin-users");
       }
     };
     checkAdminHash();
@@ -14294,6 +14299,95 @@ function AppInner() {
                   ))}
                 </div>
               </>)}
+            </div>
+          </div>);
+        })()}
+
+        {/* ADMIN USERS */}
+        {view === "admin-users" && syncId === (import.meta.env.VITE_ADMIN_SYNC_ID || "") && (() => {
+          const loadUsers = async () => {
+            if (adminUsersLoading) return;
+            setAdminUsersLoading(true);
+            try {
+              const res = await fetch("/api/admin-users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId }) });
+              const d = await res.json();
+              if (d.error) { console.error("[admin-users]", d.error); setAdminUsersData(null); }
+              else setAdminUsersData(d);
+            } catch (e) { console.error("[admin-users]", e); }
+            setAdminUsersLoading(false);
+          };
+          if (!adminUsersData && !adminUsersLoading) loadUsers();
+          const deleteUser = async (uid) => {
+            try {
+              const res = await fetch("/api/admin-users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ syncId, action: "delete", targetUserId: uid }) });
+              const d = await res.json();
+              if (d.ok) { setAdminDeleteConfirm(null); setAdminUsersData(null); }
+              else alert("Erreur: " + (d.error || "inconnue"));
+            } catch (e) { alert("Erreur: " + e.message); }
+          };
+          return (
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", justifyContent: "center" }}>
+            <div style={{ width: "100%", maxWidth: 700, padding: "16px 12px 300px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: C.txt }}>{"👥"} Gestion utilisateurs</h2>
+                <button onClick={() => { setAdminUsersData(null); }} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>{"🔄"} Rafraichir</button>
+              </div>
+              {adminUsersLoading && <div style={{ textAlign: "center", padding: 40, color: C.txtM }}>Chargement...</div>}
+              {adminUsersData && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: C.txtM, marginBottom: 4 }}>{adminUsersData.users.length} utilisateur{adminUsersData.users.length > 1 ? "s" : ""}</div>
+                  {adminUsersData.users.map(u => {
+                    const short = u.sync_id.length > 16 ? u.sync_id.slice(0, 8) + "…" + u.sync_id.slice(-6) : u.sync_id;
+                    const isAdmin = u.sync_id === syncId;
+                    const isConfirming = adminDeleteConfirm === u.sync_id;
+                    return (
+                    <div key={u.sync_id} style={{ background: C.s1, borderRadius: 10, padding: "12px 14px", border: `1px solid ${isConfirming ? C.warn : C.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: C.txt, fontFamily: "monospace" }} title={u.sync_id}>{short}</span>
+                            {u.name && <span style={{ fontSize: 11, color: C.txtM }}>({u.name})</span>}
+                            {isAdmin && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: C.accBg, color: C.acc, fontWeight: 600 }}>ADMIN</span>}
+                          </div>
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4, fontSize: 11, color: C.txtM }}>
+                            <span>{"⭐"} {u.points} pts</span>
+                            <span>{"🃏"} {u.cards} cartes</span>
+                            <span>{"📊"} {u.sessions} sessions</span>
+                            <span>{"🤖"} {u.ai_messages} msgs IA</span>
+                            {u.devices.length > 0 && <span>{"📱"} {u.devices.join(", ")}</span>}
+                          </div>
+                          {u.last_seen && <div style={{ fontSize: 10, color: C.txtM, marginTop: 2 }}>Vu le {u.last_seen.slice(0, 10)}</div>}
+                        </div>
+                        {!isAdmin && !isConfirming && (
+                          <button onClick={() => setAdminDeleteConfirm(u.sync_id)}
+                            style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${C.warn}`, background: "none", color: C.warn, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", flexShrink: 0 }}>
+                            Supprimer
+                          </button>
+                        )}
+                      </div>
+                      {isConfirming && (
+                        <div style={{ background: C.warnBg || "rgba(255,59,48,0.08)", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.warn }}>Confirmer la suppression ?</div>
+                          <div style={{ fontSize: 11, color: C.txtM, lineHeight: 1.4 }}>
+                            Cela supprimera toutes les donnees de <strong>{short}</strong> : profil, cartes, sessions et evenements. Cette action est irreversible.
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => deleteUser(u.sync_id)}
+                              style={{ padding: "6px 14px", borderRadius: 6, border: "none", background: C.warn, color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              Oui, supprimer
+                            </button>
+                            <button onClick={() => setAdminDeleteConfirm(null)}
+                              style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.s1, color: C.txtS, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'" }}>
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>);
         })()}

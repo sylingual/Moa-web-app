@@ -14247,6 +14247,7 @@ function AppInner() {
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <span style={{ fontSize: 13, fontWeight: 600, color: C.txt, fontFamily: "monospace" }} title={u.sync_id}>{short}</span>
                             {u.name && <span style={{ fontSize: 11, color: C.txtM }}>({u.name})</span>}
+                            {u.email && <span style={{ fontSize: 10, color: C.txtS, fontFamily: "monospace" }}>{u.email}</span>}
                             {isAdmin && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, background: C.accBg, color: C.acc, fontWeight: 600 }}>ADMIN</span>}
                           </div>
                           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4, fontSize: 11, color: C.txtM }}>

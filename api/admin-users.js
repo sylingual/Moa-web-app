@@ -35,11 +35,17 @@ export default async function handler(req, res) {
     }
 
     // Default action: list users
-    const [moaData, sessionsData, eventsData] = await Promise.all([
+    const [moaData, sessionsData, eventsData, authUsers] = await Promise.all([
       supabase.from('moa_data').select('user_id, data, updated_at'),
       supabase.from('sessions').select('sync_id, started_at, ended_at, device_type').order('started_at', { ascending: false }).limit(5000),
       supabase.from('events').select('sync_id, type, ts').order('ts', { ascending: false }).limit(10000),
+      supabase.auth.admin.listUsers({ perPage: 1000 }),
     ]);
+
+    const emailMap = {};
+    (authUsers.data?.users || []).forEach(u => {
+      if (u.id && u.email) emailMap[u.id] = u.email;
+    });
 
     const moaMap = {};
     (moaData.data || []).forEach(row => {
@@ -77,6 +83,7 @@ export default async function handler(req, res) {
     const users = [...allSyncIds].map(uid => ({
       sync_id: uid,
       name: moaMap[uid]?.name || '',
+      email: emailMap[uid] || '',
       points: moaMap[uid]?.points || 0,
       cards: moaMap[uid]?.cards || 0,
       sessions: userMap[uid]?.sessions || 0,

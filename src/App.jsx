@@ -8447,7 +8447,34 @@ function AppInner() {
             }, 100);
             return centeredOverlay(<div>{stepDots(tutoStep)}<div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 16 }}>{msg}</div><div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div><div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div></div>);
           }
-          return positionedBubble(msg, null, null);
+          const r = tutoRect;
+          const pad = 12;
+          const bubbleW = Math.min(340, winW - 32);
+          const aboveSpace = r.top;
+          const belowSpace = window.innerHeight - r.bottom;
+          const placeBelow = belowSpace > 180 || belowSpace >= aboveSpace;
+          const top = placeBelow ? r.bottom + pad : undefined;
+          const bottom = !placeBelow ? (window.innerHeight - r.top + pad) : undefined;
+          let left = Math.max(16, r.left + r.width / 2 - bubbleW / 2);
+          if (left + bubbleW > winW - 16) left = winW - 16 - bubbleW;
+          const arrowLeft = Math.min(Math.max(r.left + r.width / 2 - left - 8, 12), bubbleW - 28);
+          return (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }}>
+                <div style={{ position: "fixed", top: r.top - 6, left: r.left - 6, width: r.width + 12, height: r.height + 12, borderRadius: 10, boxShadow: "0 0 0 9999px rgba(0,0,0,0.35)", zIndex: 9998, pointerEvents: "none" }} />
+              </div>
+              <div style={{ position: "fixed", top, bottom, left, width: bubbleW, zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
+                  <div style={{ position: "absolute", [placeBelow ? "top" : "bottom"]: -8, left: arrowLeft, width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", [placeBelow ? "borderBottom" : "borderTop"]: "9px solid #fff" }} />
+                  {stepDots(tutoStep)}
+                  <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 6, textAlign: "center" }}>{msg}</div>
+                  <div style={{ fontSize: 12, color: "#aaa", textAlign: "center", marginTop: 4 }}>{"👆"}</div>
+                  <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+                </div>
+              </div>
+            </>
+          );
         }
 
         // Step 9: Congrats

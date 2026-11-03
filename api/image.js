@@ -63,10 +63,16 @@ async function searchBrave(q, count, key) {
   return { images: images.slice(0, count) }
 }
 
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed', images: [] })
   }
+
+  var auth = await verifyAuth(req)
+  if (!auth.user) return res.status(401).json({ error: 'Non authentifie', images: [] })
+
   try {
     var body = req.body || {}
     var q = (body.q || '').toString().trim()

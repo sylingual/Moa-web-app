@@ -115,10 +115,8 @@ async function saveToSupabase(userId, appData) {
   try {
     const { error } = await supabase
       .from('moa_data')
-      .upsert(
-        { user_id: userId, data: appData, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      );
+      .update({ data: appData, updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
     if (error) return { ok: false, error: error.message };
     return { ok: true };
   } catch (e) {
@@ -202,6 +200,22 @@ export function isSupabaseConfigured() {
 // ---- AUTH ----
 export function getSupabase() { return supabase; }
 
+export async function signInWithGoogle() {
+  if (!supabase) return { ok: false, error: 'not_configured' };
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function getAccessToken() {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data?.session?.access_token || null;
+}
+
 export async function signUpWithEmail(email, password) {
   if (!supabase) return { ok: false, error: 'not_configured' };
   const { data, error } = await supabase.auth.signUp({
@@ -267,6 +281,28 @@ export async function migrateOldAccount(oldSyncId, newUserId) {
   const merged = mergeWithDefaults(old.data);
   saveLocal(merged);
   return { ok: true, data: merged };
+}
+
+export async function createAccountOnServer(inviteCode) {
+  const token = await getAccessToken();
+  if (!token) return { ok: false, error: 'not_authenticated' };
+  try {
+    const r = await fetch('/api/create-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ inviteCode }),
+    });
+    const json = await r.json();
+    if (!r.ok) return { ok: false, error: json.error || 'server_error' };
+    if (json.data) {
+      const merged = mergeWithDefaults(json.data);
+      saveLocal(merged);
+      return { ok: true, data: merged, source: json.source };
+    }
+    return { ok: true, source: json.source };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 }
 
 export { DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE };

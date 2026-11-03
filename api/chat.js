@@ -1,7 +1,12 @@
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
+
+  var auth = await verifyAuth(req)
+  if (!auth.user) return res.status(401).json({ error: 'Non authentifie' })
 
   var body = req.body
   var useSearch = body.search === true

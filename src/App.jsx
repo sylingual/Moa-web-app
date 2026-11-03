@@ -59,7 +59,7 @@ const T = {
     importImage: "Importer une image", importSourceUrl: "Lien source (optionnel)", ocrLoading: "Extraction du texte...", ocrEmpty: "Aucun texte détecté dans l'image.",
     ocrNoTarget: (l) => `Aucun texte en ${l} n'a été détecté dans cette image. Tu t'es peut-être trompé d'image ?`,
     pointsFound: (n) => `${n} point${n > 1 ? "s" : ""} repéré${n > 1 ? "s" : ""} dans ton texte`,
-    importAllKnown: "Tous les points de ce texte sont déjà dans ta bibliothèque — rien de nouveau à ajouter.",
+    importAllKnown: "Tous les points de ce texte sont déjà dans ta bibliothèque, donc rien de nouveau à ajouter.",
     pickSub: "Choisis celui que tu veux étudier, ou marque ceux que tu connais déjà.",
     iKnow: "Je connais", addedAcq: "Acquis",
     startLesson: "Commencer la leçon", morePoints: "Trouver d'autres points",

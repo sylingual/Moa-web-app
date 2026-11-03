@@ -3,10 +3,15 @@
 // If the key is missing or Brave errors, this returns an empty result set and the
 // client falls back to curated deep-links, so the feature never hard-fails.
 
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed', results: [] })
   }
+
+  var auth = await verifyAuth(req)
+  if (!auth.user) return res.status(401).json({ error: 'Non authentifie', results: [] })
 
   var key = process.env.BRAVE_API_KEY || ''
   if (!key) {

@@ -10033,7 +10033,7 @@ function AppInner() {
         const totalSteps = 10;
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
-        const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
+        const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(0,0,0,0.35)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
         const closeBtn = <button onClick={finishTutorial} style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,0.08)", color: "#888", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0 }} aria-label="Close">{"×"}</button>;
         const stepDots = (current) => (
           <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 14 }}>
@@ -13149,7 +13149,7 @@ function AppInner() {
                             {t.goalImportCancel}
                           </button>
                         </div>
-                        <label style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "transparent", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", alignSelf: "flex-start" }}>
+                        <label style={{ display: isTutorialActive ? "none" : "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 6, border: `1px dashed ${C.borderS}`, background: "transparent", color: C.txtM, fontSize: 11, cursor: "pointer", fontFamily: "'Plus Jakarta Sans'", alignSelf: "flex-start" }}>
                           + 📷
                           <input type="file" accept="image/*" multiple onChange={async (e) => {
                             const files = [...(e.target.files || [])]; e.target.value = "";

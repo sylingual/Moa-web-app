@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
-import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange, migrateOldAccount } from "./storage.js";
+import { loadData, saveData, syncData, connectData, isSupabaseConfigured, DEFAULT_DATA, DEFAULT_PROFILE, DEFAULT_LANG_PROFILE, signInWithGoogle, getAccessToken, signUpWithEmail, signInWithEmail, resetPassword, updatePassword, signOutAuth, getAuthUser, onAuthStateChange } from "./storage.js";
 import { initTracking, trackEvent, updateSessionLangs } from "./tracking.js";
 
 // =============================================
@@ -6641,9 +6641,6 @@ function AppInner() {
   const [authBusy, setAuthBusy] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const [needsInvite, setNeedsInvite] = useState(false);
-  const [migrateMode, setMigrateMode] = useState(false);
-  const [migrateInput, setMigrateInput] = useState("");
-  const [migrationMsg, setMigrationMsg] = useState(null);
   const [showSync, setShowSync] = useState(false);
 
   // Import
@@ -7139,20 +7136,7 @@ function AppInner() {
         setSyncId(user.id);
         localStorage.setItem("moa-sync-id", user.id);
         setNeedsInvite(false);
-        localStorage.removeItem("moa-migrate-from");
       } else if (existing.error === "account_not_found") {
-        const migrateFrom = localStorage.getItem("moa-migrate-from");
-        if (migrateFrom) {
-          localStorage.removeItem("moa-migrate-from");
-          const migrated = await migrateOldAccount(migrateFrom, user.id);
-          if (migrated.ok) {
-            setSyncId(user.id);
-            localStorage.setItem("moa-sync-id", user.id);
-            localStorage.setItem("moa-auth-migrated", "1");
-            setNeedsInvite(false);
-            return;
-          }
-        }
         const inviteValidated = localStorage.getItem("moa-invite-validated");
         if (inviteValidated) {
           localStorage.removeItem("moa-invite-validated");
@@ -7183,11 +7167,6 @@ function AppInner() {
     return unsub;
   }, []);
 
-  useEffect(() => {
-    if (authUser && loaded && data.cards.length === 0 && !localStorage.getItem("moa-auth-migrated")) {
-      setMigrateMode(true);
-    }
-  }, [authUser, loaded]);
 
   const save = useCallback((nd) => { setData(nd); saveData(nd, syncId); }, [syncId]);
 
@@ -9627,55 +9606,6 @@ function AppInner() {
     );
   }
 
-  // Migration prompt after first login (user is authenticated but has no cards)
-  if (migrateMode && authUser) {
-    const isMobile = winW < 700;
-    const wBgWelcome = `url('/${isMobile ? "welcome-m" : "welcome-d"}.png') center/cover no-repeat, #5C3D2E`;
-    const fullScreen = { fontFamily: "'Plus Jakarta Sans'", position: "fixed", inset: 0, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 };
-    const wPanel = { width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, background: "rgba(255,248,230,0.92)", borderRadius: 20, padding: "32px 24px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.5s ease" };
-    const wBtn = (primary) => ({ width: "100%", padding: "14px", borderRadius: 12, border: primary ? "none" : "2px solid rgba(255,255,255,0.3)", background: primary ? C.acc : "rgba(255,255,255,0.15)", color: primary ? C.onAcc : "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" });
-    const doMigrate = async () => {
-      if (!migrateInput.trim()) return;
-      setMigrationMsg("loading");
-      const result = await migrateOldAccount(migrateInput.trim(), authUser.id);
-      if (result.ok) {
-        setMigrationMsg("success");
-        setData(result.data);
-        if (result.data.lastTargetLang) setTargetLang(result.data.lastTargetLang);
-        localStorage.setItem("moa-auth-migrated", "1");
-        setTimeout(() => { setMigrateMode(false); setMigrationMsg(null); }, 1500);
-      } else { setMigrationMsg("error"); }
-    };
-    return (
-      <div style={fullScreen}>
-        <div style={{ position: "absolute", inset: 0, background: wBgWelcome }} />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-          <div style={wPanel}>
-            <span style={{ fontSize: 52, fontWeight: 700, color: "#3a2a1a", letterSpacing: -1, fontFamily: "'Noto Sans KR'" }}>
-              모<span style={{ color: C.acc }}>아</span>
-            </span>
-            <div style={{ fontSize: 20, fontWeight: 600, color: "#3a2a1a", textAlign: "center" }}>{t.migrateTitle}</div>
-            <div style={{ fontSize: 13, color: "#8B7355", textAlign: "center", lineHeight: 1.6 }}>{t.migrateSub}</div>
-            <input autoFocus value={migrateInput} onChange={e => { setMigrateInput(e.target.value); setMigrationMsg(null); }}
-              onKeyDown={e => { if (e.key === "Enter" && migrateInput.trim()) doMigrate(); }}
-              placeholder={t.welcomeCodePlaceholder}
-              disabled={migrationMsg === "loading"}
-              style={{ width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontSize: 16, fontFamily: "'Plus Jakarta Sans'", color: "#3a2a1a", background: "#fff", outline: "none", textAlign: "center" }}
-            />
-            <button onClick={doMigrate} disabled={migrationMsg === "loading" || !migrateInput.trim()}
-              style={{ ...wBtn(true), opacity: migrateInput.trim() && migrationMsg !== "loading" ? 1 : 0.5 }}>
-              {migrationMsg === "loading" ? t.syncLoading : migrationMsg === "success" ? t.migrateSuccess : t.migrateAction}
-            </button>
-            {migrationMsg === "error" && <div style={{ fontSize: 12, color: C.warn, textAlign: "center" }}>{t.migrateError}</div>}
-            <button onClick={() => { setMigrateMode(false); localStorage.setItem("moa-auth-migrated", "1"); }}
-              style={{ padding: "8px 16px", border: "none", background: "none", color: "#8B7355", fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-              {t.migrateSkip}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
 
   // Auto-select Korean if no target language chosen yet (skip language selection screen)
@@ -9796,8 +9726,8 @@ function AppInner() {
     const onbInput = { width: "100%", boxSizing: "border-box", border: "2px solid #e0d5c5", borderRadius: 10, padding: "12px 14px", fontFamily: "'Plus Jakarta Sans'", fontSize: 15, color: "#3a2a1a", background: "#fff", outline: "none", lineHeight: 1.6, resize: "vertical" };
     const onbNext = () => onbStep < onbTotal - 1 ? setOnbStep(onbStep + 1) : finishOnboarding(false);
     const onbPrev = () => onbStep > 0 && setOnbStep(onbStep - 1);
-    const userName = data.profile?.name || signupName || "";
-    const userGender = data.profile?.gender || signupGender || "";
+    const userName = data.profile?.name || "";
+    const userGender = data.profile?.gender || "";
 
     const onbBgLayer = (bg, visible) => ({ position: "absolute", inset: 0, background: bg, transition: "opacity 0.6s ease, transform 0.6s ease", opacity: visible ? 1 : 0, transform: visible ? "scale(1)" : "scale(1.04)" });
     const showQuestionnaire = onbWelcomeDone;
@@ -10551,12 +10481,6 @@ function AppInner() {
         <div style={{ padding: "10px 16px", background: C.s1, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>🔗 {t.syncConnected}</span>
           <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{authUser ? (authUser.email || "Google") : syncId}</span>
-          {authUser && !(data.cards || []).length && (
-            <button onClick={() => setMigrateMode(true)}
-              style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
-              {t.migrateTitle}
-            </button>
-          )}
           <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
             {"🔄 Tutoriel"}

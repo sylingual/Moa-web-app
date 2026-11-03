@@ -191,10 +191,10 @@ export default async function handler(req, res) {
 
     // --- TOKEN USAGE PER USER ---
     const TOKEN_COSTS = {
-      gemini: { input: 0.00001, output: 0.00004 },
-      anthropic: { input: 0.003, output: 0.015 },
-      openai: { input: 0.0001, output: 0.0004 },
-      groq: { input: 0.00005, output: 0.00008 },
+      gemini: { input: 0.10, output: 0.40 },
+      anthropic: { input: 3.00, output: 15.00 },
+      openai: { input: 0.15, output: 0.60 },
+      groq: { input: 0.05, output: 0.08 },
     };
     const tokenEvents = events.filter(e => e.type === 'ai_tokens');
     const tokensByUser = {};

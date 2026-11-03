@@ -286,7 +286,7 @@ const T = {
     tutoFillNameAlone: "Donne un nom à ton objectif, par exemple \"Cours du 15 octobre\".",
     tutoFillDeadline: "Indique par exemple ton prochain cours ou ton prochain examen.",
     tutoStartDate: "Ce champ est optionnel, mais pratique si tu veux planifier à l'avance.",
-    tutoImportArea: "C'est ici que tu peux importer tes notes de cours.\nCopier/coller, photo ou screenshot.\nVas-y, clique sur \"Importer un texte\" !",
+    tutoImportArea: "C'est ici que tu peux importer tes notes de cours,\npar copié/collé d'un texte, photo ou screenshot.\nJe t'ai mis un texte pour que tu testes. Clique sur \"Importer un texte\" !",
     tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
     tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
     tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
@@ -7547,7 +7547,7 @@ function AppInner() {
         setGrammarSel(new Set(grammarItems.map((_, i) => i)));
         setSelPick(0); setKnown(new Set()); setImpStep("picks");
       }
-    } catch (e) { console.error(e); alert(e.message); setImpStep("input"); }
+    } catch (e) { console.error(e); handleAIError(e); setImpStep("input"); }
   };
 
   const makeVocabCard = (v, status) => ({
@@ -7640,7 +7640,7 @@ function AppInner() {
       if (!hasTargetScript(text, tl)) { alert(t.ocrNoTarget(getTargetLangName(tl, lang))); setImpStep("input"); return; }
       setImpText(prev => prev && prev.trim() ? prev + "\n" + text : text);
       setImpStep("input");
-    } catch (err) { console.error("OCR error:", err); alert(err.message); setImpStep("input"); }
+    } catch (err) { console.error("OCR error:", err); handleAIError(err); setImpStep("input"); }
   };
 
   const onImagePick = async (e) => {
@@ -9128,9 +9128,19 @@ function AppInner() {
       setGoalImpStep(null);
     } catch (err) {
       console.error("Goal import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
+  };
+
+  const handleAIError = (err) => {
+    const isQuota = err.message && (err.message.includes("429") || err.message.toLowerCase().includes("quota") || err.message.toLowerCase().includes("resource_exhausted"));
+    if (isQuota) {
+      alert("Crédits IA épuisés. Contacte sylingual@gmail.com pour l'en informer. Réponse sous 24h garantie.");
+    } else {
+      alert(err.message);
+    }
+    if (isTutorialActive) finishTutorial();
   };
 
   const processGoalText = async () => {
@@ -9156,7 +9166,7 @@ function AppInner() {
       setGoalImpText("");
     } catch (err) {
       console.error("Goal text import error:", err);
-      alert(err.message);
+      handleAIError(err);
       setGoalImpStep(null);
     }
   };
@@ -10029,6 +10039,7 @@ function AppInner() {
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
         const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
+        const closeBtn = <button onClick={finishTutorial} style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, border: "none", background: "rgba(0,0,0,0.08)", color: "#888", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, padding: 0 }} aria-label="Close">{"×"}</button>;
         const stepDots = (current) => (
           <div style={{ display: "flex", justifyContent: "center", gap: 5, marginBottom: 14 }}>
             {Array.from({ length: totalSteps }, (_, i) => (
@@ -10040,7 +10051,8 @@ function AppInner() {
         // Centered bubble (no target element)
         const centeredOverlay = (content) => (
           <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.3s ease" }}>
-            <div style={{ background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+            <div style={{ position: "relative", background: "#fff", borderRadius: 18, padding: isMobile ? "26px 20px" : "30px 26px", maxWidth: 400, width: "100%", boxShadow: "0 12px 40px rgba(0,0,0,0.3)", animation: "tutoBubble 0.4s ease-out" }}>
+              {closeBtn}
               {content}
             </div>
           </div>
@@ -10072,6 +10084,7 @@ function AppInner() {
               {/* Speech bubble */}
               <div style={{ position: "fixed", top, bottom, left, width: bubbleW, zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
                 <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
                   {/* Arrow */}
                   <div style={{ position: "absolute", [placeBelow ? "top" : "bottom"]: -8, left: arrowLeft, width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", [placeBelow ? "borderBottom" : "borderTop"]: "9px solid #fff" }} />
                   {stepDots(tutoStep)}
@@ -10162,7 +10175,8 @@ function AppInner() {
             };
             return (
               <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", width: Math.min(340, winW - 32), zIndex: 10000, animation: "tutoBubble 0.4s ease-out", pointerEvents: "auto" }}>
-                <div style={{ background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                <div style={{ position: "relative", background: "#fff", borderRadius: 14, padding: "18px 18px 14px", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
+                  {closeBtn}
                   {stepDots(tutoStep)}
                   <div style={{ fontSize: 14, color: "#444", lineHeight: 1.65, whiteSpace: "pre-line", marginBottom: 14, textAlign: "center" }}>{t.tutoImportPicks}</div>
                   <button onClick={onContinue} style={btnPrimary}>{t.tutoContinue}</button>
@@ -10172,8 +10186,11 @@ function AppInner() {
             );
           }
           if (goalImpStep === "scanning" || goalImpStep === "ocr") {
-            // Scanning in progress: no bubble, let the UI show
-            return (<div style={{ position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none" }} />);
+            return (
+              <div style={{ position: "fixed", top: 10, right: 10, zIndex: 10000, pointerEvents: "auto" }}>
+                <button onClick={finishTutorial} style={{ width: 32, height: 32, borderRadius: 16, border: "none", background: "rgba(255,255,255,0.9)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.2)", padding: 0 }} aria-label="Close">{"×"}</button>
+              </div>
+            );
           }
           // Default: import area, no continue button - user must click "Importer"
           return positionedBubble(t.tutoImportArea, null, null);
@@ -13153,7 +13170,7 @@ function AppInner() {
                               if (!combined.trim()) { setGoalImpStep("picks"); return; }
                               setGoalImpText(prev => (prev ? prev + "\n" : "") + combined);
                               setGoalImpStep(null);
-                            } catch (err) { console.error(err); alert(err.message); setGoalImpStep("picks"); }
+                            } catch (err) { console.error(err); handleAIError(err); setGoalImpStep("picks"); }
                           }} style={{ display: "none" }} />
                         </label>
                       </div>
@@ -14190,8 +14207,7 @@ function AppInner() {
                   {/* Monthly evolution */}
                   {(d.tokens.by_month || []).length > 0 && (() => {
                     const months = d.tokens.by_month;
-                    const maxCost = Math.max(...months.map(m => m.cost), 0.0001);
-                    const maxTokens = Math.max(...months.map(m => m.input + m.output), 1);
+                    const maxCalls = Math.max(...months.map(m => m.calls), 1);
                     return (<>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6 }}>Evolution mensuelle</div>
                       <div style={{ overflowX: "auto", marginBottom: 12 }}>
@@ -14211,7 +14227,7 @@ function AppInner() {
                                 <td style={{ padding: "6px 4px", color: C.txt }}>{m.input?.toLocaleString()}</td>
                                 <td style={{ padding: "6px 4px", color: C.txt }}>{m.output?.toLocaleString()}</td>
                                 <td style={{ padding: "6px 4px", color: C.acc, fontWeight: 600 }}>{"$" + m.cost.toFixed(4)}</td>
-                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.cost / maxCost * 100)) + "%", opacity: 0.7 }} /></td>
+                                <td style={{ padding: "6px 4px", width: "30%" }}><div style={{ height: 8, borderRadius: 4, background: C.acc, width: Math.max(2, Math.round(m.calls / maxCalls * 100)) + "%", opacity: 0.7 }} /></td>
                               </tr>
                             ))}
                           </tbody>
@@ -14221,8 +14237,8 @@ function AppInner() {
                   })()}
                   {/* By context */}
                   {(d.tokens.by_context || []).length > 0 && (() => {
-                    const ctxMax = Math.max(...d.tokens.by_context.map(c => c.cost), 0.0001);
-                    const ctxLabels = { analyze_text: "Analyse texte", analyze_vocab: "Analyse vocab", analyze_bulk: "Analyse bulk", study_vocab: "Etude vocab", qcm_comprehension: "QCM comprehension", qcm_sentence: "QCM phrase", qcm_answer: "QCM reponse", reformulation: "Reformulation", detect_pos: "Detection POS", lesson: "Lecon", translate: "Traduction", description: "Description", register: "Registre", lesson_chat: "Chat lecon", exercise_gen: "Exercice (gen)", exercise_eval: "Exercice (eval)", exercise_continue: "Exercice (suite)", feed_keywords: "Feed mots-cles", dream_search: "Recherche dream", recap: "Recap", lesson_summary: "Resume lecon", resource_chat: "Chat ressource", card_chat: "Chat carte", library_chat: "Chat biblio", lemma: "Lemme", translate_selection: "Trad. selection", etymology: "Etymologie", ocr: "OCR image", unknown: "Autre" };
+                    const ctxMaxCalls = Math.max(...d.tokens.by_context.map(c => c.calls), 1);
+                    const ctxLabels = { analyze_text: "Analyse texte", analyze_vocab: "Analyse vocab", analyze_bulk: "Analyse bulk", study_vocab: "Etude vocab", qcm_comprehension: "QCM comprehension", qcm_sentence: "QCM phrase", qcm_answer: "QCM reponse", reformulation: "Reformulation", detect_pos: "Détection POS", lesson: "Leçon", translate: "Traduction", description: "Description", register: "Registre", lesson_chat: "Chat leçon", exercise_gen: "Exercice (gen)", exercise_eval: "Exercice (eval)", exercise_continue: "Exercice (suite)", feed_keywords: "Feed mots-clés", dream_search: "Recherche dream", recap: "Récap", lesson_summary: "Résumé leçon", resource_chat: "Chat ressource", card_chat: "Chat carte", library_chat: "Chat biblio", lemma: "Lemme", translate_selection: "Trad. sélection", etymology: "Étymologie", ocr: "OCR image", unknown: "Autre", detect_verbs: "Détection verbes" };
                     return (<>
                       <div style={{ fontSize: 12, fontWeight: 600, color: C.txt, marginBottom: 6, marginTop: 4 }}>Par type de fonction</div>
                       <div style={{ marginBottom: 12 }}>
@@ -14230,7 +14246,7 @@ function AppInner() {
                           <div key={c.context} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                             <span style={{ fontSize: 11, color: C.txt, minWidth: 130, flexShrink: 0 }}>{ctxLabels[c.context] || c.context}</span>
                             <div style={{ flex: 1, height: 8, borderRadius: 4, background: C.s2, overflow: "hidden" }}>
-                              <div style={{ width: Math.max(2, Math.round(c.cost / ctxMax * 100)) + "%", height: "100%", background: C.acc, borderRadius: 4, opacity: 0.7 }} />
+                              <div style={{ width: Math.max(2, Math.round(c.calls / ctxMaxCalls * 100)) + "%", height: "100%", background: C.acc, borderRadius: 4, opacity: 0.7 }} />
                             </div>
                             <span style={{ fontSize: 10, color: C.txtM, minWidth: 55, textAlign: "right" }}>{"$" + c.cost.toFixed(4)}</span>
                             <span style={{ fontSize: 10, color: C.txtM, minWidth: 30, textAlign: "right" }}>{c.calls}x</span>

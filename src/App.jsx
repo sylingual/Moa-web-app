@@ -6112,7 +6112,7 @@ function AppInner() {
       return;
     }
     const exWord = data.cards.find(c => c.korean === word);
-    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setSelAdd(null); return; }
+    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setSelAdd(null); setVocabPreview({ word, baseForm: word, translation: desc || "", context: context || "", tags: exWord.tags || [], loading: false, _existingCard: exWord }); return; }
     if (exWord && exWord.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
       setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
@@ -6130,7 +6130,7 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setFlash(t.alreadyInLib + (desc ? " : " + desc : "")); setTimeout(() => setFlash(null), 3000); setVocabPreview(null); return; }
+    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setVocabPreview({ word, baseForm, translation: desc || "", context: context || "", tags: exBase.tags || [], loading: false, _existingCard: exBase }); return; }
     if (exBase && exBase.status === "pending") {
       save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
       setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
@@ -8537,7 +8537,10 @@ function AppInner() {
           onClick={() => { if (!vocabPreview.loading) setVocabPreview(null); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: C.s2, borderRadius: winW < 700 ? "16px 16px 0 0" : 16, padding: "20px 22px", width: winW < 700 ? "100%" : 380, maxWidth: "100%", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease-out" }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: C.txt, marginBottom: 14 }}>{t.vocabPreviewTitle}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.vocabPreviewTitle}</div>
+              {vocabPreview._existingCard && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "#e8f5e9", color: "#2e7d32", fontWeight: 500 }}>{t.alreadyInLib}</span>}
+            </div>
             <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 22, fontWeight: 600, color: C.txt, marginBottom: 8 }}>
               {vocabPreview.loading ? vocabPreview.word : (vocabPreview.baseForm || vocabPreview.word)}
               {vocabPreview.baseForm && vocabPreview.baseForm !== vocabPreview.word && (
@@ -8553,7 +8556,7 @@ function AppInner() {
                     {vocabPreview.translation}
                   </div>
                 )}
-                <div style={{ marginBottom: 14 }}>
+                {!vocabPreview._existingCard && <div style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 11, fontWeight: 500, color: C.txtS, marginBottom: 6 }}>{t.vocabPreviewTag}</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 6 }}>
                     {(vocabPreview.tags || []).map(tag => (
@@ -8600,16 +8603,23 @@ function AppInner() {
                       </div>
                     );
                   })()}
-                </div>
+                </div>}
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                   <button onClick={() => setVocabPreview(null)}
                     style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${C.border}`, background: C.s1, color: C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, cursor: "pointer" }}>
-                    {t.vocabPreviewCancel}
+                    {vocabPreview._existingCard ? t.close || "Fermer" : t.vocabPreviewCancel}
                   </button>
-                  <button onClick={confirmVocabAdd}
-                    style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                    {t.vocabPreviewAdd}
-                  </button>
+                  {vocabPreview._existingCard ? (
+                    <button onClick={() => { const c = vocabPreview._existingCard; setVocabPreview(null); setRecapCard(c); setView("recap"); }}
+                      style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                      {t.seeCard || "Voir la fiche"}
+                    </button>
+                  ) : (
+                    <button onClick={confirmVocabAdd}
+                      style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                      {t.vocabPreviewAdd}
+                    </button>
+                  )}
                 </div>
               </>
             )}

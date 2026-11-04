@@ -9163,7 +9163,8 @@ function AppInner() {
                               {expandable && <span style={{ color: C.txtM }}>— {t.shelfExpandHint}</span>}
                             </div>
                             {hasSubs ? subgroups.map((sg, si) => (
-                              <div key={si} style={{ marginBottom: si < subgroups.length - 1 ? 10 : 0 }}>
+                              <div key={si}>
+                                {si > 0 && <div style={{ borderTop: `1px solid ${C.border}`, margin: "10px 0" }} />}
                                 <div style={{ fontSize: 10.5, fontWeight: 500, color: C.txtM, marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
                                   {sg.label} <span style={{ opacity: 0.6 }}>· {sg.cards.length}</span>
                                 </div>
@@ -9229,10 +9230,15 @@ function AppInner() {
                             );
                           })()}
                           {shelf("new", C.stNewBg, C.stNew, C.stNewCard, { masked: true })}
-                          {shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true, subgroups: [
-                            { label: t.shelfTagged, cards: groups.studied.filter(c => (c.tags || []).length > 0) },
-                            { label: t.shelfUntagged, cards: groups.studied.filter(c => !(c.tags || []).length) }
-                          ] })}
+                          {(() => {
+                            const td = dayKey();
+                            const due = groups.studied.filter(c => { const nr = getCardNextReviewDate(c, Infinity); return nr && nr <= td; });
+                            const notDue = groups.studied.filter(c => { const nr = getCardNextReviewDate(c, Infinity); return !nr || nr > td; });
+                            return shelf("studied", C.stStudiedBg, C.stStudied, C.stStudiedCard, { expandable: true, subgroups: [
+                              { label: "📋 " + t.shelfDueToday, cards: due },
+                              { label: t.shelfNotDue, cards: notDue }
+                            ] });
+                          })()}
                           {shelf("acquired", C.stAcqBg, C.stAcq, C.stAcqCard, { compact: true })}
                           {groups.pending.length > 0 && (
                             <div style={{ marginTop: 8 }}>

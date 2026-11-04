@@ -1424,20 +1424,22 @@ function migrateStatus(s) {
 }
 
 // Remove extracted grammar/vocab items that duplicate an existing library card, and
-// de-duplicate within the extraction. A card already "studied" (but not acquired) may be
-// re-proposed once for review; anything acquired / already queued is dropped.
+// de-duplicate within the extraction. Studied cards are kept (tagged _existing) so the
+// user can attach them to a goal; acquired cards are dropped.
 function dedupeExtracted(items, existingCards) {
   const byKorean = {};
   (existingCards || []).forEach(c => { if (c && c.korean) byKorean[c.korean.trim()] = c; });
   const seen = new Set();
   return (items || []).filter(it => {
     const key = ((it && (it.korean || it.word)) || "").trim();
-    if (!key || seen.has(key)) return false;   // empty or already in this batch
+    if (!key || seen.has(key)) return false;
     seen.add(key);
     const ex = byKorean[key];
-    if (!ex) return true;                        // brand new -> show
+    if (!ex) return true;
     const s = migrateStatus(ex.status);
-    return s === "pending";   // only pending -> re-show; studied/acquired/queued -> hide
+    if (s === "acquired") return false;
+    if (s === "studied" || s === "in_progress") { it._existing = true; it._existingId = ex.id; return true; }
+    return s === "pending";
   });
 }
 
@@ -7577,15 +7579,16 @@ function AppInner() {
     if (!goalImpSel.size) return;
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goalForm.deadline || "";
-    const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
+    const existingIds = items.filter(v => v._existing && v._existingId).map(v => v._existingId);
+    const newCards = items.filter(v => !v._existing && !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
       const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
       const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       return card;
     });
-    if (newCards.length) {
-      save({ ...data, cards: [...data.cards, ...newCards] });
-      setGoalPickSel(prev => new Set([...prev, ...newCards.map(c => c.id)]));
+    if (newCards.length || existingIds.length) {
+      if (newCards.length) save({ ...data, cards: [...data.cards, ...newCards] });
+      setGoalPickSel(prev => new Set([...prev, ...newCards.map(c => c.id), ...existingIds]));
       const vocabCards = newCards.filter(c => normType(c.type) === "vocab" || normType(c.type) === "expression");
       if (vocabCards.length) {
         detectPartOfSpeech(vocabCards, tl).then(results => {
@@ -7612,18 +7615,20 @@ function AppInner() {
     const goal = goals.find(g => g.id === goalId);
     const items = [...goalImpSel].sort((a, b) => a - b).map(i => goalImpFound[i]).filter(Boolean);
     const deadlineTag = goal?.deadline || "";
-    const newCards = items.filter(v => !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
+    const existingIds = items.filter(v => v._existing && v._existingId).map(v => v._existingId);
+    const newCards = items.filter(v => !v._existing && !data.cards.find(c => c.korean === (v.korean || v.word))).map(v => {
       const isVocabOrExpr = v.type === "vocab" || v.type === "expression";
       const card = isVocabOrExpr ? makeVocabCard(v, "new") : makeCard({ korean: v.korean || v.word, type: v.type || "grammar", description_fr: v.meaning_fr || v.description_fr || "", description_en: v.meaning_en || v.description_en || "", description_target: v.description_target || "", example_kr: v.example_kr || "", example_fr: v.example_fr || "", example_en: v.example_en || "", category: v.category || "" }, "new");
       if (deadlineTag) card.tags = [deadlineTag];
       card.goalId = goalId;
       return card;
     });
-    if (newCards.length) {
+    const allNewIds = [...newCards.map(c => c.id), ...existingIds];
+    if (allNewIds.length) {
       save({
         ...data,
-        cards: [...data.cards, ...newCards],
-        goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...(g.cardIds || []), ...newCards.map(c => c.id)])] } : g),
+        cards: [...data.cards.map(c => existingIds.includes(c.id) ? { ...c, goalId: goalId } : c), ...newCards],
+        goals: goals.map(g => g.id === goalId ? { ...g, cardIds: [...new Set([...(g.cardIds || []), ...allNewIds])] } : g),
       });
       const vocabCards = newCards.filter(c => normType(c.type) === "vocab" || normType(c.type) === "expression");
       if (vocabCards.length) {
@@ -11397,10 +11402,11 @@ function AppInner() {
                                   <div style={{ fontSize: 10.5, color: C.txtS, marginTop: 1 }}>{lang === "fr" ? v.meaning_fr : (v.meaning_en || v.meaning_fr)}</div>
                                 </div>
                                 <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
-                                <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
+                                {v._existing && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: "#e8f5e9", color: "#2e7d32" }}>{t.statusStudied}</span>}
+                                {!v._existing && <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                   style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                   ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}
-                                </button>
+                                </button>}
                               </div>
                             );
                           })}
@@ -11759,10 +11765,11 @@ function AppInner() {
                                     <span style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, border: `1px solid ${on ? C.acc : C.borderS}`, background: on ? C.acc : "transparent", color: C.onAcc }}>{on ? "✓" : ""}</span>
                                     <span style={{ fontFamily: tFont, fontSize: 13, color: C.txt, flex: 1 }}>{v.korean || v.word}</span>
                                     <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: v.type === "expression" ? "#fff3e0" : v.type === "grammar" ? C.accBg : C.proBg, color: v.type === "expression" ? "#e65100" : v.type === "grammar" ? C.acc : C.pro }}>{v.type === "expression" ? t.expression : v.type === "grammar" ? t.importModeGrammar : t.importModeVocab}</span>
-                                    <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
+                                    {v._existing && <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 3, flexShrink: 0, background: "#e8f5e9", color: "#2e7d32" }}>{t.statusStudied}</span>}
+                                    {!v._existing && <button onClick={e => { e.stopPropagation(); markGoalImpKnown(i); }}
                                       style={{ padding: "2px 6px", borderRadius: 5, fontSize: 9.5, cursor: "pointer", whiteSpace: "nowrap", border: `1px solid ${goalImpKnown.has(i) ? C.okB : C.border}`, background: goalImpKnown.has(i) ? C.okBg : "none", color: goalImpKnown.has(i) ? C.ok : C.txtM, fontFamily: "'Plus Jakarta Sans'" }}>
                                       ✓ {goalImpKnown.has(i) ? t.addedAcq : t.iKnow}
-                                    </button>
+                                    </button>}
                                   </div>
                                 ); })}
                               </div>

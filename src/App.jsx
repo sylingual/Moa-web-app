@@ -7125,7 +7125,7 @@ function AppInner() {
   const tutoSawPicksRef = useRef(false);
 
   // Tutorial: highlight target elements & measure position for bubble
-  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress' };
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress', 16: 'import-zone' };
   const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone && !(data.profile?.tutoGoalsDone && data.profile?.tutoLibraryDone && data.profile?.tutoProfileDone);
 
   useEffect(() => {
@@ -8611,17 +8611,9 @@ function AppInner() {
           );
         }
 
-        // Step 16: Try with this message (user must click Analyser) - no blocking overlay
+        // Step 16: Try with this message (user must click Analyser) - overlay with cutout
         if (tutoStep === 16) {
-          return (
-            <div style={{ position: "fixed", top: 50, left: "50%", transform: "translateX(-50%)", zIndex: 9998, background: "#fff", borderRadius: 18, padding: isMobile ? "22px 18px" : "26px 22px", maxWidth: 360, width: "calc(100% - 32px)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "tutoBubble 0.4s ease-out" }}>
-              {closeBtn}
-              {stepDots(16)}
-              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 6 }}>{t.tutoLibTryText}</div>
-              <div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👇"}</div>
-              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
-            </div>
-          );
+          return positionedBubble(t.tutoLibTryText, null, null);
         }
 
         // Step 17: After analysis, explain mode choices
@@ -9496,6 +9488,7 @@ function AppInner() {
               <div style={{ fontSize: 36 }}>📄</div>
               <div style={{ fontSize: 16, fontWeight: 500, color: C.txt }}>{t.importTitle}</div>
               <div style={{ fontSize: 12.5, color: C.txtS, textAlign: "center", maxWidth: 400, lineHeight: 1.6 }}>{t.importSub}</div>
+              <div data-tutorial="import-zone" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%" }}>
               <textarea value={impText} onChange={e => setImpText(e.target.value)} placeholder={tlConf?.placeholder || t.placeholder}
                 style={{ width: "100%", maxWidth: 480, height: 160, border: `2px dashed ${C.borderS}`, borderRadius: 12, background: C.s1, padding: 14, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, color: C.txt, resize: "none", outline: "none", lineHeight: 1.6 }}
                 onFocus={e => { e.target.style.borderColor = C.acc; e.target.style.borderStyle = "solid"; }}
@@ -9529,6 +9522,7 @@ function AppInner() {
                 style={{ padding: "8px 22px", borderRadius: 6, border: "none", cursor: impText.trim() ? "pointer" : "default", background: impText.trim() ? C.acc : C.s1, color: impText.trim() ? C.onAcc : C.txtM, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 500 }}>
                 ✨ {t.analyze}
               </button>
+              </div>
             </>)}
             {impStep === "scanning" && <div style={{ fontSize: 36 }}>📄</div>}
             {impStep === "scanning" && <div className="pulse" style={{ fontSize: 13, color: C.txtS }}>{t.analyzing}{bulkProgress ? ` (${bulkProgress.current}/${bulkProgress.total})` : ""}</div>}

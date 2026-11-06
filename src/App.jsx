@@ -289,7 +289,11 @@ const T = {
     tutoImportArea: "C'est ici que tu peux importer tes notes de cours,\npar copié/collé d'un texte, photo ou screenshot.\nJe t'ai mis un texte pour que tu testes. Clique sur \"Importer un texte\" !",
     tutoImportPicks: "Super ! Moa a extrait pour toi le vocabulaire et la grammaire à réviser.\nChoisis ce que tu veux étudier, ou clique sur \"Je connais\" pour les mots que tu maîtrises déjà.",
     tutoClickSave: "Tu peux maintenant créer ton objectif !\nNe t'inquiète pas, tu pourras le modifier plus tard.",
-    tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi. Bonne étude !",
+    tutoCongrats: "Félicitations ! Tu as créé ton premier objectif !\nMoa a organisé les révisions pour toi.\nVoyons ça de plus près !",
+    tutoTodayExplain: "Voici ta section \"Aujourd'hui\" !\nMoa sélectionne chaque jour les cartes à découvrir et à réviser.\nTout est organisé pour toi.",
+    tutoProgressExplain: "Ces barres de progression suivent ton parcours :\n• Découvertes : les cartes que tu as étudiées\n• Révisions : tes révisions faites\n• Acquises : les cartes maîtrisées",
+    tutoTryCard: "Clique sur une carte pour commencer ta première leçon !\nMoa te guidera pas à pas.",
+    tutoFinal: "Tu es prêt(e) ! Moa est là pour t'accompagner.\nBonne étude et amuse-toi bien !",
     tutoOui: "Oui !",
     tutoContinue: "Continuer",
     tutoNext: "Suivant",
@@ -836,7 +840,11 @@ const T = {
     tutoImportArea: "This is where you can import your class notes.\nCopy/paste, photo or screenshot.\nGo ahead, click \"Import a text\"!",
     tutoImportPicks: "Great! Moa extracted the vocabulary and grammar for you to review.\nChoose what you want to study, or click \"I know this\" for words you already know.",
     tutoClickSave: "You can now create your goal!\nDon't worry, you can always edit it later.",
-    tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you. Happy studying!",
+    tutoCongrats: "Congratulations! You created your first goal!\nMoa has organized your reviews for you.\nLet me show you around!",
+    tutoTodayExplain: "Here's your \"Today\" section!\nMoa selects cards each day for you to discover and review.\nEverything is organized for you.",
+    tutoProgressExplain: "These progress bars track your journey:\n• Discovered: cards you've studied\n• Reviews: your completed reviews\n• Acquired: cards you've mastered",
+    tutoTryCard: "Click on a card to start your first lesson!\nMoa will guide you step by step.",
+    tutoFinal: "You're all set! Moa is here to help you along the way.\nHappy studying and have fun!",
     tutoOui: "Yes!",
     tutoContinue: "Continue",
     tutoNext: "Next",
@@ -1383,7 +1391,11 @@ const T = {
     tutoImportArea: "여기서 수업 노트를 가져올 수 있어요.\n복사/붙여넣기, 사진 또는 스크린샷.\n\"텍스트 가져오기\"를 클릭해 보세요!",
     tutoImportPicks: "좋아요! Moa가 복습할 어휘와 문법을 추출했어요.\n공부하고 싶은 것을 선택하거나, 이미 아는 단어는 \"알고 있어요\"를 클릭하세요.",
     tutoClickSave: "이제 목표를 만들 수 있어요!\n걱정 마세요, 나중에 수정할 수 있어요.",
-    tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요. 즐거운 공부 되세요!",
+    tutoCongrats: "축하해요! 첫 번째 목표를 만들었어요!\nMoa가 복습을 정리해 드렸어요.\n자세히 살펴볼까요!",
+    tutoTodayExplain: "여기가 \"오늘\" 섹션이에요!\nMoa가 매일 발견하고 복습할 카드를 선택해 줘요.\n모든 것이 정리되어 있어요.",
+    tutoProgressExplain: "이 진행 바가 여러분의 여정을 추적해요:\n• 발견: 공부한 카드\n• 복습: 완료한 복습\n• 습득: 마스터한 카드",
+    tutoTryCard: "카드를 클릭해서 첫 번째 수업을 시작하세요!\nMoa가 단계별로 안내해 드릴게요.",
+    tutoFinal: "준비 완료! Moa가 함께 도와줄게요.\n즐거운 공부 되세요!",
     tutoOui: "네!",
     tutoContinue: "계속",
     tutoNext: "다음",
@@ -8780,7 +8792,7 @@ function AppInner() {
   const goalPicksRef = useRef(null);
 
   // Tutorial: highlight target elements & measure position for bubble
-  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save' };
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress' };
   const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone;
 
   useEffect(() => {
@@ -8804,7 +8816,7 @@ function AppInner() {
       else setTutoRect(null);
     };
     // Scroll target into view for steps where element may be off-screen
-    if (tutoStep === 8) {
+    if (tutoStep === 8 || tutoStep === 10 || tutoStep === 11) {
       const el = document.querySelector(`[data-tutorial="${attr}"]`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -8828,7 +8840,7 @@ function AppInner() {
   useEffect(() => {
     if (!isTutorialActive) return;
     if (tutoStep === 3 && goalView === 'create') setTutoStep(4);
-    if (tutoStep === 8 && goalView === 'list') setTutoStep(9);
+    if (tutoStep === 8 && goalView === 'detail') setTutoStep(9);
   }, [goalView, tutoStep, isTutorialActive]);
 
   const goals = data.goals || [];
@@ -8968,7 +8980,13 @@ function AppInner() {
     }) };
     save(nd);
     trackEvent("goal_update", { goal_id: id, status: isScheduled ? "scheduled" : "created", card_count: cardIds.size });
-    setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
+    setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set());
+    if (isTutorialActive) {
+      setGoalEditId(id);
+      setGoalView("detail");
+    } else {
+      setGoalView("list");
+    }
   };
 
   const deleteGoal = (goalId, deleteCards) => {
@@ -10030,7 +10048,7 @@ function AppInner() {
       {/* WELCOME TUTORIAL OVERLAY */}
       {showTutorial && (() => {
         const isMobile = winW < 700;
-        const totalSteps = 10;
+        const totalSteps = 14;
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
         const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(255,255,255,0.6)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
@@ -10204,14 +10222,62 @@ function AppInner() {
           return positionedBubble(msg, null, null);
         }
 
-        // Step 9: Congrats
+        // Step 9: Congrats + intro to goal detail
         if (tutoStep === 9) {
           return centeredOverlay(
             <div>
               {stepDots(9)}
               <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🎉</div>
               <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoCongrats}</div>
-              <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
+              <button onClick={() => {
+                setTutoStep(10);
+                setTimeout(() => {
+                  const el = document.querySelector('[data-tutorial="goal-today"]');
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 200);
+              }} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 10: Highlight Today section
+        if (tutoStep === 10) {
+          return positionedBubble(t.tutoTodayExplain, t.tutoContinue, () => {
+            setTutoStep(11);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-progress"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 200);
+          });
+        }
+
+        // Step 11: Highlight progress bars
+        if (tutoStep === 11) {
+          return positionedBubble(t.tutoProgressExplain, t.tutoContinue, () => setTutoStep(12));
+        }
+
+        // Step 12: Encourage clicking a card
+        if (tutoStep === 12) {
+          return centeredOverlay(
+            <div>
+              {stepDots(12)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>📖</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoTryCard}</div>
+              <button onClick={() => setTutoStep(13)} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 13: Final encouragement
+        if (tutoStep === 13) {
+          return centeredOverlay(
+            <div>
+              {stepDots(13)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🚀</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoFinal}</div>
+              <button onClick={() => { finishTutorial(); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );
         }
@@ -13281,7 +13347,7 @@ function AppInner() {
                         return ["ce","co","pe"].some(k => (p[k] || []).includes(today));
                       };
                       return (
-                        <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
+                        <div data-tutorial="goal-today" style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                             ☀️ {t.goalTodayTitle}
                           </div>
@@ -13320,7 +13386,7 @@ function AppInner() {
                     })()}
 
                     {/* Progress bars */}
-                    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                    <div data-tutorial="goal-progress" style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                           <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress1}</span>

@@ -8540,7 +8540,7 @@ function AppInner() {
             <div>
               {stepDots(13)}
               <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🚀</div>
-              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoFinal}</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoFinal(gender)}</div>
               <button onClick={() => { finishTutorial(); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );

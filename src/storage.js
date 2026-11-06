@@ -40,6 +40,9 @@ const DEFAULT_PROFILE = {
   onboarded: false,
   detailedDone: false,
   tutorialDone: false,
+  tutoGoalsDone: false,
+  tutoLibraryDone: false,
+  tutoProfileDone: false,
 };
 
 const DEFAULT_LANG_PROFILE = {

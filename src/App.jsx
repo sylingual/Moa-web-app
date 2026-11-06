@@ -7126,7 +7126,7 @@ function AppInner() {
 
   // Tutorial: highlight target elements & measure position for bubble
   const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress' };
-  const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone;
+  const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone && !(data.profile?.tutoGoalsDone && data.profile?.tutoLibraryDone && data.profile?.tutoProfileDone);
 
   useEffect(() => {
     if (!isTutorialActive) return;
@@ -7190,6 +7190,22 @@ function AppInner() {
       }, 100);
     }
   }, [goalImpStep, tutoStep, isTutorialActive]);
+
+  // Auto-advance: Library tutorial trigger
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (view === "library" && !data.profile?.tutoLibraryDone && data.cards.length > 0 && tutoStep === 0) {
+      setTutoStep(14);
+    }
+  }, [view, isTutorialActive, data.cards.length, tutoStep]);
+
+  // Auto-advance: after import analysis completes (step 16 -> 17)
+  useEffect(() => {
+    if (!isTutorialActive) return;
+    if (tutoStep === 16 && (impStep === "picks" || impStep === "vocabpicks" || impStep === "bulkpicks")) {
+      setTutoStep(17);
+    }
+  }, [impStep, tutoStep, isTutorialActive]);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -8278,9 +8294,21 @@ function AppInner() {
   }
 
   // ---- WELCOME TUTORIAL (after onboarding, before main app) ----
-  const showTutorial = data.profile?.onboarded && !data.profile?.tutorialDone;
+  const showTutorial = data.profile?.onboarded && !data.profile?.tutorialDone && !(data.profile?.tutoGoalsDone && data.profile?.tutoLibraryDone && data.profile?.tutoProfileDone);
   const finishTutorial = () => {
-    const nd = { ...data, profile: { ...data.profile, tutorialDone: true } };
+    const nd = { ...data, profile: { ...data.profile, tutoGoalsDone: true, tutoLibraryDone: true, tutoProfileDone: true } };
+    save(nd);
+    setTutoStep(0);
+    setTutoAnswer(null);
+  };
+  const finishGoalsTutorial = () => {
+    const nd = { ...data, profile: { ...data.profile, tutoGoalsDone: true } };
+    save(nd);
+    setTutoStep(0);
+    setTutoAnswer(null);
+  };
+  const finishLibraryTutorial = () => {
+    const nd = { ...data, profile: { ...data.profile, tutoLibraryDone: true } };
     save(nd);
     setTutoStep(0);
     setTutoAnswer(null);
@@ -8293,7 +8321,7 @@ function AppInner() {
       {/* WELCOME TUTORIAL OVERLAY */}
       {showTutorial && (() => {
         const isMobile = winW < 700;
-        const totalSteps = 14;
+        const totalSteps = 20;
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
         const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(0,0,0,0.35)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
@@ -8541,7 +8569,81 @@ function AppInner() {
               {stepDots(13)}
               <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🚀</div>
               <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoFinal(gender)}</div>
-              <button onClick={() => { finishTutorial(); }} style={btnPrimary}>{t.tutoReady}</button>
+              <button onClick={() => { finishGoalsTutorial(); }} style={btnPrimary}>{t.tutoReady}</button>
+            </div>
+          );
+        }
+
+        // Step 14: Library intro
+        if (tutoStep === 14) {
+          return centeredOverlay(
+            <div>
+              {stepDots(14)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>📚</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibIntro}</div>
+              <button onClick={() => { setTutoStep(15); navTo("import"); }} style={btnPrimary}>{t.tutoLibShowMe}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 15: Import tab explanation
+        if (tutoStep === 15) {
+          return centeredOverlay(
+            <div>
+              {stepDots(15)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>📝</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibImport}</div>
+              <button onClick={() => { setImpText("⛰️ 이번 주 토요일 등산 공지!\n이번 주 토요일에 북한산 가실 분~? 😊\n📅 10/31(토) 오전 9시\n📍 북한산우이역 2번 출구\n왕복 4~5시간 정도 걸릴 것 같아요! 날씨가 쌀쌀하니까 따뜻하게 입고 오시고, 물이랑 간식도 챙겨 오세요~ 등산 끝나고 다 같이 맛있는 것도 먹어요 ㅠㅠ 참석하실 분들은 댓글 남겨주세요! 🦶"); setTutoStep(16); }} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 16: Try with this message (user must click Analyser)
+        if (tutoStep === 16) {
+          return centeredOverlay(
+            <div>
+              {stepDots(16)}
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibTryText}</div>
+              <div style={{ fontSize: 12, color: "#aaa", textAlign: "center" }}>{"👆"}</div>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 17: After analysis, explain mode choices
+        if (tutoStep === 17) {
+          return centeredOverlay(
+            <div>
+              {stepDots(17)}
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibChoose}</div>
+              <button onClick={() => setTutoStep(18)} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 18: Explain bulk import
+        if (tutoStep === 18) {
+          return centeredOverlay(
+            <div>
+              {stepDots(18)}
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibBulk}</div>
+              <button onClick={() => setTutoStep(19)} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 19: Library tutorial done
+        if (tutoStep === 19) {
+          return centeredOverlay(
+            <div>
+              {stepDots(19)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>{"🎉"}</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibDone}</div>
+              <button onClick={() => { finishLibraryTutorial(); navTo("library"); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );
         }
@@ -9013,7 +9115,7 @@ function AppInner() {
         <div style={{ padding: "10px 16px", background: C.s1, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 12, color: C.ok, fontWeight: 500 }}>🔗 {t.syncConnected}</span>
           <span style={{ fontSize: 12, color: C.txt, fontFamily: "monospace", background: C.okBg, padding: "2px 8px", borderRadius: 4 }}>{authUser ? (authUser.email || "Google") : syncId}</span>
-          <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
+          <button onClick={() => { const nd = { ...data, profile: { ...data.profile, tutorialDone: false, tutoGoalsDone: false, tutoLibraryDone: false, tutoProfileDone: false } }; save(nd); setTutoStep(0); setTutoAnswer(null); }}
             style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${C.acc}`, background: C.accBg, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: C.acc, cursor: "pointer" }}>
             {"🔄 Tutoriel"}
           </button>

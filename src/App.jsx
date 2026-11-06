@@ -7125,7 +7125,7 @@ function AppInner() {
   const tutoSawPicksRef = useRef(false);
 
   // Tutorial: highlight target elements & measure position for bubble
-  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress', 16: 'import-zone' };
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress', 16: 'import-zone', 17: 'import-modes', 18: 'import-modes' };
   const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone && !(data.profile?.tutoGoalsDone && data.profile?.tutoLibraryDone && data.profile?.tutoProfileDone);
 
   useEffect(() => {
@@ -7149,7 +7149,7 @@ function AppInner() {
       else setTutoRect(null);
     };
     // Scroll target into view for steps where element may be off-screen
-    if (tutoStep === 8 || tutoStep === 10 || tutoStep === 11) {
+    if (tutoStep === 8 || tutoStep === 10 || tutoStep === 11 || tutoStep === 17 || tutoStep === 18) {
       const el = document.querySelector(`[data-tutorial="${attr}"]`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -7199,13 +7199,6 @@ function AppInner() {
     }
   }, [view, isTutorialActive, data.cards.length, tutoStep]);
 
-  // Auto-advance: after user adds cards from import (step 18 done, waiting for bulktag)
-  useEffect(() => {
-    if (!isTutorialActive) return;
-    if (tutoStep === 0 && !data.profile?.tutoLibraryDone && view === "import" && impStep === "bulktag") {
-      setTutoStep(19);
-    }
-  }, [impStep, tutoStep, isTutorialActive, view, data.profile?.tutoLibraryDone]);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -8328,7 +8321,7 @@ function AppInner() {
         const stepDots = (current) => {
           let sectionStart, sectionLen;
           if (current <= 13) { sectionStart = 0; sectionLen = 14; }
-          else if (current <= 19) { sectionStart = 14; sectionLen = 6; }
+          else if (current <= 18) { sectionStart = 14; sectionLen = 5; }
           else { sectionStart = 20; sectionLen = 4; }
           const idx = current - sectionStart;
           return (
@@ -8616,28 +8609,14 @@ function AppInner() {
           return positionedBubble(t.tutoLibTryText, t.tutoContinue, () => setTutoStep(17));
         }
 
-        // Step 17: Explain mode choices (before user clicks Analyser)
+        // Step 17: Explain mode choices (highlight mode bar)
         if (tutoStep === 17) {
-          return centeredOverlay(
-            <div>
-              {stepDots(17)}
-              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibChoose}</div>
-              <button onClick={() => setTutoStep(18)} style={btnPrimary}>{t.tutoContinue}</button>
-              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
-            </div>
-          );
+          return positionedBubble(t.tutoLibChoose, t.tutoContinue, () => setTutoStep(18));
         }
 
-        // Step 18: Explain bulk import, then let user interact freely
+        // Step 18: Explain bulk import (highlight mode bar), then finish library tutorial
         if (tutoStep === 18) {
-          return centeredOverlay(
-            <div>
-              {stepDots(18)}
-              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibBulk}</div>
-              <button onClick={() => setTutoStep(0)} style={btnPrimary}>{t.tutoContinue}</button>
-              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
-            </div>
-          );
+          return positionedBubble(t.tutoLibBulk, t.tutoReady, () => finishLibraryTutorial());
         }
 
         // Step 19: Library tutorial done (triggered after "Etudier ces mots")
@@ -9507,7 +9486,7 @@ function AppInner() {
                 <div style={{ fontSize: 11, color: C.txtM }}>{t.goalImportPaste}</div>
               </div>
               {/* Study mode: grammar or vocabulary */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div data-tutorial="import-modes" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <div style={{ fontSize: 11.5, color: C.txtM }}>{t.importModeSub}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 2, background: C.s1, borderRadius: 8, padding: 3, border: `1px solid ${C.border}`, justifyContent: "center" }}>
                   {[["grammar", t.importModeGrammar], ["vocab", t.importModeVocab], ["expression", t.importModeExpression], ["bulk", t.importModeBulk]].map(([k, l]) => (

@@ -7125,7 +7125,7 @@ function AppInner() {
   const tutoSawPicksRef = useRef(false);
 
   // Tutorial: highlight target elements & measure position for bubble
-  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save' };
+  const tutoTargets = { 2: 'goals-tab', 3: 'create-goal-btn', 4: 'goal-name', 5: 'goal-deadline', 6: 'goal-startdate', 7: 'goal-import', 8: 'goal-save', 10: 'goal-today', 11: 'goal-progress' };
   const isTutorialActive = data.profile?.onboarded && !data.profile?.tutorialDone;
 
   useEffect(() => {
@@ -7149,7 +7149,7 @@ function AppInner() {
       else setTutoRect(null);
     };
     // Scroll target into view for steps where element may be off-screen
-    if (tutoStep === 8) {
+    if (tutoStep === 8 || tutoStep === 10 || tutoStep === 11) {
       const el = document.querySelector(`[data-tutorial="${attr}"]`);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -7173,7 +7173,7 @@ function AppInner() {
   useEffect(() => {
     if (!isTutorialActive) return;
     if (tutoStep === 3 && goalView === 'create') setTutoStep(4);
-    if (tutoStep === 8 && goalView === 'list') setTutoStep(9);
+    if (tutoStep === 8 && goalView === 'detail') setTutoStep(9);
   }, [goalView, tutoStep, isTutorialActive]);
 
   useEffect(() => {
@@ -7328,7 +7328,13 @@ function AppInner() {
     }) };
     save(nd);
     trackEvent("goal_update", { goal_id: id, status: isScheduled ? "scheduled" : "created", card_count: cardIds.size });
-    setGoalView("list"); setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); setGoalFormErrors({ name: false, deadline: false });
+    setGoalForm({ name: "", deadline: "", startDate: "" }); setGoalPickSel(new Set()); setGoalFormErrors({ name: false, deadline: false });
+    if (isTutorialActive) {
+      setGoalEditId(id);
+      setGoalView("detail");
+    } else {
+      setGoalView("list");
+    }
   };
 
   const deleteGoal = (goalId, deleteCards) => {
@@ -8287,7 +8293,7 @@ function AppInner() {
       {/* WELCOME TUTORIAL OVERLAY */}
       {showTutorial && (() => {
         const isMobile = winW < 700;
-        const totalSteps = 10;
+        const totalSteps = 14;
         const gender = data.profile?.gender || "";
         const btnPrimary = { padding: "12px 20px", borderRadius: 12, border: "none", background: C.acc, color: "#fff", fontFamily: "'Plus Jakarta Sans'", fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%" };
         const btnSkip = { padding: "8px 16px", borderRadius: 8, border: "none", background: "none", color: "rgba(0,0,0,0.35)", fontFamily: "'Plus Jakarta Sans'", fontSize: 12, cursor: "pointer", marginTop: 6 };
@@ -8480,14 +8486,62 @@ function AppInner() {
           );
         }
 
-        // Step 9: Congrats
+        // Step 9: Congrats + intro to goal detail
         if (tutoStep === 9) {
           return centeredOverlay(
             <div>
               {stepDots(9)}
               <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🎉</div>
               <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoCongrats}</div>
-              <button onClick={() => { finishTutorial(); navTo("goals"); }} style={btnPrimary}>{t.tutoReady}</button>
+              <button onClick={() => {
+                setTutoStep(10);
+                setTimeout(() => {
+                  const el = document.querySelector('[data-tutorial="goal-today"]');
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 200);
+              }} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 10: Highlight Today section
+        if (tutoStep === 10) {
+          return positionedBubble(t.tutoTodayExplain, t.tutoContinue, () => {
+            setTutoStep(11);
+            setTimeout(() => {
+              const el = document.querySelector('[data-tutorial="goal-progress"]');
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 200);
+          });
+        }
+
+        // Step 11: Highlight progress bars
+        if (tutoStep === 11) {
+          return positionedBubble(t.tutoProgressExplain, t.tutoContinue, () => setTutoStep(12));
+        }
+
+        // Step 12: Encourage clicking a card
+        if (tutoStep === 12) {
+          return centeredOverlay(
+            <div>
+              {stepDots(12)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>📖</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoTryCard}</div>
+              <button onClick={() => setTutoStep(13)} style={btnPrimary}>{t.tutoContinue}</button>
+              <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
+            </div>
+          );
+        }
+
+        // Step 13: Final encouragement
+        if (tutoStep === 13) {
+          return centeredOverlay(
+            <div>
+              {stepDots(13)}
+              <div style={{ fontSize: 36, textAlign: "center", marginBottom: 8 }}>🚀</div>
+              <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoFinal}</div>
+              <button onClick={() => { finishTutorial(); }} style={btnPrimary}>{t.tutoReady}</button>
             </div>
           );
         }
@@ -11580,7 +11634,7 @@ function AppInner() {
                         return ["ce","co","pe"].some(k => (p[k] || []).includes(today));
                       };
                       return (
-                        <div style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
+                        <div data-tutorial="goal-today" style={{ background: "linear-gradient(150deg, rgba(255,214,102,0.18), rgba(255,214,102,0.08))", border: "1px solid rgba(230,180,40,0.30)", borderRadius: 12, padding: 14 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#8a6d00", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
                             ☀️ {t.goalTodayTitle}
                           </div>
@@ -11619,7 +11673,7 @@ function AppInner() {
                     })()}
 
                     {/* Progress bars */}
-                    <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                    <div data-tutorial="goal-progress" style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "12px 14px" }}>
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                           <span style={{ fontSize: 11, color: C.txtM, fontWeight: 500 }}>{t.goalProgress1}</span>

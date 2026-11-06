@@ -5158,7 +5158,7 @@ function AppInner() {
     if (exFilter === "vocab") base = base.filter(c => c.type === "vocab");
     else if (exFilter === "grammar") base = base.filter(c => c.type !== "vocab");
     if (exTagFilter === "__none__") base = base.filter(c => !(c.tags || []).length);
-    else if (exTagFilter && exTagFilter.startsWith("__goal:")) { const gid = exTagFilter.slice(7, -2); base = base.filter(c => c.goalId === gid); }
+    else if (exTagFilter && exTagFilter.startsWith("__goal:")) { const gid = exTagFilter.slice(7, -2); const goal = (data.goals || []).find(g => g.id === gid); const gCardIds = goal ? new Set(goal.cardIds || []) : new Set(); base = base.filter(c => gCardIds.has(c.id)); }
     else if (exTagFilter) base = base.filter(c => (c.tags || []).includes(exTagFilter));
     if (exDueOnly === "all" || exDueOnly === "pending") {
       const today = dayKey();
@@ -10947,12 +10947,14 @@ function AppInner() {
                               ))}
                             </div>
                           )}
-                          {(() => { const exGoals = (data.goals || []).filter(g => !g.trophyDate && (g.cardIds || []).some(id => { const c = data.cards.find(x => x.id === id); return c && (c.status === "studied" || c.status === "acquired") && (c.targetLang || "ko") === tl; })); return (allTags.length > 0 || exGoals.length > 0) ? (
+                          {(() => { const exGoals = (data.goals || []).filter(g => (g.cardIds || []).some(id => { const c = data.cards.find(x => x.id === id); return c && (c.status === "studied" || c.status === "acquired" || c.status === "new" || c.status === "in_progress") && (c.targetLang || "ko") === tl; })).sort((a, b) => (b.deadline || "").localeCompare(a.deadline || "")); return (allTags.length > 0 || exGoals.length > 0) ? (
                             <select value={exTagFilter || ""} onChange={e => setExTagFilter(e.target.value || null)}
                               style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 11, fontFamily: "'Plus Jakarta Sans'", color: exTagFilter ? C.acc : C.txtM, background: C.s1, cursor: "pointer", outline: "none", appearance: "auto" }}>
                               <option value="">{t.allTags}</option>
                               <option value="__none__">{t.noTags}</option>
-                              {exGoals.map(g => <option key={"g_" + g.id} value={"__goal:" + g.id + "__"}>{"🎯 " + g.name}</option>)}
+                              {exGoals.length > 0 && <option disabled style={{ fontWeight: 600 }}>{t.goalFilterGroup || "--- Objectifs ---"}</option>}
+                              {exGoals.map(g => <option key={"g_" + g.id} value={"__goal:" + g.id + "__"}>{(g.trophyDate ? "🏆 " : "🎯 ") + g.name}</option>)}
+                              {allTags.length > 0 && <option disabled style={{ fontWeight: 600 }}>{t.tagFilterGroup || "--- Tags ---"}</option>}
                               {allTags.map(tag => <option key={tag} value={tag}>#{tag}</option>)}
                             </select>
                           ) : null; })()}

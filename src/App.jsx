@@ -7199,13 +7199,13 @@ function AppInner() {
     }
   }, [view, isTutorialActive, data.cards.length, tutoStep]);
 
-  // Auto-advance: after import analysis completes (step 16 -> 17)
+  // Auto-advance: after user adds cards from import (step 18 done, waiting for bulktag)
   useEffect(() => {
     if (!isTutorialActive) return;
-    if (tutoStep === 16 && (impStep === "picks" || impStep === "vocabpicks" || impStep === "bulkpicks")) {
-      setTutoStep(17);
+    if (tutoStep === 0 && !data.profile?.tutoLibraryDone && view === "import" && impStep === "bulktag") {
+      setTutoStep(19);
     }
-  }, [impStep, tutoStep, isTutorialActive]);
+  }, [impStep, tutoStep, isTutorialActive, view, data.profile?.tutoLibraryDone]);
 
   const goals = data.goals || [];
   const todayKey = dayKey();
@@ -8611,12 +8611,12 @@ function AppInner() {
           );
         }
 
-        // Step 16: Try with this message (user must click Analyser) - overlay with cutout
+        // Step 16: "Try with this message" - highlight import zone with continue
         if (tutoStep === 16) {
-          return positionedBubble(t.tutoLibTryText, null, null);
+          return positionedBubble(t.tutoLibTryText, t.tutoContinue, () => setTutoStep(17));
         }
 
-        // Step 17: After analysis, explain mode choices
+        // Step 17: Explain mode choices (before user clicks Analyser)
         if (tutoStep === 17) {
           return centeredOverlay(
             <div>
@@ -8628,19 +8628,19 @@ function AppInner() {
           );
         }
 
-        // Step 18: Explain bulk import
+        // Step 18: Explain bulk import, then let user interact freely
         if (tutoStep === 18) {
           return centeredOverlay(
             <div>
               {stepDots(18)}
               <div style={{ fontSize: 14, color: "#555", lineHeight: 1.7, whiteSpace: "pre-line", textAlign: "center", marginBottom: 18 }}>{t.tutoLibBulk}</div>
-              <button onClick={() => setTutoStep(19)} style={btnPrimary}>{t.tutoContinue}</button>
+              <button onClick={() => setTutoStep(0)} style={btnPrimary}>{t.tutoContinue}</button>
               <div style={{ textAlign: "center" }}><button onClick={finishTutorial} style={btnSkip}>{t.tutoSkip}</button></div>
             </div>
           );
         }
 
-        // Step 19: Library tutorial done
+        // Step 19: Library tutorial done (triggered after "Etudier ces mots")
         if (tutoStep === 19) {
           return centeredOverlay(
             <div>

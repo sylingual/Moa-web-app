@@ -8384,6 +8384,11 @@ function AppInner() {
           );
         };
 
+        // Don't show goals steps if goals section already done (avoids loop)
+        if (tutoStep <= 13 && data.profile?.tutoGoalsDone) return null;
+        // Don't show library steps if library section already done
+        if (tutoStep >= 14 && tutoStep <= 19 && data.profile?.tutoLibraryDone) return null;
+
         // Step 0: Welcome + question
         if (tutoStep === 0) {
           return centeredOverlay(

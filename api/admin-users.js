@@ -93,7 +93,18 @@ export default async function handler(req, res) {
       has_data: !!moaMap[uid],
     })).sort((a, b) => (b.last_seen || '').localeCompare(a.last_seen || ''));
 
-    return res.status(200).json({ users });
+    const debug = {
+      moa_rows: (moaData.data || []).length,
+      moa_error: moaData.error?.message || null,
+      sessions_rows: (sessionsData.data || []).length,
+      sessions_error: sessionsData.error?.message || null,
+      events_rows: (eventsData.data || []).length,
+      events_error: eventsData.error?.message || null,
+      auth_users: (authUsers.data?.users || []).length,
+      auth_error: authUsers.error?.message || null,
+    };
+
+    return res.status(200).json({ users, debug });
   } catch (err) {
     console.error('[admin-users]', err);
     return res.status(500).json({ error: err.message });

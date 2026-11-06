@@ -360,7 +360,19 @@ export default async function handler(req, res) {
       }
     });
 
+    const debug = {
+      sessions_rows: (sessionsAll.data || []).length,
+      sessions_error: sessionsAll.error?.message || null,
+      events_rows: (eventsAll.data || []).length,
+      events_error: eventsAll.error?.message || null,
+      moa_rows: (moaDataAll.data || []).length,
+      moa_error: moaDataAll.error?.message || null,
+      key_prefix: (process.env.SUPABASE_SERVICE_KEY || '').slice(0, 10) + '...',
+      url_prefix: (process.env.VITE_SUPABASE_URL || '').slice(0, 20) + '...',
+    };
+
     return res.status(200).json({
+      debug,
       overview: {
         total_sessions: sessions.length,
         sessions_today: sessionsToday,

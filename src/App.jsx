@@ -6112,11 +6112,7 @@ function AppInner() {
       return;
     }
     const exWord = data.cards.find(c => c.korean === word);
-    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setSelAdd(null); setVocabPreview({ word, baseForm: word, translation: desc || "", context: context || "", tags: exWord.tags || [], loading: false, _existingCard: exWord }); return; }
-    if (exWord && exWord.status === "pending") {
-      save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
-      setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
-    }
+    if (exWord) { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setSelAdd(null); setVocabPreview({ word, baseForm: word, translation: desc || "", context: context || "", tags: exWord.tags || [], loading: false, _existingCard: exWord }); return; }
     setSelAdd(null);
     try { window.getSelection()?.removeAllRanges(); } catch {}
     setVocabPreview({ word, baseForm: null, translation: null, context: context || "", tags: [], loading: true });
@@ -6130,11 +6126,7 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setVocabPreview({ word, baseForm, translation: desc || "", context: context || "", tags: exBase.tags || [], loading: false, _existingCard: exBase }); return; }
-    if (exBase && exBase.status === "pending") {
-      save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
-      setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
-    }
+    if (exBase) { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setVocabPreview({ word, baseForm, translation: desc || "", context: context || "", tags: exBase.tags || [], loading: false, _existingCard: exBase }); return; }
     let translation = "";
     try {
       const tLang = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";

@@ -6112,11 +6112,7 @@ function AppInner() {
       return;
     }
     const exWord = data.cards.find(c => c.korean === word);
-    if (exWord && exWord.status !== "pending") { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setSelAdd(null); setVocabPreview({ word, baseForm: word, translation: desc || "", context: context || "", tags: exWord.tags || [], loading: false, _existingCard: exWord }); return; }
-    if (exWord && exWord.status === "pending") {
-      save({ ...data, cards: data.cards.map(c => c.id === exWord.id ? { ...c, status: "new" } : c) });
-      setSelAdd(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
-    }
+    if (exWord) { const desc = lang === "fr" ? exWord.description_fr : (exWord.description_en || exWord.description_fr); setSelAdd(null); setVocabPreview({ word, baseForm: word, translation: desc || "", context: context || "", tags: exWord.tags || [], loading: false, _existingCard: exWord }); return; }
     setSelAdd(null);
     try { window.getSelection()?.removeAllRanges(); } catch {}
     setVocabPreview({ word, baseForm: null, translation: null, context: context || "", tags: [], loading: true });
@@ -6130,11 +6126,7 @@ function AppInner() {
       console.warn("Lemmatization failed, using original word:", e);
     }
     const exBase = data.cards.find(c => c.korean === baseForm);
-    if (exBase && exBase.status !== "pending") { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setVocabPreview({ word, baseForm, translation: desc || "", context: context || "", tags: exBase.tags || [], loading: false, _existingCard: exBase }); return; }
-    if (exBase && exBase.status === "pending") {
-      save({ ...data, cards: data.cards.map(c => c.id === exBase.id ? { ...c, status: "new" } : c) });
-      setVocabPreview(null); setFlash((baseForm !== word ? baseForm + " " : "") + t.addedToVocab); setTimeout(() => setFlash(null), 2500); return;
-    }
+    if (exBase) { const desc = lang === "fr" ? exBase.description_fr : (exBase.description_en || exBase.description_fr); setVocabPreview({ word, baseForm, translation: desc || "", context: context || "", tags: exBase.tags || [], loading: false, _existingCard: exBase }); return; }
     let translation = "";
     try {
       const tLang = lang === "fr" ? "French" : lang === "ko" ? "Korean" : "English";
@@ -8678,8 +8670,12 @@ function AppInner() {
             style={{ background: C.s2, borderRadius: winW < 700 ? "16px 16px 0 0" : 16, padding: "20px 22px", width: winW < 700 ? "100%" : 380, maxWidth: "100%", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease-out" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{t.vocabPreviewTitle}</div>
-              {vocabPreview._existingCard && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: "#e8f5e9", color: "#2e7d32", fontWeight: 500 }}>{t.alreadyInLib}</span>}
+              {vocabPreview._existingCard && <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, background: vocabPreview._existingCard.status === "pending" ? "#fff3e0" : "#e8f5e9", color: vocabPreview._existingCard.status === "pending" ? "#e65100" : "#2e7d32", fontWeight: 500 }}>{vocabPreview._existingCard.status === "pending" ? t.statusPending : t.alreadyInLib}</span>}
             </div>
+            {vocabPreview._existingCard?.status === "pending" && (() => {
+              const goal = (data.goals || []).find(g => !g.trophyDate && (g.cardIds || []).includes(vocabPreview._existingCard.id));
+              return goal ? <div style={{ fontSize: 12, color: "#e65100", background: "#fff3e0", padding: "6px 10px", borderRadius: 8, marginBottom: 10, lineHeight: 1.4 }}>{t.pendingGoalMsg(goal.name)}</div> : null;
+            })()}
             <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: 22, fontWeight: 600, color: C.txt, marginBottom: 8 }}>
               {vocabPreview.loading ? vocabPreview.word : (vocabPreview.baseForm || vocabPreview.word)}
               {vocabPreview.baseForm && vocabPreview.baseForm !== vocabPreview.word && (
@@ -8749,10 +8745,17 @@ function AppInner() {
                     {vocabPreview._existingCard ? t.close || "Fermer" : t.vocabPreviewCancel}
                   </button>
                   {vocabPreview._existingCard ? (
-                    <button onClick={() => { const c = vocabPreview._existingCard; setVocabPreview(null); setRecapCard(c); setView("recap"); }}
-                      style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                      {t.seeCard || "Voir la fiche"}
-                    </button>
+                    vocabPreview._existingCard.status === "pending" ? (
+                      <button onClick={() => { const c = vocabPreview._existingCard; save({ ...data, cards: data.cards.map(x => x.id === c.id ? { ...x, status: "new" } : x) }); setVocabPreview(null); setFlash(t.addedToVocab); setTimeout(() => setFlash(null), 2500); }}
+                        style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                        {t.activateNow}
+                      </button>
+                    ) : (
+                      <button onClick={() => { const c = vocabPreview._existingCard; setVocabPreview(null); setRecapCard(c); setView("recap"); }}
+                        style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                        {t.seeCard || "Voir la fiche"}
+                      </button>
+                    )
                   ) : (
                     <button onClick={confirmVocabAdd}
                       style={{ padding: "8px 22px", borderRadius: 8, border: "none", background: C.acc, color: C.onAcc, fontFamily: "'Plus Jakarta Sans'", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>

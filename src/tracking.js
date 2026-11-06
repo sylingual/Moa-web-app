@@ -1,12 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabase, getAccessToken } from './storage.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-let supabase = null;
-if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 const HEARTBEAT_INTERVAL = 60_000;
 const FLUSH_INTERVAL = 10_000;
@@ -21,8 +15,10 @@ let inactivityTimer = null;
 let lastActivity = Date.now();
 let sessionEnded = false;
 
+function sb() { return getSupabase(); }
+
 export function initTracking(userSyncId, interfaceLang, targetLang) {
-  if (!supabase || !userSyncId) return;
+  if (!sb() || !userSyncId) return;
   syncId = userSyncId;
   sessionEnded = false;
   startSession(interfaceLang, targetLang);
@@ -71,11 +67,11 @@ function detectDevice() {
 }
 
 async function startSession(interfaceLang, targetLang) {
-  if (!supabase || !syncId) return;
+  if (!sb() || !syncId) return;
   try {
     const { device_type, os, browser } = detectDevice();
     const id = crypto.randomUUID();
-    const { error } = await supabase
+    const { error } = await sb()
       .from('sessions')
       .insert({
         id,
@@ -98,9 +94,9 @@ async function startSession(interfaceLang, targetLang) {
 }
 
 async function heartbeat() {
-  if (!supabase || !sessionId || sessionEnded) return;
+  if (!sb() || !sessionId || sessionEnded) return;
   try {
-    await supabase
+    await sb()
       .from('sessions')
       .update({ ended_at: new Date().toISOString() })
       .eq('id', sessionId);
@@ -110,12 +106,12 @@ async function heartbeat() {
 }
 
 async function endSession() {
-  if (!supabase || !sessionId || sessionEnded) return;
+  if (!sb() || !sessionId || sessionEnded) return;
   sessionEnded = true;
   await flushEvents();
   try {
     const now = new Date().toISOString();
-    await supabase
+    await sb()
       .from('sessions')
       .update({ ended_at: now })
       .eq('id', sessionId);
@@ -124,42 +120,47 @@ async function endSession() {
   }
 }
 
-const supaHeaders = {
-  'Content-Type': 'application/json',
-  'apikey': SUPABASE_ANON_KEY,
-  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-  'Prefer': 'return=minimal',
-};
+async function getAuthHeaders() {
+  const token = await getAccessToken();
+  const apikey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  return {
+    'Content-Type': 'application/json',
+    'apikey': apikey,
+    'Authorization': `Bearer ${token || apikey}`,
+    'Prefer': 'return=minimal',
+  };
+}
 
-function endSessionHandler() {
-  if (!supabase || !sessionId || sessionEnded) return;
+async function endSessionHandler() {
+  if (!sb() || !sessionId || sessionEnded) return;
   sessionEnded = true;
   const now = new Date().toISOString();
   const pending = eventBuffer.splice(0);
+  const headers = await getAuthHeaders();
   if (pending.length) {
     fetch(`${SUPABASE_URL}/rest/v1/events`, {
-      method: 'POST', headers: supaHeaders, keepalive: true,
+      method: 'POST', headers, keepalive: true,
       body: JSON.stringify(pending.map(ev => ({
         session_id: sessionId, sync_id: syncId, ts: ev.ts, type: ev.type, data: ev.data,
       }))),
     }).catch(() => {});
   }
   fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${sessionId}`, {
-    method: 'PATCH', headers: supaHeaders, keepalive: true,
+    method: 'PATCH', headers, keepalive: true,
     body: JSON.stringify({ ended_at: now }),
   }).catch(() => {});
 }
 
 export function trackEvent(type, data = {}) {
-  if (!supabase || !syncId) return;
+  if (!sb() || !syncId) return;
   eventBuffer.push({ ts: new Date().toISOString(), type, data });
 }
 
 async function flushEvents() {
-  if (!supabase || !sessionId || !eventBuffer.length) return;
+  if (!sb() || !sessionId || !eventBuffer.length) return;
   const batch = eventBuffer.splice(0);
   try {
-    await supabase.from('events').insert(
+    await sb().from('events').insert(
       batch.map(ev => ({
         session_id: sessionId,
         sync_id: syncId,
@@ -190,13 +191,14 @@ function resetInactivityTimer() {
   }, INACTIVITY_TIMEOUT);
 }
 
-function onVisibilityChange() {
+async function onVisibilityChange() {
   if (document.hidden) {
     flushEvents();
-    if (supabase && sessionId && !sessionEnded) {
+    if (sb() && sessionId && !sessionEnded) {
       const now = new Date().toISOString();
+      const headers = await getAuthHeaders();
       fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${sessionId}`, {
-        method: 'PATCH', headers: supaHeaders, keepalive: true,
+        method: 'PATCH', headers, keepalive: true,
         body: JSON.stringify({ ended_at: now }),
       }).catch(() => {});
     }
@@ -211,8 +213,8 @@ function onVisibilityChange() {
 }
 
 export function updateSessionLangs(interfaceLang, targetLang) {
-  if (!supabase || !sessionId || sessionEnded) return;
-  supabase
+  if (!sb() || !sessionId || sessionEnded) return;
+  sb()
     .from('sessions')
     .update({ interface_lang: interfaceLang, target_lang: targetLang })
     .eq('id', sessionId)
